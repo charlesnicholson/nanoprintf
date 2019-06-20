@@ -1,16 +1,12 @@
-# Prerequisites
-*.d
+# vim backup files
+*~
 
 # Object files
 *.o
 *.ko
 *.obj
 *.elf
-
-# Linker output
-*.ilk
-*.map
-*.exp
+*.pyc
 
 # Precompiled Headers
 *.gch
@@ -38,15 +34,22 @@
 
 # Debug files
 *.dSYM/
-*.su
-*.idb
-*.pdb
 
-# Kernel Module Compile Results
-*.mod*
-*.cmd
-.tmp_versions/
-modules.order
-Module.symvers
-Mkfile.old
-dkms.conf
+# temp / external directories
+build
+external
+
+# latex intermediates / unused artifacts
+doc/*.aux
+doc/*.log
+doc/*.mp
+doc/*.out
+doc/*.1
+doc/*.mps
+doc/*.toc
+
+# hooray for osx
+.DS_Store
+
+# hooray for windows
+*.TMP
