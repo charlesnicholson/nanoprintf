@@ -51,8 +51,10 @@ add_dependencies(libCppUTestExt CppUTest_external)
 ################ Tests
 
 add_executable(npf_unit_tests
+    nanoprintf.h
     unit_tests/test_nanoprintf.cc
-    unit_tests/nanoprintf.cc
+    unit_tests/nanoprintf_in_unit_tests.cc
+    unit_tests/nanoprintf_in_unit_tests.h
     unit_tests/main.cc)
 
 target_include_directories(npf_unit_tests PRIVATE "${CPPUTEST_INCLUDE_DIR}")
