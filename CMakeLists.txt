@@ -48,7 +48,39 @@ set_target_properties(libCppUTestExt PROPERTIES IMPORTED_LOCATION "${CPPUTESTEXT
 add_dependencies(libCppUTest CppUTest_external)
 add_dependencies(libCppUTestExt CppUTest_external)
 
-################ Tests
+################ Flag / language compilation tests
+
+add_library(npf_c_no_flags compilation_tests/nanoprintf_compilation_test_c.c)
+target_compile_definitions(npf_c_no_flags PRIVATE
+    NANOPRINTF_USE_C99_FORMAT_SPECIFIERS=0
+    NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=0)
+
+add_library(npf_c_floats compilation_tests/nanoprintf_compilation_test_c.c)
+target_compile_definitions(npf_c_floats PRIVATE
+    NANOPRINTF_USE_C99_FORMAT_SPECIFIERS=0
+    NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=1)
+
+add_library(npf_c_c99 compilation_tests/nanoprintf_compilation_test_c.c)
+target_compile_definitions(npf_c_c99 PRIVATE
+    NANOPRINTF_USE_C99_FORMAT_SPECIFIERS=1
+    NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=0)
+
+add_library(npf_cc_no_flags compilation_tests/nanoprintf_compilation_test_cc.cc)
+target_compile_definitions(npf_cc_no_flags PRIVATE
+    NANOPRINTF_USE_C99_FORMAT_SPECIFIERS=0
+    NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=0)
+
+add_library(npf_cc_floats compilation_tests/nanoprintf_compilation_test_cc.cc)
+target_compile_definitions(npf_cc_floats PRIVATE
+    NANOPRINTF_USE_C99_FORMAT_SPECIFIERS=0
+    NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=1)
+
+add_library(npf_cc_c99 compilation_tests/nanoprintf_compilation_test_cc.cc)
+target_compile_definitions(npf_cc_c99 PRIVATE
+    NANOPRINTF_USE_C99_FORMAT_SPECIFIERS=1
+    NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=0)
+
+################ Unit tests
 
 add_executable(npf_unit_tests
     nanoprintf.h
