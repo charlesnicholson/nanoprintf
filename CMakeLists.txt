@@ -4,7 +4,6 @@ project(nanoprintf C CXX)
 ############### Global flags
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
-set(CMAKE_XCODE_ATTRIBUTE_CLANG_CXX_LIBRARY "libc++")
 
 ################ CppUTest
 
@@ -18,8 +17,16 @@ set(CPPUTEST_CMAKE_ARGS -DCMAKE_BINARY_DIR=${CMAKE_BINARY_DIR}
                         -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
                         -DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}/CppUTest
                         -DTESTS=OFF)
-set(CPPUTEST_LIB_NAME ${CMAKE_STATIC_LIBRARY_PREFIX}CppUTest${CMAKE_STATIC_LIBRARY_SUFFIX})
-set(CPPUTESTEXT_LIB_NAME ${CMAKE_STATIC_LIBRARY_PREFIX}CppUTestExt${CMAKE_STATIC_LIBRARY_SUFFIX})
+set(CPPUTEST_LIB_NAME
+    ${CMAKE_STATIC_LIBRARY_PREFIX}CppUTest${CMAKE_STATIC_LIBRARY_SUFFIX})
+
+set(CPPUTEST_LIB "${CPPUTEST_LIB_DIR}/${CPPUTEST_LIB_NAME}")
+
+set(CPPUTESTEXT_LIB_NAME
+    ${CMAKE_STATIC_LIBRARY_PREFIX}CppUTestExt${CMAKE_STATIC_LIBRARY_SUFFIX})
+
+set(CPPUTESTEXT_LIB "${CPPUTEST_LIB_DIR}/${CPPUTESTEXT_LIB_NAME}")
+
 ExternalProject_Add(CppUTest_external
                     PREFIX ${CPPUTEST_ROOT_DIR}
                     GIT_REPOSITORY "https://github.com/cpputest/cpputest.git"
@@ -30,43 +37,43 @@ ExternalProject_Add(CppUTest_external
                     CMAKE_ARGS ${CPPUTEST_CMAKE_ARGS}
                     BINARY_DIR ${CMAKE_BINARY_DIR}/CppUTest
                     INSTALL_DIR ${CMAKE_BINARY_DIR}/CppUTest
-                    BUILD_BYPRODUCTS ${CPPUTEST_LIB_DIR}/${CPPUTEST_LIB_NAME} ${CPPUTEST_LIB_DIR}/${CPPUTESTEXT_LIB_NAME})
+                    BUILD_BYPRODUCTS "${CPPUTEST_LIB}" "${CPPUTESTEXT_LIB}")
 
 add_library(libCppUTest STATIC IMPORTED)
-set_target_properties(libCppUTest PROPERTIES IMPORTED_LOCATION ${CPPUTEST_LIB_DIR}/${CPPUTEST_LIB_NAME})
+set_target_properties(libCppUTest PROPERTIES IMPORTED_LOCATION "${CPPUTEST_LIB}")
 
 add_library(libCppUTestExt STATIC IMPORTED)
-set_target_properties(libCppUTestExt PROPERTIES IMPORTED_LOCATION ${CPPUTEST_LIB_DIR}/${CPPUTESTEXT_LIB_NAME})
+set_target_properties(libCppUTestExt PROPERTIES IMPORTED_LOCATION "${CPPUTESTEXT_LIB}")
 
 add_dependencies(libCppUTest CppUTest_external)
 add_dependencies(libCppUTestExt CppUTest_external)
 
-################ Test support
+################ Tests
 
-function(npf_add_test TEST_TARGET_EXECUTABLE)
-    set(TEST_TIMESTAMP_FILE
-        ${CMAKE_CURRENT_BINARY_DIR}/${TEST_TARGET_EXECUTABLE}_tests.timestamp)
-    add_custom_target(RUN_${TEST_TARGET_EXECUTABLE}_TESTS
-        ALL DEPENDS ${TEST_TIMESTAMP_FILE})
-    add_custom_command(OUTPUT ${TEST_TIMESTAMP_FILE}
-        COMMAND ${TEST_TARGET_EXECUTABLE} && ${CMAKE_COMMAND} -E touch ${TEST_TIMESTAMP_FILE}
-        DEPENDS ${TEST_TARGET_EXECUTABLE}
-        COMMENT "Running ${TEST_TARGET_EXECUTABLE}")
-endfunction()
+add_executable(npf_unit_tests
+    unit_tests/test_nanoprintf.cc
+    unit_tests/nanoprintf.cc
+    unit_tests/main.cc)
 
-################ General compilation flags
+target_include_directories(npf_unit_tests PRIVATE "${CPPUTEST_INCLUDE_DIR}")
+target_link_libraries(npf_unit_tests libCppUTest libCppUTestExt)
 
-set(NPF_RUNTIME_FLAGS -pedantic -ansi -fstrict-aliasing -Wsign-conversion)
-set(NPF_COMMON_FLAGS -Wall
-                     -Wextra
-                     -Wunreachable-code
-                     -Wshadow
-                     -Wcast-align
-                     -Wcast-qual
-                     -Wstrict-aliasing
-                     -Wmissing-braces
-                     -march=native)
+target_compile_options(npf_unit_tests PRIVATE
+    -Wall -Weverything -Wpedantic -ansi
+    -Wno-c++11-long-long    # CppUTest uses long long
+    -Wno-reserved-id-macro  # CppUTest uses leading __
+    -Wno-old-style-cast     # C style casts are ok
+    -Wno-keyword-macro      # CppUTest redefines 'new' for memory checks
+    -Wno-disabled-macro-expansion
+    -Wno-weak-vtables
+    -Wno-global-constructors   # CppUTest memory checks
+    -Wno-exit-time-destructors # CppUTest memory checks
+    -Wno-padded)
 
-################ Targets
+set(timestamp ${CMAKE_CURRENT_BINARY_DIR}/npf_unit_tests.timestamp)
+add_custom_target(run_npf_unit_tests ALL DEPENDS ${timestamp})
 
-add_subdirectory(unit_tests)
+add_custom_command(OUTPUT ${timestamp}
+    COMMAND npf_unit_tests && ${CMAKE_COMMAND} -E touch ${timestamp}
+    DEPENDS npf_unit_tests
+    COMMENT "Running unit tests")
