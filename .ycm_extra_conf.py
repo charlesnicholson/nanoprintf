@@ -3,6 +3,9 @@ import ycm_core
 import ntpath
 
 flags = [
+    '-DNANOPRINTF_IMPLEMENTATION',
+    '-DNANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=1',
+    '-DNANOPRINTF_USE_C99_FORMAT_SPECIFIERS=1',
     '-Wall',
     '-Wextra',
     '-Wall',

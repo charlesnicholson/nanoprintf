@@ -84,11 +84,11 @@ typedef enum {
 
 typedef struct {
     /* optional flags */
-    char left_justified : 1;   /* '-' */
-    char prepend_sign : 1;     /* '+' */
-    char prepend_space : 1;    /* ' ' */
-    char alternative_form : 1; /* '#' */
-    char zero_pad : 1;         /* '0' */
+    unsigned char left_justified : 1;   /* '-' */
+    unsigned char prepend_sign : 1;     /* '+' */
+    unsigned char prepend_space : 1;    /* ' ' */
+    unsigned char alternative_form : 1; /* '#' */
+    unsigned char zero_pad : 1;         /* '0' */
 
     /* field width */
     npf__format_spec_field_width_t field_width_type;
@@ -120,6 +120,12 @@ int npf__parse_format_spec(char const *format, npf__format_spec_t *out_spec);
 #include "nanoprintf.h"
 #define NANOPRINTF_IMPLEMENTATION
 
+#if NANOPRINTF_USE_C99_FORMAT_SPECIFIERS
+#include <inttypes.h>
+#include <stdint.h>
+#include <wchar.h>
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -129,6 +135,35 @@ int npf__parse_format_spec(char const *format, npf__format_spec_t *out_spec) {
 
     if (*cur++ != '%') {
         return 0;
+    }
+
+    /* Optional flags */
+    out_spec->left_justified = 0;
+    out_spec->prepend_sign = 0;
+    out_spec->prepend_space = 0;
+    out_spec->alternative_form = 0;
+    out_spec->zero_pad = 0;
+
+    while (*cur == '-' || *cur == '+' || *cur == ' ' || *cur == '#' ||
+           *cur == '0') {
+        switch (*cur++) {
+            case '-':
+                out_spec->left_justified = 1;
+                break;
+            case '+':
+                out_spec->prepend_sign = 1;
+                out_spec->prepend_space = 0;
+                break;
+            case ' ':
+                out_spec->prepend_space = !out_spec->prepend_sign;
+                break;
+            case '#':
+                out_spec->alternative_form = 1;
+                break;
+            case '0':
+                out_spec->zero_pad = 1;
+                break;
+        }
     }
 
     switch (*cur++) {
