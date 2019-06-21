@@ -1,5 +1,3 @@
-#include "../nanoprintf.h"
-
 #include <CppUTest/CommandLineTestRunner.h>
 #include <CppUTest/TestRegistry.h>
 #include <CppUTestExt/MemoryReporterPlugin.h>
