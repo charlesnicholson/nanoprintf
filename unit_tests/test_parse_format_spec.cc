@@ -442,4 +442,3 @@ TEST(npf__parse_format_spec, G) {
     CHECK_EQUAL(NPF_FMT_SPEC_CONV_FLOAT_DYNAMIC, spec.conversion_specifier);
     CHECK_EQUAL(NPF_FMT_SPEC_CONV_CASE_UPPER, spec.conversion_specifier_case);
 }
-
