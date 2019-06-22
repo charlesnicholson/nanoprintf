@@ -201,6 +201,35 @@ int npf__parse_format_spec(char const *format, npf__format_spec_t *out_spec) {
         }
     }
 
+    /* Length modifier */
+    if (*cur == 'h' || *cur == 'l'
+#if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS
+        || *cur == 'L'
+#endif
+#if NANOPRINTF_USE_C99_FORMAT_SPECIFIERS
+        || *cur == 'j' || *cur == 'z' || *cur == 't'
+#endif
+    ) {
+        switch (*cur) {
+            case 'h':
+                break;
+            case 'l':
+                break;
+#if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS
+            case 'L':
+                break;
+#endif
+#if NANOPRINTF_USE_C99_FORMAT_SPECIFIERS
+            case 'j':
+                break;
+            case 'z':
+                break;
+            case 't':
+                break;
+#endif
+        }
+    }
+
     /* Conversion specifier */
     switch (*cur++) {
         case '%':
