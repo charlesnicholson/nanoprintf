@@ -88,7 +88,7 @@ typedef struct {
     unsigned char prepend_sign : 1;     /* '+' */
     unsigned char prepend_space : 1;    /* ' ' */
     unsigned char alternative_form : 1; /* '#' */
-    unsigned char zero_pad : 1;         /* '0' */
+    unsigned char leading_zero_pad : 1; /* '0' */
 
     /* field width */
     npf__format_spec_field_width_t field_width_type;
@@ -133,22 +133,27 @@ extern "C" {
 int npf__parse_format_spec(char const *format, npf__format_spec_t *out_spec) {
     char const *cur = format;
 
+    out_spec->left_justified = 0;
+    out_spec->prepend_sign = 0;
+    out_spec->prepend_space = 0;
+    out_spec->alternative_form = 0;
+    out_spec->leading_zero_pad = 0;
+    out_spec->field_width_type = NPF_FMT_SPEC_FIELD_WIDTH_NONE;
+    out_spec->precision_type = NPF_FMT_SPEC_PRECISION_NONE;
+    out_spec->length_modifier = NPF_FMT_SPEC_LENGTH_MOD_NONE;
+
+    /* Format specifiers start with % */
     if (*cur++ != '%') {
         return 0;
     }
 
     /* Optional flags */
-    out_spec->left_justified = 0;
-    out_spec->prepend_sign = 0;
-    out_spec->prepend_space = 0;
-    out_spec->alternative_form = 0;
-    out_spec->zero_pad = 0;
-
     while (*cur == '-' || *cur == '+' || *cur == ' ' || *cur == '#' ||
            *cur == '0') {
         switch (*cur++) {
             case '-':
                 out_spec->left_justified = 1;
+                out_spec->leading_zero_pad = 0;
                 break;
             case '+':
                 out_spec->prepend_sign = 1;
@@ -161,11 +166,42 @@ int npf__parse_format_spec(char const *format, npf__format_spec_t *out_spec) {
                 out_spec->alternative_form = 1;
                 break;
             case '0':
-                out_spec->zero_pad = 1;
+                out_spec->leading_zero_pad = !out_spec->left_justified;
                 break;
         }
     }
 
+    /* Minimum field width */
+    if (*cur == '*') {
+        out_spec->field_width_type = NPF_FMT_SPEC_FIELD_WIDTH_STAR;
+        ++cur;
+    } else {
+        if (*cur >= '0' && *cur <= '9') {
+            out_spec->field_width_type = NPF_FMT_SPEC_FIELD_WIDTH_LITERAL;
+        }
+        while (*cur >= '0' && *cur <= '9') {
+            out_spec->field_width =
+                (out_spec->field_width * 10) + (*cur++ - '0');
+        }
+    }
+
+    /* Precision */
+    if (*cur == '.') {
+        ++cur;
+        out_spec->precision_type = NPF_FMT_SPEC_PRECISION_LITERAL;
+        out_spec->precision = 0;
+        if (*cur == '*') {
+            ++cur;
+            out_spec->precision_type = NPF_FMT_SPEC_PRECISION_STAR;
+        } else {
+            while (*cur >= '0' && *cur <= '9') {
+                out_spec->precision =
+                    (out_spec->precision * 10) + (*cur++ - '0');
+            }
+        }
+    }
+
+    /* Conversion specifier */
     switch (*cur++) {
         case '%':
             out_spec->conversion_specifier = NPF_FMT_SPEC_CONV_PERCENT;
