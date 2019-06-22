@@ -210,21 +210,42 @@ int npf__parse_format_spec(char const *format, npf__format_spec_t *out_spec) {
         || *cur == 'j' || *cur == 'z' || *cur == 't'
 #endif
     ) {
-        switch (*cur) {
+        switch (*cur++) {
             case 'h':
+#if NANOPRINTF_USE_C99_FORMAT_SPECIFIERS
+                if (*cur == 'h') {
+                    out_spec->length_modifier =
+                        NPF_FMT_SPEC_LENGTH_MOD_C99_CHAR;
+                    ++cur;
+                } else
+#endif
+                    out_spec->length_modifier = NPF_FMT_SPEC_LENGTH_MOD_SHORT;
                 break;
             case 'l':
+#if NANOPRINTF_USE_C99_FORMAT_SPECIFIERS
+                if (*cur == 'l') {
+                    out_spec->length_modifier =
+                        NPF_FMT_SPEC_LENGTH_MOD_C99_LONG_LONG;
+                    ++cur;
+                } else
+#endif
+                    out_spec->length_modifier = NPF_FMT_SPEC_LENGTH_MOD_LONG;
                 break;
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS
             case 'L':
+                out_spec->length_modifier = NPF_FMT_SPEC_LENGTH_MOD_LONG_DOUBLE;
                 break;
 #endif
 #if NANOPRINTF_USE_C99_FORMAT_SPECIFIERS
             case 'j':
+                out_spec->length_modifier = NPF_FMT_SPEC_LENGTH_MOD_C99_INTMAX;
                 break;
             case 'z':
+                out_spec->length_modifier = NPF_FMT_SPEC_LENGTH_MOD_C99_SIZET;
                 break;
             case 't':
+                out_spec->length_modifier =
+                    NPF_FMT_SPEC_LENGTH_MOD_C99_PTRDIFFT;
                 break;
 #endif
         }

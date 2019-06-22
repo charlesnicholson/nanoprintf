@@ -15,114 +15,9 @@ TEST(npf__parse_format_spec, ReturnsZeroIfPercentEndsString) {
     CHECK_EQUAL(0, npf__parse_format_spec("%", &spec));
 }
 
-// All conversion specifiers are defined in 7.21.6.1.8
+// Printf behavior is specified in ISO/IEC 9899:201x 7.21.6.1
 
-TEST(npf__parse_format_spec, PercentLiteral) {
-    CHECK_EQUAL(2, npf__parse_format_spec("%%", &spec));
-    CHECK_EQUAL(NPF_FMT_SPEC_CONV_PERCENT, spec.conversion_specifier);
-}
-
-TEST(npf__parse_format_spec, c) {
-    CHECK_EQUAL(2, npf__parse_format_spec("%c", &spec));
-    CHECK_EQUAL(NPF_FMT_SPEC_CONV_CHAR, spec.conversion_specifier);
-}
-
-TEST(npf__parse_format_spec, s) {
-    CHECK_EQUAL(2, npf__parse_format_spec("%s", &spec));
-    CHECK_EQUAL(NPF_FMT_SPEC_CONV_STRING, spec.conversion_specifier);
-}
-
-TEST(npf__parse_format_spec, i) {
-    CHECK_EQUAL(2, npf__parse_format_spec("%i", &spec));
-    CHECK_EQUAL(NPF_FMT_SPEC_CONV_SIGNED_INT, spec.conversion_specifier);
-}
-
-TEST(npf__parse_format_spec, d) {
-    CHECK_EQUAL(2, npf__parse_format_spec("%d", &spec));
-    CHECK_EQUAL(NPF_FMT_SPEC_CONV_SIGNED_INT, spec.conversion_specifier);
-}
-
-TEST(npf__parse_format_spec, o) {
-    CHECK_EQUAL(2, npf__parse_format_spec("%o", &spec));
-    CHECK_EQUAL(NPF_FMT_SPEC_CONV_OCTAL, spec.conversion_specifier);
-}
-
-TEST(npf__parse_format_spec, x) {
-    CHECK_EQUAL(2, npf__parse_format_spec("%x", &spec));
-    CHECK_EQUAL(NPF_FMT_SPEC_CONV_HEX_INT, spec.conversion_specifier);
-    CHECK_EQUAL(NPF_FMT_SPEC_CONV_CASE_LOWER, spec.conversion_specifier_case);
-}
-
-TEST(npf__parse_format_spec, X) {
-    CHECK_EQUAL(2, npf__parse_format_spec("%X", &spec));
-    CHECK_EQUAL(NPF_FMT_SPEC_CONV_HEX_INT, spec.conversion_specifier);
-    CHECK_EQUAL(NPF_FMT_SPEC_CONV_CASE_UPPER, spec.conversion_specifier_case);
-}
-
-TEST(npf__parse_format_spec, u) {
-    CHECK_EQUAL(2, npf__parse_format_spec("%u", &spec));
-    CHECK_EQUAL(NPF_FMT_SPEC_CONV_UNSIGNED_INT, spec.conversion_specifier);
-}
-
-TEST(npf__parse_format_spec, n) {
-    CHECK_EQUAL(2, npf__parse_format_spec("%n", &spec));
-    CHECK_EQUAL(NPF_FMT_SPEC_CONV_CHARS_WRITTEN, spec.conversion_specifier);
-}
-
-TEST(npf__parse_format_spec, p) {
-    CHECK_EQUAL(2, npf__parse_format_spec("%p", &spec));
-    CHECK_EQUAL(NPF_FMT_SPEC_CONV_POINTER, spec.conversion_specifier);
-}
-
-TEST(npf__parse_format_spec, f) {
-    CHECK_EQUAL(2, npf__parse_format_spec("%f", &spec));
-    CHECK_EQUAL(NPF_FMT_SPEC_CONV_FLOAT_DECIMAL, spec.conversion_specifier);
-    CHECK_EQUAL(NPF_FMT_SPEC_CONV_CASE_LOWER, spec.conversion_specifier_case);
-}
-
-TEST(npf__parse_format_spec, F) {
-    CHECK_EQUAL(2, npf__parse_format_spec("%F", &spec));
-    CHECK_EQUAL(NPF_FMT_SPEC_CONV_FLOAT_DECIMAL, spec.conversion_specifier);
-    CHECK_EQUAL(NPF_FMT_SPEC_CONV_CASE_UPPER, spec.conversion_specifier_case);
-}
-
-TEST(npf__parse_format_spec, e) {
-    CHECK_EQUAL(2, npf__parse_format_spec("%e", &spec));
-    CHECK_EQUAL(NPF_FMT_SPEC_CONV_FLOAT_EXPONENT, spec.conversion_specifier);
-    CHECK_EQUAL(NPF_FMT_SPEC_CONV_CASE_LOWER, spec.conversion_specifier_case);
-}
-
-TEST(npf__parse_format_spec, E) {
-    CHECK_EQUAL(2, npf__parse_format_spec("%E", &spec));
-    CHECK_EQUAL(NPF_FMT_SPEC_CONV_FLOAT_EXPONENT, spec.conversion_specifier);
-    CHECK_EQUAL(NPF_FMT_SPEC_CONV_CASE_UPPER, spec.conversion_specifier_case);
-}
-
-TEST(npf__parse_format_spec, a) {
-    CHECK_EQUAL(2, npf__parse_format_spec("%a", &spec));
-    CHECK_EQUAL(NPF_FMT_SPEC_CONV_C99_FLOAT_HEX, spec.conversion_specifier);
-    CHECK_EQUAL(NPF_FMT_SPEC_CONV_CASE_LOWER, spec.conversion_specifier_case);
-}
-
-TEST(npf__parse_format_spec, A) {
-    CHECK_EQUAL(2, npf__parse_format_spec("%A", &spec));
-    CHECK_EQUAL(NPF_FMT_SPEC_CONV_C99_FLOAT_HEX, spec.conversion_specifier);
-    CHECK_EQUAL(NPF_FMT_SPEC_CONV_CASE_UPPER, spec.conversion_specifier_case);
-}
-
-TEST(npf__parse_format_spec, g) {
-    CHECK_EQUAL(2, npf__parse_format_spec("%g", &spec));
-    CHECK_EQUAL(NPF_FMT_SPEC_CONV_FLOAT_DYNAMIC, spec.conversion_specifier);
-    CHECK_EQUAL(NPF_FMT_SPEC_CONV_CASE_LOWER, spec.conversion_specifier_case);
-}
-
-TEST(npf__parse_format_spec, G) {
-    CHECK_EQUAL(2, npf__parse_format_spec("%G", &spec));
-    CHECK_EQUAL(NPF_FMT_SPEC_CONV_FLOAT_DYNAMIC, spec.conversion_specifier);
-    CHECK_EQUAL(NPF_FMT_SPEC_CONV_CASE_UPPER, spec.conversion_specifier_case);
-}
-
-// All optional flags are defined in 7.21.6.1.6
+// Otional flags are defined in 7.21.6.1.6
 
 /*
     '-' flag: The result of the conversion is left-justified within the field.
@@ -345,3 +240,204 @@ TEST(npf__parse_format_spec, PrecisionIsLiteralIfPeriodThenNumber) {
     CHECK_EQUAL(NPF_FMT_SPEC_PRECISION_LITERAL, spec.precision_type);
     CHECK_EQUAL(12345, spec.precision);
 }
+
+/*
+   The length modifiers and their meanings are:
+
+   hh Specifies that a following d, i, o, u, x, or X conversion specifier
+   applies to a signed char or unsigned char argument (the argument will have
+   been promoted according to the integer promotions, but its value shall be
+   converted to signed char or unsigned char before printing); or that a
+   following n conversion specifier applies to a pointer to a signed char
+   argument.
+
+   h Specifies that a following d, i, o, u, x, or X conversion specifier applies
+   to a short int or unsigned short int argument (the argument will have been
+   promoted according to the integer promotions, but its value shall be
+   converted to short int or unsigned short int before printing); or that a
+   following n conversion specifier applies to a pointer to a short int
+   argument.
+
+   l (ell) Specifies that a following d, i, o, u, x, or X conversion specifier
+   applies to a long int or unsigned long int argument; that a following n
+   conversion specifier applies to a pointer to a long int argument; that a
+   following c conversion specifier applies to a wint_t argument; that a
+   following s conversion specifier applies to a pointer to a wchar_t argument;
+   or has no effect on a following a, A, e, E, f, F, g, or G conversion
+   specifier.
+
+   ll (ell-ell) Specifies that a following d, i, o, u, x, or X
+   conversion specifier applies to a long long int or unsigned long long int
+   argument; or that a following n conversion specifier applies to a pointer to
+   a long long int argument.
+
+   j Specifies that a following d, i, o, u, x, or X
+   conversion specifier applies to an intmax_t or uintmax_t argument; or that a
+   following n conversion specifier applies to a pointer to an intmax_t
+   argument.
+
+   z Specifies that a following d, i, o, u, x, or X conversion specifier applies
+   to a size_t or the corresponding signed integer type argument; or that a
+   following n conversion specifier applies to a pointer to a signed integer
+   type corresponding to size_t argument
+
+   t Specifies that a following d, i, o, u, x, or X conversion specifier applies
+   to a ptrdiff_t or the corresponding unsigned integer type argument; or that a
+   following n conversion specifier applies to a pointer to a ptrdiff_t
+   argument.
+
+   L Specifies that a following a, A, e, E, f, F, g, or G conversion specifier
+   applies to a long double argument.
+*/
+
+TEST(npf__parse_format_spec, LengthModWithoutConversionSpecifierReturnsZero) {
+    CHECK_EQUAL(0, npf__parse_format_spec("%hh", &spec));
+}
+
+TEST(npf__parse_format_spec, LengthMod_hh) {
+    CHECK_EQUAL(4, npf__parse_format_spec("%hhu", &spec));
+    CHECK_EQUAL(NPF_FMT_SPEC_LENGTH_MOD_C99_CHAR, spec.length_modifier);
+}
+
+TEST(npf__parse_format_spec, LengthMode_h) {
+    CHECK_EQUAL(3, npf__parse_format_spec("%hu", &spec));
+    CHECK_EQUAL(NPF_FMT_SPEC_LENGTH_MOD_SHORT, spec.length_modifier);
+}
+
+TEST(npf__parse_format_spec, LengthMode_l) {
+    CHECK_EQUAL(3, npf__parse_format_spec("%lu", &spec));
+    CHECK_EQUAL(NPF_FMT_SPEC_LENGTH_MOD_LONG, spec.length_modifier);
+}
+
+TEST(npf__parse_format_spec, LengthMode_ll) {
+    CHECK_EQUAL(4, npf__parse_format_spec("%llu", &spec));
+    CHECK_EQUAL(NPF_FMT_SPEC_LENGTH_MOD_C99_LONG_LONG, spec.length_modifier);
+}
+
+TEST(npf__parse_format_spec, LengthMode_j) {
+    CHECK_EQUAL(3, npf__parse_format_spec("%ju", &spec));
+    CHECK_EQUAL(NPF_FMT_SPEC_LENGTH_MOD_C99_INTMAX, spec.length_modifier);
+}
+
+TEST(npf__parse_format_spec, LengthMode_z) {
+    CHECK_EQUAL(3, npf__parse_format_spec("%zu", &spec));
+    CHECK_EQUAL(NPF_FMT_SPEC_LENGTH_MOD_C99_SIZET, spec.length_modifier);
+}
+
+TEST(npf__parse_format_spec, LengthMode_t) {
+    CHECK_EQUAL(3, npf__parse_format_spec("%tu", &spec));
+    CHECK_EQUAL(NPF_FMT_SPEC_LENGTH_MOD_C99_PTRDIFFT, spec.length_modifier);
+}
+
+TEST(npf__parse_format_spec, LengthMode_L) {
+    CHECK_EQUAL(3, npf__parse_format_spec("%Lu", &spec));
+    CHECK_EQUAL(NPF_FMT_SPEC_LENGTH_MOD_LONG_DOUBLE, spec.length_modifier);
+}
+
+// All conversion specifiers are defined in 7.21.6.1.8
+
+TEST(npf__parse_format_spec, PercentLiteral) {
+    CHECK_EQUAL(2, npf__parse_format_spec("%%", &spec));
+    CHECK_EQUAL(NPF_FMT_SPEC_CONV_PERCENT, spec.conversion_specifier);
+}
+
+TEST(npf__parse_format_spec, c) {
+    CHECK_EQUAL(2, npf__parse_format_spec("%c", &spec));
+    CHECK_EQUAL(NPF_FMT_SPEC_CONV_CHAR, spec.conversion_specifier);
+}
+
+TEST(npf__parse_format_spec, s) {
+    CHECK_EQUAL(2, npf__parse_format_spec("%s", &spec));
+    CHECK_EQUAL(NPF_FMT_SPEC_CONV_STRING, spec.conversion_specifier);
+}
+
+TEST(npf__parse_format_spec, i) {
+    CHECK_EQUAL(2, npf__parse_format_spec("%i", &spec));
+    CHECK_EQUAL(NPF_FMT_SPEC_CONV_SIGNED_INT, spec.conversion_specifier);
+}
+
+TEST(npf__parse_format_spec, d) {
+    CHECK_EQUAL(2, npf__parse_format_spec("%d", &spec));
+    CHECK_EQUAL(NPF_FMT_SPEC_CONV_SIGNED_INT, spec.conversion_specifier);
+}
+
+TEST(npf__parse_format_spec, o) {
+    CHECK_EQUAL(2, npf__parse_format_spec("%o", &spec));
+    CHECK_EQUAL(NPF_FMT_SPEC_CONV_OCTAL, spec.conversion_specifier);
+}
+
+TEST(npf__parse_format_spec, x) {
+    CHECK_EQUAL(2, npf__parse_format_spec("%x", &spec));
+    CHECK_EQUAL(NPF_FMT_SPEC_CONV_HEX_INT, spec.conversion_specifier);
+    CHECK_EQUAL(NPF_FMT_SPEC_CONV_CASE_LOWER, spec.conversion_specifier_case);
+}
+
+TEST(npf__parse_format_spec, X) {
+    CHECK_EQUAL(2, npf__parse_format_spec("%X", &spec));
+    CHECK_EQUAL(NPF_FMT_SPEC_CONV_HEX_INT, spec.conversion_specifier);
+    CHECK_EQUAL(NPF_FMT_SPEC_CONV_CASE_UPPER, spec.conversion_specifier_case);
+}
+
+TEST(npf__parse_format_spec, u) {
+    CHECK_EQUAL(2, npf__parse_format_spec("%u", &spec));
+    CHECK_EQUAL(NPF_FMT_SPEC_CONV_UNSIGNED_INT, spec.conversion_specifier);
+}
+
+TEST(npf__parse_format_spec, n) {
+    CHECK_EQUAL(2, npf__parse_format_spec("%n", &spec));
+    CHECK_EQUAL(NPF_FMT_SPEC_CONV_CHARS_WRITTEN, spec.conversion_specifier);
+}
+
+TEST(npf__parse_format_spec, p) {
+    CHECK_EQUAL(2, npf__parse_format_spec("%p", &spec));
+    CHECK_EQUAL(NPF_FMT_SPEC_CONV_POINTER, spec.conversion_specifier);
+}
+
+TEST(npf__parse_format_spec, f) {
+    CHECK_EQUAL(2, npf__parse_format_spec("%f", &spec));
+    CHECK_EQUAL(NPF_FMT_SPEC_CONV_FLOAT_DECIMAL, spec.conversion_specifier);
+    CHECK_EQUAL(NPF_FMT_SPEC_CONV_CASE_LOWER, spec.conversion_specifier_case);
+}
+
+TEST(npf__parse_format_spec, F) {
+    CHECK_EQUAL(2, npf__parse_format_spec("%F", &spec));
+    CHECK_EQUAL(NPF_FMT_SPEC_CONV_FLOAT_DECIMAL, spec.conversion_specifier);
+    CHECK_EQUAL(NPF_FMT_SPEC_CONV_CASE_UPPER, spec.conversion_specifier_case);
+}
+
+TEST(npf__parse_format_spec, e) {
+    CHECK_EQUAL(2, npf__parse_format_spec("%e", &spec));
+    CHECK_EQUAL(NPF_FMT_SPEC_CONV_FLOAT_EXPONENT, spec.conversion_specifier);
+    CHECK_EQUAL(NPF_FMT_SPEC_CONV_CASE_LOWER, spec.conversion_specifier_case);
+}
+
+TEST(npf__parse_format_spec, E) {
+    CHECK_EQUAL(2, npf__parse_format_spec("%E", &spec));
+    CHECK_EQUAL(NPF_FMT_SPEC_CONV_FLOAT_EXPONENT, spec.conversion_specifier);
+    CHECK_EQUAL(NPF_FMT_SPEC_CONV_CASE_UPPER, spec.conversion_specifier_case);
+}
+
+TEST(npf__parse_format_spec, a) {
+    CHECK_EQUAL(2, npf__parse_format_spec("%a", &spec));
+    CHECK_EQUAL(NPF_FMT_SPEC_CONV_C99_FLOAT_HEX, spec.conversion_specifier);
+    CHECK_EQUAL(NPF_FMT_SPEC_CONV_CASE_LOWER, spec.conversion_specifier_case);
+}
+
+TEST(npf__parse_format_spec, A) {
+    CHECK_EQUAL(2, npf__parse_format_spec("%A", &spec));
+    CHECK_EQUAL(NPF_FMT_SPEC_CONV_C99_FLOAT_HEX, spec.conversion_specifier);
+    CHECK_EQUAL(NPF_FMT_SPEC_CONV_CASE_UPPER, spec.conversion_specifier_case);
+}
+
+TEST(npf__parse_format_spec, g) {
+    CHECK_EQUAL(2, npf__parse_format_spec("%g", &spec));
+    CHECK_EQUAL(NPF_FMT_SPEC_CONV_FLOAT_DYNAMIC, spec.conversion_specifier);
+    CHECK_EQUAL(NPF_FMT_SPEC_CONV_CASE_LOWER, spec.conversion_specifier_case);
+}
+
+TEST(npf__parse_format_spec, G) {
+    CHECK_EQUAL(2, npf__parse_format_spec("%G", &spec));
+    CHECK_EQUAL(NPF_FMT_SPEC_CONV_FLOAT_DYNAMIC, spec.conversion_specifier);
+    CHECK_EQUAL(NPF_FMT_SPEC_CONV_CASE_UPPER, spec.conversion_specifier_case);
+}
+
