@@ -1,10 +1,6 @@
 cmake_minimum_required(VERSION 3.4)
 project(nanoprintf C CXX)
 
-############### Global flags
-
-set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
-
 ################ CppUTest
 
 include(ExternalProject)
@@ -50,6 +46,35 @@ add_dependencies(libCppUTestExt CppUTest_external)
 
 ################ Flag / language compilation tests
 
+string(CONCAT nanoprintf_common_flags
+    "-pedantic "
+    "-Wall "
+    "-Weverything "
+    "-Werror "
+    "-Wno-old-style-cast "
+    "-Wno-padded")
+
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${nanoprintf_common_flags}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${nanoprintf_common_flags}")
+
+add_library(npf_c89 compilation_tests/nanoprintf_compilation_test_c.c)
+target_compile_definitions(npf_c89 PRIVATE
+    NANOPRINTF_USE_C99_FORMAT_SPECIFIERS=0
+    NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=1)
+target_compile_options(npf_c89 PRIVATE -std=c89)
+
+add_library(npf_c99 compilation_tests/nanoprintf_compilation_test_c.c)
+target_compile_definitions(npf_c99 PRIVATE
+    NANOPRINTF_USE_C99_FORMAT_SPECIFIERS=1
+    NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=1)
+target_compile_options(npf_c99 PRIVATE -std=c99)
+
+add_library(npf_c11 compilation_tests/nanoprintf_compilation_test_c.c)
+target_compile_definitions(npf_c11 PRIVATE
+    NANOPRINTF_USE_C99_FORMAT_SPECIFIERS=1
+    NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=1)
+target_compile_options(npf_c11 PRIVATE -std=c11)
+
 add_library(npf_c_no_flags compilation_tests/nanoprintf_compilation_test_c.c)
 target_compile_definitions(npf_c_no_flags PRIVATE
     NANOPRINTF_USE_C99_FORMAT_SPECIFIERS=0
@@ -93,7 +118,6 @@ target_include_directories(npf_unit_tests PRIVATE "${CPPUTEST_INCLUDE_DIR}")
 target_link_libraries(npf_unit_tests libCppUTest libCppUTestExt)
 
 target_compile_options(npf_unit_tests PRIVATE
-    -Wall -Weverything -Wpedantic -ansi
     -Wno-c++11-long-long    # CppUTest uses long long
     -Wno-reserved-id-macro  # CppUTest uses leading __
     -Wno-old-style-cast     # C style casts are ok
@@ -102,7 +126,7 @@ target_compile_options(npf_unit_tests PRIVATE
     -Wno-weak-vtables
     -Wno-global-constructors   # CppUTest memory checks
     -Wno-exit-time-destructors # CppUTest memory checks
-    -Wno-padded)
+)
 
 set(timestamp ${CMAKE_CURRENT_BINARY_DIR}/npf_unit_tests.timestamp)
 add_custom_target(run_npf_unit_tests ALL DEPENDS ${timestamp})

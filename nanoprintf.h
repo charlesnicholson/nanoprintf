@@ -1,4 +1,4 @@
-// https://github.com/nothings/stb/blob/master/docs/stb_howto.txt
+/* https://github.com/nothings/stb/blob/master/docs/stb_howto.txt */
 #ifndef NANOPRINTF_IMPLEMENTATION
 
 #ifndef NANOPRINTF_H_INCLUDED
