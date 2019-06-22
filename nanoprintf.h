@@ -186,10 +186,10 @@ int npf__parse_format_spec(char const *format, npf__format_spec_t *out_spec) {
     }
 
     /* Precision */
+    out_spec->precision = 0;
     if (*cur == '.') {
         ++cur;
         out_spec->precision_type = NPF_FMT_SPEC_PRECISION_LITERAL;
-        out_spec->precision = 0;
         if (*cur == '*') {
             ++cur;
             out_spec->precision_type = NPF_FMT_SPEC_PRECISION_STAR;

@@ -220,8 +220,10 @@ TEST(npf__parse_format_spec, FieldWidthReadFromLiteral) {
 */
 
 TEST(npf__parse_format_spec, PrecisionIsNoneIfNotSpecified) {
+    spec.precision = 1234;
     CHECK_EQUAL(2, npf__parse_format_spec("%u", &spec));
     CHECK_EQUAL(NPF_FMT_SPEC_PRECISION_NONE, spec.precision_type);
+    CHECK_EQUAL(0, spec.precision);
 }
 
 TEST(npf__parse_format_spec, PrecisionIsStarIfPeriodAsterisk) {
