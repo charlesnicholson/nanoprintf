@@ -25,7 +25,7 @@ int npf_snprintf(char *buffer, size_t bufsz, const char *format, ...);
 int npf_vsnprintf(char *buffer, size_t bufsz, char const *format,
                   va_list vlist);
 
-typedef int (*npf_putc)(char c, void *ctx);
+typedef int (*npf_putc)(int c, void *ctx);
 int npf_pprintf(npf_putc pc, void *pc_ctx, char const *format, ...);
 int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist);
 
@@ -111,6 +111,16 @@ typedef struct {
 } npf__format_spec_t;
 
 int npf__parse_format_spec(char const *format, npf__format_spec_t *out_spec);
+
+enum { NPF__EOF = -1 };
+
+typedef struct {
+    char *dst;
+    size_t len;
+    size_t cur;
+} npf__bufputc_ctx_t;
+
+int npf__bufputc(int c, void *ctx);
 
 #ifdef __cplusplus
 }
@@ -334,6 +344,23 @@ int npf__parse_format_spec(char const *format, npf__format_spec_t *out_spec) {
     return (int)(cur - format);
 }
 
+int npf__bufputc(int c, void *ctx) {
+    npf__bufputc_ctx_t *bpc = (npf__bufputc_ctx_t *)ctx;
+    if (bpc->cur < bpc->len) {
+        bpc->dst[bpc->cur++] = (char)c;
+        return NPF__EOF;
+    }
+    return c;
+}
+
+int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
+    (void)pc;
+    (void)pc_ctx;
+    (void)format;
+    (void)vlist;
+    return 0;
+}
+
 int npf_pprintf(npf_putc pc, void *pc_ctx, char const *format, ...) {
     va_list val;
     int rv;
@@ -343,12 +370,22 @@ int npf_pprintf(npf_putc pc, void *pc_ctx, char const *format, ...) {
     return rv;
 }
 
-int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
-    (void)pc;
-    (void)pc_ctx;
-    (void)format;
-    (void)vlist;
-    return 0;
+int npf_snprintf(char *buffer, size_t bufsz, const char *format, ...) {
+    va_list val;
+    int rv;
+    va_start(val, format);
+    rv = npf_vsnprintf(buffer, bufsz, format, val);
+    va_end(val);
+    return rv;
+}
+
+int npf_vsnprintf(char *buffer, size_t bufsz, char const *format,
+                  va_list vlist) {
+    npf__bufputc_ctx_t bufputc_ctx;
+    bufputc_ctx.dst = buffer;
+    bufputc_ctx.len = bufsz;
+    bufputc_ctx.cur = 0;
+    return npf_vpprintf(npf__bufputc, &bufputc_ctx, format, vlist);
 }
 
 #ifdef __cplusplus

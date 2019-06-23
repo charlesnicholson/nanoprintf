@@ -115,6 +115,7 @@ target_compile_definitions(npf_cc_c99 PRIVATE
 add_executable(npf_unit_tests
     nanoprintf.h
     unit_tests/test_parse_format_spec.cc
+    unit_tests/test_bufputc.cc
     unit_tests/nanoprintf_in_unit_tests.cc
     unit_tests/nanoprintf_in_unit_tests.h
     unit_tests/main.cc)
@@ -131,6 +132,9 @@ target_compile_options(npf_unit_tests PRIVATE
     -Wno-weak-vtables
     -Wno-global-constructors   # CppUTest memory checks
     -Wno-exit-time-destructors # CppUTest memory checks
+    -Wno-c++98-compat
+    -Wno-c++98-compat-pedantic
+    -std=c++11
 )
 
 set(timestamp ${CMAKE_CURRENT_BINARY_DIR}/npf_unit_tests.timestamp)
