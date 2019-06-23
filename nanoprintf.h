@@ -355,6 +355,7 @@ int npf__bufputc(int c, void *ctx) {
 int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
     int n = 0;
     char const *cur = format;
+    char cbuf[24], *cbuf_dst = cbuf;
     while (*cur) {
         if (*cur != '%') {
             if (pc(*cur++, pc_ctx) == NPF_EOF) {
@@ -394,9 +395,8 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                     } break;
                     case NPF_FMT_SPEC_CONV_SIGNED_INT: { /* 'i', 'd' */
                         int i = va_arg(vlist, int);
-                        char ibuf[24], *dst = ibuf;
                         if (i == 0) {
-                            *dst++ = '0';
+                            *cbuf_dst++ = '0';
                         } else {
                             int const neg = (i < 0) ? -1 : 1;
                             if (i < 0) {
@@ -406,34 +406,48 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                                 ++n;
                             }
                             while (i) {
-                                *dst++ = (char)('0' + (neg * (i % 10)));
+                                *cbuf_dst++ = (char)('0' + (neg * (i % 10)));
                                 i /= 10;
                             }
                         }
-                        while (dst > ibuf) {
-                            if (pc(*--dst, pc_ctx) == NPF_EOF) {
+                        while (cbuf_dst > cbuf) {
+                            if (pc(*--cbuf_dst, pc_ctx) == NPF_EOF) {
                                 return n;
                             }
                             ++n;
                         }
                     } break;
-                    case NPF_FMT_SPEC_CONV_OCTAL: /* 'o' */
-                        break;
+                    case NPF_FMT_SPEC_CONV_OCTAL: { /* 'o' */
+                        unsigned i = va_arg(vlist, unsigned);
+                        if (i == 0) {
+                            *cbuf_dst++ = '0';
+                        } else {
+                            while (i) {
+                                *cbuf_dst++ = '0' + (i % 8);
+                                i /= 8;
+                            }
+                        }
+                        while (cbuf_dst > cbuf) {
+                            if (pc(*--cbuf_dst, pc_ctx) == NPF_EOF) {
+                                return n;
+                            }
+                            ++n;
+                        }
+                    } break;
                     case NPF_FMT_SPEC_CONV_HEX_INT: /* 'x', 'X' */
                         break;
                     case NPF_FMT_SPEC_CONV_UNSIGNED_INT: { /* 'u' */
                         unsigned i = va_arg(vlist, unsigned);
-                        char ibuf[24], *dst = ibuf;
                         if (i == 0) {
-                            *dst++ = '0';
+                            *cbuf_dst++ = '0';
                         } else {
                             while (i) {
-                                *dst++ = '0' + (i % 10);
+                                *cbuf_dst++ = '0' + (i % 10);
                                 i /= 10;
                             }
                         }
-                        while (dst > ibuf) {
-                            if (pc(*--dst, pc_ctx) == NPF_EOF) {
+                        while (cbuf_dst > cbuf) {
+                            if (pc(*--cbuf_dst, pc_ctx) == NPF_EOF) {
                                 return n;
                             }
                             ++n;

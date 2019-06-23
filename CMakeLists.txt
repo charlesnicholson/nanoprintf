@@ -115,11 +115,15 @@ target_compile_definitions(npf_cc_c99 PRIVATE
 add_executable(npf_unit_tests
     nanoprintf.h
     unit_tests/test_bufputc.cc
+    unit_tests/test_conformance.cc
     unit_tests/test_parse_format_spec.cc
     unit_tests/test_vpprintf.cc
     unit_tests/nanoprintf_in_unit_tests.cc
     unit_tests/nanoprintf_in_unit_tests.h
     unit_tests/main.cc)
+
+set_source_files_properties(unit_tests/test_conformance.cc
+    PROPERTIES COMPILE_FLAGS -Wno-format-nonliteral)
 
 target_include_directories(npf_unit_tests PRIVATE "${CPPUTEST_INCLUDE_DIR}")
 target_link_libraries(npf_unit_tests libCppUTest libCppUTestExt)
@@ -135,6 +139,7 @@ target_compile_options(npf_unit_tests PRIVATE
     -Wno-exit-time-destructors # CppUTest memory checks
     -Wno-c++98-compat
     -Wno-c++98-compat-pedantic
+    -Wno-missing-prototypes
     -std=c++11
 )
 

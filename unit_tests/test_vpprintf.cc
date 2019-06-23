@@ -11,7 +11,8 @@ struct Recorder {
         return (--r.eof_count <= 0) ? NPF_EOF : c;
     }
     std::string String() const {
-        return std::string(calls.begin(), calls.end() - 1);  // trim \0
+        return calls.empty() ? std::string()
+                             : std::string(calls.begin(), calls.end() - 1);
     }
     std::vector<int> calls;
     int eof_count = 10000;
@@ -101,5 +102,30 @@ TEST(npf_vpprintf, SignedInt_IntMin) {
 TEST(npf_vpprintf, UnsignedInt_Zero) {
     CHECK_EQUAL(2, npf_pprintf(r.PutC, &r, "%u", 0));
     CHECK_EQUAL("0", r.String());
+}
+
+TEST(npf_vpprintf, UnsignedInt_Positive) {
+    CHECK_EQUAL(6, npf_pprintf(r.PutC, &r, "%u", 45678));
+    CHECK_EQUAL("45678", r.String());
+}
+
+TEST(npf_vpprintf, UnsignedInt_UIntMax32) {
+    CHECK_EQUAL(11, npf_pprintf(r.PutC, &r, "%u", 4294967295u));
+    CHECK_EQUAL("4294967295", r.String());
+}
+
+TEST(npf_vpprintf, Octal_Zero) {
+    CHECK_EQUAL(2, npf_pprintf(r.PutC, &r, "%o", 0));
+    CHECK_EQUAL("0", r.String());
+}
+
+TEST(npf_vpprintf, Octal_Positive) {
+    CHECK_EQUAL(5, npf_pprintf(r.PutC, &r, "%o", 1234));
+    CHECK_EQUAL("2322", r.String());
+}
+
+TEST(npf_vpprintf, Octal_UIntMax32) {
+    CHECK_EQUAL(12, npf_pprintf(r.PutC, &r, "%o", 4294967295u));
+    CHECK_EQUAL("37777777777", r.String());
 }
 
