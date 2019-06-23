@@ -44,7 +44,10 @@ set_target_properties(libCppUTestExt PROPERTIES IMPORTED_LOCATION "${CPPUTESTEXT
 add_dependencies(libCppUTest CppUTest_external)
 add_dependencies(libCppUTestExt CppUTest_external)
 
-################ Flag / language compilation tests
+################ Common compile flags
+
+set(CMAKE_C_FLAGS_RELWITHDEBINFO "-Os -g")
+set(CMAKE_C_FLAGS_RELEASE "-Os")
 
 string(CONCAT nanoprintf_common_flags
     "-pedantic "
@@ -53,6 +56,8 @@ string(CONCAT nanoprintf_common_flags
     "-Werror "
     "-Wno-old-style-cast "
     "-Wno-padded")
+
+################ Flag / language compilation tests
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${nanoprintf_common_flags}")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${nanoprintf_common_flags}")

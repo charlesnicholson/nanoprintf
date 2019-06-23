@@ -9,7 +9,7 @@ SCRIPT_PATH=$(cd $(dirname $0); pwd -P)
 CMAKE="$SCRIPT_PATH/external/cmake/cmake"
 NINJA="$SCRIPT_PATH/external/ninja/ninja"
 
-BUILD_TYPE=relwithdebinfo
+BUILD_TYPE=release
 if [ -n "$1" ]; then
     BUILD_TYPE=$1; shift
 fi

@@ -25,6 +25,10 @@ int npf_snprintf(char *buffer, size_t bufsz, const char *format, ...);
 int npf_vsnprintf(char *buffer, size_t bufsz, char const *format,
                   va_list vlist);
 
+typedef int (*npf_putc)(char c, void *ctx);
+int npf_pprintf(npf_putc pc, void *pc_ctx, char const *format, ...);
+int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist);
+
 /* Internal */
 
 typedef enum {
@@ -328,6 +332,23 @@ int npf__parse_format_spec(char const *format, npf__format_spec_t *out_spec) {
             return 0;
     }
     return (int)(cur - format);
+}
+
+int npf_pprintf(npf_putc pc, void *pc_ctx, char const *format, ...) {
+    va_list val;
+    int rv;
+    va_start(val, format);
+    rv = npf_vpprintf(pc, pc_ctx, format, val);
+    va_end(val);
+    return rv;
+}
+
+int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
+    (void)pc;
+    (void)pc_ctx;
+    (void)format;
+    (void)vlist;
+    return 0;
 }
 
 #ifdef __cplusplus
