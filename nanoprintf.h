@@ -25,6 +25,7 @@ int npf_snprintf(char *buffer, size_t bufsz, const char *format, ...);
 int npf_vsnprintf(char *buffer, size_t bufsz, char const *format,
                   va_list vlist);
 
+enum { NPF_EOF = -1 };
 typedef int (*npf_putc)(int c, void *ctx);
 int npf_pprintf(npf_putc pc, void *pc_ctx, char const *format, ...);
 int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist);
@@ -111,8 +112,6 @@ typedef struct {
 } npf__format_spec_t;
 
 int npf__parse_format_spec(char const *format, npf__format_spec_t *out_spec);
-
-enum { NPF__EOF = -1 };
 
 typedef struct {
     char *dst;
@@ -348,9 +347,9 @@ int npf__bufputc(int c, void *ctx) {
     npf__bufputc_ctx_t *bpc = (npf__bufputc_ctx_t *)ctx;
     if (bpc->cur < bpc->len) {
         bpc->dst[bpc->cur++] = (char)c;
-        return NPF__EOF;
+        return c;
     }
-    return c;
+    return NPF_EOF;
 }
 
 int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {

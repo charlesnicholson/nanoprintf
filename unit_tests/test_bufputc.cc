@@ -21,3 +21,12 @@ TEST(npf__bufputc, IncrementsCurAfterWrite) {
     npf__bufputc('A', &bpc);
     CHECK_EQUAL(1, bpc.cur);
 }
+
+TEST(npf__bufputc, ReturnsCWhenWriteSucceded) {
+    CHECK_EQUAL('A', npf__bufputc('A', &bpc));
+}
+
+TEST(npf__bufputc, ReturnsEofWhenCurIsLen) {
+    bpc.cur = bpc.len;
+    CHECK_EQUAL(NPF_EOF, npf__bufputc('A', &bpc));
+}
