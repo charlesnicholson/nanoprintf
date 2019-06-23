@@ -1,6 +1,10 @@
 # vim backup files
 *~
 
+# preprocessed / asm files
+*.i
+*.s
+
 # Object files
 *.o
 *.ko

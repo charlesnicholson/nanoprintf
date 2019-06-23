@@ -398,15 +398,15 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                         if (i == 0) {
                             *dst++ = '0';
                         } else {
+                            int const neg = (i < 0) ? -1 : 1;
                             if (i < 0) {
                                 if (pc('-', pc_ctx) == NPF_EOF) {
                                     return n;
                                 }
                                 ++n;
-                                i = -i;
                             }
                             while (i) {
-                                *dst++ = '0' + (i % 10);
+                                *dst++ = (char)('0' + (neg * (i % 10)));
                                 i /= 10;
                             }
                         }
@@ -421,8 +421,24 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                         break;
                     case NPF_FMT_SPEC_CONV_HEX_INT: /* 'x', 'X' */
                         break;
-                    case NPF_FMT_SPEC_CONV_UNSIGNED_INT: /* 'u' */
-                        break;
+                    case NPF_FMT_SPEC_CONV_UNSIGNED_INT: { /* 'u' */
+                        unsigned i = va_arg(vlist, unsigned);
+                        char ibuf[24], *dst = ibuf;
+                        if (i == 0) {
+                            *dst++ = '0';
+                        } else {
+                            while (i) {
+                                *dst++ = '0' + (i % 10);
+                                i /= 10;
+                            }
+                        }
+                        while (dst > ibuf) {
+                            if (pc(*--dst, pc_ctx) == NPF_EOF) {
+                                return n;
+                            }
+                            ++n;
+                        }
+                    } break;
                     case NPF_FMT_SPEC_CONV_CHARS_WRITTEN: /* 'n' */
                         break;
                     case NPF_FMT_SPEC_CONV_POINTER: /* 'p' */

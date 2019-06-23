@@ -88,3 +88,18 @@ TEST(npf_vpprintf, SignedInt_Negative) {
     CHECK_EQUAL("-456", r.String());
 }
 
+TEST(npf_vpprintf, SignedInt_IntMax) {
+    CHECK_EQUAL(11, npf_pprintf(r.PutC, &r, "%d", INT_MAX));
+    CHECK_EQUAL("2147483647", r.String());
+}
+
+TEST(npf_vpprintf, SignedInt_IntMin) {
+    npf_pprintf(r.PutC, &r, "%d", INT_MIN);
+    CHECK_EQUAL("-2147483648", r.String());
+}
+
+TEST(npf_vpprintf, UnsignedInt_Zero) {
+    CHECK_EQUAL(2, npf_pprintf(r.PutC, &r, "%u", 0));
+    CHECK_EQUAL("0", r.String());
+}
+
