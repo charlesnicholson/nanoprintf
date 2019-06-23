@@ -40,5 +40,17 @@ TEST(conformance, Char) {
     for (int i = CHAR_MIN; i < CHAR_MAX; ++i) {
         CheckConformance("%c", i);
     }
+
+    /*
+    for (int precision = 0; precision < 20; ++precision) {
+        char fmt[8];
+        sprintf(fmt, "%%%dc", precision);
+        CheckConformance(fmt, 'A');
+    }
+    */
 }
 
+TEST(conformance, UnsignedInt) {
+    CheckConformance("%u", 0);
+    CheckConformance("%u", UINT_MAX);
+}

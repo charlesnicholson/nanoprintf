@@ -44,88 +44,112 @@ TEST(npf_vpprintf, PutsEntireStringThenNullTerm_NoFormatSpecifiers) {
     CHECK_EQUAL(s, r.String());
 }
 
-TEST(npf_vpprintf, PercentLiteral) {
+// Conversion Specifiers
+
+TEST_GROUP(Percent) { Recorder r; };
+
+TEST(Percent, Literal) {
     CHECK_EQUAL(2, npf_pprintf(r.PutC, &r, "%%"));
     CHECK_EQUAL("%", r.String());
 }
 
-TEST(npf_vpprintf, Char) {
+TEST_GROUP(Char) { Recorder r; };
+
+TEST(Char, Single) {
     CHECK_EQUAL(2, npf_pprintf(r.PutC, &r, "%c", 'A'));
     CHECK_EQUAL("A", r.String());
 }
 
-TEST(npf_vpprintf, CharMany) {
+TEST(Char, Multiple) {
     CHECK_EQUAL(5, npf_pprintf(r.PutC, &r, "%c%c%c%c", 'A', 'B', 'C', 'D'));
     CHECK_EQUAL("ABCD", r.String());
 }
 
-TEST(npf_vpprintf, String) {
+TEST_GROUP(String) { Recorder r; };
+
+TEST(String, Single) {
     CHECK_EQUAL(5, npf_pprintf(r.PutC, &r, "%s", "abcd"));
     CHECK_EQUAL("abcd", r.String());
 }
 
-TEST(npf_vpprintf, StringEmpty) {
+TEST(String, Empty) {
     CHECK_EQUAL(1, npf_pprintf(r.PutC, &r, "%s", ""));
     CHECK_EQUAL("", r.String());
 }
 
-TEST(npf_vpprintf, StringMany) {
+TEST(String, Multiple) {
     CHECK_EQUAL(9, npf_pprintf(r.PutC, &r, "%s%s%s", "abcd", "e", "fgh"));
     CHECK_EQUAL("abcdefgh", r.String());
 }
 
-TEST(npf_vpprintf, SignedInt_Zero) {
+TEST_GROUP(SignedInt) { Recorder r; };
+
+TEST(SignedInt, Zero) {
     CHECK_EQUAL(2, npf_pprintf(r.PutC, &r, "%i", 0));
     CHECK_EQUAL("0", r.String());
 }
 
-TEST(npf_vpprintf, SignedInt_Positive) {
+TEST(SignedInt, Positive) {
     CHECK_EQUAL(4, npf_pprintf(r.PutC, &r, "%i", 123));
     CHECK_EQUAL("123", r.String());
 }
 
-TEST(npf_vpprintf, SignedInt_Negative) {
+TEST(SignedInt, Negative) {
     CHECK_EQUAL(5, npf_pprintf(r.PutC, &r, "%i", -456));
     CHECK_EQUAL("-456", r.String());
 }
 
-TEST(npf_vpprintf, SignedInt_IntMax) {
+TEST(SignedInt, IntMax) {
     CHECK_EQUAL(11, npf_pprintf(r.PutC, &r, "%d", INT_MAX));
     CHECK_EQUAL("2147483647", r.String());
 }
 
-TEST(npf_vpprintf, SignedInt_IntMin) {
+TEST(SignedInt, IntMin) {
     npf_pprintf(r.PutC, &r, "%d", INT_MIN);
     CHECK_EQUAL("-2147483648", r.String());
 }
 
-TEST(npf_vpprintf, UnsignedInt_Zero) {
+TEST_GROUP(UnsignedInt) { Recorder r; };
+
+TEST(UnsignedInt, Zero) {
     CHECK_EQUAL(2, npf_pprintf(r.PutC, &r, "%u", 0));
     CHECK_EQUAL("0", r.String());
 }
 
-TEST(npf_vpprintf, UnsignedInt_Positive) {
+TEST(UnsignedInt, Positive) {
     CHECK_EQUAL(6, npf_pprintf(r.PutC, &r, "%u", 45678));
     CHECK_EQUAL("45678", r.String());
 }
 
-TEST(npf_vpprintf, UnsignedInt_UIntMax32) {
+TEST(UnsignedInt, UIntMax32) {
     CHECK_EQUAL(11, npf_pprintf(r.PutC, &r, "%u", 4294967295u));
     CHECK_EQUAL("4294967295", r.String());
 }
 
-TEST(npf_vpprintf, Octal_Zero) {
+TEST_GROUP(Octal) { Recorder r; };
+
+TEST(Octal, Zero) {
     CHECK_EQUAL(2, npf_pprintf(r.PutC, &r, "%o", 0));
     CHECK_EQUAL("0", r.String());
 }
 
-TEST(npf_vpprintf, Octal_Positive) {
+TEST(Octal, Positive) {
     CHECK_EQUAL(5, npf_pprintf(r.PutC, &r, "%o", 1234));
     CHECK_EQUAL("2322", r.String());
 }
 
-TEST(npf_vpprintf, Octal_UIntMax32) {
+TEST(Octal, UIntMax32) {
     CHECK_EQUAL(12, npf_pprintf(r.PutC, &r, "%o", 4294967295u));
     CHECK_EQUAL("37777777777", r.String());
 }
 
+// Field Width
+
+TEST_GROUP(FieldWidth) { Recorder r; };
+
+/*
+TEST(FieldWidth, RightJustifiedByDefault) {
+    CHECK_EQUAL(3, npf_pprintf(r.PutC, &r, "%2c", 'A'));
+    CHECK_EQUAL(" A", r.String());
+}
+*/
