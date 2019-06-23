@@ -353,11 +353,101 @@ int npf__bufputc(int c, void *ctx) {
 }
 
 int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
-    (void)pc;
-    (void)pc_ctx;
-    (void)format;
-    (void)vlist;
-    return 0;
+    int n = 0;
+    char const *cur = format;
+    while (*cur) {
+        if (*cur != '%') {
+            if (pc(*cur++, pc_ctx) == NPF_EOF) {
+                return n;
+            }
+            ++n;
+        } else {
+            npf__format_spec_t fs;
+            int const fs_len = npf__parse_format_spec(cur, &fs);
+            if (fs_len == 0) {
+                if (pc(*cur++, pc_ctx) == NPF_EOF) {
+                    return n;
+                }
+                ++n;
+            } else {
+                switch (fs.conversion_specifier) {
+                    case NPF_FMT_SPEC_CONV_PERCENT:
+                        if (pc('%', pc_ctx) == NPF_EOF) {
+                            return n;
+                        }
+                        ++n;
+                        break;
+                    case NPF_FMT_SPEC_CONV_CHAR: /* 'c' */
+                        if (pc((char)va_arg(vlist, int), pc_ctx) == NPF_EOF) {
+                            return n;
+                        }
+                        ++n;
+                        break;
+                    case NPF_FMT_SPEC_CONV_STRING: { /* 's' */
+                        char const *s = va_arg(vlist, char *);
+                        while (*s) {
+                            if (pc(*s++, pc_ctx) == NPF_EOF) {
+                                return n;
+                            }
+                            ++n;
+                        }
+                    } break;
+                    case NPF_FMT_SPEC_CONV_SIGNED_INT: { /* 'i', 'd' */
+                        int i = va_arg(vlist, int);
+                        char ibuf[24], *dst = ibuf;
+                        if (i == 0) {
+                            *dst++ = '0';
+                        } else {
+                            if (i < 0) {
+                                if (pc('-', pc_ctx) == NPF_EOF) {
+                                    return n;
+                                }
+                                ++n;
+                                i = -i;
+                            }
+                            while (i) {
+                                *dst++ = '0' + (i % 10);
+                                i /= 10;
+                            }
+                        }
+                        while (dst > ibuf) {
+                            if (pc(*--dst, pc_ctx) == NPF_EOF) {
+                                return n;
+                            }
+                            ++n;
+                        }
+                    } break;
+                    case NPF_FMT_SPEC_CONV_OCTAL: /* 'o' */
+                        break;
+                    case NPF_FMT_SPEC_CONV_HEX_INT: /* 'x', 'X' */
+                        break;
+                    case NPF_FMT_SPEC_CONV_UNSIGNED_INT: /* 'u' */
+                        break;
+                    case NPF_FMT_SPEC_CONV_CHARS_WRITTEN: /* 'n' */
+                        break;
+                    case NPF_FMT_SPEC_CONV_POINTER: /* 'p' */
+                        break;
+#if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS
+                    case NPF_FMT_SPEC_CONV_FLOAT_DECIMAL: /* 'f', 'F' */
+                        break;
+                    case NPF_FMT_SPEC_CONV_FLOAT_EXPONENT: /* 'e', 'E' */
+                        break;
+                    case NPF_FMT_SPEC_CONV_FLOAT_DYNAMIC: /* 'g', 'G' */
+                        break;
+#if NANOPRINTF_USE_C99_FORMAT_SPECIFIERS
+                    case NPF_FMT_SPEC_CONV_C99_FLOAT_HEX: /* 'a', 'A' */
+                        break;
+#endif
+#endif
+                }
+                cur += fs_len;
+            }
+        }
+    }
+    if (pc('\0', pc_ctx) == NPF_EOF) {
+        return n;
+    }
+    return n + 1;
 }
 
 int npf_pprintf(npf_putc pc, void *pc_ctx, char const *format, ...) {

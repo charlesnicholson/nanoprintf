@@ -30,3 +30,15 @@ TEST(npf__bufputc, ReturnsEofWhenCurIsLen) {
     bpc.cur = bpc.len;
     CHECK_EQUAL(NPF_EOF, npf__bufputc('A', &bpc));
 }
+
+TEST(npf__bufputc, MultipleCallsWriteSequentially) {
+    CHECK_EQUAL('A', npf__bufputc('A', &bpc));
+    CHECK_EQUAL('B', npf__bufputc('B', &bpc));
+    CHECK_EQUAL('C', npf__bufputc('C', &bpc));
+    CHECK_EQUAL('D', npf__bufputc('D', &bpc));
+    CHECK_EQUAL('E', npf__bufputc('E', &bpc));
+    CHECK_EQUAL('F', npf__bufputc('F', &bpc));
+    CHECK_EQUAL(6, bpc.cur);
+    bpc.dst[6] = '\0';
+    STRCMP_EQUAL("ABCDEF", bpc.dst);
+}
