@@ -33,21 +33,28 @@ TEST(conformance, Percent) {
     CheckConformance("%+%");
     CheckConformance("%#%");
     CheckConformance("%.10%");
-    // CheckConformance("%-10%");
+    CheckConformance("%-10%");
 }
 
 TEST(conformance, Char) {
+    // every char
     for (int i = CHAR_MIN; i < CHAR_MAX; ++i) {
         CheckConformance("%c", i);
     }
 
-    /*
+    // right justify field width
     for (int precision = 0; precision < 20; ++precision) {
         char fmt[8];
         sprintf(fmt, "%%%dc", precision);
         CheckConformance(fmt, 'A');
     }
-    */
+
+    // left justify field width
+    for (int precision = 0; precision < 20; ++precision) {
+        char fmt[8];
+        sprintf(fmt, "%%-%dc", precision);
+        CheckConformance(fmt, 'A');
+    }
 }
 
 TEST(conformance, UnsignedInt) {

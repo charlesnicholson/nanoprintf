@@ -147,9 +147,17 @@ TEST(Octal, UIntMax32) {
 
 TEST_GROUP(FieldWidth) { Recorder r; };
 
-/*
+TEST(FieldWidth, OneDoesNothing) {
+    CHECK_EQUAL(2, npf_pprintf(r.PutC, &r, "%1c", 'A'));
+    CHECK_EQUAL("A", r.String());
+}
+
 TEST(FieldWidth, RightJustifiedByDefault) {
     CHECK_EQUAL(3, npf_pprintf(r.PutC, &r, "%2c", 'A'));
     CHECK_EQUAL(" A", r.String());
 }
-*/
+
+TEST(FieldWidth, FlagLeftJustified) {
+    CHECK_EQUAL(3, npf_pprintf(r.PutC, &r, "%-2c", 'A'));
+    CHECK_EQUAL("A ", r.String());
+}

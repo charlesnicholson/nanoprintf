@@ -194,6 +194,7 @@ int npf__parse_format_spec(char const *format, npf__format_spec_t *out_spec) {
         out_spec->field_width_type = NPF_FMT_SPEC_FIELD_WIDTH_STAR;
         ++cur;
     } else {
+        out_spec->field_width = 0;
         if (*cur >= '0' && *cur <= '9') {
             out_spec->field_width_type = NPF_FMT_SPEC_FIELD_WIDTH_LITERAL;
         }
@@ -461,16 +462,31 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
 #endif
 #endif
                 }
+                if (!fs.left_justified &&
+                    (fs.field_width_type == NPF_FMT_SPEC_FIELD_WIDTH_LITERAL)) {
+                    int pad = fs.field_width - cbuf_len;
+                    while (pad-- > 0) {
+                        NPF_PUT_CHECKED(' ');
+                    }
+                }
                 if (fs.conversion_specifier == NPF_FMT_SPEC_CONV_STRING) {
                     for (i = 0; i < cbuf_len; ++i) {
                         NPF_PUT_CHECKED(cbuf[i]);
                     }
                 } else {
+                    int rem = cbuf_len;
                     if (neg) {
                         NPF_PUT_CHECKED('-');
                     }
-                    while (cbuf_len--) {
-                        NPF_PUT_CHECKED(cbuf[cbuf_len]);
+                    while (rem--) {
+                        NPF_PUT_CHECKED(cbuf[rem]);
+                    }
+                }
+                if (fs.left_justified &&
+                    (fs.field_width_type == NPF_FMT_SPEC_FIELD_WIDTH_LITERAL)) {
+                    int pad = fs.field_width - cbuf_len;
+                    while (pad-- > 0) {
+                        NPF_PUT_CHECKED(' ');
                     }
                 }
                 cur += fs_len;
