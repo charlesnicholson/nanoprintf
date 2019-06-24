@@ -103,23 +103,21 @@ TEST(conformance, PrecisionStrings) {
 }
 
 TEST(conformance, FieldWidthAndSign) {
-    CheckConformance("%+3c", 1);
-    CheckConformance("%+3c", 0);
-    CheckConformance("%+3c", -1);
-    CheckConformance("%+3i", 1);
-    CheckConformance("%+3i", 0);
-    CheckConformance("%+3i", -1);
-    CheckConformance("%+3u", 1);
-    CheckConformance("%+3u", 0);
+    CheckConformance("%+4c", 1);
+    CheckConformance("%+4c", 0);
+    CheckConformance("%+4c", -1);
+    CheckConformance("%+4i", 1);
+    CheckConformance("%+4i", 0);
+    CheckConformance("%+4i", -1);
+    CheckConformance("%+4u", 1);
+    CheckConformance("%+4u", 0);
 }
 
 TEST(conformance, FieldWidthAndZeroPad) {
-    CheckConformance("%03c", 1);
-    CheckConformance("%03c", 0);
-    CheckConformance("%03c", -1);
-    CheckConformance("%03i", 1);
-    CheckConformance("%03i", 0);
-    CheckConformance("%03i", -1);
-    CheckConformance("%03u", 1);
-    CheckConformance("%03u", 0);
+    // zero-pad is undefined on char
+    CheckConformance("%04i", 1);
+    CheckConformance("%04i", 0);
+    CheckConformance("%04i", -1);
+    CheckConformance("%04u", 1);
+    CheckConformance("%04u", 0);
 }

@@ -200,3 +200,17 @@ TEST(PrependSpaceFlag, MinusWhenNegative) {
     CHECK_EQUAL("-1", r.String());
 }
 
+// Leading zero pad flag
+
+TEST_GROUP(LeadingZeroPadFlag) { Recorder r; };
+
+TEST(LeadingZeroPadFlag, DoesNothingOnChar_Undefined) {
+    CHECK_EQUAL(2, npf_pprintf(r.PutC, &r, "%010c", 'A'));
+    CHECK_EQUAL("A", r.String());
+}
+
+TEST(LeadingZeroPadFlag, DoesNothingOnString_Undefined) {
+    CHECK_EQUAL(5, npf_pprintf(r.PutC, &r, "%010s", "ABCD"));
+    CHECK_EQUAL("ABCD", r.String());
+}
+

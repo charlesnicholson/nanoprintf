@@ -14,7 +14,6 @@
 
 #include <stdarg.h>
 #include <stddef.h>
-#include <stdio.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -401,15 +400,20 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
 
     while (*cur) {
         if (*cur != '%') {
+            /* Non-format character, write directly */
             NPF_PUT_CHECKED(*cur++);
         } else {
+            /* Might be a format run, try to parse */
             int const fs_len = npf__parse_format_spec(cur, &fs);
             if (fs_len == 0) {
+                /* Invalid format specifier, write and continue */
                 NPF_PUT_CHECKED(*cur++);
             } else {
-                char cbuf_mem[24], *cbuf = cbuf_mem, sign_c = 0, pad_c;
+                /* Format specifier, convert and write argument */
+                char cbuf_mem[24], *cbuf = cbuf_mem, sign_c, pad_c;
                 int cbuf_len = 0, pad = 0;
 
+                /* Convert the argument to string and point cbuf at it */
                 switch (fs.conversion_specifier) {
                     case NPF_FMT_SPEC_CONV_PERCENT:
                         *cbuf = '%';
@@ -472,15 +476,26 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                     }
                 }
 
-                pad_c =
-                    (fs.field_width_type == NPF_FMT_SPEC_FIELD_WIDTH_LITERAL)
-                        ? (fs.leading_zero_pad ? '0' : ' ')
-                        : 0;
+                /* Compute the field width pad character */
+                pad_c = 0;
+                if (fs.field_width_type == NPF_FMT_SPEC_FIELD_WIDTH_LITERAL) {
+                    if (fs.leading_zero_pad) {
+                        if ((fs.conversion_specifier !=
+                             NPF_FMT_SPEC_CONV_STRING) &&
+                            (fs.conversion_specifier !=
+                             NPF_FMT_SPEC_CONV_CHAR)) {
+                            pad_c = '0';
+                        }
+                    } else {
+                        pad_c = ' ';
+                    }
+                }
 
                 if (pad_c) {
                     pad = fs.field_width - cbuf_len - (sign_c ? 1 : 0);
                 }
 
+                /* Apply right-justified field width if requested */
                 if (!fs.left_justified && pad_c) {
                     /* If leading zeros pad the field, the '-' goes first. */
                     if (sign_c == '-' && pad_c == '0') {
@@ -492,7 +507,9 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                     }
                 }
 
+                /* Write the converted payload */
                 if (fs.conversion_specifier == NPF_FMT_SPEC_CONV_STRING) {
+                    /* Strings are in the correct order */
                     for (i = 0; i < cbuf_len; ++i) {
                         NPF_PUT_CHECKED(cbuf[i]);
                     }
@@ -500,11 +517,13 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                     if (sign_c) {
                         NPF_PUT_CHECKED(sign_c);
                     }
+                    /* *toa leaves numeric payloads reversed */
                     while (cbuf_len--) {
                         NPF_PUT_CHECKED(cbuf[cbuf_len]);
                     }
                 }
 
+                /* Apply left-justified field width if requested */
                 if (fs.left_justified && pad_c) {
                     while (pad-- > 0) {
                         NPF_PUT_CHECKED(pad_c);
