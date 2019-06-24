@@ -14,6 +14,7 @@
 
 #include <stdarg.h>
 #include <stddef.h>
+#include <stdio.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -120,6 +121,10 @@ typedef struct {
 } npf__bufputc_ctx_t;
 
 int npf__bufputc(int c, void *ctx);
+
+int npf__itoa_rev(char *buf, int i);
+int npf__utoa_rev(char *buf, unsigned i, int base,
+                  npf__format_spec_conversion_case_t cc);
 
 #ifdef __cplusplus
 }
@@ -352,107 +357,93 @@ int npf__bufputc(int c, void *ctx) {
     return NPF_EOF;
 }
 
+int npf__itoa_rev(char *buf, int i) {
+    char *dst = buf;
+    if (i == 0) {
+        *dst++ = '0';
+    } else {
+        int const neg = (i < 0) ? -1 : 1;
+        while (i) {
+            *dst++ = (char)('0' + (neg * (i % 10)));
+            i /= 10;
+        }
+    }
+    return (int)(dst - buf);
+}
+
+int npf__utoa_rev(char *buf, unsigned i, int base,
+                  npf__format_spec_conversion_case_t cc) {
+    char *dst = buf;
+    if (i == 0) {
+        *dst++ = '0';
+    } else {
+        unsigned const base_c =
+            (cc == NPF_FMT_SPEC_CONV_CASE_LOWER) ? 'a' : 'A';
+        while (i) {
+            unsigned const d = i % (unsigned)base;
+            i /= (unsigned)base;
+            *dst++ = (d < 10) ? (char)('0' + d) : (char)(base_c + d);
+        }
+    }
+    return (int)(dst - buf);
+}
+
 int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
-    int n = 0;
+    npf__format_spec_t fs;
     char const *cur = format;
-    char cbuf[24], *cbuf_dst = cbuf;
+    int n = 0, i;
+    int neg = 0;
+
+#define NPF_PUT_CHECKED(VAL)                \
+    do {                                    \
+        if (pc((VAL), pc_ctx) == NPF_EOF) { \
+            return n;                       \
+        }                                   \
+        ++n;                                \
+    } while (0)
+
     while (*cur) {
         if (*cur != '%') {
-            if (pc(*cur++, pc_ctx) == NPF_EOF) {
-                return n;
-            }
-            ++n;
+            NPF_PUT_CHECKED(*cur++);
         } else {
-            npf__format_spec_t fs;
             int const fs_len = npf__parse_format_spec(cur, &fs);
             if (fs_len == 0) {
-                if (pc(*cur++, pc_ctx) == NPF_EOF) {
-                    return n;
-                }
-                ++n;
+                NPF_PUT_CHECKED(*cur++);
             } else {
+                char cbuf_mem[24], *cbuf = cbuf_mem;
+                int cbuf_len = 0;
                 switch (fs.conversion_specifier) {
                     case NPF_FMT_SPEC_CONV_PERCENT:
-                        if (pc('%', pc_ctx) == NPF_EOF) {
-                            return n;
-                        }
-                        ++n;
+                        *cbuf = '%';
+                        cbuf_len = 1;
                         break;
                     case NPF_FMT_SPEC_CONV_CHAR: /* 'c' */
-                        if (pc((char)va_arg(vlist, int), pc_ctx) == NPF_EOF) {
-                            return n;
-                        }
-                        ++n;
+                        *cbuf = (char)va_arg(vlist, int);
+                        cbuf_len = 1;
                         break;
                     case NPF_FMT_SPEC_CONV_STRING: { /* 's' */
-                        char const *s = va_arg(vlist, char *);
-                        while (*s) {
-                            if (pc(*s++, pc_ctx) == NPF_EOF) {
-                                return n;
-                            }
-                            ++n;
-                        }
+                        char *s = va_arg(vlist, char *);
+                        cbuf = s;
+                        while (*s) ++s;
+                        cbuf_len = (int)(s - cbuf);
                     } break;
                     case NPF_FMT_SPEC_CONV_SIGNED_INT: { /* 'i', 'd' */
-                        int i = va_arg(vlist, int);
-                        if (i == 0) {
-                            *cbuf_dst++ = '0';
-                        } else {
-                            int const neg = (i < 0) ? -1 : 1;
-                            if (i < 0) {
-                                if (pc('-', pc_ctx) == NPF_EOF) {
-                                    return n;
-                                }
-                                ++n;
-                            }
-                            while (i) {
-                                *cbuf_dst++ = (char)('0' + (neg * (i % 10)));
-                                i /= 10;
-                            }
-                        }
-                        while (cbuf_dst > cbuf) {
-                            if (pc(*--cbuf_dst, pc_ctx) == NPF_EOF) {
-                                return n;
-                            }
-                            ++n;
-                        }
+                        int const val = va_arg(vlist, int);
+                        neg = (val < 0) ? 1 : 0;
+                        cbuf_len = npf__itoa_rev(cbuf, val);
                     } break;
-                    case NPF_FMT_SPEC_CONV_OCTAL: { /* 'o' */
-                        unsigned i = va_arg(vlist, unsigned);
-                        if (i == 0) {
-                            *cbuf_dst++ = '0';
-                        } else {
-                            while (i) {
-                                *cbuf_dst++ = '0' + (i % 8);
-                                i /= 8;
-                            }
-                        }
-                        while (cbuf_dst > cbuf) {
-                            if (pc(*--cbuf_dst, pc_ctx) == NPF_EOF) {
-                                return n;
-                            }
-                            ++n;
-                        }
-                    } break;
+                    case NPF_FMT_SPEC_CONV_OCTAL: /* 'o' */
+                        cbuf_len =
+                            npf__utoa_rev(cbuf, va_arg(vlist, unsigned), 8,
+                                          fs.conversion_specifier_case);
+                        break;
                     case NPF_FMT_SPEC_CONV_HEX_INT: /* 'x', 'X' */
                         break;
-                    case NPF_FMT_SPEC_CONV_UNSIGNED_INT: { /* 'u' */
-                        unsigned i = va_arg(vlist, unsigned);
-                        if (i == 0) {
-                            *cbuf_dst++ = '0';
-                        } else {
-                            while (i) {
-                                *cbuf_dst++ = '0' + (i % 10);
-                                i /= 10;
-                            }
-                        }
-                        while (cbuf_dst > cbuf) {
-                            if (pc(*--cbuf_dst, pc_ctx) == NPF_EOF) {
-                                return n;
-                            }
-                            ++n;
-                        }
-                    } break;
+                    case NPF_FMT_SPEC_CONV_UNSIGNED_INT: /* 'u' */
+                        cbuf_len =
+                            npf__utoa_rev(cbuf, va_arg(vlist, unsigned), 10,
+                                          fs.conversion_specifier_case);
+                        break;
                     case NPF_FMT_SPEC_CONV_CHARS_WRITTEN: /* 'n' */
                         break;
                     case NPF_FMT_SPEC_CONV_POINTER: /* 'p' */
@@ -470,14 +461,25 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
 #endif
 #endif
                 }
+                if (fs.conversion_specifier == NPF_FMT_SPEC_CONV_STRING) {
+                    for (i = 0; i < cbuf_len; ++i) {
+                        NPF_PUT_CHECKED(cbuf[i]);
+                    }
+                } else {
+                    if (neg) {
+                        NPF_PUT_CHECKED('-');
+                    }
+                    while (cbuf_len--) {
+                        NPF_PUT_CHECKED(cbuf[cbuf_len]);
+                    }
+                }
                 cur += fs_len;
             }
         }
     }
-    if (pc('\0', pc_ctx) == NPF_EOF) {
-        return n;
-    }
-    return n + 1;
+    NPF_PUT_CHECKED('\0');
+#undef NPF_PUT_CHECKED
+    return n;
 }
 
 int npf_pprintf(npf_putc pc, void *pc_ctx, char const *format, ...) {
