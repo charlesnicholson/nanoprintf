@@ -379,7 +379,7 @@ int npf__utoa_rev(char *buf, unsigned i, int base,
         while (i) {
             unsigned const d = i % (unsigned)base;
             i /= (unsigned)base;
-            *dst++ = (d < 10) ? (char)('0' + d) : (char)(base_c + d);
+            *dst++ = (d < 10) ? (char)('0' + d) : (char)(base_c + (d - 10));
         }
     }
     return (int)(dst - buf);
@@ -440,6 +440,9 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                                           fs.conversion_specifier_case);
                         break;
                     case NPF_FMT_SPEC_CONV_HEX_INT: /* 'x', 'X' */
+                        cbuf_len =
+                            npf__utoa_rev(cbuf, va_arg(vlist, unsigned), 16,
+                                          fs.conversion_specifier_case);
                         break;
                     case NPF_FMT_SPEC_CONV_UNSIGNED_INT: /* 'u' */
                         cbuf_len =
@@ -480,10 +483,13 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                 pad_c = 0;
                 if (fs.field_width_type == NPF_FMT_SPEC_FIELD_WIDTH_LITERAL) {
                     if (fs.leading_zero_pad) {
+                        /* '0' flag is only legal with numeric types */
                         if ((fs.conversion_specifier !=
                              NPF_FMT_SPEC_CONV_STRING) &&
                             (fs.conversion_specifier !=
-                             NPF_FMT_SPEC_CONV_CHAR)) {
+                             NPF_FMT_SPEC_CONV_CHAR) &&
+                            (fs.conversion_specifier !=
+                             NPF_FMT_SPEC_CONV_PERCENT)) {
                             pad_c = '0';
                         }
                     } else {

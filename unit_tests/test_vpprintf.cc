@@ -143,6 +143,38 @@ TEST(Octal, UIntMax32) {
     CHECK_EQUAL("37777777777", r.String());
 }
 
+TEST_GROUP(Hex) { Recorder r; };
+
+TEST(Hex, Zero) {
+    CHECK_EQUAL(2, npf_pprintf(r.PutC, &r, "%x", 0));
+    CHECK_EQUAL("0", r.String());
+}
+
+TEST(Hex, LessThanA) {
+    CHECK_EQUAL(2, npf_pprintf(r.PutC, &r, "%x", 8));
+    CHECK_EQUAL("8", r.String());
+}
+
+TEST(Hex, SingleDigitGreaterThan9) {
+    CHECK_EQUAL(2, npf_pprintf(r.PutC, &r, "%x", 0xc));
+    CHECK_EQUAL("c", r.String());
+}
+
+TEST(Hex, Large) {
+    CHECK_EQUAL(9, npf_pprintf(r.PutC, &r, "%x", 0x9ABCDEF0));
+    CHECK_EQUAL("9abcdef0", r.String());
+}
+
+TEST(Hex, UIntMax32) {
+    CHECK_EQUAL(9, npf_pprintf(r.PutC, &r, "%x", 0xFFFFFFFF));
+    CHECK_EQUAL("ffffffff", r.String());
+}
+
+TEST(Hex, Uppercase) {
+    CHECK_EQUAL(9, npf_pprintf(r.PutC, &r, "%X", 0xabcdefab));
+    CHECK_EQUAL("ABCDEFAB", r.String());
+}
+
 // Field Width
 
 TEST_GROUP(FieldWidth) { Recorder r; };

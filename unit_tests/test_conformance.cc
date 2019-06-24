@@ -30,7 +30,7 @@ TEST(conformance, Percent) {
     CheckConformance("%%");
     CheckConformance("%-%");
     CheckConformance("% %");
-    CheckConformance("%0%");
+    // CheckConformance("%012%"); Undefined
     CheckConformance("%+%");
     CheckConformance("%#%");
     CheckConformance("%10%");
@@ -76,6 +76,13 @@ TEST(conformance, SignedInt) {
     CheckConformance("%i", INT_MAX);
 }
 
+TEST(conformance, Hex) {
+    CheckConformance("%x", 0);
+    CheckConformance("%x", UINT_MAX);
+    CheckConformance("%X", 0);
+    CheckConformance("%X", UINT_MAX);
+}
+
 TEST(conformance, PrependSign) {
     CheckConformance("%+%");
     CheckConformance("%+c", 'A');
@@ -88,20 +95,24 @@ TEST(conformance, PrependSign) {
     CheckConformance("%+u", 1);
     CheckConformance("%+o", 0);
     CheckConformance("%+o", 1);
+    CheckConformance("%+x", 0);
+    CheckConformance("%+x", 1);
 }
 
 TEST(conformance, PrependSpace) {
     CheckConformance("% %");
-    CheckConformance("% c", 'A');
-    CheckConformance("% c", 0);
-    CheckConformance("% c", -1);
-    CheckConformance("% i", -1);
-    CheckConformance("% i", 0);
-    CheckConformance("% i", 1);
-    CheckConformance("% u", 0);
-    CheckConformance("% u", 1);
-    CheckConformance("% o", 0);
-    CheckConformance("% o", 1);
+    CheckConformance("% 6c", 'A');
+    CheckConformance("% 6c", 0);
+    CheckConformance("% 6c", -1);
+    CheckConformance("% 6i", -1);
+    CheckConformance("% 6i", 0);
+    CheckConformance("% 6i", 1);
+    CheckConformance("% 6u", 0);
+    CheckConformance("% 6u", 1);
+    CheckConformance("% 6o", 0);
+    CheckConformance("% 6o", 1);
+    CheckConformance("% 6x", 0);
+    CheckConformance("% 6x", 1);
 }
 
 TEST(conformance, FieldWidthStrings) {
