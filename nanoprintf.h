@@ -492,12 +492,11 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                         NPF_PUT_CHECKED(cbuf[i]);
                     }
                 } else {
-                    int rem = cbuf_len;
                     if (sign_c) {
                         NPF_PUT_CHECKED(sign_c);
                     }
-                    while (rem--) {
-                        NPF_PUT_CHECKED(cbuf[rem]);
+                    while (cbuf_len--) {
+                        NPF_PUT_CHECKED(cbuf[cbuf_len]);
                     }
                 }
 
