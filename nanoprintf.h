@@ -166,27 +166,30 @@ int npf__parse_format_spec(char const *format, npf__format_spec_t *out_spec) {
     }
 
     /* Optional flags */
-    while (*cur == '-' || *cur == '+' || *cur == ' ' || *cur == '#' ||
-           *cur == '0') {
+    while (*cur) {
         switch (*cur++) {
             case '-':
                 out_spec->left_justified = 1;
                 out_spec->leading_zero_pad = 0;
-                break;
+                continue;
             case '+':
                 out_spec->prepend_sign = 1;
                 out_spec->prepend_space = 0;
-                break;
+                continue;
             case ' ':
                 out_spec->prepend_space = !out_spec->prepend_sign;
-                break;
+                continue;
             case '#':
                 out_spec->alternative_form = 1;
-                break;
+                continue;
             case '0':
                 out_spec->leading_zero_pad = !out_spec->left_justified;
+                continue;
+            default:
                 break;
         }
+        --cur;
+        break;
     }
 
     /* Minimum field width */
@@ -222,53 +225,45 @@ int npf__parse_format_spec(char const *format, npf__format_spec_t *out_spec) {
     }
 
     /* Length modifier */
-    if (*cur == 'h' || *cur == 'l'
-#if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS
-        || *cur == 'L'
-#endif
+    switch (*cur++) {
+        case 'h':
 #if NANOPRINTF_USE_C99_FORMAT_SPECIFIERS
-        || *cur == 'j' || *cur == 'z' || *cur == 't'
+            if (*cur == 'h') {
+                out_spec->length_modifier = NPF_FMT_SPEC_LENGTH_MOD_C99_CHAR;
+                ++cur;
+            } else
 #endif
-    ) {
-        switch (*cur++) {
-            case 'h':
+                out_spec->length_modifier = NPF_FMT_SPEC_LENGTH_MOD_SHORT;
+            break;
+        case 'l':
 #if NANOPRINTF_USE_C99_FORMAT_SPECIFIERS
-                if (*cur == 'h') {
-                    out_spec->length_modifier =
-                        NPF_FMT_SPEC_LENGTH_MOD_C99_CHAR;
-                    ++cur;
-                } else
-#endif
-                    out_spec->length_modifier = NPF_FMT_SPEC_LENGTH_MOD_SHORT;
-                break;
-            case 'l':
-#if NANOPRINTF_USE_C99_FORMAT_SPECIFIERS
-                if (*cur == 'l') {
-                    out_spec->length_modifier =
-                        NPF_FMT_SPEC_LENGTH_MOD_C99_LONG_LONG;
-                    ++cur;
-                } else
-#endif
-                    out_spec->length_modifier = NPF_FMT_SPEC_LENGTH_MOD_LONG;
-                break;
-#if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS
-            case 'L':
-                out_spec->length_modifier = NPF_FMT_SPEC_LENGTH_MOD_LONG_DOUBLE;
-                break;
-#endif
-#if NANOPRINTF_USE_C99_FORMAT_SPECIFIERS
-            case 'j':
-                out_spec->length_modifier = NPF_FMT_SPEC_LENGTH_MOD_C99_INTMAX;
-                break;
-            case 'z':
-                out_spec->length_modifier = NPF_FMT_SPEC_LENGTH_MOD_C99_SIZET;
-                break;
-            case 't':
+            if (*cur == 'l') {
                 out_spec->length_modifier =
-                    NPF_FMT_SPEC_LENGTH_MOD_C99_PTRDIFFT;
-                break;
+                    NPF_FMT_SPEC_LENGTH_MOD_C99_LONG_LONG;
+                ++cur;
+            } else
 #endif
-        }
+                out_spec->length_modifier = NPF_FMT_SPEC_LENGTH_MOD_LONG;
+            break;
+#if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS
+        case 'L':
+            out_spec->length_modifier = NPF_FMT_SPEC_LENGTH_MOD_LONG_DOUBLE;
+            break;
+#endif
+#if NANOPRINTF_USE_C99_FORMAT_SPECIFIERS
+        case 'j':
+            out_spec->length_modifier = NPF_FMT_SPEC_LENGTH_MOD_C99_INTMAX;
+            break;
+        case 'z':
+            out_spec->length_modifier = NPF_FMT_SPEC_LENGTH_MOD_C99_SIZET;
+            break;
+        case 't':
+            out_spec->length_modifier = NPF_FMT_SPEC_LENGTH_MOD_C99_PTRDIFFT;
+            break;
+#endif
+        default:
+            --cur;
+            break;
     }
 
     /* Conversion specifier */
@@ -347,6 +342,7 @@ int npf__parse_format_spec(char const *format, npf__format_spec_t *out_spec) {
         default:
             return 0;
     }
+
     return (int)(cur - format);
 }
 
