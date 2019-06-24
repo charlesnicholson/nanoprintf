@@ -393,8 +393,7 @@ int npf__utoa_rev(char *buf, unsigned i, int base,
 int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
     npf__format_spec_t fs;
     char const *cur = format;
-    int n = 0, i;
-    int sign = 0;
+    int n = 0, sign = 0, i;
 
 #define NPF_PUT_CHECKED(VAL)                \
     do {                                    \
@@ -412,9 +411,8 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
             if (fs_len == 0) {
                 NPF_PUT_CHECKED(*cur++);
             } else {
-                char cbuf_mem[24], *cbuf = cbuf_mem;
+                char cbuf_mem[24], *cbuf = cbuf_mem, sign_c = 0, pad_c;
                 int cbuf_len = 0, pad = 0;
-                char sign_c = 0;
 
                 switch (fs.conversion_specifier) {
                     case NPF_FMT_SPEC_CONV_PERCENT:
@@ -478,12 +476,23 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                     }
                 }
 
-                pad = fs.field_width - cbuf_len - (sign_c ? 1 : 0);
+                pad_c =
+                    (fs.field_width_type == NPF_FMT_SPEC_FIELD_WIDTH_LITERAL)
+                        ? (fs.leading_zero_pad ? '0' : ' ')
+                        : 0;
 
-                if (!fs.left_justified &&
-                    (fs.field_width_type == NPF_FMT_SPEC_FIELD_WIDTH_LITERAL)) {
+                if (pad_c) {
+                    pad = fs.field_width - cbuf_len - (sign_c ? 1 : 0);
+                }
+
+                if (!fs.left_justified && pad_c) {
+                    /* If leading zeros pad the field, the '-' goes first. */
+                    if (sign_c == '-' && pad_c == '0') {
+                        NPF_PUT_CHECKED(sign_c);
+                        sign_c = 0;
+                    }
                     while (pad-- > 0) {
-                        NPF_PUT_CHECKED(' ');
+                        NPF_PUT_CHECKED(pad_c);
                     }
                 }
 
@@ -500,10 +509,9 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                     }
                 }
 
-                if (fs.left_justified &&
-                    (fs.field_width_type == NPF_FMT_SPEC_FIELD_WIDTH_LITERAL)) {
+                if (fs.left_justified && pad_c) {
                     while (pad-- > 0) {
-                        NPF_PUT_CHECKED(' ');
+                        NPF_PUT_CHECKED(pad_c);
                     }
                 }
 

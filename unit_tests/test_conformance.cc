@@ -93,8 +93,33 @@ TEST(conformance, PrependSpace) {
     CheckConformance("% o", 1);
 }
 
+TEST(conformance, FieldWidthStrings) {
+    CheckConformance("%10s", "hello");
+    CheckConformance("%10s", "hello world!");
+}
+
+TEST(conformance, PrecisionStrings) {
+    //    CheckConformance("%.10s", "hello world this string is > 10");
+}
+
 TEST(conformance, FieldWidthAndSign) {
+    CheckConformance("%+3c", 1);
+    CheckConformance("%+3c", 0);
+    CheckConformance("%+3c", -1);
     CheckConformance("%+3i", 1);
     CheckConformance("%+3i", 0);
     CheckConformance("%+3i", -1);
+    CheckConformance("%+3u", 1);
+    CheckConformance("%+3u", 0);
+}
+
+TEST(conformance, FieldWidthAndZeroPad) {
+    CheckConformance("%03c", 1);
+    CheckConformance("%03c", 0);
+    CheckConformance("%03c", -1);
+    CheckConformance("%03i", 1);
+    CheckConformance("%03i", 0);
+    CheckConformance("%03i", -1);
+    CheckConformance("%03u", 1);
+    CheckConformance("%03u", 0);
 }
