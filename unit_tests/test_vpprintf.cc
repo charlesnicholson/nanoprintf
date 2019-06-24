@@ -161,3 +161,42 @@ TEST(FieldWidth, FlagLeftJustified) {
     CHECK_EQUAL(3, npf_pprintf(r.PutC, &r, "%-2c", 'A'));
     CHECK_EQUAL("A ", r.String());
 }
+
+// Prepend Sign flag
+
+TEST_GROUP(PrependSignFlag) { Recorder r; };
+
+TEST(PrependSignFlag, Negative) {
+    CHECK_EQUAL(3, npf_pprintf(r.PutC, &r, "%+d", -2));
+    CHECK_EQUAL("-2", r.String());
+}
+
+TEST(PrependSignFlag, PositiveForSignedConversion) {
+    CHECK_EQUAL(3, npf_pprintf(r.PutC, &r, "%+d", 2));
+    CHECK_EQUAL("+2", r.String());
+}
+
+TEST(PrependSignFlag, Zero) {
+    CHECK_EQUAL(3, npf_pprintf(r.PutC, &r, "%+d", 0));
+    CHECK_EQUAL("+0", r.String());
+}
+
+TEST(PrependSignFlag, NothingForUnsignedConversion) {
+    CHECK_EQUAL(2, npf_pprintf(r.PutC, &r, "%+u", 1));
+    CHECK_EQUAL("1", r.String());
+}
+
+// Prepend space flag
+
+TEST_GROUP(PrependSpaceFlag) { Recorder r; };
+
+TEST(PrependSpaceFlag, SpaceInsteadOfSignWhenPositive) {
+    CHECK_EQUAL(3, npf_pprintf(r.PutC, &r, "% d", 1));
+    CHECK_EQUAL(" 1", r.String());
+}
+
+TEST(PrependSpaceFlag, MinusWhenNegative) {
+    CHECK_EQUAL(3, npf_pprintf(r.PutC, &r, "% d", -1));
+    CHECK_EQUAL("-1", r.String());
+}
+

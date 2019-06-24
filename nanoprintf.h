@@ -218,6 +218,7 @@ int npf__parse_format_spec(char const *format, npf__format_spec_t *out_spec) {
                     (out_spec->precision * 10) + (*cur++ - '0');
             }
         }
+        out_spec->leading_zero_pad = 0;
     }
 
     /* Length modifier */
@@ -393,7 +394,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
     npf__format_spec_t fs;
     char const *cur = format;
     int n = 0, i;
-    int neg = 0;
+    int sign = 0;
 
 #define NPF_PUT_CHECKED(VAL)                \
     do {                                    \
@@ -412,7 +413,9 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                 NPF_PUT_CHECKED(*cur++);
             } else {
                 char cbuf_mem[24], *cbuf = cbuf_mem;
-                int cbuf_len = 0;
+                int cbuf_len = 0, pad = 0;
+                char sign_c = 0;
+
                 switch (fs.conversion_specifier) {
                     case NPF_FMT_SPEC_CONV_PERCENT:
                         *cbuf = '%';
@@ -430,7 +433,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                     } break;
                     case NPF_FMT_SPEC_CONV_SIGNED_INT: { /* 'i', 'd' */
                         int const val = va_arg(vlist, int);
-                        neg = (val < 0) ? 1 : 0;
+                        sign = (val < 0) ? -1 : 1;
                         cbuf_len = npf__itoa_rev(cbuf, val);
                     } break;
                     case NPF_FMT_SPEC_CONV_OCTAL: /* 'o' */
@@ -462,33 +465,49 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
 #endif
 #endif
                 }
+
+                /* Compute the leading symbol (+, -, ' ') */
+                sign_c = 0;
+                if (sign == -1) {
+                    sign_c = '-';
+                } else if (sign == 1) {
+                    if (fs.prepend_sign) {
+                        sign_c = '+';
+                    } else if (fs.prepend_space) {
+                        sign_c = ' ';
+                    }
+                }
+
+                pad = fs.field_width - cbuf_len - (sign_c ? 1 : 0);
+
                 if (!fs.left_justified &&
                     (fs.field_width_type == NPF_FMT_SPEC_FIELD_WIDTH_LITERAL)) {
-                    int pad = fs.field_width - cbuf_len;
                     while (pad-- > 0) {
                         NPF_PUT_CHECKED(' ');
                     }
                 }
+
                 if (fs.conversion_specifier == NPF_FMT_SPEC_CONV_STRING) {
                     for (i = 0; i < cbuf_len; ++i) {
                         NPF_PUT_CHECKED(cbuf[i]);
                     }
                 } else {
                     int rem = cbuf_len;
-                    if (neg) {
-                        NPF_PUT_CHECKED('-');
+                    if (sign_c) {
+                        NPF_PUT_CHECKED(sign_c);
                     }
                     while (rem--) {
                         NPF_PUT_CHECKED(cbuf[rem]);
                     }
                 }
+
                 if (fs.left_justified &&
                     (fs.field_width_type == NPF_FMT_SPEC_FIELD_WIDTH_LITERAL)) {
-                    int pad = fs.field_width - cbuf_len;
                     while (pad-- > 0) {
                         NPF_PUT_CHECKED(' ');
                     }
                 }
+
                 cur += fs_len;
             }
         }

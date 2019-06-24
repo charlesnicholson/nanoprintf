@@ -243,6 +243,11 @@ TEST(npf__parse_format_spec, PrecisionIsLiteralIfPeriodThenNumber) {
     CHECK_EQUAL(12345, spec.precision);
 }
 
+TEST(npf__parse_format_spec, PrecisionExplicitDisablesLeadingZeroPad) {
+    CHECK_EQUAL(5, npf__parse_format_spec("%0.1u", &spec));
+    CHECK_EQUAL(0, spec.leading_zero_pad);
+}
+
 /*
    The length modifiers and their meanings are:
 

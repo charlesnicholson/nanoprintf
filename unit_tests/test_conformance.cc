@@ -29,11 +29,14 @@ void CheckConformance(char const *fmt, ...) {
 TEST(conformance, Percent) {
     CheckConformance("%%");
     CheckConformance("%-%");
+    CheckConformance("% %");
     CheckConformance("%0%");
     CheckConformance("%+%");
     CheckConformance("%#%");
+    CheckConformance("%10%");
     CheckConformance("%.10%");
     CheckConformance("%-10%");
+    CheckConformance("%10.10%");
 }
 
 TEST(conformance, Char) {
@@ -60,4 +63,38 @@ TEST(conformance, Char) {
 TEST(conformance, UnsignedInt) {
     CheckConformance("%u", 0);
     CheckConformance("%u", UINT_MAX);
+}
+
+TEST(conformance, PrependSign) {
+    CheckConformance("%+%");
+    CheckConformance("%+c", 'A');
+    CheckConformance("%+c", 0);
+    CheckConformance("%+c", -1);
+    CheckConformance("%+i", -1);
+    CheckConformance("%+i", 0);
+    CheckConformance("%+i", 1);
+    CheckConformance("%+u", 0);
+    CheckConformance("%+u", 1);
+    CheckConformance("%+o", 0);
+    CheckConformance("%+o", 1);
+}
+
+TEST(conformance, PrependSpace) {
+    CheckConformance("% %");
+    CheckConformance("% c", 'A');
+    CheckConformance("% c", 0);
+    CheckConformance("% c", -1);
+    CheckConformance("% i", -1);
+    CheckConformance("% i", 0);
+    CheckConformance("% i", 1);
+    CheckConformance("% u", 0);
+    CheckConformance("% u", 1);
+    CheckConformance("% o", 0);
+    CheckConformance("% o", 1);
+}
+
+TEST(conformance, FieldWidthAndSign) {
+    CheckConformance("%+3i", 1);
+    CheckConformance("%+3i", 0);
+    CheckConformance("%+3i", -1);
 }
