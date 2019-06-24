@@ -65,6 +65,17 @@ TEST(conformance, UnsignedInt) {
     CheckConformance("%u", UINT_MAX);
 }
 
+TEST(conformance, Octal) {
+    CheckConformance("%o", 0);
+    CheckConformance("%o", UINT_MAX);
+}
+
+TEST(conformance, SignedInt) {
+    CheckConformance("%i", INT_MIN);
+    CheckConformance("%i", 0);
+    CheckConformance("%i", INT_MAX);
+}
+
 TEST(conformance, PrependSign) {
     CheckConformance("%+%");
     CheckConformance("%+c", 'A');
@@ -111,6 +122,8 @@ TEST(conformance, FieldWidthAndSign) {
     CheckConformance("%+4i", -1);
     CheckConformance("%+4u", 1);
     CheckConformance("%+4u", 0);
+    CheckConformance("%+4o", 1);
+    CheckConformance("%+4o", 0);
 }
 
 TEST(conformance, FieldWidthAndZeroPad) {
@@ -120,4 +133,6 @@ TEST(conformance, FieldWidthAndZeroPad) {
     CheckConformance("%04i", -1);
     CheckConformance("%04u", 1);
     CheckConformance("%04u", 0);
+    CheckConformance("%04o", 1);
+    CheckConformance("%04o", 0);
 }
