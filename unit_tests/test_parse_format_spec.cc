@@ -248,6 +248,12 @@ TEST(npf__parse_format_spec, PrecisionExplicitDisablesLeadingZeroPad) {
     CHECK_EQUAL(0, spec.leading_zero_pad);
 }
 
+TEST(npf__parse_format_spec, PrecisionNoneWhenNegativeLiteral) {
+    CHECK_EQUAL(6, npf__parse_format_spec("%.-34u", &spec));
+    CHECK_EQUAL(NPF_FMT_SPEC_PRECISION_NONE, spec.precision_type);
+    CHECK_EQUAL(0, spec.precision);
+}
+
 /*
    The length modifiers and their meanings are:
 

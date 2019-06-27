@@ -246,3 +246,8 @@ TEST(LeadingZeroPadFlag, DoesNothingOnString_Undefined) {
     CHECK_EQUAL("ABCD", r.String());
 }
 
+// Precision
+
+TEST_GROUP(Precision) { Recorder r; };
+
+// TEST(Precision,

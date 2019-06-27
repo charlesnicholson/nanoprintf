@@ -120,8 +120,17 @@ TEST(conformance, FieldWidthStrings) {
     CheckConformance("%10s", "hello world!");
 }
 
+TEST(conformance, FieldWidthHex) {
+    CheckConformance("%10x", 0x1234);
+    //    CheckConformance("%#10x", 0x1234);
+}
+
 TEST(conformance, PrecisionStrings) {
     //    CheckConformance("%.10s", "hello world this string is > 10");
+}
+
+TEST(conformance, PrecisionIntegral) {
+    // CheckConformance("%.-123i", 400); xcode libc doesn't ignore negative
 }
 
 TEST(conformance, FieldWidthAndSign) {

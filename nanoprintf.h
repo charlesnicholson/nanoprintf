@@ -214,6 +214,12 @@ int npf__parse_format_spec(char const *format, npf__format_spec_t *out_spec) {
         if (*cur == '*') {
             ++cur;
             out_spec->precision_type = NPF_FMT_SPEC_PRECISION_STAR;
+        } else if (*cur == '-') {
+            out_spec->precision_type = NPF_FMT_SPEC_PRECISION_NONE;
+            ++cur;
+            while (*cur >= '0' && *cur <= '9') {
+                ++cur;
+            }
         } else {
             while (*cur >= '0' && *cur <= '9') {
                 out_spec->precision =
