@@ -124,6 +124,7 @@ int npf__bufputc(int c, void *ctx);
 int npf__itoa_rev(char *buf, int i);
 int npf__utoa_rev(char *buf, unsigned i, int base,
                   npf__format_spec_conversion_case_t cc);
+int npf__ptoa_rev(char *buf, void const *p);
 
 #ifdef __cplusplus
 }
@@ -391,6 +392,34 @@ int npf__utoa_rev(char *buf, unsigned i, int base,
     return (int)(dst - buf);
 }
 
+int npf__ptoa_rev(char *buf, void const *p) {
+    if (!p) {
+        *buf++ = ')';
+        *buf++ = 'l';
+        *buf++ = 'l';
+        *buf++ = 'u';
+        *buf++ = 'n';
+        *buf++ = '(';
+        return 6;
+    } else {
+        unsigned i;
+        char const *pb = (char const *)&p;
+        char *dst = buf;
+        for (i = 0; i < sizeof(void *); ++i) {
+            unsigned const d1 = pb[i] & 0xF;
+            unsigned const d2 = (pb[i] >> 4) & 0xF;
+            *dst++ = (d1 < 10) ? (char)('0' + d1) : (char)('a' + (d1 - 10));
+            *dst++ = (d2 < 10) ? (char)('0' + d2) : (char)('a' + (d2 - 10));
+        }
+        while (*--dst == '0')
+            ;
+        ++dst;
+        *dst++ = 'x';
+        *dst++ = '0';
+        return (int)(dst - buf);
+    }
+}
+
 int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
     npf__format_spec_t fs;
     char const *cur = format;
@@ -467,6 +496,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                     case NPF_FMT_SPEC_CONV_CHARS_WRITTEN: /* 'n' */
                         break;
                     case NPF_FMT_SPEC_CONV_POINTER: /* 'p' */
+                        cbuf_len = npf__ptoa_rev(cbuf, va_arg(vlist, void *));
                         break;
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS
                     case NPF_FMT_SPEC_CONV_FLOAT_DECIMAL: /* 'f', 'F' */

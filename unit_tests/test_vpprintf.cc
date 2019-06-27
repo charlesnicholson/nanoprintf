@@ -175,6 +175,34 @@ TEST(Hex, Uppercase) {
     CHECK_EQUAL("ABCDEFAB", r.String());
 }
 
+TEST_GROUP(Pointer) { Recorder r; };
+
+TEST(Pointer, Null) {
+    CHECK_EQUAL(7, npf_pprintf(r.PutC, &r, "%p", nullptr));
+    CHECK_EQUAL("(null)", r.String());
+}
+
+TEST(Pointer, NonNull) {
+    void *p;
+    uintptr_t const u = 1234;
+    memcpy(&p, &u, sizeof(p));
+    int const n = npf_pprintf(r.PutC, &r, "%p", p);
+
+    std::string const s = r.String();
+    char const *sb = s.c_str();
+
+    CHECK_COMPARE(n, >, 2);
+    CHECK_EQUAL('0', *sb);
+    ++sb;
+    CHECK_EQUAL('x', *sb);
+    ++sb;
+
+    for (int i = 2; i < n - 1; ++i) {
+        char const c = *sb++;
+        CHECK((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f'));
+    }
+}
+
 // Field Width
 
 TEST_GROUP(FieldWidth) { Recorder r; };

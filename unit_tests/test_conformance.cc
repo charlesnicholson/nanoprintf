@@ -60,6 +60,12 @@ TEST(conformance, Char) {
     }
 }
 
+TEST(conformance, Strings) {
+    CheckConformance("%10s", "hello");
+    CheckConformance("%10s", "hello world!");
+    //    CheckConformance("%.10s", "hello world this string is > 10");
+}
+
 TEST(conformance, UnsignedInt) {
     CheckConformance("%u", 0);
     CheckConformance("%u", UINT_MAX);
@@ -77,6 +83,7 @@ TEST(conformance, SignedInt) {
     CheckConformance("%i", INT_MIN);
     CheckConformance("%i", 0);
     CheckConformance("%i", INT_MAX);
+    // CheckConformance("%.-123i", 400); xcode libc doesn't ignore negative
 }
 
 TEST(conformance, Hex) {
@@ -89,6 +96,13 @@ TEST(conformance, Hex) {
     CheckConformance("%#x", 0);
     CheckConformance("%10x", 0x1234);
     CheckConformance("%#10x", 0x1234);
+}
+
+TEST(conformance, Pointer) {
+    // CheckConformance("%p", nullptr); implementation defined
+    int x, *p = &x;
+    CheckConformance("%p", p);
+    CheckConformance("%10p", p);
 }
 
 TEST(conformance, PrependSign) {
@@ -121,19 +135,6 @@ TEST(conformance, PrependSpace) {
     CheckConformance("% 6o", 1);
     CheckConformance("% 6x", 0);
     CheckConformance("% 6x", 1);
-}
-
-TEST(conformance, FieldWidthStrings) {
-    CheckConformance("%10s", "hello");
-    CheckConformance("%10s", "hello world!");
-}
-
-TEST(conformance, PrecisionStrings) {
-    //    CheckConformance("%.10s", "hello world this string is > 10");
-}
-
-TEST(conformance, PrecisionIntegral) {
-    // CheckConformance("%.-123i", 400); xcode libc doesn't ignore negative
 }
 
 TEST(conformance, FieldWidthAndSign) {
