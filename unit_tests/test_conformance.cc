@@ -78,8 +78,10 @@ TEST(conformance, SignedInt) {
 
 TEST(conformance, Hex) {
     CheckConformance("%x", 0);
+    CheckConformance("%x", 0x12345678);
     CheckConformance("%x", UINT_MAX);
     CheckConformance("%X", 0);
+    CheckConformance("%X", 0x90ABCDEF);
     CheckConformance("%X", UINT_MAX);
 }
 
@@ -122,7 +124,7 @@ TEST(conformance, FieldWidthStrings) {
 
 TEST(conformance, FieldWidthHex) {
     CheckConformance("%10x", 0x1234);
-    //    CheckConformance("%#10x", 0x1234);
+    CheckConformance("%#10x", 0x1234);
 }
 
 TEST(conformance, PrecisionStrings) {

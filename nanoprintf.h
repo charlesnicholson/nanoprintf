@@ -107,8 +107,8 @@ typedef struct {
     npf__format_spec_length_modifier_t length_modifier;
 
     /* conversion specifiers */
-    npf__format_spec_conversion_t conversion_specifier;
-    npf__format_spec_conversion_case_t conversion_specifier_case;
+    npf__format_spec_conversion_t conv_spec;
+    npf__format_spec_conversion_case_t conv_spec_case;
 } npf__format_spec_t;
 
 int npf__parse_format_spec(char const *format, npf__format_spec_t *out_spec);
@@ -274,75 +274,75 @@ int npf__parse_format_spec(char const *format, npf__format_spec_t *out_spec) {
     /* Conversion specifier */
     switch (*cur++) {
         case '%':
-            out_spec->conversion_specifier = NPF_FMT_SPEC_CONV_PERCENT;
+            out_spec->conv_spec = NPF_FMT_SPEC_CONV_PERCENT;
             break;
         case 'c':
-            out_spec->conversion_specifier = NPF_FMT_SPEC_CONV_CHAR;
+            out_spec->conv_spec = NPF_FMT_SPEC_CONV_CHAR;
             break;
         case 's':
-            out_spec->conversion_specifier = NPF_FMT_SPEC_CONV_STRING;
+            out_spec->conv_spec = NPF_FMT_SPEC_CONV_STRING;
             break;
         case 'i':
-            out_spec->conversion_specifier = NPF_FMT_SPEC_CONV_SIGNED_INT;
+            out_spec->conv_spec = NPF_FMT_SPEC_CONV_SIGNED_INT;
             break;
         case 'd':
-            out_spec->conversion_specifier = NPF_FMT_SPEC_CONV_SIGNED_INT;
+            out_spec->conv_spec = NPF_FMT_SPEC_CONV_SIGNED_INT;
             break;
         case 'o':
-            out_spec->conversion_specifier = NPF_FMT_SPEC_CONV_OCTAL;
+            out_spec->conv_spec = NPF_FMT_SPEC_CONV_OCTAL;
             break;
         case 'x':
-            out_spec->conversion_specifier = NPF_FMT_SPEC_CONV_HEX_INT;
-            out_spec->conversion_specifier_case = NPF_FMT_SPEC_CONV_CASE_LOWER;
+            out_spec->conv_spec = NPF_FMT_SPEC_CONV_HEX_INT;
+            out_spec->conv_spec_case = NPF_FMT_SPEC_CONV_CASE_LOWER;
             break;
         case 'X':
-            out_spec->conversion_specifier = NPF_FMT_SPEC_CONV_HEX_INT;
-            out_spec->conversion_specifier_case = NPF_FMT_SPEC_CONV_CASE_UPPER;
+            out_spec->conv_spec = NPF_FMT_SPEC_CONV_HEX_INT;
+            out_spec->conv_spec_case = NPF_FMT_SPEC_CONV_CASE_UPPER;
             break;
         case 'u':
-            out_spec->conversion_specifier = NPF_FMT_SPEC_CONV_UNSIGNED_INT;
+            out_spec->conv_spec = NPF_FMT_SPEC_CONV_UNSIGNED_INT;
             break;
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS
         case 'f':
-            out_spec->conversion_specifier = NPF_FMT_SPEC_CONV_FLOAT_DECIMAL;
-            out_spec->conversion_specifier_case = NPF_FMT_SPEC_CONV_CASE_LOWER;
+            out_spec->conv_spec = NPF_FMT_SPEC_CONV_FLOAT_DECIMAL;
+            out_spec->conv_spec_case = NPF_FMT_SPEC_CONV_CASE_LOWER;
             break;
         case 'F':
-            out_spec->conversion_specifier = NPF_FMT_SPEC_CONV_FLOAT_DECIMAL;
-            out_spec->conversion_specifier_case = NPF_FMT_SPEC_CONV_CASE_UPPER;
+            out_spec->conv_spec = NPF_FMT_SPEC_CONV_FLOAT_DECIMAL;
+            out_spec->conv_spec_case = NPF_FMT_SPEC_CONV_CASE_UPPER;
             break;
         case 'e':
-            out_spec->conversion_specifier = NPF_FMT_SPEC_CONV_FLOAT_EXPONENT;
-            out_spec->conversion_specifier_case = NPF_FMT_SPEC_CONV_CASE_LOWER;
+            out_spec->conv_spec = NPF_FMT_SPEC_CONV_FLOAT_EXPONENT;
+            out_spec->conv_spec_case = NPF_FMT_SPEC_CONV_CASE_LOWER;
             break;
         case 'E':
-            out_spec->conversion_specifier = NPF_FMT_SPEC_CONV_FLOAT_EXPONENT;
-            out_spec->conversion_specifier_case = NPF_FMT_SPEC_CONV_CASE_UPPER;
+            out_spec->conv_spec = NPF_FMT_SPEC_CONV_FLOAT_EXPONENT;
+            out_spec->conv_spec_case = NPF_FMT_SPEC_CONV_CASE_UPPER;
             break;
 #if NANOPRINTF_USE_C99_FORMAT_SPECIFIERS
         case 'a':
-            out_spec->conversion_specifier = NPF_FMT_SPEC_CONV_C99_FLOAT_HEX;
-            out_spec->conversion_specifier_case = NPF_FMT_SPEC_CONV_CASE_LOWER;
+            out_spec->conv_spec = NPF_FMT_SPEC_CONV_C99_FLOAT_HEX;
+            out_spec->conv_spec_case = NPF_FMT_SPEC_CONV_CASE_LOWER;
             break;
         case 'A':
-            out_spec->conversion_specifier = NPF_FMT_SPEC_CONV_C99_FLOAT_HEX;
-            out_spec->conversion_specifier_case = NPF_FMT_SPEC_CONV_CASE_UPPER;
+            out_spec->conv_spec = NPF_FMT_SPEC_CONV_C99_FLOAT_HEX;
+            out_spec->conv_spec_case = NPF_FMT_SPEC_CONV_CASE_UPPER;
             break;
 #endif
         case 'g':
-            out_spec->conversion_specifier = NPF_FMT_SPEC_CONV_FLOAT_DYNAMIC;
-            out_spec->conversion_specifier_case = NPF_FMT_SPEC_CONV_CASE_LOWER;
+            out_spec->conv_spec = NPF_FMT_SPEC_CONV_FLOAT_DYNAMIC;
+            out_spec->conv_spec_case = NPF_FMT_SPEC_CONV_CASE_LOWER;
             break;
         case 'G':
-            out_spec->conversion_specifier = NPF_FMT_SPEC_CONV_FLOAT_DYNAMIC;
-            out_spec->conversion_specifier_case = NPF_FMT_SPEC_CONV_CASE_UPPER;
+            out_spec->conv_spec = NPF_FMT_SPEC_CONV_FLOAT_DYNAMIC;
+            out_spec->conv_spec_case = NPF_FMT_SPEC_CONV_CASE_UPPER;
             break;
 #endif
         case 'n':
-            out_spec->conversion_specifier = NPF_FMT_SPEC_CONV_CHARS_WRITTEN;
+            out_spec->conv_spec = NPF_FMT_SPEC_CONV_CHARS_WRITTEN;
             break;
         case 'p':
-            out_spec->conversion_specifier = NPF_FMT_SPEC_CONV_POINTER;
+            out_spec->conv_spec = NPF_FMT_SPEC_CONV_POINTER;
             break;
         default:
             return 0;
@@ -420,7 +420,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                 int cbuf_len = 0, pad = 0;
 
                 /* Convert the argument to string and point cbuf at it */
-                switch (fs.conversion_specifier) {
+                switch (fs.conv_spec) {
                     case NPF_FMT_SPEC_CONV_PERCENT:
                         *cbuf = '%';
                         cbuf_len = 1;
@@ -441,19 +441,24 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                         cbuf_len = npf__itoa_rev(cbuf, val);
                     } break;
                     case NPF_FMT_SPEC_CONV_OCTAL: /* 'o' */
-                        cbuf_len =
-                            npf__utoa_rev(cbuf, va_arg(vlist, unsigned), 8,
-                                          fs.conversion_specifier_case);
+                        cbuf_len = npf__utoa_rev(cbuf, va_arg(vlist, unsigned),
+                                                 8, fs.conv_spec_case);
                         break;
-                    case NPF_FMT_SPEC_CONV_HEX_INT: /* 'x', 'X' */
+                    case NPF_FMT_SPEC_CONV_HEX_INT: { /* 'x', 'X' */
+                        unsigned const val = va_arg(vlist, unsigned);
                         cbuf_len =
-                            npf__utoa_rev(cbuf, va_arg(vlist, unsigned), 16,
-                                          fs.conversion_specifier_case);
-                        break;
+                            npf__utoa_rev(cbuf, val, 16, fs.conv_spec_case);
+                        if (val && fs.alternative_form) {
+                            cbuf[cbuf_len++] = (fs.conv_spec_case ==
+                                                NPF_FMT_SPEC_CONV_CASE_LOWER)
+                                                   ? 'x'
+                                                   : 'X';
+                            cbuf[cbuf_len++] = '0';
+                        }
+                    } break;
                     case NPF_FMT_SPEC_CONV_UNSIGNED_INT: /* 'u' */
-                        cbuf_len =
-                            npf__utoa_rev(cbuf, va_arg(vlist, unsigned), 10,
-                                          fs.conversion_specifier_case);
+                        cbuf_len = npf__utoa_rev(cbuf, va_arg(vlist, unsigned),
+                                                 10, fs.conv_spec_case);
                         break;
                     case NPF_FMT_SPEC_CONV_CHARS_WRITTEN: /* 'n' */
                         break;
@@ -490,12 +495,9 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                 if (fs.field_width_type == NPF_FMT_SPEC_FIELD_WIDTH_LITERAL) {
                     if (fs.leading_zero_pad) {
                         /* '0' flag is only legal with numeric types */
-                        if ((fs.conversion_specifier !=
-                             NPF_FMT_SPEC_CONV_STRING) &&
-                            (fs.conversion_specifier !=
-                             NPF_FMT_SPEC_CONV_CHAR) &&
-                            (fs.conversion_specifier !=
-                             NPF_FMT_SPEC_CONV_PERCENT)) {
+                        if ((fs.conv_spec != NPF_FMT_SPEC_CONV_STRING) &&
+                            (fs.conv_spec != NPF_FMT_SPEC_CONV_CHAR) &&
+                            (fs.conv_spec != NPF_FMT_SPEC_CONV_PERCENT)) {
                             pad_c = '0';
                         }
                     } else {
@@ -509,7 +511,8 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
 
                 /* Apply right-justified field width if requested */
                 if (!fs.left_justified && pad_c) {
-                    /* If leading zeros pad the field, the '-' goes first. */
+                    /* If leading zeros pad the field, the '-' goes
+                     * first. */
                     if (sign_c == '-' && pad_c == '0') {
                         NPF_PUT_CHECKED(sign_c);
                         sign_c = 0;
@@ -520,7 +523,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                 }
 
                 /* Write the converted payload */
-                if (fs.conversion_specifier == NPF_FMT_SPEC_CONV_STRING) {
+                if (fs.conv_spec == NPF_FMT_SPEC_CONV_STRING) {
                     /* Strings are in the correct order */
                     for (i = 0; i < cbuf_len; ++i) {
                         NPF_PUT_CHECKED(cbuf[i]);

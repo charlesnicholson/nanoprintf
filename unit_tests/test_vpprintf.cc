@@ -246,6 +246,25 @@ TEST(LeadingZeroPadFlag, DoesNothingOnString_Undefined) {
     CHECK_EQUAL("ABCD", r.String());
 }
 
+// Alternative implementation
+
+TEST_GROUP(AlternativeImplementationFlag) { Recorder r; };
+
+TEST(AlternativeImplementationFlag, HexDoesntPrepend0xIfValueIsZero) {
+    CHECK_EQUAL(2, npf_pprintf(r.PutC, &r, "%#x", 0));
+    CHECK_EQUAL("0", r.String());
+}
+
+TEST(AlternativeImplementationFlag, HexUppercase0X) {
+    CHECK_EQUAL(4, npf_pprintf(r.PutC, &r, "%#X", 1));
+    CHECK_EQUAL("0X1", r.String());
+}
+
+TEST(AlternativeImplementationFlag, HexLowercase0x) {
+    CHECK_EQUAL(4, npf_pprintf(r.PutC, &r, "%#x", 1));
+    CHECK_EQUAL("0x1", r.String());
+}
+
 // Precision
 
 TEST_GROUP(Precision) { Recorder r; };
