@@ -117,6 +117,9 @@ add_executable(npf_unit_tests
     unit_tests/test_bufputc.cc
     unit_tests/test_conformance.cc
     unit_tests/test_parse_format_spec.cc
+    unit_tests/test_itoa_rev.cc
+    unit_tests/test_ptoa_rev.cc
+    unit_tests/test_utoa_rev.cc
     unit_tests/test_vpprintf.cc
     unit_tests/nanoprintf_in_unit_tests.cc
     unit_tests/nanoprintf_in_unit_tests.h
