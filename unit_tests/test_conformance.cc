@@ -67,7 +67,10 @@ TEST(conformance, UnsignedInt) {
 
 TEST(conformance, Octal) {
     CheckConformance("%o", 0);
+    CheckConformance("%#o", 0);
     CheckConformance("%o", UINT_MAX);
+    CheckConformance("%10o", 1234);
+    CheckConformance("%#10o", 1234);
 }
 
 TEST(conformance, SignedInt) {
@@ -83,6 +86,9 @@ TEST(conformance, Hex) {
     CheckConformance("%X", 0);
     CheckConformance("%X", 0x90ABCDEF);
     CheckConformance("%X", UINT_MAX);
+    CheckConformance("%#x", 0);
+    CheckConformance("%10x", 0x1234);
+    CheckConformance("%#10x", 0x1234);
 }
 
 TEST(conformance, PrependSign) {
@@ -120,11 +126,6 @@ TEST(conformance, PrependSpace) {
 TEST(conformance, FieldWidthStrings) {
     CheckConformance("%10s", "hello");
     CheckConformance("%10s", "hello world!");
-}
-
-TEST(conformance, FieldWidthHex) {
-    CheckConformance("%10x", 0x1234);
-    CheckConformance("%#10x", 0x1234);
 }
 
 TEST(conformance, PrecisionStrings) {

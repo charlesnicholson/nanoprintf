@@ -265,6 +265,16 @@ TEST(AlternativeImplementationFlag, HexLowercase0x) {
     CHECK_EQUAL("0x1", r.String());
 }
 
+TEST(AlternativeImplementationFlag, OctalDoesntPrepent0IfValueIsZero) {
+    CHECK_EQUAL(2, npf_pprintf(r.PutC, &r, "%#o", 0));
+    CHECK_EQUAL("0", r.String());
+}
+
+TEST(AlternativeImplementationFlag, OctalNonZero) {
+    CHECK_EQUAL(3, npf_pprintf(r.PutC, &r, "%#o", 2));
+    CHECK_EQUAL("02", r.String());
+}
+
 // Precision
 
 TEST_GROUP(Precision) { Recorder r; };

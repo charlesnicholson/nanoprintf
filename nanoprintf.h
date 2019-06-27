@@ -440,10 +440,14 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                         sign = (val < 0) ? -1 : 1;
                         cbuf_len = npf__itoa_rev(cbuf, val);
                     } break;
-                    case NPF_FMT_SPEC_CONV_OCTAL: /* 'o' */
-                        cbuf_len = npf__utoa_rev(cbuf, va_arg(vlist, unsigned),
-                                                 8, fs.conv_spec_case);
-                        break;
+                    case NPF_FMT_SPEC_CONV_OCTAL: { /* 'o' */
+                        unsigned const val = va_arg(vlist, unsigned);
+                        cbuf_len =
+                            npf__utoa_rev(cbuf, val, 8, fs.conv_spec_case);
+                        if (val && fs.alternative_form) {
+                            cbuf[cbuf_len++] = '0';
+                        }
+                    } break;
                     case NPF_FMT_SPEC_CONV_HEX_INT: { /* 'x', 'X' */
                         unsigned const val = va_arg(vlist, unsigned);
                         cbuf_len =
