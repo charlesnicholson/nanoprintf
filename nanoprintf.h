@@ -494,6 +494,8 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                                                  10, fs.conv_spec_case);
                         break;
                     case NPF_FMT_SPEC_CONV_CHARS_WRITTEN: /* 'n' */
+                        cbuf_len = npf__utoa_rev(cbuf, (unsigned)n, 10,
+                                                 NPF_FMT_SPEC_CONV_CASE_NONE);
                         break;
                     case NPF_FMT_SPEC_CONV_POINTER: /* 'p' */
                         cbuf_len = npf__ptoa_rev(cbuf, va_arg(vlist, void *));

@@ -149,3 +149,7 @@ TEST(conformance, Pointer) {
     // CheckConformance("%030p", p); 0x comes before zero pad
     // CheckConformance("%.30p", p); 0x comes before precision
 }
+
+TEST(conformance, BytesWritten) {
+    // CheckConformance("%n"); often unimplemented
+}

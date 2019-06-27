@@ -203,6 +203,25 @@ TEST(Pointer, NonNull) {
     }
 }
 
+// Position
+
+TEST_GROUP(Position) { Recorder r; };
+
+TEST(Position, Zero) {
+    CHECK_EQUAL(2, npf_pprintf(r.PutC, &r, "%n"));
+    CHECK_EQUAL("0", r.String());
+}
+
+TEST(Position, One) {
+    CHECK_EQUAL(3, npf_pprintf(r.PutC, &r, " %n"));
+    CHECK_EQUAL(" 1", r.String());
+}
+
+TEST(Position, AfterString) {
+    CHECK_EQUAL(7, npf_pprintf(r.PutC, &r, "%s%n", "hello"));
+    CHECK_EQUAL("hello5", r.String());
+}
+
 // Field Width
 
 TEST_GROUP(FieldWidth) { Recorder r; };
