@@ -138,7 +138,7 @@ int npf__utoa_rev(char *buf, unsigned i, int base,
                   npf__format_spec_conversion_case_t cc);
 int npf__ptoa_rev(char *buf, void const *p);
 
-int npf__ftoa(char *buf, float f);
+int npf__ftoa_rev(char *buf, float f);
 
 #ifdef __cplusplus
 }
@@ -448,7 +448,7 @@ enum {
 };
 
 #include <stdio.h>
-int npf__ftoa(char *buf, float f) {
+int npf__ftoa_rev(char *buf, float f) {
     // conversion algorithm by Wojciech Muła
     // http://0x80.pl/notesen/2015-12-29-float-to-string.html
 
@@ -543,7 +543,6 @@ int npf__ftoa(char *buf, float f) {
         integer_dec /= 10;
     }
     *dst++ = 0;
-    printf("%s\n", buf);
 
     return (int)(dst - buf);
 }

@@ -48,6 +48,8 @@ add_dependencies(libCppUTestExt CppUTest_external)
 
 set(CMAKE_C_FLAGS_RELWITHDEBINFO "-Os -g")
 set(CMAKE_C_FLAGS_RELEASE "-Os")
+set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-Os -g")
+set(CMAKE_CXX_FLAGS_RELEASE "-Os")
 set(CMAKE_CXX_STANDARD 11)
 
 string(CONCAT nanoprintf_common_flags
@@ -119,7 +121,7 @@ add_executable(npf_unit_tests
     unit_tests/test_bufputc.cc
     unit_tests/test_conformance.cc
     unit_tests/test_parse_format_spec.cc
-    unit_tests/test_ftoa.cc
+    unit_tests/test_ftoa_rev.cc
     unit_tests/test_itoa_rev.cc
     unit_tests/test_ptoa_rev.cc
     unit_tests/test_utoa_rev.cc
