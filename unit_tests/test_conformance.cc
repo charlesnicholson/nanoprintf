@@ -153,3 +153,11 @@ TEST(conformance, Pointer) {
 TEST(conformance, BytesWritten) {
     // CheckConformance("%n"); often unimplemented
 }
+
+TEST(conformance, StarArgs) {
+    CheckConformance("%*c", 10, 'Z');
+    CheckConformance("%*%", 6);
+    CheckConformance("%.*c", 2, 'B');
+    CheckConformance("%*.*c", 20, 2, 'B');
+    //    CheckConformance("%.*s", 1, "hello world");
+}

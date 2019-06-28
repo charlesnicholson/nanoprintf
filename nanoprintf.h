@@ -447,7 +447,6 @@ enum {
     NPF_FRACTION_BIN_DIGITS = 64
 };
 
-#include <stdio.h>
 int npf__ftoa_rev(char *buf, float f) {
     // conversion algorithm by Wojciech Muła
     // http://0x80.pl/notesen/2015-12-29-float-to-string.html
@@ -575,6 +574,17 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                 /* Format specifier, convert and write argument */
                 char cbuf_mem[24], *cbuf = cbuf_mem, sign_c, pad_c;
                 int cbuf_len = 0, pad = 0;
+
+                /* '*' modifiers require more varargs */
+                if (fs.field_width_type == NPF_FMT_SPEC_FIELD_WIDTH_STAR) {
+                    fs.field_width = va_arg(vlist, int);
+                    fs.field_width_type = NPF_FMT_SPEC_FIELD_WIDTH_LITERAL;
+                }
+
+                if (fs.precision_type == NPF_FMT_SPEC_PRECISION_STAR) {
+                    fs.precision = va_arg(vlist, int);
+                    fs.precision_type = NPF_FMT_SPEC_PRECISION_LITERAL;
+                }
 
                 /* Convert the argument to string and point cbuf at it */
                 switch (fs.conv_spec) {
