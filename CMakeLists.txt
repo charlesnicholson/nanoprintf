@@ -48,6 +48,7 @@ add_dependencies(libCppUTestExt CppUTest_external)
 
 set(CMAKE_C_FLAGS_RELWITHDEBINFO "-Os -g")
 set(CMAKE_C_FLAGS_RELEASE "-Os")
+set(CMAKE_CXX_STANDARD 11)
 
 string(CONCAT nanoprintf_common_flags
     "-pedantic "
@@ -55,6 +56,7 @@ string(CONCAT nanoprintf_common_flags
     "-Weverything "
     "-Werror "
     "-Wno-old-style-cast "
+    "-Wno-c++98-compat-pedantic "
     "-Wno-padded")
 
 ################ Flag / language compilation tests
@@ -65,7 +67,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${nanoprintf_common_flags}")
 add_library(npf_c89 compilation_tests/nanoprintf_compilation_test_c.c)
 target_compile_definitions(npf_c89 PRIVATE
     NANOPRINTF_USE_C99_FORMAT_SPECIFIERS=0
-    NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=1)
+    NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=0)
 target_compile_options(npf_c89 PRIVATE -std=c89)
 
 add_library(npf_c99 compilation_tests/nanoprintf_compilation_test_c.c)
@@ -117,6 +119,7 @@ add_executable(npf_unit_tests
     unit_tests/test_bufputc.cc
     unit_tests/test_conformance.cc
     unit_tests/test_parse_format_spec.cc
+    unit_tests/test_ftoa.cc
     unit_tests/test_itoa_rev.cc
     unit_tests/test_ptoa_rev.cc
     unit_tests/test_utoa_rev.cc
@@ -141,7 +144,6 @@ target_compile_options(npf_unit_tests PRIVATE
     -Wno-global-constructors   # CppUTest memory checks
     -Wno-exit-time-destructors # CppUTest memory checks
     -Wno-c++98-compat
-    -Wno-c++98-compat-pedantic
     -Wno-missing-prototypes
     -std=c++11
 )

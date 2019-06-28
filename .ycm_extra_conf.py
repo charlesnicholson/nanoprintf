@@ -12,6 +12,7 @@ flags = [
     '-Weverything',
     '-Wpedantic',
     '-ansi',
+    '-Wno-c++98-compat-pedantic '
     '-Wno-c++11-long-long',
     '-Wno-reserved-id-macro',
     '-Wno-old-style-cast',

@@ -12,6 +12,18 @@
 #error NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS must be #defined to 0 or 1
 #endif
 
+#if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
+#ifdef __cplusplus
+#if __cplusplus < 201103L
+#error nanoprintf float support requires fixed-width types from c++11 or later.
+#endif
+#else
+#if __STDC_VERSION__ < 199409L
+#error nanoprintf float support requires fixed-width types from c99 or later.
+#endif
+#endif
+#endif
+
 #include <stdarg.h>
 #include <stddef.h>
 
@@ -126,6 +138,8 @@ int npf__utoa_rev(char *buf, unsigned i, int base,
                   npf__format_spec_conversion_case_t cc);
 int npf__ptoa_rev(char *buf, void const *p);
 
+int npf__ftoa(char *buf, float f);
+
 #ifdef __cplusplus
 }
 #endif
@@ -137,6 +151,11 @@ int npf__ptoa_rev(char *buf, void const *p);
 #undef NANOPRINTF_IMPLEMENTATION
 #include "nanoprintf.h"
 #define NANOPRINTF_IMPLEMENTATION
+
+#if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
+#include <math.h>
+#include <stdint.h>
+#endif
 
 #if NANOPRINTF_USE_C99_FORMAT_SPECIFIERS
 #include <inttypes.h>
@@ -419,6 +438,116 @@ int npf__ptoa_rev(char *buf, void const *p) {
         return (int)(dst - buf);
     }
 }
+
+#if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
+enum {
+    NPF_MANTISSA_BITS = 23,
+    NPF_EXPONENT_BITS = 8,
+    NPF_EXPONENT_BIAS = 127,
+    NPF_FRACTION_BIN_DIGITS = 64
+};
+
+#include <stdio.h>
+int npf__ftoa(char *buf, float f) {
+    // conversion algorithm by Wojciech Muła
+    // http://0x80.pl/notesen/2015-12-29-float-to-string.html
+
+    if (f == 0.0f) {
+        *buf++ = '0';
+        *buf++ = '0';
+        *buf++ = '0';
+        *buf++ = '0';
+        *buf++ = '0';
+        *buf++ = '0';
+        *buf++ = '.';
+        *buf++ = '0';
+        return 8;
+    } else if (f != f) {
+        *buf++ = 'n';
+        *buf++ = 'a';
+        *buf++ = 'n';
+        return 3;
+    } else if (f == INFINITY) {
+        *buf++ = 'i';
+        *buf++ = 'n';
+        *buf++ = 'f';
+        return 3;
+    }
+
+    // union-cast is UB, avoiding stdlib calls, so copy through char*
+    uint32_t i_bits;
+    {
+        char const *src = (char const *)&f;
+        char *dst = (char *)&i_bits;
+        *dst++ = *src++;
+        *dst++ = *src++;
+        *dst++ = *src++;
+        *dst++ = *src++;
+    }
+
+    // set up the constants
+    int const exponent =
+        (((i_bits >> NPF_MANTISSA_BITS) & ((1u << NPF_EXPONENT_BITS) - 1)) -
+         NPF_EXPONENT_BIAS) -
+        NPF_MANTISSA_BITS;
+    uint32_t const implicit_one = 1u << NPF_MANTISSA_BITS;
+    uint32_t const mantissa = i_bits & (implicit_one - 1);
+    uint32_t const mantissa_norm = mantissa | implicit_one;
+
+    // value is out of range
+    if (exponent >= (64 - NPF_MANTISSA_BITS)) {
+        return 0;
+    }
+
+    uint64_t integer_dec;
+    if (exponent > 0) {
+        integer_dec = mantissa_norm << exponent;
+    } else if (exponent < 0) {
+        if (-exponent > NPF_MANTISSA_BITS) {
+            integer_dec = 0;
+        } else {
+            integer_dec = mantissa_norm >> -exponent;
+        }
+    } else {
+        integer_dec = mantissa_norm;
+    }
+
+    unsigned fraction_dec = 0;
+    {
+        uint64_t fraction_bin;
+        int const shift = NPF_FRACTION_BIN_DIGITS + exponent - 4;
+        if ((shift >= (NPF_FRACTION_BIN_DIGITS - 4)) || (shift < 0)) {
+            fraction_bin = 0;
+        } else {
+            fraction_bin = ((uint64_t)mantissa_norm) << shift;
+        }
+
+        int frac_digits_written = 0;
+        while (fraction_bin && (frac_digits_written < 6)) {
+            fraction_bin &= 0x0fffffffffffffffllu;
+            fraction_bin *= 10;
+            fraction_dec *= 10;
+            fraction_dec += fraction_bin >> (NPF_FRACTION_BIN_DIGITS - 4);
+            ++frac_digits_written;
+        }
+    }
+
+    char *dst = buf;
+    while (fraction_dec) {
+        *dst++ = '0' + (fraction_dec % 10);
+        fraction_dec /= 10;
+    }
+    *dst++ = '.';
+    while (integer_dec) {
+        *dst++ = '0' + (integer_dec % 10);
+        integer_dec /= 10;
+    }
+    *dst++ = 0;
+    printf("%s\n", buf);
+
+    return (int)(dst - buf);
+}
+#endif
 
 int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
     npf__format_spec_t fs;
