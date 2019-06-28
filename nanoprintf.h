@@ -421,6 +421,8 @@ int npf__ptoa_rev(char *buf, void const *p) {
         *buf++ = '(';
         return 6;
     } else {
+        // c89 requires configuration to learn what uint a void* fits in.
+        // Instead, just alias to char* and print nibble-by-nibble.
         unsigned i;
         char const *pb = (char const *)&p;
         char *dst = buf;
@@ -473,7 +475,7 @@ int npf__ftoa_rev(char *buf, float f) {
         return 3;
     }
 
-    // union-cast is UB, avoiding stdlib calls, so copy through char*
+    // union-cast is UB, so copy through char*, compiler can optimize.
     uint32_t i_bits;
     {
         char const *src = (char const *)&f;
