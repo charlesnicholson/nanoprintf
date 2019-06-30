@@ -464,7 +464,7 @@ enum {
     NPF_EXPONENT_BITS = 8,
     NPF_EXPONENT_BIAS = 127,
     NPF_FRACTION_BIN_DIGITS = 64,
-    NPF_MAX_PRECISION = 6
+    NPF_MAX_FRACTION_DEC_DIGITS = 8
 };
 
 int npf__fsplit_abs(float f, uint64_t *out_int_part, uint64_t *out_frac_part) {
@@ -521,7 +521,8 @@ int npf__fsplit_abs(float f, uint64_t *out_int_part, uint64_t *out_frac_part) {
             fraction_bin = ((uint64_t)mantissa_norm) << shift;
         }
 
-        for (int written = 0; written < NPF_MAX_PRECISION; ++written) {
+        for (int written = 0; written < NPF_MAX_FRACTION_DEC_DIGITS;
+             ++written) {
             fraction_bin &= 0x0fffffffffffffffllu;
             fraction_bin *= 10;
             if (fraction_bin == 0) {

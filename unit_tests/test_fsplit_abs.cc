@@ -33,9 +33,9 @@ TEST(fsplit_abs, LargeNegativeInteger) {
     CHECK_EQUAL(0, frac_part);
 }
 
-// Perfectly-representable fractions
+// Perfectly-representable fractions, adding 1 bit to mantissa each time.
 
-TEST(fsplit_abs, 5) {
+TEST(fsplit_abs, 532) {
     CHECK(npf__fsplit_abs(1.5f, &int_part, &frac_part));
     CHECK_EQUAL(1, int_part);
     CHECK_EQUAL(5, frac_part);
@@ -71,8 +71,36 @@ TEST(fsplit_abs, 984375) {
     CHECK_EQUAL(984375, frac_part);
 }
 
-TEST(fsplit_abs, 9921875_Truncates) {
+TEST(fsplit_abs, 9921875) {
     CHECK(npf__fsplit_abs(1.9921875f, &int_part, &frac_part));
     CHECK_EQUAL(1, int_part);
-    CHECK_EQUAL(992187, frac_part);
+    CHECK_EQUAL(9921875, frac_part);
+}
+
+// Divergent but split has full accuracy.
+
+TEST(fsplit_abs, 9960938) {
+    CHECK(npf__fsplit_abs(1.9960938f, &int_part, &frac_part));
+    CHECK_EQUAL(1, int_part);
+    CHECK_EQUAL(99609375, frac_part);
+}
+
+// Truncations, continue adding mantissa bits
+
+TEST(fsplit_abs, 9980469_Truncates) {
+    CHECK(npf__fsplit_abs(1.9980469f, &int_part, &frac_part));
+    CHECK_EQUAL(1, int_part);
+    CHECK_EQUAL(99804687, frac_part);  // 1.998046875 is stored.
+}
+
+TEST(fsplit_abs, 9990234_Truncates) {
+    CHECK(npf__fsplit_abs(1.9990234f, &int_part, &frac_part));
+    CHECK_EQUAL(1, int_part);
+    CHECK_EQUAL(99902343, frac_part);  // 1.9990234375 is stored.
+}
+
+TEST(fsplit_abs, 9995117_Truncates) {
+    CHECK(npf__fsplit_abs(1.9995117f, &int_part, &frac_part));
+    CHECK_EQUAL(1, int_part);
+    CHECK_EQUAL(99951171, frac_part);  // 1.99951171875 is stored.
 }
