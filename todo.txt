@@ -1,10 +1,13 @@
 nanoprintf todo:
 ================
-
-float support
-precision support
-push * vararg parsing up into npf__parse_format_spec
+float support (fF)
 unit tests for itoa_rev, utoa_rev, ftoa_rev, fsplit
+precision support
+c99 modifier support
+exponent support (eE)
+push * vararg parsing up into npf__parse_format_spec
 npf_putc => npf_putchars, scan for runs instead of char-by-char
-NANOPRINTF_INTERFACE_STATIC compilation test (redefine a npf_ symbol and confirm linker doesn't yell)
+NANOPRINTF_INTERFACE_STATIC compilation test
 commit gates (automated build + test): circleci / travis / appveyor?
+dynamic float support (gG)
+hex float support (aA)

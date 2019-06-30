@@ -153,8 +153,8 @@ NPF_INTERFACE_DEF int npf__utoa_rev(char *buf, unsigned i, int base,
 NPF_INTERFACE_DEF int npf__ptoa_rev(char *buf, void const *p);
 
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
-NPF_INTERFACE_DEF int npf__fsplit(float f, uint64_t *out_int_part,
-                                  uint64_t *out_frac_part);
+NPF_INTERFACE_DEF int npf__fsplit_abs(float f, uint64_t *out_int_part,
+                                      uint64_t *out_frac_part);
 NPF_INTERFACE_DEF int npf__ftoa_rev(char *buf, float f);
 #endif
 
@@ -466,9 +466,12 @@ enum {
     NPF_FRACTION_BIN_DIGITS = 64
 };
 
-int npf__fsplit(float f, uint64_t *out_int_part, uint64_t *out_frac_part) {
-    // conversion algorithm by Wojciech Muła
+int npf__fsplit_abs(float f, uint64_t *out_int_part, uint64_t *out_frac_part) {
+    // conversion algorithm by Wojciech Muła (zdjęcia@garnek.pl)
     // http://0x80.pl/notesen/2015-12-29-float-to-string.html
+
+    // grisu2 (https://bit.ly/2JgMggX) and ryu (https://bit.ly/2RLXSg0)
+    // are precise and do rounding, but bigger and require large lookup tables.
 
     // union-cast is UB, so copy through char*, compiler can optimize.
     uint32_t i_bits;
@@ -555,7 +558,7 @@ int npf__ftoa_rev(char *buf, float f) {
     }
 
     uint64_t int_part, frac_part;
-    if (npf__fsplit(f, &int_part, &frac_part) == 0) {
+    if (npf__fsplit_abs(f, &int_part, &frac_part) == 0) {
         *buf++ = 'r';
         *buf++ = 'o';
         *buf++ = 'o';
