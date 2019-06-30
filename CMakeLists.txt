@@ -124,6 +124,7 @@ add_executable(npf_unit_tests
     unit_tests/test_conformance.cc
     unit_tests/test_parse_format_spec.cc
     unit_tests/test_ftoa_rev.cc
+    unit_tests/test_fsplit_abs.cc
     unit_tests/test_itoa_rev.cc
     unit_tests/test_ptoa_rev.cc
     unit_tests/test_utoa_rev.cc
