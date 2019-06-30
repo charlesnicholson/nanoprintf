@@ -27,6 +27,10 @@
 #include <stdarg.h>
 #include <stddef.h>
 
+#if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
+#include <stdint.h>
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -138,7 +142,10 @@ int npf__utoa_rev(char *buf, unsigned i, int base,
                   npf__format_spec_conversion_case_t cc);
 int npf__ptoa_rev(char *buf, void const *p);
 
+#if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
+int npf__fsplit(float f, uint64_t *out_int_part, uint64_t *out_frac_part);
 int npf__ftoa_rev(char *buf, float f);
+#endif
 
 #ifdef __cplusplus
 }
@@ -154,10 +161,9 @@ int npf__ftoa_rev(char *buf, float f);
 
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
 #include <math.h>
-#include <stdint.h>
 #endif
 
-#if NANOPRINTF_USE_C99_FORMAT_SPECIFIERS
+#if NANOPRINTF_USE_C99_FORMAT_SPECIFIERS == 1
 #include <inttypes.h>
 #include <stdint.h>
 #include <wchar.h>
@@ -252,7 +258,7 @@ int npf__parse_format_spec(char const *format, npf__format_spec_t *out_spec) {
     /* Length modifier */
     switch (*cur++) {
         case 'h':
-#if NANOPRINTF_USE_C99_FORMAT_SPECIFIERS
+#if NANOPRINTF_USE_C99_FORMAT_SPECIFIERS == 1
             if (*cur == 'h') {
                 out_spec->length_modifier = NPF_FMT_SPEC_LENGTH_MOD_C99_CHAR;
                 ++cur;
@@ -261,7 +267,7 @@ int npf__parse_format_spec(char const *format, npf__format_spec_t *out_spec) {
                 out_spec->length_modifier = NPF_FMT_SPEC_LENGTH_MOD_SHORT;
             break;
         case 'l':
-#if NANOPRINTF_USE_C99_FORMAT_SPECIFIERS
+#if NANOPRINTF_USE_C99_FORMAT_SPECIFIERS == 1
             if (*cur == 'l') {
                 out_spec->length_modifier =
                     NPF_FMT_SPEC_LENGTH_MOD_C99_LONG_LONG;
@@ -270,12 +276,12 @@ int npf__parse_format_spec(char const *format, npf__format_spec_t *out_spec) {
 #endif
                 out_spec->length_modifier = NPF_FMT_SPEC_LENGTH_MOD_LONG;
             break;
-#if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS
+#if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
         case 'L':
             out_spec->length_modifier = NPF_FMT_SPEC_LENGTH_MOD_LONG_DOUBLE;
             break;
 #endif
-#if NANOPRINTF_USE_C99_FORMAT_SPECIFIERS
+#if NANOPRINTF_USE_C99_FORMAT_SPECIFIERS == 1
         case 'j':
             out_spec->length_modifier = NPF_FMT_SPEC_LENGTH_MOD_C99_INTMAX;
             break;
@@ -322,7 +328,7 @@ int npf__parse_format_spec(char const *format, npf__format_spec_t *out_spec) {
         case 'u':
             out_spec->conv_spec = NPF_FMT_SPEC_CONV_UNSIGNED_INT;
             break;
-#if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS
+#if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
         case 'f':
             out_spec->conv_spec = NPF_FMT_SPEC_CONV_FLOAT_DECIMAL;
             out_spec->conv_spec_case = NPF_FMT_SPEC_CONV_CASE_LOWER;
@@ -339,7 +345,7 @@ int npf__parse_format_spec(char const *format, npf__format_spec_t *out_spec) {
             out_spec->conv_spec = NPF_FMT_SPEC_CONV_FLOAT_EXPONENT;
             out_spec->conv_spec_case = NPF_FMT_SPEC_CONV_CASE_UPPER;
             break;
-#if NANOPRINTF_USE_C99_FORMAT_SPECIFIERS
+#if NANOPRINTF_USE_C99_FORMAT_SPECIFIERS == 1
         case 'a':
             out_spec->conv_spec = NPF_FMT_SPEC_CONV_C99_FLOAT_HEX;
             out_spec->conv_spec_case = NPF_FMT_SPEC_CONV_CASE_LOWER;
@@ -421,8 +427,8 @@ int npf__ptoa_rev(char *buf, void const *p) {
         *buf++ = '(';
         return 6;
     } else {
-        // c89 requires configuration to learn what uint a void* fits in.
-        // Instead, just alias to char* and print nibble-by-nibble.
+        /* c89 requires configuration to learn what uint a void* fits in.
+        Instead, just alias to char* and print nibble-by-nibble. */
         unsigned i;
         char const *pb = (char const *)&p;
         char *dst = buf;
@@ -449,31 +455,9 @@ enum {
     NPF_FRACTION_BIN_DIGITS = 64
 };
 
-int npf__ftoa_rev(char *buf, float f) {
+int npf__fsplit(float f, uint64_t *out_int_part, uint64_t *out_frac_part) {
     // conversion algorithm by Wojciech Muła
     // http://0x80.pl/notesen/2015-12-29-float-to-string.html
-
-    if (f == 0.0f) {
-        *buf++ = '0';
-        *buf++ = '0';
-        *buf++ = '0';
-        *buf++ = '0';
-        *buf++ = '0';
-        *buf++ = '0';
-        *buf++ = '.';
-        *buf++ = '0';
-        return 8;
-    } else if (f != f) {
-        *buf++ = 'n';
-        *buf++ = 'a';
-        *buf++ = 'n';
-        return 3;
-    } else if (f == INFINITY) {
-        *buf++ = 'i';
-        *buf++ = 'n';
-        *buf++ = 'f';
-        return 3;
-    }
 
     // union-cast is UB, so copy through char*, compiler can optimize.
     uint32_t i_bits;
@@ -500,17 +484,16 @@ int npf__ftoa_rev(char *buf, float f) {
         return 0;
     }
 
-    uint64_t integer_dec;
     if (exponent > 0) {
-        integer_dec = mantissa_norm << exponent;
+        *out_int_part = mantissa_norm << exponent;
     } else if (exponent < 0) {
         if (-exponent > NPF_MANTISSA_BITS) {
-            integer_dec = 0;
+            *out_int_part = 0;
         } else {
-            integer_dec = mantissa_norm >> -exponent;
+            *out_int_part = mantissa_norm >> -exponent;
         }
     } else {
-        integer_dec = mantissa_norm;
+        *out_int_part = mantissa_norm;
     }
 
     unsigned fraction_dec = 0;
@@ -533,15 +516,50 @@ int npf__ftoa_rev(char *buf, float f) {
         }
     }
 
+    *out_frac_part = fraction_dec;
+    return 1;
+}
+
+int npf__ftoa_rev(char *buf, float f) {
+    if (f == 0.0f) {
+        *buf++ = '0';
+        *buf++ = '0';
+        *buf++ = '0';
+        *buf++ = '0';
+        *buf++ = '0';
+        *buf++ = '0';
+        *buf++ = '.';
+        *buf++ = '0';
+        return 8;
+    } else if (f != f) {
+        *buf++ = 'n';
+        *buf++ = 'a';
+        *buf++ = 'n';
+        return 3;
+    } else if (f == INFINITY) {
+        *buf++ = 'f';
+        *buf++ = 'n';
+        *buf++ = 'i';
+        return 3;
+    }
+
+    uint64_t int_part, frac_part;
+    if (npf__fsplit(f, &int_part, &frac_part) == 0) {
+        *buf++ = 'r';
+        *buf++ = 'o';
+        *buf++ = 'o';
+        return 3;
+    }
+
     char *dst = buf;
-    while (fraction_dec) {
-        *dst++ = '0' + (fraction_dec % 10);
-        fraction_dec /= 10;
+    while (frac_part) {
+        *dst++ = '0' + (frac_part % 10);
+        frac_part /= 10;
     }
     *dst++ = '.';
-    while (integer_dec) {
-        *dst++ = '0' + (integer_dec % 10);
-        integer_dec /= 10;
+    while (int_part) {
+        *dst++ = '0' + (int_part % 10);
+        int_part /= 10;
     }
     *dst++ = 0;
 
@@ -640,14 +658,14 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                     case NPF_FMT_SPEC_CONV_POINTER: /* 'p' */
                         cbuf_len = npf__ptoa_rev(cbuf, va_arg(vlist, void *));
                         break;
-#if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS
+#if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
                     case NPF_FMT_SPEC_CONV_FLOAT_DECIMAL: /* 'f', 'F' */
                         break;
                     case NPF_FMT_SPEC_CONV_FLOAT_EXPONENT: /* 'e', 'E' */
                         break;
                     case NPF_FMT_SPEC_CONV_FLOAT_DYNAMIC: /* 'g', 'G' */
                         break;
-#if NANOPRINTF_USE_C99_FORMAT_SPECIFIERS
+#if NANOPRINTF_USE_C99_FORMAT_SPECIFIERS == 1
                     case NPF_FMT_SPEC_CONV_C99_FLOAT_HEX: /* 'a', 'A' */
                         break;
 #endif

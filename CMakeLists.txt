@@ -93,11 +93,13 @@ add_library(npf_c_floats compilation_tests/nanoprintf_compilation_test_c.c)
 target_compile_definitions(npf_c_floats PRIVATE
     NANOPRINTF_USE_C99_FORMAT_SPECIFIERS=0
     NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=1)
+target_compile_options(npf_c_floats PRIVATE -std=c99)
 
 add_library(npf_c_c99 compilation_tests/nanoprintf_compilation_test_c.c)
 target_compile_definitions(npf_c_c99 PRIVATE
     NANOPRINTF_USE_C99_FORMAT_SPECIFIERS=1
     NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=0)
+target_compile_options(npf_c_c99 PRIVATE -std=c99)
 
 add_library(npf_cc_no_flags compilation_tests/nanoprintf_compilation_test_cc.cc)
 target_compile_definitions(npf_cc_no_flags PRIVATE
