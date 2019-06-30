@@ -1,0 +1,8 @@
+nanoprintf todo:
+================
+
+float support
+precision support
+push * vararg parsing up into npf__parse_format_spec
+unit tests for itoa_rev, utoa_rev, ftoa_rev, fsplit
+NANOPRINTF_INTERFACE_STATIC compilation test (redefine a npf_ symbol and confirm linker doesn't yell)

@@ -12,6 +12,12 @@
 #error NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS must be #defined to 0 or 1
 #endif
 
+#ifdef NANOPRINTF_VISIBILITY_STATIC
+#define NPF_INTERFACE_DEF static
+#else
+#define NPF_INTERFACE_DEF extern
+#endif
+
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
 #ifdef __cplusplus
 #if __cplusplus < 201103L
@@ -37,14 +43,17 @@ extern "C" {
 
 /* Public API */
 
-int npf_snprintf(char *buffer, size_t bufsz, const char *format, ...);
-int npf_vsnprintf(char *buffer, size_t bufsz, char const *format,
-                  va_list vlist);
+NPF_INTERFACE_DEF int npf_snprintf(char *buffer, size_t bufsz,
+                                   const char *format, ...);
+NPF_INTERFACE_DEF int npf_vsnprintf(char *buffer, size_t bufsz,
+                                    char const *format, va_list vlist);
 
 enum { NPF_EOF = -1 };
 typedef int (*npf_putc)(int c, void *ctx);
-int npf_pprintf(npf_putc pc, void *pc_ctx, char const *format, ...);
-int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist);
+NPF_INTERFACE_DEF int npf_pprintf(npf_putc pc, void *pc_ctx, char const *format,
+                                  ...);
+NPF_INTERFACE_DEF int npf_vpprintf(npf_putc pc, void *pc_ctx,
+                                   char const *format, va_list vlist);
 
 /* Internal */
 
@@ -127,7 +136,8 @@ typedef struct {
     npf__format_spec_conversion_case_t conv_spec_case;
 } npf__format_spec_t;
 
-int npf__parse_format_spec(char const *format, npf__format_spec_t *out_spec);
+NPF_INTERFACE_DEF int npf__parse_format_spec(char const *format,
+                                             npf__format_spec_t *out_spec);
 
 typedef struct {
     char *dst;
@@ -135,16 +145,17 @@ typedef struct {
     size_t cur;
 } npf__bufputc_ctx_t;
 
-int npf__bufputc(int c, void *ctx);
+NPF_INTERFACE_DEF int npf__bufputc(int c, void *ctx);
 
-int npf__itoa_rev(char *buf, int i);
-int npf__utoa_rev(char *buf, unsigned i, int base,
-                  npf__format_spec_conversion_case_t cc);
-int npf__ptoa_rev(char *buf, void const *p);
+NPF_INTERFACE_DEF int npf__itoa_rev(char *buf, int i);
+NPF_INTERFACE_DEF int npf__utoa_rev(char *buf, unsigned i, int base,
+                                    npf__format_spec_conversion_case_t cc);
+NPF_INTERFACE_DEF int npf__ptoa_rev(char *buf, void const *p);
 
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
-int npf__fsplit(float f, uint64_t *out_int_part, uint64_t *out_frac_part);
-int npf__ftoa_rev(char *buf, float f);
+NPF_INTERFACE_DEF int npf__fsplit(float f, uint64_t *out_int_part,
+                                  uint64_t *out_frac_part);
+NPF_INTERFACE_DEF int npf__ftoa_rev(char *buf, float f);
 #endif
 
 #ifdef __cplusplus
