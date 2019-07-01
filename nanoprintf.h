@@ -472,35 +472,35 @@ int npf__fsplit_abs(float f, uint64_t *out_int_part, uint64_t *out_frac_part) {
     // http://0x80.pl/notesen/2015-12-29-float-to-string.html
 
     // grisu2 (https://bit.ly/2JgMggX) and ryu (https://bit.ly/2RLXSg0)
-    // are precise and do rounding, but bigger and require large lookup tables.
+    // are fast + precise + round, but bigger and require large lookup tables.
 
     // union-cast is UB, so copy through char*, compiler can optimize.
-    uint32_t i_bits;
+    uint32_t f_bits;
     {
         char const *src = (char const *)&f;
-        char *dst = (char *)&i_bits;
+        char *dst = (char *)&f_bits;
         *dst++ = *src++;
         *dst++ = *src++;
         *dst++ = *src++;
         *dst++ = *src++;
     }
 
-    // set up the constants
-    int const exponent =
-        (((i_bits >> NPF_MANTISSA_BITS) & ((1u << NPF_EXPONENT_BITS) - 1)) -
-         NPF_EXPONENT_BIAS) -
-        NPF_MANTISSA_BITS;
-    uint32_t const implicit_one = 1u << NPF_MANTISSA_BITS;
-    uint32_t const mantissa = i_bits & (implicit_one - 1);
-    uint32_t const mantissa_norm = mantissa | implicit_one;
+    int const exponent = ((int)((f_bits >> NPF_MANTISSA_BITS) &
+                                ((1u << NPF_EXPONENT_BITS) - 1u)) -
+                          NPF_EXPONENT_BIAS) -
+                         NPF_MANTISSA_BITS;
 
     // value is out of range
     if (exponent >= (64 - NPF_MANTISSA_BITS)) {
         return 0;
     }
 
+    uint32_t const implicit_one = 1u << NPF_MANTISSA_BITS;
+    uint32_t const mantissa = f_bits & (implicit_one - 1);
+    uint32_t const mantissa_norm = mantissa | implicit_one;
+
     if (exponent > 0) {
-        *out_int_part = mantissa_norm << exponent;
+        *out_int_part = (uint64_t)mantissa_norm << exponent;
     } else if (exponent < 0) {
         if (-exponent > NPF_MANTISSA_BITS) {
             *out_int_part = 0;

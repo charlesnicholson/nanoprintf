@@ -1,6 +1,8 @@
 #include "CppUTest/TestHarness.h"
 #include "nanoprintf_in_unit_tests.h"
 
+#include <cmath>
+
 TEST_GROUP(fsplit_abs) { uint64_t int_part, frac_part; };
 
 TEST(fsplit_abs, Zero) {
@@ -31,6 +33,12 @@ TEST(fsplit_abs, LargeNegativeInteger) {
     CHECK(npf__fsplit_abs(-123456.f, &int_part, &frac_part));
     CHECK_EQUAL(123456, int_part);
     CHECK_EQUAL(0, frac_part);
+}
+
+TEST(fsplit_abs, ReturnsZeroIfExponentTooLarge) {
+    CHECK(npf__fsplit_abs(std::powf(2.0f, 63.f), &int_part, &frac_part));
+    CHECK_EQUAL(0,
+                npf__fsplit_abs(std::powf(2.0f, 64.f), &int_part, &frac_part));
 }
 
 // Perfectly-representable fractions, adding 1 bit to mantissa each time.
