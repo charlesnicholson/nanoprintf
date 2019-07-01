@@ -104,3 +104,39 @@ TEST(fsplit_abs, 9995117_Truncates) {
     CHECK_EQUAL(1, int_part);
     CHECK_EQUAL(99951171, frac_part);  // 1.99951171875 is stored.
 }
+
+TEST(fsplit_abs, 9997559_Truncates) {
+    CHECK(npf__fsplit_abs(1.9997559f, &int_part, &frac_part));
+    CHECK_EQUAL(1, int_part);
+    CHECK_EQUAL(99975585, frac_part);  // 1.999755859375 is stored.
+}
+
+TEST(fsplit_abs, 9998779_Truncates) {
+    CHECK(npf__fsplit_abs(1.9998779f, &int_part, &frac_part));
+    CHECK_EQUAL(1, int_part);
+    CHECK_EQUAL(99987792, frac_part);  // 1.9998779296875 is stored.
+}
+
+TEST(fsplit_abs, 999939_Truncates) {
+    CHECK(npf__fsplit_abs(1.999939f, &int_part, &frac_part));
+    CHECK_EQUAL(1, int_part);
+    CHECK_EQUAL(99993896, frac_part);  // 1.99993896484375 is stored.
+}
+
+TEST(fsplit_abs, 9999695_Truncates) {
+    CHECK(npf__fsplit_abs(1.9999695f, &int_part, &frac_part));
+    CHECK_EQUAL(1, int_part);
+    CHECK_EQUAL(99996948, frac_part);  // 1.999969482421875 is stored.
+}
+
+TEST(fsplit_abs, 9999847_Truncates) {
+    CHECK(npf__fsplit_abs(1.9999847f, &int_part, &frac_part));
+    CHECK_EQUAL(1, int_part);
+    CHECK_EQUAL(99998474, frac_part);  // 1.9999847412109375 is stored.
+}
+
+TEST(fsplit_abs, 9999924_Truncates) {
+    CHECK(npf__fsplit_abs(1.9999924f, &int_part, &frac_part));
+    CHECK_EQUAL(1, int_part);
+    CHECK_EQUAL(99999237, frac_part);  // 1.99999237060546875 is stored.
+}
