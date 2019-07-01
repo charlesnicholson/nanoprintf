@@ -1,7 +1,15 @@
 #include "CppUTest/TestHarness.h"
 #include "nanoprintf_in_unit_tests.h"
 
-TEST_GROUP(ftoa_rev){};
+TEST_GROUP(ftoa_rev) {
+    void setup() override { memset(buf, 0, sizeof(buf)); }
+    char buf[64];
+};
+
+TEST(ftoa_rev, Zero) {
+    CHECK_EQUAL(8, npf__ftoa_rev(buf, 0.f));
+    STRCMP_EQUAL("000000.0", buf);
+}
 
 TEST(ftoa_rev, derp) {
     char buf[128];

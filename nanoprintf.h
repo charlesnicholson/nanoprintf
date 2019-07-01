@@ -677,6 +677,8 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                         break;
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
                     case NPF_FMT_SPEC_CONV_FLOAT_DECIMAL: /* 'f', 'F' */
+                        cbuf_len =
+                            npf__ftoa_rev(cbuf, (float)va_arg(vlist, double));
                         break;
                     case NPF_FMT_SPEC_CONV_FLOAT_EXPONENT: /* 'e', 'E' */
                         break;

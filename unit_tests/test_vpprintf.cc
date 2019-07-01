@@ -222,6 +222,15 @@ TEST(Position, AfterString) {
     CHECK_EQUAL("hello5", r.String());
 }
 
+// Float
+
+TEST_GROUP(Float) { Recorder r; };
+
+TEST(Float, Zero) {
+    CHECK_EQUAL(9, npf_pprintf(r.PutC, &r, "%f", (double)0.f));
+    CHECK_EQUAL("0.000000", r.String());
+}
+
 // Field Width
 
 TEST_GROUP(FieldWidth) { Recorder r; };
@@ -327,3 +336,4 @@ TEST(AlternativeImplementationFlag, OctalNonZero) {
 TEST_GROUP(Precision) { Recorder r; };
 
 // TEST(Precision,
+
