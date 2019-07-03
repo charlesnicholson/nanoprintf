@@ -13,6 +13,12 @@ TEST(ftoa_rev, Zero) {
 
 TEST(ftoa_rev, derp) {
     char buf[128];
+    npf_snprintf(buf, 128, "%f", (double)1.1234f);
+    //    printf("<%s>\n", buf);
+    npf_snprintf(buf, 128, "%f", 1.0 / 0.0);
+    //   printf("<%s>\n", buf);
+    npf_snprintf(buf, 128, "%f", (double)1.1f);
+    //  printf("<%s>\n", buf);
     npf__ftoa_rev(buf, 1.0f);
     npf__ftoa_rev(buf, 1.1234f);
     npf__ftoa_rev(buf, 0.f);

@@ -578,7 +578,6 @@ int npf__ftoa_rev(char *buf, float f) {
         *dst++ = '0' + (int_part % 10);
         int_part /= 10;
     }
-    *dst++ = 0;
 
     return (int)(dst - buf);
 }
