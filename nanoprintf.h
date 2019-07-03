@@ -180,6 +180,9 @@ NPF_INTERFACE_DEF int npf__ftoa_rev(char *buf, float f);
 #include <wchar.h>
 #endif
 
+#define NPF_MIN(x, y) ((x) < (y) ? (x) : (y))
+#define NPF_MAX(x, y) ((x) > (y) ? (x) : (y))
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -312,12 +315,15 @@ int npf__parse_format_spec(char const *format, npf__format_spec_t *out_spec) {
     switch (*cur++) {
         case '%':
             out_spec->conv_spec = NPF_FMT_SPEC_CONV_PERCENT;
+            out_spec->precision_type = NPF_FMT_SPEC_PRECISION_NONE;
             break;
         case 'c':
             out_spec->conv_spec = NPF_FMT_SPEC_CONV_CHAR;
+            out_spec->precision_type = NPF_FMT_SPEC_PRECISION_NONE;
             break;
         case 's':
             out_spec->conv_spec = NPF_FMT_SPEC_CONV_STRING;
+            out_spec->leading_zero_pad = 0;
             break;
         case 'i':
             out_spec->conv_spec = NPF_FMT_SPEC_CONV_SIGNED_INT;
@@ -376,10 +382,13 @@ int npf__parse_format_spec(char const *format, npf__format_spec_t *out_spec) {
             break;
 #endif
         case 'n':
+            /* todo: reject string if flags or width or precision exist */
             out_spec->conv_spec = NPF_FMT_SPEC_CONV_CHARS_WRITTEN;
+            out_spec->precision_type = NPF_FMT_SPEC_PRECISION_NONE;
             break;
         case 'p':
             out_spec->conv_spec = NPF_FMT_SPEC_CONV_POINTER;
+            out_spec->precision_type = NPF_FMT_SPEC_PRECISION_NONE;
             break;
         default:
             return 0;
@@ -609,7 +618,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
             } else {
                 /* Format specifier, convert and write argument */
                 char cbuf_mem[24], *cbuf = cbuf_mem, sign_c, pad_c;
-                int cbuf_len = 0, pad = 0;
+                int cbuf_len = 0, pad = 0, precision;
 
                 /* '*' modifiers require more varargs */
                 if (fs.field_width_type == NPF_FMT_SPEC_FIELD_WIDTH_STAR) {
@@ -717,15 +726,25 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                     }
                 }
 
-                if (pad_c) {
-                    pad = fs.field_width - cbuf_len - (sign_c ? 1 : 0);
+                /* Compute the number of bytes to truncate or '0'-pad. */
+                if (fs.conv_spec == NPF_FMT_SPEC_CONV_STRING) {
+                    precision =
+                        (fs.precision_type == NPF_FMT_SPEC_PRECISION_NONE)
+                            ? cbuf_len
+                            : NPF_MIN(fs.precision, cbuf_len);
+                    pad = fs.field_width - precision;
+                } else {
+                    precision =
+                        (fs.precision_type == NPF_FMT_SPEC_PRECISION_LITERAL)
+                            ? NPF_MAX(fs.precision - cbuf_len, 0)
+                            : 0;
+                    pad = fs.field_width - cbuf_len - !!sign_c - precision;
                 }
 
                 /* Apply right-justified field width if requested */
                 if (!fs.left_justified && pad_c) {
-                    /* If leading zeros pad the field, the '-' goes
-                     * first. */
-                    if (sign_c == '-' && pad_c == '0') {
+                    /* If leading zeros pad, sign goes first. */
+                    if ((sign_c == '-' || sign_c == '+') && pad_c == '0') {
                         NPF_PUT_CHECKED(sign_c);
                         sign_c = 0;
                     }
@@ -736,15 +755,18 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
 
                 /* Write the converted payload */
                 if (fs.conv_spec == NPF_FMT_SPEC_CONV_STRING) {
-                    /* Strings are in the correct order */
-                    for (i = 0; i < cbuf_len; ++i) {
+                    /* Strings are not reversed, put directly */
+                    for (i = 0; i < precision; ++i) {
                         NPF_PUT_CHECKED(cbuf[i]);
                     }
                 } else {
                     if (sign_c) {
                         NPF_PUT_CHECKED(sign_c);
                     }
-                    /* *toa leaves numeric payloads reversed */
+                    while (precision--) {
+                        NPF_PUT_CHECKED('0');
+                    }
+                    /* *toa_rev leaves payloads reversed */
                     while (cbuf_len--) {
                         NPF_PUT_CHECKED(cbuf[cbuf_len]);
                     }

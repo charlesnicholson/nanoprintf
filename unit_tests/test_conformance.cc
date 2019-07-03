@@ -14,7 +14,6 @@ void CheckConformance(char const *output, char const *fmt, ...) {
         va_end(v);
         actual = conformance_buf;
     }
-    CHECK_EQUAL(actual, output);
 
     std::string expected;
     {
@@ -24,6 +23,8 @@ void CheckConformance(char const *output, char const *fmt, ...) {
         va_end(v);
         expected = conformance_buf;
     }
+
+    CHECK_EQUAL(expected, output);
     CHECK_EQUAL(expected, actual);
 }
 }  // namespace
@@ -65,10 +66,13 @@ TEST(conformance, Char) {
 }
 
 TEST(conformance, Strings) {
-    CheckConformance("hello", "%s", "hello");
-    CheckConformance("     hello", "%10s", "hello");
-    CheckConformance("hello world!", "%10s", "hello world!");
-    //    CheckConformance("%.10s", "hello world this string is > 10");
+    CheckConformance("one", "%s", "one");
+    CheckConformance("       two", "%10s", "two");
+    CheckConformance("thr", "%.3s", "three");
+    CheckConformance("four", "%.100s", "four");
+    // CheckConformance("abc", "%010s", "abc");  // undefined
+    CheckConformance("", "%.0s", "five");
+    CheckConformance("       six", "%10.3s", "sixAAAAAAAA");
 }
 
 TEST(conformance, UnsignedInt) {
@@ -76,8 +80,32 @@ TEST(conformance, UnsignedInt) {
     CheckConformance("4294967295", "%u", UINT_MAX);
     CheckConformance("0", "%+u", 0);
     CheckConformance("1", "%+u", 1);
-    CheckConformance("   1", "%+4u", 1);
+    CheckConformance("   1", "%+4u", 1);  // undefined but usually skips +
     CheckConformance("     0", "% 6u", 0);
+    CheckConformance("01", "%.2u", 1);
+    CheckConformance("    0123", "%8.4u", 123);
+}
+
+TEST(conformance, SignedInt) {
+    CheckConformance("-2147483648", "%i", INT_MIN);
+    CheckConformance("0", "%i", 0);
+    CheckConformance("2147483647", "%i", INT_MAX);
+    CheckConformance("-1", "%+i", -1);
+    CheckConformance("+0", "%+i", 0);
+    CheckConformance("+1", "%+i", 1);
+    CheckConformance("  -1", "% 4i", -1);
+    CheckConformance("   0", "% 4i", 0);
+    CheckConformance("   1", "% 4i", 1);
+    CheckConformance("  +1", "%+4i", 1);
+    CheckConformance("  +0", "%+4i", 0);
+    CheckConformance("  -1", "%+4i", -1);
+    CheckConformance("0001", "%04i", 1);
+    CheckConformance("0000", "%04i", 0);
+    CheckConformance("-001", "%04i", -1);
+    CheckConformance("+001", "%+04i", 1);
+    CheckConformance("+01", "%+.2i", 1);
+    CheckConformance(" +01", "%+4.2i", 1);
+    // CheckConformance("%.-123i", 400); xcode libc doesn't ignore negative
 }
 
 TEST(conformance, Octal) {
@@ -92,25 +120,6 @@ TEST(conformance, Octal) {
     CheckConformance("1", "%+o", 1);
     CheckConformance("   1", "%+4o", 1);
     CheckConformance("     1", "% 6o", 1);
-}
-
-TEST(conformance, SignedInt) {
-    CheckConformance("-2147483648", "%i", INT_MIN);
-    CheckConformance("0", "%i", 0);
-    CheckConformance("2147483647", "%i", INT_MAX);
-    CheckConformance("-1", "%+i", -1);
-    CheckConformance("+0", "%+i", 0);
-    CheckConformance("+1", "%+i", 1);
-    CheckConformance("    -1", "% 6i", -1);
-    CheckConformance("     0", "% 6i", 0);
-    CheckConformance("     1", "% 6i", 1);
-    CheckConformance("  +1", "%+4i", 1);
-    CheckConformance("  +0", "%+4i", 0);
-    CheckConformance("  -1", "%+4i", -1);
-    CheckConformance("0001", "%04i", 1);
-    CheckConformance("0000", "%04i", 0);
-    CheckConformance("-001", "%04i", -1);
-    // CheckConformance("%.-123i", 400); xcode libc doesn't ignore negative
 }
 
 TEST(conformance, Hex) {
@@ -150,7 +159,7 @@ TEST(conformance, BytesWritten) {
 TEST(conformance, StarArgs) {
     CheckConformance("         Z", "%*c", 10, 'Z');
     CheckConformance("     %", "%*%", 6);
-    CheckConformance("B", "%.*c", 2, 'B');
-    CheckConformance("         B", "%*.*c", 10, 2, 'B');
-    //    CheckConformance("%.*s", 1, "hello world");
+    CheckConformance("01", "%.*i", 2, 1);
+    CheckConformance("        07", "%*.*i", 10, 2, 7);
+    CheckConformance("h", "%.*s", 1, "hello world");
 }

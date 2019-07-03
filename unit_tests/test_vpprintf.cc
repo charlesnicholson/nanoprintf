@@ -231,6 +231,11 @@ TEST(Float, Zero) {
     CHECK_EQUAL("0.000000", r.String());
 }
 
+TEST(Float, One) {
+    // CHECK_EQUAL(9, npf_pprintf(r.PutC, &r, "%f", 1.0));
+    // CHECK_EQUAL("1.000000", r.String());
+}
+
 // Field Width
 
 TEST_GROUP(FieldWidth) { Recorder r; };
@@ -298,7 +303,7 @@ TEST(LeadingZeroPadFlag, DoesNothingOnChar_Undefined) {
 }
 
 TEST(LeadingZeroPadFlag, DoesNothingOnString_Undefined) {
-    CHECK_EQUAL(5, npf_pprintf(r.PutC, &r, "%010s", "ABCD"));
+    CHECK_EQUAL(5, npf_pprintf(r.PutC, &r, "%0s", "ABCD"));
     CHECK_EQUAL("ABCD", r.String());
 }
 

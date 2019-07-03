@@ -354,14 +354,29 @@ TEST(npf__parse_format_spec, PercentLiteral) {
     CHECK_EQUAL(NPF_FMT_SPEC_CONV_PERCENT, spec.conv_spec);
 }
 
+TEST(npf__parse_format_spec, PercentClearsPrecision) {
+    CHECK_EQUAL(4, npf__parse_format_spec("%.9%", &spec));
+    CHECK_EQUAL(NPF_FMT_SPEC_PRECISION_NONE, spec.precision_type);
+}
+
 TEST(npf__parse_format_spec, c) {
     CHECK_EQUAL(2, npf__parse_format_spec("%c", &spec));
     CHECK_EQUAL(NPF_FMT_SPEC_CONV_CHAR, spec.conv_spec);
 }
 
+TEST(npf__parse_format_spec, cClearsPrecision) {
+    CHECK_EQUAL(4, npf__parse_format_spec("%.9c", &spec));
+    CHECK_EQUAL(NPF_FMT_SPEC_PRECISION_NONE, spec.precision_type);
+}
+
 TEST(npf__parse_format_spec, s) {
     CHECK_EQUAL(2, npf__parse_format_spec("%s", &spec));
     CHECK_EQUAL(NPF_FMT_SPEC_CONV_STRING, spec.conv_spec);
+}
+
+TEST(npf__parse_format_spec, cClearsLeadingZero) {
+    CHECK_EQUAL(3, npf__parse_format_spec("%0s", &spec));
+    CHECK_EQUAL(0, spec.leading_zero_pad);
 }
 
 TEST(npf__parse_format_spec, i) {
@@ -401,9 +416,19 @@ TEST(npf__parse_format_spec, n) {
     CHECK_EQUAL(NPF_FMT_SPEC_CONV_CHARS_WRITTEN, spec.conv_spec);
 }
 
+TEST(npf__parse_format_spec, nClearsPrecision) {
+    CHECK_EQUAL(4, npf__parse_format_spec("%.4n", &spec));
+    CHECK_EQUAL(NPF_FMT_SPEC_PRECISION_NONE, spec.precision_type);
+}
+
 TEST(npf__parse_format_spec, p) {
     CHECK_EQUAL(2, npf__parse_format_spec("%p", &spec));
     CHECK_EQUAL(NPF_FMT_SPEC_CONV_POINTER, spec.conv_spec);
+}
+
+TEST(npf__parse_format_spec, pClearsPrecision) {
+    CHECK_EQUAL(4, npf__parse_format_spec("%.4p", &spec));
+    CHECK_EQUAL(NPF_FMT_SPEC_PRECISION_NONE, spec.precision_type);
 }
 
 TEST(npf__parse_format_spec, f) {
