@@ -457,13 +457,13 @@ TEST(npf__parse_format_spec, E) {
 
 TEST(npf__parse_format_spec, a) {
     CHECK_EQUAL(2, npf__parse_format_spec("%a", &spec));
-    CHECK_EQUAL(NPF_FMT_SPEC_CONV_C99_FLOAT_HEX, spec.conv_spec);
+    CHECK_EQUAL(NPF_FMT_SPEC_CONV_C99_FLOAT_HEXPONENT, spec.conv_spec);
     CHECK_EQUAL(NPF_FMT_SPEC_CONV_CASE_LOWER, spec.conv_spec_case);
 }
 
 TEST(npf__parse_format_spec, A) {
     CHECK_EQUAL(2, npf__parse_format_spec("%A", &spec));
-    CHECK_EQUAL(NPF_FMT_SPEC_CONV_C99_FLOAT_HEX, spec.conv_spec);
+    CHECK_EQUAL(NPF_FMT_SPEC_CONV_C99_FLOAT_HEXPONENT, spec.conv_spec);
     CHECK_EQUAL(NPF_FMT_SPEC_CONV_CASE_UPPER, spec.conv_spec_case);
 }
 

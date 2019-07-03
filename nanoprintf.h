@@ -101,7 +101,7 @@ typedef enum {
     NPF_FMT_SPEC_CONV_FLOAT_DYNAMIC   /* 'g', 'G' */
 #if NANOPRINTF_USE_C99_FORMAT_SPECIFIERS
     ,
-    NPF_FMT_SPEC_CONV_C99_FLOAT_HEX /* 'a', 'A' */
+    NPF_FMT_SPEC_CONV_C99_FLOAT_HEXPONENT /* 'a', 'A' */
 #endif
 #endif
 } npf__format_spec_conversion_t;
@@ -148,14 +148,15 @@ typedef struct {
 NPF_INTERFACE_DEF int npf__bufputc(int c, void *ctx);
 
 NPF_INTERFACE_DEF int npf__itoa_rev(char *buf, int i);
-NPF_INTERFACE_DEF int npf__utoa_rev(char *buf, unsigned i, int base,
+NPF_INTERFACE_DEF int npf__utoa_rev(char *buf, unsigned i, unsigned base,
                                     npf__format_spec_conversion_case_t cc);
 NPF_INTERFACE_DEF int npf__ptoa_rev(char *buf, void const *p);
 
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
 NPF_INTERFACE_DEF int npf__fsplit_abs(float f, uint64_t *out_int_part,
                                       uint64_t *out_frac_part);
-NPF_INTERFACE_DEF int npf__ftoa_rev(char *buf, float f);
+NPF_INTERFACE_DEF int npf__ftoa_rev(char *buf, float f, unsigned base,
+                                    npf__format_spec_conversion_case_t cc);
 #endif
 
 #ifdef __cplusplus
@@ -364,11 +365,11 @@ int npf__parse_format_spec(char const *format, npf__format_spec_t *out_spec) {
             break;
 #if NANOPRINTF_USE_C99_FORMAT_SPECIFIERS == 1
         case 'a':
-            out_spec->conv_spec = NPF_FMT_SPEC_CONV_C99_FLOAT_HEX;
+            out_spec->conv_spec = NPF_FMT_SPEC_CONV_C99_FLOAT_HEXPONENT;
             out_spec->conv_spec_case = NPF_FMT_SPEC_CONV_CASE_LOWER;
             break;
         case 'A':
-            out_spec->conv_spec = NPF_FMT_SPEC_CONV_C99_FLOAT_HEX;
+            out_spec->conv_spec = NPF_FMT_SPEC_CONV_C99_FLOAT_HEXPONENT;
             out_spec->conv_spec_case = NPF_FMT_SPEC_CONV_CASE_UPPER;
             break;
 #endif
@@ -420,7 +421,7 @@ int npf__itoa_rev(char *buf, int i) {
     return (int)(dst - buf);
 }
 
-int npf__utoa_rev(char *buf, unsigned i, int base,
+int npf__utoa_rev(char *buf, unsigned i, unsigned base,
                   npf__format_spec_conversion_case_t cc) {
     char *dst = buf;
     if (i == 0) {
@@ -429,8 +430,8 @@ int npf__utoa_rev(char *buf, unsigned i, int base,
         unsigned const base_c =
             (cc == NPF_FMT_SPEC_CONV_CASE_LOWER) ? 'a' : 'A';
         while (i) {
-            unsigned const d = i % (unsigned)base;
-            i /= (unsigned)base;
+            unsigned const d = i % base;
+            i /= base;
             *dst++ = (d < 10) ? (char)('0' + d) : (char)(base_c + (d - 10));
         }
     }
@@ -546,7 +547,8 @@ int npf__fsplit_abs(float f, uint64_t *out_int_part, uint64_t *out_frac_part) {
     return 1;
 }
 
-int npf__ftoa_rev(char *buf, float f) {
+int npf__ftoa_rev(char *buf, float f, unsigned base,
+                  npf__format_spec_conversion_case_t cc) {
     if (f == 0.0f) {
         *buf++ = '0';
         *buf++ = '0';
@@ -577,15 +579,19 @@ int npf__ftoa_rev(char *buf, float f) {
         return 3;
     }
 
+    unsigned const base_c = (cc == NPF_FMT_SPEC_CONV_CASE_LOWER) ? 'a' : 'A';
     char *dst = buf;
+
     while (frac_part) {
-        *dst++ = '0' + (frac_part % 10);
-        frac_part /= 10;
+        unsigned const d = frac_part % (unsigned)base;
+        frac_part /= (unsigned)base;
+        *dst++ = (d < 10) ? (char)('0' + d) : (char)(base_c + (d - 10));
     }
     *dst++ = '.';
     while (int_part) {
-        *dst++ = '0' + (int_part % 10);
-        int_part /= 10;
+        unsigned const d = int_part % (unsigned)base;
+        int_part /= (unsigned)base;
+        *dst++ = (d < 10) ? (char)('0' + d) : (char)(base_c + (d - 10));
     }
 
     return (int)(dst - buf);
@@ -686,14 +692,15 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
                     case NPF_FMT_SPEC_CONV_FLOAT_DECIMAL: /* 'f', 'F' */
                         cbuf_len =
-                            npf__ftoa_rev(cbuf, (float)va_arg(vlist, double));
+                            npf__ftoa_rev(cbuf, (float)va_arg(vlist, double),
+                                          10, fs.conv_spec_case);
                         break;
                     case NPF_FMT_SPEC_CONV_FLOAT_EXPONENT: /* 'e', 'E' */
                         break;
                     case NPF_FMT_SPEC_CONV_FLOAT_DYNAMIC: /* 'g', 'G' */
                         break;
 #if NANOPRINTF_USE_C99_FORMAT_SPECIFIERS == 1
-                    case NPF_FMT_SPEC_CONV_C99_FLOAT_HEX: /* 'a', 'A' */
+                    case NPF_FMT_SPEC_CONV_C99_FLOAT_HEXPONENT: /* 'a', 'A' */
                         break;
 #endif
 #endif

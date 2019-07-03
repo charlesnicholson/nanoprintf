@@ -163,3 +163,5 @@ TEST(conformance, StarArgs) {
     CheckConformance("        07", "%*.*i", 10, 2, 7);
     CheckConformance("h", "%.*s", 1, "hello world");
 }
+
+TEST(conformance, Float) { CheckConformance("0.000000", "%f", 0); }
