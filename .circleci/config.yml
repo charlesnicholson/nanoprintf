@@ -7,17 +7,21 @@ jobs:
       - image: charlesnicholson/circleci-images:latest
     steps:
       - checkout
-      - export CC=/usr/bin/gcc
-      - export CXX=/usr/bin/g++
-      - run: ./b
+      - run:
+          command: |
+            export CC=/usr/bin/gcc
+            export CXX=/usr/bin/g++
+            ./b
   build-clang:
     docker:
       - image: charlesnicholson/circleci-images:latest
     steps:
       - checkout
-      - export CC=/usr/bin/clang
-      - export CXX=/usr/bin/clang++
-      - run: ./b
+      - run:
+          command: |
+            export CC=/usr/bin/clang
+            export CXX=/usr/bin/clang++
+            ./b
 
 workflows:
   submit-gate:
