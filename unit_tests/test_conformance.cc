@@ -36,9 +36,9 @@ TEST(conformance, Percent) {
     CheckConformance("%", "%%");
     CheckConformance("%", "%-%");
     CheckConformance("%", "% %");
+    CheckConformance("%", "%+%");
     /*
     // CheckConformance("%012%"); Undefined
-    CheckConformance("%", "%+%");
     CheckConformance("%", "%#%");
     CheckConformance("         %", "%10%");
     // CheckConformance("%", "%.10%"); gcc prints precision, clang doesn't
