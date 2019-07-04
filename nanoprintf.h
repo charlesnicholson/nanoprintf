@@ -589,8 +589,8 @@ int npf__ftoa_rev(char *buf, float f, unsigned base,
     char *dst = buf;
 
     while (frac_part) {
-        unsigned const d = frac_part % (unsigned)base;
-        frac_part /= (unsigned)base;
+        unsigned const d = frac_part % base;
+        frac_part /= base;
         *dst++ = (d < 10) ? (char)('0' + d) : (char)(base_c + (d - 10));
     }
     *out_frac_chars = (int)(dst - buf);
@@ -599,8 +599,8 @@ int npf__ftoa_rev(char *buf, float f, unsigned base,
         *dst++ = '0';
     } else {
         while (int_part) {
-            unsigned const d = int_part % (unsigned)base;
-            int_part /= (unsigned)base;
+            unsigned const d = int_part % base;
+            int_part /= base;
             *dst++ = (d < 10) ? (char)('0' + d) : (char)(base_c + (d - 10));
         }
     }
