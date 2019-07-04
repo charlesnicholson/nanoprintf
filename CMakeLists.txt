@@ -12,6 +12,7 @@ set(CPPUTEST_CMAKE_ARGS -DCMAKE_BINARY_DIR=${CMAKE_BINARY_DIR}
                         -DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
                         -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
                         -DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}/CppUTest
+                        -DC++11=ON
                         -DTESTS=OFF)
 set(CPPUTEST_LIB_NAME
     ${CMAKE_STATIC_LIBRARY_PREFIX}CppUTest${CMAKE_STATIC_LIBRARY_SUFFIX})
@@ -52,74 +53,73 @@ set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-Os -g")
 set(CMAKE_CXX_FLAGS_RELEASE "-Os")
 set(CMAKE_CXX_STANDARD 11)
 
-string(CONCAT nanoprintf_common_flags
-    "-pedantic "
-    "-Wall "
-    "-Werror "
-    "-Wno-padded")
+set(nanoprintf_common_flags -pedantic -Wall -Werror -Wno-padded)
 
 string(FIND "${CMAKE_C_COMPILER_ID}" "Clang" is_clang)
 if (${is_clang} GREATER_EQUAL 0)
-    string(APPEND nanoprintf_common_flags " -Weverything")
-    string(APPEND nanoprintf_cxx_flags
-        " -Wno-old-style-cast -Wno-c++98-compat-pedantic")
+    list(APPEND nanoprintf_common_flags -Weverything)
+    list(APPEND nanoprintf_cxx_flags
+        -Wno-old-style-cast -Wno-c++98-compat-pedantic)
 endif()
 
-################ Flag / language compilation tests
+set(nanoprintf_c_flags ${nanoprintf_common_flags})
+set(nanoprintf_cxx_flags ${nanoprintf_common_flags} ${nanoprintf_cxx_flags})
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${nanoprintf_common_flags}")
-set(CMAKE_CXX_FLAGS
-    "${CMAKE_CXX_FLAGS} ${nanoprintf_common_flags} ${nanoprintf_cxx_flags}")
+################ Flag / language compilation tests
 
 add_library(npf_c89 compilation_tests/nanoprintf_compilation_test_c.c)
 target_compile_definitions(npf_c89 PRIVATE
     NANOPRINTF_USE_C99_FORMAT_SPECIFIERS=0
     NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=0)
-target_compile_options(npf_c89 PRIVATE -std=c89)
+target_compile_options(npf_c89 PRIVATE -std=c89 ${nanoprintf_c_flags})
 
 add_library(npf_c99 compilation_tests/nanoprintf_compilation_test_c.c)
 target_compile_definitions(npf_c99 PRIVATE
     NANOPRINTF_USE_C99_FORMAT_SPECIFIERS=1
     NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=1)
-target_compile_options(npf_c99 PRIVATE -std=c99)
+target_compile_options(npf_c99 PRIVATE -std=c99 ${nanoprintf_c_flags})
 
 add_library(npf_c11 compilation_tests/nanoprintf_compilation_test_c.c)
 target_compile_definitions(npf_c11 PRIVATE
     NANOPRINTF_USE_C99_FORMAT_SPECIFIERS=1
     NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=1)
-target_compile_options(npf_c11 PRIVATE -std=c11)
+target_compile_options(npf_c11 PRIVATE -std=c11 ${nanoprintf_c_flags})
 
 add_library(npf_c_no_flags compilation_tests/nanoprintf_compilation_test_c.c)
 target_compile_definitions(npf_c_no_flags PRIVATE
     NANOPRINTF_USE_C99_FORMAT_SPECIFIERS=0
     NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=0)
+target_compile_options(npf_c_no_flags PRIVATE ${nanoprintf_c_flags})
 
 add_library(npf_c_floats compilation_tests/nanoprintf_compilation_test_c.c)
 target_compile_definitions(npf_c_floats PRIVATE
     NANOPRINTF_USE_C99_FORMAT_SPECIFIERS=0
     NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=1)
-target_compile_options(npf_c_floats PRIVATE -std=c99)
+target_compile_options(npf_c_floats PRIVATE -std=c99 ${nanoprintf_c_flags})
 
 add_library(npf_c_c99 compilation_tests/nanoprintf_compilation_test_c.c)
 target_compile_definitions(npf_c_c99 PRIVATE
     NANOPRINTF_USE_C99_FORMAT_SPECIFIERS=1
     NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=0)
-target_compile_options(npf_c_c99 PRIVATE -std=c99)
+target_compile_options(npf_c_c99 PRIVATE -std=c99 ${nanoprintf_c_flags})
 
 add_library(npf_cc_no_flags compilation_tests/nanoprintf_compilation_test_cc.cc)
 target_compile_definitions(npf_cc_no_flags PRIVATE
     NANOPRINTF_USE_C99_FORMAT_SPECIFIERS=0
     NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=0)
+target_compile_options(npf_cc_no_flags PRIVATE ${nanoprintf_cxx_flags})
 
 add_library(npf_cc_floats compilation_tests/nanoprintf_compilation_test_cc.cc)
 target_compile_definitions(npf_cc_floats PRIVATE
     NANOPRINTF_USE_C99_FORMAT_SPECIFIERS=0
     NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=1)
+target_compile_options(npf_cc_floats PRIVATE ${nanoprintf_cxx_flags})
 
 add_library(npf_cc_c99 compilation_tests/nanoprintf_compilation_test_cc.cc)
 target_compile_definitions(npf_cc_c99 PRIVATE
     NANOPRINTF_USE_C99_FORMAT_SPECIFIERS=1
     NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=0)
+target_compile_options(npf_cc_c99 PRIVATE ${nanoprintf_cxx_flags})
 
 ################ Unit tests
 
@@ -145,6 +145,7 @@ target_include_directories(npf_unit_tests PRIVATE "${CPPUTEST_INCLUDE_DIR}")
 target_link_libraries(npf_unit_tests libCppUTest libCppUTestExt)
 
 target_compile_options(npf_unit_tests PRIVATE
+    ${nanoprintf_cxx_flags}
     -Wno-old-style-cast     # C style casts are ok
     -std=c++11
 )
