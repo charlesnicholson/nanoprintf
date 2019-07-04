@@ -11,7 +11,7 @@ jobs:
           command: |
             export CC=/usr/bin/gcc
             export CXX=/usr/bin/g++
-            ./b
+            ./b release -v
   build-clang:
     docker:
       - image: charlesnicholson/circleci-images:latest
@@ -21,7 +21,7 @@ jobs:
           command: |
             export CC=/usr/bin/clang
             export CXX=/usr/bin/clang++
-            ./b
+            ./b release -v
 
 workflows:
   submit-gate:
