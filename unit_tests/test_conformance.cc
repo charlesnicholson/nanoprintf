@@ -136,6 +136,7 @@ TEST(conformance, Hex) {
     CheckConformance("ffffffff", "%x", UINT_MAX);
     CheckConformance("0", "%X", 0);
     CheckConformance("", "%.0X", 0);
+    CheckConformance("", "%#.0X", 0);
     CheckConformance("90ABCDEF", "%X", 0x90ABCDEF);
     CheckConformance("FFFFFFFF", "%X", UINT_MAX);
     CheckConformance("0", "%#x", 0);
