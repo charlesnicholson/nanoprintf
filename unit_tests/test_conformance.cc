@@ -2,6 +2,8 @@
 
 #include "CppUTest/TestHarness.h"
 
+#include <cstring>
+
 TEST_GROUP(conformance){};
 
 namespace {
