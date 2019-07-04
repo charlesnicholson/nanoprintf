@@ -114,11 +114,11 @@ typedef enum {
 
 typedef struct {
     /* optional flags */
-    unsigned char left_justified : 1;   /* '-' */
-    unsigned char prepend_sign : 1;     /* '+' */
-    unsigned char prepend_space : 1;    /* ' ' */
-    unsigned char alternative_form : 1; /* '#' */
-    unsigned char leading_zero_pad : 1; /* '0' */
+    unsigned left_justified : 1;   /* '-' */
+    unsigned prepend_sign : 1;     /* '+' */
+    unsigned prepend_space : 1;    /* ' ' */
+    unsigned alternative_form : 1; /* '#' */
+    unsigned leading_zero_pad : 1; /* '0' */
 
     /* field width */
     npf__format_spec_field_width_t field_width_type;
