@@ -3,6 +3,8 @@ version: 2.1
 
 jobs:
   build:
+    docker:
+      - image: circleci/golang:1.12.6
     steps:
       - checkout
       - run: ./b
