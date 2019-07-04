@@ -243,11 +243,6 @@ TEST(npf__parse_format_spec, PrecisionIsLiteralIfPeriodThenNumber) {
     CHECK_EQUAL(12345, spec.precision);
 }
 
-TEST(npf__parse_format_spec, PrecisionExplicitDisablesLeadingZeroPad) {
-    CHECK_EQUAL(5, npf__parse_format_spec("%0.1u", &spec));
-    CHECK_EQUAL(0, spec.leading_zero_pad);
-}
-
 TEST(npf__parse_format_spec, PrecisionNoneWhenNegativeLiteral) {
     CHECK_EQUAL(6, npf__parse_format_spec("%.-34u", &spec));
     CHECK_EQUAL(NPF_FMT_SPEC_PRECISION_NONE, spec.precision_type);
@@ -443,6 +438,12 @@ TEST(npf__parse_format_spec, F) {
     CHECK_EQUAL(NPF_FMT_SPEC_CONV_CASE_UPPER, spec.conv_spec_case);
 }
 
+TEST(npf__parse_format_spec, FloatDefaultPrecisionIsSix) {
+    npf__parse_format_spec("%f", &spec);
+    CHECK_EQUAL(NPF_FMT_SPEC_PRECISION_LITERAL, spec.precision_type);
+    CHECK_EQUAL(6, spec.precision);
+}
+
 TEST(npf__parse_format_spec, e) {
     CHECK_EQUAL(2, npf__parse_format_spec("%e", &spec));
     CHECK_EQUAL(NPF_FMT_SPEC_CONV_FLOAT_EXPONENT, spec.conv_spec);
@@ -453,6 +454,12 @@ TEST(npf__parse_format_spec, E) {
     CHECK_EQUAL(2, npf__parse_format_spec("%E", &spec));
     CHECK_EQUAL(NPF_FMT_SPEC_CONV_FLOAT_EXPONENT, spec.conv_spec);
     CHECK_EQUAL(NPF_FMT_SPEC_CONV_CASE_UPPER, spec.conv_spec_case);
+}
+
+TEST(npf__parse_format_spec, ExponentDefaultPrecisionIsSix) {
+    npf__parse_format_spec("%e", &spec);
+    CHECK_EQUAL(NPF_FMT_SPEC_PRECISION_LITERAL, spec.precision_type);
+    CHECK_EQUAL(6, spec.precision);
 }
 
 TEST(npf__parse_format_spec, a) {
@@ -478,3 +485,10 @@ TEST(npf__parse_format_spec, G) {
     CHECK_EQUAL(NPF_FMT_SPEC_CONV_FLOAT_DYNAMIC, spec.conv_spec);
     CHECK_EQUAL(NPF_FMT_SPEC_CONV_CASE_UPPER, spec.conv_spec_case);
 }
+
+TEST(npf__parse_format_spec, DynamicDefaultPrecisionIsSix) {
+    npf__parse_format_spec("%g", &spec);
+    CHECK_EQUAL(NPF_FMT_SPEC_PRECISION_LITERAL, spec.precision_type);
+    CHECK_EQUAL(6, spec.precision);
+}
+

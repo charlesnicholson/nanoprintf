@@ -1,10 +1,12 @@
 nanoprintf todo:
 ================
-float support (fF)
-unit tests for itoa_rev, utoa_rev, ftoa_rev, fsplit
-precision support
+float precision support
+extract "sign" in one place based on category (real / integral)
 c99 modifier support
+unit tests for itoa_rev, utoa_rev, ftoa_rev, fsplit
 exponent support (eE)
+ignore negative precision star args
+negative field width star arg sets adds - flag and sets field width abs
 push * vararg parsing up into npf__parse_format_spec
 npf_putc => npf_putchars, scan for runs instead of char-by-char
 NANOPRINTF_INTERFACE_STATIC compilation test

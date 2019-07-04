@@ -156,7 +156,8 @@ NPF_INTERFACE_DEF int npf__ptoa_rev(char *buf, void const *p);
 NPF_INTERFACE_DEF int npf__fsplit_abs(float f, uint64_t *out_int_part,
                                       uint64_t *out_frac_part);
 NPF_INTERFACE_DEF int npf__ftoa_rev(char *buf, float f, unsigned base,
-                                    npf__format_spec_conversion_case_t cc);
+                                    npf__format_spec_conversion_case_t cc,
+                                    int *out_frac_chars);
 #endif
 
 #ifdef __cplusplus
@@ -267,7 +268,6 @@ int npf__parse_format_spec(char const *format, npf__format_spec_t *out_spec) {
                     (out_spec->precision * 10) + (*cur++ - '0');
             }
         }
-        out_spec->leading_zero_pad = 0;
     }
 
     /* Length modifier */
@@ -394,6 +394,18 @@ int npf__parse_format_spec(char const *format, npf__format_spec_t *out_spec) {
         default:
             return 0;
     }
+
+#if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
+    /* default float precision is 6 */
+    if ((out_spec->conv_spec == NPF_FMT_SPEC_CONV_FLOAT_DECIMAL) ||
+        (out_spec->conv_spec == NPF_FMT_SPEC_CONV_FLOAT_DYNAMIC) ||
+        (out_spec->conv_spec == NPF_FMT_SPEC_CONV_FLOAT_EXPONENT)) {
+        if (out_spec->precision_type == NPF_FMT_SPEC_PRECISION_NONE) {
+            out_spec->precision_type = NPF_FMT_SPEC_PRECISION_LITERAL;
+            out_spec->precision = 6;
+        }
+    }
+#endif
 
     return (int)(cur - format);
 }
@@ -548,23 +560,15 @@ int npf__fsplit_abs(float f, uint64_t *out_int_part, uint64_t *out_frac_part) {
 }
 
 int npf__ftoa_rev(char *buf, float f, unsigned base,
-                  npf__format_spec_conversion_case_t cc) {
-    if (f == 0.0f) {
-        *buf++ = '0';
-        *buf++ = '0';
-        *buf++ = '0';
-        *buf++ = '0';
-        *buf++ = '0';
-        *buf++ = '0';
-        *buf++ = '.';
-        *buf++ = '0';
-        return 8;
-    } else if (f != f) {
+                  npf__format_spec_conversion_case_t cc, int *out_frac_chars) {
+    if (f != f) {
         *buf++ = 'n';
         *buf++ = 'a';
         *buf++ = 'n';
         return 3;
-    } else if (f == INFINITY) {
+    }
+
+    if (f == INFINITY) {
         *buf++ = 'f';
         *buf++ = 'n';
         *buf++ = 'i';
@@ -587,13 +591,17 @@ int npf__ftoa_rev(char *buf, float f, unsigned base,
         frac_part /= (unsigned)base;
         *dst++ = (d < 10) ? (char)('0' + d) : (char)(base_c + (d - 10));
     }
+    *out_frac_chars = (int)(dst - buf);
     *dst++ = '.';
-    while (int_part) {
-        unsigned const d = int_part % (unsigned)base;
-        int_part /= (unsigned)base;
-        *dst++ = (d < 10) ? (char)('0' + d) : (char)(base_c + (d - 10));
+    if (int_part == 0) {
+        *dst++ = '0';
+    } else {
+        while (int_part) {
+            unsigned const d = int_part % (unsigned)base;
+            int_part /= (unsigned)base;
+            *dst++ = (d < 10) ? (char)('0' + d) : (char)(base_c + (d - 10));
+        }
     }
-
     return (int)(dst - buf);
 }
 #endif
@@ -625,6 +633,9 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                 /* Format specifier, convert and write argument */
                 char cbuf_mem[24], *cbuf = cbuf_mem, sign_c, pad_c;
                 int cbuf_len = 0, pad = 0, precision;
+#if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS
+                int frac_chars = 0;
+#endif
 
                 /* '*' modifiers require more varargs */
                 if (fs.field_width_type == NPF_FMT_SPEC_FIELD_WIDTH_STAR) {
@@ -690,11 +701,12 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                         cbuf_len = npf__ptoa_rev(cbuf, va_arg(vlist, void *));
                         break;
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
-                    case NPF_FMT_SPEC_CONV_FLOAT_DECIMAL: /* 'f', 'F' */
-                        cbuf_len =
-                            npf__ftoa_rev(cbuf, (float)va_arg(vlist, double),
-                                          10, fs.conv_spec_case);
-                        break;
+                    case NPF_FMT_SPEC_CONV_FLOAT_DECIMAL: { /* 'f', 'F' */
+                        float const val = (float)va_arg(vlist, double);
+                        sign = (val < 0) ? -1 : 1;
+                        cbuf_len = npf__ftoa_rev(
+                            cbuf, val, 10, fs.conv_spec_case, &frac_chars);
+                    } break;
                     case NPF_FMT_SPEC_CONV_FLOAT_EXPONENT: /* 'e', 'E' */
                         break;
                     case NPF_FMT_SPEC_CONV_FLOAT_DYNAMIC: /* 'g', 'G' */
@@ -741,9 +753,16 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                             : NPF_MIN(fs.precision, cbuf_len);
                     pad = fs.field_width - precision;
                 } else {
+                    int const start =
+#if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
+                        (fs.conv_spec == NPF_FMT_SPEC_CONV_FLOAT_DECIMAL)
+                            ? frac_chars
+                            :
+#endif
+                            cbuf_len;
                     precision =
                         (fs.precision_type == NPF_FMT_SPEC_PRECISION_LITERAL)
-                            ? NPF_MAX(fs.precision - cbuf_len, 0)
+                            ? NPF_MAX(fs.precision - start, 0)
                             : 0;
                     pad = fs.field_width - cbuf_len - !!sign_c - precision;
                 }
@@ -755,7 +774,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                         NPF_PUT_CHECKED(sign_c);
                         sign_c = 0;
                     }
-                    while (pad-- > 0) {
+                    while (pad--) {
                         NPF_PUT_CHECKED(pad_c);
                     }
                 }
@@ -770,13 +789,36 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                     if (sign_c) {
                         NPF_PUT_CHECKED(sign_c);
                     }
-                    while (precision--) {
-                        NPF_PUT_CHECKED('0');
+#if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
+                    if (fs.conv_spec != NPF_FMT_SPEC_CONV_FLOAT_DECIMAL) {
+#endif
+                        /* integral precision comes before the number. */
+                        while (precision--) {
+                            NPF_PUT_CHECKED('0');
+                        }
+#if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
+                    } else {
+                        /* if 0 precision, skip the fractional part and '.'
+                           if 0 prec + alternative form, keep the '.' */
+                        if (fs.precision == 0) {
+                            cbuf += frac_chars + !fs.alternative_form;
+                            cbuf_len -= frac_chars + !fs.alternative_form;
+                        }
                     }
+#endif
                     /* *toa_rev leaves payloads reversed */
                     while (cbuf_len--) {
                         NPF_PUT_CHECKED(cbuf[cbuf_len]);
                     }
+
+#if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
+                    /* real precision comes after the number. */
+                    if (fs.conv_spec == NPF_FMT_SPEC_CONV_FLOAT_DECIMAL) {
+                        while (precision--) {
+                            NPF_PUT_CHECKED('0');
+                        }
+                    }
+#endif
                 }
 
                 /* Apply left-justified field width if requested */

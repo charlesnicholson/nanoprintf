@@ -43,7 +43,7 @@ TEST(fsplit_abs, ReturnsZeroIfExponentTooLarge) {
 
 // Perfectly-representable fractions, adding 1 bit to mantissa each time.
 
-TEST(fsplit_abs, 532) {
+TEST(fsplit_abs, 5) {
     CHECK(npf__fsplit_abs(1.5f, &int_part, &frac_part));
     CHECK_EQUAL(1, int_part);
     CHECK_EQUAL(5, frac_part);

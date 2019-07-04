@@ -6,15 +6,6 @@ TEST_GROUP(conformance){};
 namespace {
 char conformance_buf[256];
 void CheckConformance(char const *output, char const *fmt, ...) {
-    std::string actual;
-    {
-        va_list v;
-        va_start(v, fmt);
-        npf_vsnprintf(conformance_buf, sizeof(conformance_buf), fmt, v);
-        va_end(v);
-        actual = conformance_buf;
-    }
-
     std::string expected;
     {
         va_list v;
@@ -22,6 +13,15 @@ void CheckConformance(char const *output, char const *fmt, ...) {
         vsnprintf(conformance_buf, sizeof(conformance_buf), fmt, v);
         va_end(v);
         expected = conformance_buf;
+    }
+
+    std::string actual;
+    {
+        va_list v;
+        va_start(v, fmt);
+        npf_vsnprintf(conformance_buf, sizeof(conformance_buf), fmt, v);
+        va_end(v);
+        actual = conformance_buf;
     }
 
     CHECK_EQUAL(expected, output);
@@ -164,4 +164,19 @@ TEST(conformance, StarArgs) {
     CheckConformance("h", "%.*s", 1, "hello world");
 }
 
-TEST(conformance, Float) { CheckConformance("0.000000", "%f", 0); }
+TEST(conformance, Float) {
+    CheckConformance("0.000000", "%f", 0);
+    CheckConformance("0.00", "%.2f", 0);
+    CheckConformance("1.0", "%.1f", 1.0);
+    CheckConformance("1", "%.0f", 1.0);
+    CheckConformance("1.", "%#.0f", 1.0);
+    CheckConformance("1.00000000000", "%.11f", 1.0);
+    CheckConformance("1.5", "%.1f", 1.5);
+    CheckConformance("+1.5", "%+.1f", 1.5);
+    CheckConformance("-1.5", "%.1f", -1.5);
+    CheckConformance(" 1.5", "% .1f", 1.5);
+    CheckConformance(" 1.500", "%6.3f", 1.5);
+    CheckConformance("0001.500", "%08.3f", 1.5);
+    CheckConformance("+001.500", "%+08.3f", 1.5);
+    CheckConformance("-001.500", "%+08.3f", -1.5);
+}

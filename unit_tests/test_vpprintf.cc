@@ -232,8 +232,8 @@ TEST(Float, Zero) {
 }
 
 TEST(Float, One) {
-    // CHECK_EQUAL(9, npf_pprintf(r.PutC, &r, "%f", 1.0));
-    // CHECK_EQUAL("1.000000", r.String());
+    CHECK_EQUAL(9, npf_pprintf(r.PutC, &r, "%f", 1.0));
+    CHECK_EQUAL("1.000000", r.String());
 }
 
 // Field Width
