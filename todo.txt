@@ -1,15 +1,13 @@
 nanoprintf todo:
 ================
-alternate form for integral types
-extract "sign" in one place based on category (real / integral)
 c99 modifier support
-unit tests for itoa_rev, utoa_rev, ftoa_rev, fsplit
-exponent support (eE)
 ignore negative precision star args
 negative field width star arg sets adds - flag and sets field width abs
+extract "sign" in one place based on category (real / integral)
+unit tests for itoa_rev, utoa_rev, ftoa_rev, fsplit
+exponent support (eE)
 push * vararg parsing up into npf__parse_format_spec
 npf_putc => npf_putchars, scan for runs instead of char-by-char
 NANOPRINTF_INTERFACE_STATIC compilation test
-commit gates (automated build + test): circleci / travis / appveyor?
 dynamic float support (gG)
 hex float support (aA)
