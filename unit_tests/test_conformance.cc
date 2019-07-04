@@ -35,8 +35,8 @@ void CheckConformance(char const *output, char const *fmt, ...) {
 TEST(conformance, Percent) {
     CheckConformance("%", "%%");
     CheckConformance("%", "%-%");
-    /*
     CheckConformance("%", "% %");
+    /*
     // CheckConformance("%012%"); Undefined
     CheckConformance("%", "%+%");
     CheckConformance("%", "%#%");
