@@ -561,26 +561,28 @@ int npf__fsplit_abs(float f, uint64_t *out_int_part, uint64_t *out_frac_part) {
 
 int npf__ftoa_rev(char *buf, float f, unsigned base,
                   npf__format_spec_conversion_case_t cc, int *out_frac_chars) {
+    char const case_c = (cc == NPF_FMT_SPEC_CONV_CASE_LOWER) ? 'a' - 'A' : 0;
+
     if (f != f) {
-        *buf++ = 'n';
-        *buf++ = 'a';
-        *buf++ = 'n';
-        return 3;
+        *buf++ = 'N' + case_c;
+        *buf++ = 'A' + case_c;
+        *buf++ = 'N' + case_c;
+        return -3;
     }
 
     if (f == INFINITY) {
-        *buf++ = 'f';
-        *buf++ = 'n';
-        *buf++ = 'i';
-        return 3;
+        *buf++ = 'F' + case_c;
+        *buf++ = 'N' + case_c;
+        *buf++ = 'I' + case_c;
+        return -3;
     }
 
     uint64_t int_part, frac_part;
     if (npf__fsplit_abs(f, &int_part, &frac_part) == 0) {
-        *buf++ = 'r';
-        *buf++ = 'o';
-        *buf++ = 'o';
-        return 3;
+        *buf++ = 'R' + case_c;
+        *buf++ = 'O' + case_c;
+        *buf++ = 'O' + case_c;
+        return -3;
     }
 
     unsigned const base_c = (cc == NPF_FMT_SPEC_CONV_CASE_LOWER) ? 'a' : 'A';
@@ -634,7 +636,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                 char cbuf_mem[24], *cbuf = cbuf_mem, sign_c, pad_c;
                 int cbuf_len = 0, pad = 0, precision;
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS
-                int frac_chars = 0;
+                int frac_chars = 0, inf_or_nan = 0;
 #endif
 
                 /* '*' modifiers require more varargs */
@@ -706,6 +708,10 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                         sign = (val < 0) ? -1 : 1;
                         cbuf_len = npf__ftoa_rev(
                             cbuf, val, 10, fs.conv_spec_case, &frac_chars);
+                        if (cbuf_len < 0) {
+                            cbuf_len = -cbuf_len;
+                            inf_or_nan = 1;
+                        }
                     } break;
                     case NPF_FMT_SPEC_CONV_FLOAT_EXPONENT: /* 'e', 'E' */
                         break;
@@ -813,7 +819,8 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
 
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
                     /* real precision comes after the number. */
-                    if (fs.conv_spec == NPF_FMT_SPEC_CONV_FLOAT_DECIMAL) {
+                    if ((fs.conv_spec == NPF_FMT_SPEC_CONV_FLOAT_DECIMAL) &&
+                        !inf_or_nan) {
                         while (precision--) {
                             NPF_PUT_CHECKED('0');
                         }

@@ -1,5 +1,6 @@
-#include "CppUTest/TestHarness.h"
 #include "nanoprintf_in_unit_tests.h"
+
+#include "CppUTest/TestHarness.h"
 
 TEST_GROUP(conformance){};
 
@@ -165,8 +166,12 @@ TEST(conformance, StarArgs) {
 }
 
 TEST(conformance, Float) {
-    CheckConformance("0.000000", "%f", 0);
-    CheckConformance("0.00", "%.2f", 0);
+    CheckConformance("inf", "%f", 1.0 / 0.0);
+    CheckConformance("INF", "%F", 1.0 / 0.0);
+    CheckConformance("nan", "%f", 0.0 / 0.0);
+    CheckConformance("NAN", "%F", 0.0 / 0.0);
+    CheckConformance("0.000000", "%f", 0.0);
+    CheckConformance("0.00", "%.2f", 0.0);
     CheckConformance("1.0", "%.1f", 1.0);
     CheckConformance("1", "%.0f", 1.0);
     CheckConformance("1.", "%#.0f", 1.0);

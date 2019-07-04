@@ -1,6 +1,6 @@
 nanoprintf todo:
 ================
-float precision support
+alternate form for integral types
 extract "sign" in one place based on category (real / integral)
 c99 modifier support
 unit tests for itoa_rev, utoa_rev, ftoa_rev, fsplit
