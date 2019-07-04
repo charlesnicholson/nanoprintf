@@ -61,6 +61,10 @@ string(CONCAT nanoprintf_common_flags
     "-Wno-c++98-compat-pedantic "
     "-Wno-padded")
 
+if ("${CMAKE_C_COMPILER_ID}" STREQUAL "Clang")
+    string(CONCAT "${nanoprintf_common_flags}" " -Weverything")
+endif()
+
 ################ Flag / language compilation tests
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${nanoprintf_common_flags}")
