@@ -1,5 +1,8 @@
-#include "CppUTest/TestHarness.h"
 #include "nanoprintf_in_unit_tests.h"
+
+#include "CppUTest/TestHarness.h"
+
+#include <cstring>
 
 TEST_GROUP(ftoa_rev) {
     void setup() override { memset(buf, 0, sizeof(buf)); }

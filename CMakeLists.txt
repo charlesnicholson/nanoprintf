@@ -58,12 +58,11 @@ string(CONCAT nanoprintf_common_flags
     "-Werror "
     "-Wno-padded")
 
-string(CONCAT nanoprintf_cxx_flags "-Wno-c++98-compat-pedantic ")
-
 string(FIND "${CMAKE_C_COMPILER_ID}" "Clang" is_clang)
 if (${is_clang} GREATER_EQUAL 0)
     string(APPEND nanoprintf_common_flags " -Weverything")
-    string(APPEND nanoprintf_cxx_flags " -Wno-old-style-cast")
+    string(APPEND nanoprintf_cxx_flags
+        " -Wno-old-style-cast -Wno-c++98-compat-pedantic")
 endif()
 
 ################ Flag / language compilation tests

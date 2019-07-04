@@ -1,7 +1,8 @@
-#include "CppUTest/TestHarness.h"
 #include "nanoprintf_in_unit_tests.h"
 
-#include <string>
+#include "CppUTest/TestHarness.h"
+
+#include <cstring>
 #include <vector>
 
 struct Recorder {
