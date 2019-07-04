@@ -5,7 +5,3 @@
 
 #include <string>
 
-// CHECK_EQUAL("abc", std::string("abc")) does "first == second"
-inline int operator==(char const* literal, std::string const& s) {
-    return s == literal;
-}
