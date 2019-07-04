@@ -55,13 +55,13 @@ set(CMAKE_CXX_STANDARD 11)
 string(CONCAT nanoprintf_common_flags
     "-pedantic "
     "-Wall "
-    "-Weverything "
     "-Werror "
     "-Wno-old-style-cast "
     "-Wno-c++98-compat-pedantic "
     "-Wno-padded")
 
-if ("${CMAKE_C_COMPILER_ID}" STREQUAL "Clang")
+string(FIND "${CMAKE_C_COMPILER_ID}" "Clang" is_clang)
+if (${is_clang} GREATER_EQUAL 0)
     string(CONCAT "${nanoprintf_common_flags}" " -Weverything")
 endif()
 
