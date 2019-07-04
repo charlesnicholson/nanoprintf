@@ -56,19 +56,21 @@ string(CONCAT nanoprintf_common_flags
     "-pedantic "
     "-Wall "
     "-Werror "
-    "-Wno-old-style-cast "
-    "-Wno-c++98-compat-pedantic "
     "-Wno-padded")
+
+string(CONCAT nanoprintf_cxx_flags "-Wno-c++98-compat-pedantic ")
 
 string(FIND "${CMAKE_C_COMPILER_ID}" "Clang" is_clang)
 if (${is_clang} GREATER_EQUAL 0)
-    string(CONCAT "${nanoprintf_common_flags}" " -Weverything")
+    string(APPEND nanoprintf_common_flags " -Weverything")
+    string(APPEND nanoprintf_cxx_flags " -Wno-old-style-cast")
 endif()
 
 ################ Flag / language compilation tests
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${nanoprintf_common_flags}")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${nanoprintf_common_flags}")
+set(CMAKE_CXX_FLAGS
+    "${CMAKE_CXX_FLAGS} ${nanoprintf_common_flags} ${nanoprintf_cxx_flags}")
 
 add_library(npf_c89 compilation_tests/nanoprintf_compilation_test_c.c)
 target_compile_definitions(npf_c89 PRIVATE
