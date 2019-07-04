@@ -38,13 +38,10 @@ TEST(conformance, Percent) {
     CheckConformance("%", "% %");
     CheckConformance("%", "%+%");
     CheckConformance("%", "%#%");
-    CheckConformance("         %", "%10%");
-    /*
+    // CheckConformance("         %", "%10%"); clang adds width, gcc doesn't
+    // CheckConformance("%         ", "%-10%"); clang adds -width, gcc doesn't
+    // CheckConformance("         %", "%10.10%"); clang adds width + precision.
     // CheckConformance("%012%"); Undefined
-    // CheckConformance("%", "%.10%"); gcc prints precision, clang doesn't
-    CheckConformance("%         ", "%-10%");
-    CheckConformance("         %", "%10.10%");
-    */
 }
 
 TEST(conformance, Char) {
