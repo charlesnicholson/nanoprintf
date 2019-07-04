@@ -3,11 +3,17 @@ set -e
 
 SCRIPT_PATH=$(cd $(dirname $0); pwd -P)
 
-(exec scripts/get_cmake.sh)
-(exec scripts/get_ninja.sh)
+CMAKE=$(which cmake)
+if [ ! -x "$CMAKE" ]; then
+    (exec scripts/get_cmake.sh)
+    CMAKE="$SCRIPT_PATH/external/cmake/cmake"
+fi
 
-CMAKE="$SCRIPT_PATH/external/cmake/cmake"
-NINJA="$SCRIPT_PATH/external/ninja/ninja"
+NINJA=$(which ninja)
+if [ ! -x "$NINJA" ]; then
+    (exec scripts/get_ninja.sh)
+    NINJA="$SCRIPT_PATH/external/ninja/ninja"
+fi
 
 BUILD_TYPE=release
 if [ -n "$1" ]; then
