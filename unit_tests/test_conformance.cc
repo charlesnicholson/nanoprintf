@@ -164,16 +164,17 @@ TEST(conformance, StarArgs) {
     CheckConformance("h", "%.*s", 1, "hello world");
 }
 
+TEST(conformance, FloatNan) {
+    char buf[32];
+    npf_snprintf(buf, sizeof(buf), "%f", 0.0 / 0.0);
+    CHECK(!strcmp(buf, "nan") || !strcmp(buf, "-nan"));
+    npf_snprintf(buf, sizeof(buf), "%F", 0.0 / 0.0);
+    CHECK(!strcmp(buf, "NAN") || !strcmp(buf, "-NAN"));
+}
+
 TEST(conformance, Float) {
     CheckConformance("inf", "%f", 1.0 / 0.0);
     CheckConformance("INF", "%F", 1.0 / 0.0);
-#ifdef __clang__
-    CheckConformance("nan", "%f", 0.0 / 0.0);
-    CheckConformance("NAN", "%F", 0.0 / 0.0);
-#elif defined(__GNUC__) || defined(__GNUG__)
-    CheckConformance("-nan", "%f", 0.0 / 0.0);
-    CheckConformance("-NAN", "%F", 0.0 / 0.0);
-#endif
     CheckConformance("0.000000", "%f", 0.0);
     CheckConformance("0.00", "%.2f", 0.0);
     CheckConformance("1.0", "%.1f", 1.0);
