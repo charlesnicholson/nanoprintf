@@ -662,6 +662,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                         break;
                     case NPF_FMT_SPEC_CONV_STRING: { /* 's' */
                         char *s = va_arg(vlist, char *);
+                        /* don't bother loading cbuf, just point to s */
                         cbuf = s;
                         while (*s) ++s;
                         cbuf_len = (int)(s - cbuf);
@@ -669,32 +670,56 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                     case NPF_FMT_SPEC_CONV_SIGNED_INT: { /* 'i', 'd' */
                         int const val = va_arg(vlist, int);
                         sign = (val < 0) ? -1 : 1;
-                        cbuf_len = npf__itoa_rev(cbuf, val);
-                    } break;
-                    case NPF_FMT_SPEC_CONV_OCTAL: { /* 'o' */
-                        unsigned const val = va_arg(vlist, unsigned);
-                        cbuf_len =
-                            npf__utoa_rev(cbuf, val, 8, fs.conv_spec_case);
-                        if (val && fs.alternative_form) {
-                            cbuf[cbuf_len++] = '0';
+                        /* special case, if precision and value are 0, skip */
+                        if (!val && !fs.precision &&
+                            (fs.precision_type ==
+                             NPF_FMT_SPEC_PRECISION_LITERAL)) {
+                            cbuf_len = 0;
+                        } else {
+                            /* print the number into cbuf */
+                            cbuf_len = npf__itoa_rev(cbuf, val);
                         }
                     } break;
-                    case NPF_FMT_SPEC_CONV_HEX_INT: { /* 'x', 'X' */
+                    case NPF_FMT_SPEC_CONV_OCTAL:          /* 'o' */
+                    case NPF_FMT_SPEC_CONV_HEX_INT:        /* 'x', 'X' */
+                    case NPF_FMT_SPEC_CONV_UNSIGNED_INT: { /* 'u' */
                         unsigned const val = va_arg(vlist, unsigned);
-                        cbuf_len =
-                            npf__utoa_rev(cbuf, val, 16, fs.conv_spec_case);
+                        unsigned const base =
+                            (fs.conv_spec == NPF_FMT_SPEC_CONV_OCTAL)
+                                ? 8
+                                : ((fs.conv_spec == NPF_FMT_SPEC_CONV_HEX_INT)
+                                       ? 16
+                                       : 10);
+                        /* octal special case, print a single '0' */
+                        if ((fs.conv_spec == NPF_FMT_SPEC_CONV_OCTAL) && !val &&
+                            !fs.precision && fs.alternative_form) {
+                            fs.precision = 1;
+                        }
+                        /* special case, if precision and value are 0, skip */
+                        if (!val && !fs.precision &&
+                            (fs.precision_type ==
+                             NPF_FMT_SPEC_PRECISION_LITERAL)) {
+                            cbuf_len = 0;
+                        } else {
+                            /* print the number info cbuf */
+                            cbuf_len = npf__utoa_rev(cbuf, val, base,
+                                                     fs.conv_spec_case);
+                        }
+                        /* alt form adds '0' octal prefix or '0x' hex prefix */
                         if (val && fs.alternative_form) {
-                            cbuf[cbuf_len++] = (fs.conv_spec_case ==
-                                                NPF_FMT_SPEC_CONV_CASE_LOWER)
-                                                   ? 'x'
-                                                   : 'X';
-                            cbuf[cbuf_len++] = '0';
+                            if (fs.conv_spec == NPF_FMT_SPEC_CONV_OCTAL) {
+                                cbuf[cbuf_len++] = '0';
+                            } else if (fs.conv_spec ==
+                                       NPF_FMT_SPEC_CONV_HEX_INT) {
+                                cbuf[cbuf_len++] =
+                                    (fs.conv_spec_case ==
+                                     NPF_FMT_SPEC_CONV_CASE_LOWER)
+                                        ? 'x'
+                                        : 'X';
+                                cbuf[cbuf_len++] = '0';
+                            }
                         }
                     } break;
-                    case NPF_FMT_SPEC_CONV_UNSIGNED_INT: /* 'u' */
-                        cbuf_len = npf__utoa_rev(cbuf, va_arg(vlist, unsigned),
-                                                 10, fs.conv_spec_case);
-                        break;
                     case NPF_FMT_SPEC_CONV_CHARS_WRITTEN: /* 'n' */
                         cbuf_len = npf__utoa_rev(cbuf, (unsigned)n, 10,
                                                  NPF_FMT_SPEC_CONV_CASE_NONE);

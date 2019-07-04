@@ -81,6 +81,7 @@ TEST(conformance, UnsignedInt) {
     CheckConformance("0", "%u", 0);
     CheckConformance("4294967295", "%u", UINT_MAX);
     CheckConformance("0", "%+u", 0);
+    CheckConformance("", "%.0u", 0);
     CheckConformance("1", "%+u", 1);
     CheckConformance("   1", "%+4u", 1);  // undefined but usually skips +
     CheckConformance("     0", "% 6u", 0);
@@ -91,6 +92,8 @@ TEST(conformance, UnsignedInt) {
 TEST(conformance, SignedInt) {
     CheckConformance("-2147483648", "%i", INT_MIN);
     CheckConformance("0", "%i", 0);
+    CheckConformance("", "%.0i", 0);
+    CheckConformance("+", "%+.0i", 0);
     CheckConformance("2147483647", "%i", INT_MAX);
     CheckConformance("-1", "%+i", -1);
     CheckConformance("+0", "%+i", 0);
@@ -113,6 +116,8 @@ TEST(conformance, SignedInt) {
 TEST(conformance, Octal) {
     CheckConformance("0", "%o", 0);
     CheckConformance("0", "%#o", 0);
+    CheckConformance("", "%.0o", 0);
+    CheckConformance("0", "%#.0o", 0);
     CheckConformance("37777777777", "%o", UINT_MAX);
     CheckConformance("      2322", "%10o", 1234);
     CheckConformance("     02322", "%#10o", 1234);
@@ -126,9 +131,11 @@ TEST(conformance, Octal) {
 
 TEST(conformance, Hex) {
     CheckConformance("0", "%x", 0);
+    CheckConformance("", "%.0x", 0);
     CheckConformance("12345678", "%x", 0x12345678);
     CheckConformance("ffffffff", "%x", UINT_MAX);
     CheckConformance("0", "%X", 0);
+    CheckConformance("", "%.0X", 0);
     CheckConformance("90ABCDEF", "%X", 0x90ABCDEF);
     CheckConformance("FFFFFFFF", "%X", UINT_MAX);
     CheckConformance("0", "%#x", 0);
