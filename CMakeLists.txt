@@ -146,18 +146,23 @@ target_include_directories(npf_unit_tests PRIVATE "${CPPUTEST_INCLUDE_DIR}")
 target_link_libraries(npf_unit_tests libCppUTest libCppUTestExt)
 
 target_compile_options(npf_unit_tests PRIVATE
-    -Wno-c++11-long-long    # CppUTest uses long long
-    -Wno-reserved-id-macro  # CppUTest uses leading __
     -Wno-old-style-cast     # C style casts are ok
-    -Wno-keyword-macro      # CppUTest redefines 'new' for memory checks
-    -Wno-disabled-macro-expansion
-    -Wno-weak-vtables
-    -Wno-global-constructors   # CppUTest memory checks
-    -Wno-exit-time-destructors # CppUTest memory checks
-    -Wno-c++98-compat
-    -Wno-missing-prototypes
     -std=c++11
 )
+
+if (is_clang GREATER_EQUAL 0)
+    target_compile_options(npf_unit_tests PRIVATE
+        -Wno-c++11-long-long    # CppUTest uses long long
+        -Wno-reserved-id-macro  # CppUTest uses leading __
+        -Wno-keyword-macro      # CppUTest redefines 'new' for memory checks
+        -Wno-disabled-macro-expansion
+        -Wno-weak-vtables
+        -Wno-global-constructors   # CppUTest memory checks
+        -Wno-exit-time-destructors # CppUTest memory checks
+        -Wno-c++98-compat
+        -Wno-missing-prototypes
+    )
+endif()
 
 set(timestamp ${CMAKE_CURRENT_BINARY_DIR}/npf_unit_tests.timestamp)
 add_custom_target(run_npf_unit_tests ALL DEPENDS ${timestamp})
