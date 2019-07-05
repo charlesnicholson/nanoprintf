@@ -32,6 +32,8 @@ nanoprintf has 4 main functions:
 
 The `pprintf` variations take a callback that returns an `int`. If the callback returns `NPF_EOF`, the print functions will stop printing and return immediately.
 
+nanoprintf does *not* provide `printf` itself; that's seen as project- or platform-specific. nanoprintf is hopefully a good building block for rolling your own `printf`, though.
+
 ## Configuration
 
 nanoprintf has the following static configuration flags. You can either inject them into your compiler (usually `-D` flags) or wrap `nanoprintf.h` in [your own header](https://github.com/charlesnicholson/nanoprintf/blob/readme/unit_tests/nanoprintf_in_unit_tests.h) that sets them up, and then `#include` your header instead of `nanoprintf.h` in your application.
