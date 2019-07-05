@@ -170,6 +170,8 @@ target_link_libraries(npf_unit_tests libCppUTest libCppUTestExt)
 target_compile_options(npf_unit_tests PRIVATE
     ${nanoprintf_cxx_flags}
     -Wno-old-style-cast     # C style casts are ok
+    -Wno-format
+    -Wno-format-pedantic
     -std=c++11
 )
 
