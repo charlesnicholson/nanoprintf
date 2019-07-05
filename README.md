@@ -6,6 +6,8 @@ nanoprintf is an almost-standard-compliant implementation of snprintf and vsnpri
 
 nanoprintf is a [single header file](https://github.com/charlesnicholson/nanoprintf/blob/readme/nanoprintf.h) in the style of the [stb libraries](https://github.com/nothings/stb). The rest of the repository is tests and scaffolding and not required for use.
 
+## Features
+
 ## Usage
 
 1. Copy `nanoprintf.h` into your codebase somewhere.
@@ -16,4 +18,12 @@ nanoprintf is a [single header file](https://github.com/charlesnicholson/nanopri
 	#include "path/to/nanoprintf.h"
 	```
 
-1. bleh
+1. `#include "path/to/nanoprintf.h"` as usual to expose the function prototypes.
+
+## Configuration
+
+nanoprintf has the following static configuration flags. You can either inject them into your compiler (usually `-D` flags) or wrap `nanoprintf.h` in [your own header](https://github.com/charlesnicholson/nanoprintf/blob/readme/unit_tests/nanoprintf_in_unit_tests.h) that sets them up.
+
+* `NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS`: Set to `0` or `1`. Enables floating-point conversion operators.
+* `NANOPRINTF_USE_C99_FORMAT_SPECIFIERS`: Set to `0` or `1`. Enables C99-specific conversion operators.
+* `NANOPRINTF_VISIBILITY_STATIC`: Optional define with no value. Marks all prototypes as `static` to sandbox nanoprintf.
