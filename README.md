@@ -22,7 +22,7 @@ nanoprintf is a [single header file](https://github.com/charlesnicholson/nanopri
 
 ## Configuration
 
-nanoprintf has the following static configuration flags. You can either inject them into your compiler (usually `-D` flags) or wrap `nanoprintf.h` in [your own header](https://github.com/charlesnicholson/nanoprintf/blob/readme/unit_tests/nanoprintf_in_unit_tests.h) that sets them up.
+nanoprintf has the following static configuration flags. You can either inject them into your compiler (usually `-D` flags) or wrap `nanoprintf.h` in [your own header](https://github.com/charlesnicholson/nanoprintf/blob/readme/unit_tests/nanoprintf_in_unit_tests.h) that sets them up, and then `#include` your header instead of `nanoprintf.h` in your application.
 
 * `NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS`: Set to `0` or `1`. Enables floating-point conversion operators.
 * `NANOPRINTF_USE_C99_FORMAT_SPECIFIERS`: Set to `0` or `1`. Enables C99-specific conversion operators.
