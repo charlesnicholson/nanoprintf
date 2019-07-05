@@ -89,3 +89,7 @@ Like `printf`, `nanoprintf` expects a conversion specification string of the fol
 	* `%p`: Pointers
 	* `%n`: Write the number of bytes written to the pointer vararg
 	* `%f`/`%F`: Floating-point values
+
+## Acknowledgments
+
+Float-to-int conversion is done using [Wojciech Muła](mailto:zdjęcia@garnek.pl)'s [algorithm](http://0x80.pl/notesen/2015-12-29-float-to-string.html).
