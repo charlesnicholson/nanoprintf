@@ -26,4 +26,4 @@ nanoprintf has the following static configuration flags. You can either inject t
 
 * `NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS`: Set to `0` or `1`. Enables floating-point conversion operators.
 * `NANOPRINTF_USE_C99_FORMAT_SPECIFIERS`: Set to `0` or `1`. Enables C99-specific conversion operators.
-* `NANOPRINTF_VISIBILITY_STATIC`: Optional define with no value. Marks all prototypes as `static` to sandbox nanoprintf.
+* `NANOPRINTF_VISIBILITY_STATIC`: Optional define. Marks prototypes as `static` to sandbox nanoprintf.
