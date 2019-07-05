@@ -721,7 +721,14 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                         cbuf_len = (int)(s - cbuf);
                     } break;
                     case NPF_FMT_SPEC_CONV_SIGNED_INT: { /* 'i', 'd' */
-                        int const val = va_arg(vlist, int);
+                        int val;
+                        if (fs.length_modifier ==
+                            NPF_FMT_SPEC_LENGTH_MOD_SHORT) {
+                            val = (short)va_arg(vlist, int);
+                        } else {
+                            val = va_arg(vlist, int);
+                        }
+
                         sign = (val < 0) ? -1 : 1;
                         /* special case, if precision and value are 0, skip */
                         if (!val && !fs.precision &&
@@ -736,13 +743,20 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                     case NPF_FMT_SPEC_CONV_OCTAL:          /* 'o' */
                     case NPF_FMT_SPEC_CONV_HEX_INT:        /* 'x', 'X' */
                     case NPF_FMT_SPEC_CONV_UNSIGNED_INT: { /* 'u' */
-                        unsigned const val = va_arg(vlist, unsigned);
                         unsigned const base =
                             (fs.conv_spec == NPF_FMT_SPEC_CONV_OCTAL)
                                 ? 8
                                 : ((fs.conv_spec == NPF_FMT_SPEC_CONV_HEX_INT)
                                        ? 16
                                        : 10);
+                        unsigned val;
+                        if (fs.length_modifier ==
+                            NPF_FMT_SPEC_LENGTH_MOD_SHORT) {
+                            val = (unsigned short)va_arg(vlist, unsigned);
+                        } else {
+                            val = va_arg(vlist, unsigned);
+                        }
+
                         /* octal special case, print a single '0' */
                         if ((fs.conv_spec == NPF_FMT_SPEC_CONV_OCTAL) && !val &&
                             !fs.precision && fs.alternative_form) {
