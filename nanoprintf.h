@@ -798,7 +798,15 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                         break;
 #if NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS == 1
                     case NPF_FMT_SPEC_CONV_WRITEBACK: /* 'n' */
-                        *(va_arg(vlist, int *)) = n;
+                        if (fs.length_modifier ==
+                            NPF_FMT_SPEC_LENGTH_MOD_SHORT) {
+                            *(va_arg(vlist, short *)) = (short)n;
+                        } else if (fs.length_modifier ==
+                                   NPF_FMT_SPEC_LENGTH_MOD_LONG) {
+                            *(va_arg(vlist, long *)) = n;
+                        } else {
+                            *(va_arg(vlist, int *)) = n;
+                        }
                         break;
 #endif
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1

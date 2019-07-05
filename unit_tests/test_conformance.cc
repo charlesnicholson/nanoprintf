@@ -177,7 +177,7 @@ namespace {
 int dummy_putc(int, void *) { return 1; }
 }  // namespace
 
-TEST(conformance, Writeback) {
+TEST(conformance, WritebackInt) {
     int writeback = -1;
     npf_pprintf(dummy_putc, nullptr, "%n", &writeback);
     CHECK_EQUAL(0, writeback);
@@ -189,6 +189,18 @@ TEST(conformance, Writeback) {
     CHECK_EQUAL(4, writeback);
     npf_pprintf(dummy_putc, nullptr, "%u%s%n", 0, "abcd", &writeback);
     CHECK_EQUAL(5, writeback);
+}
+
+TEST(conformance, WritebackShort) {
+    short writeback = -1;
+    npf_pprintf(dummy_putc, nullptr, "1234%hn", &writeback);
+    CHECK_EQUAL(4, writeback);
+}
+
+TEST(conformance, WritebackLong) {
+    long writeback = -1;
+    npf_pprintf(dummy_putc, nullptr, "1234567%ln", &writeback);
+    CHECK_EQUAL(7, writeback);
 }
 
 TEST(conformance, StarArgs) {
