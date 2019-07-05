@@ -2,6 +2,3 @@
 #define NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS 1
 
 #include "../nanoprintf.h"
-
-#include <string>
-
