@@ -8,6 +8,28 @@ nanoprintf is a [single header file](https://github.com/charlesnicholson/nanopri
 
 ## Features
 
+Like `printf`, `nanoprintf` expects a conversion specification string of the following form:
+
+`[flags][field width][.precision][length modifier][conversion specifier]`
+
+* *Flags* one or more of the following:
+	* `0`: Pad the field with leading zero characters.
+	* `-`: Left-justify the conversion result in the field.
+	* `+`: Signed conversions always begin with `+` or `-` characters.
+	* ` ` (space): A space character is inserted if the first converted character is not a sign.
+
+### Converstion Specifiers
+* `%c`: Characters
+* `%s`: Null-terminated strings
+* `%i`/`%d`: Signed integers
+* `%u`: Unsigned integers
+* `%o`: Unsigned octal integers
+* `%x` / `%X`: Unsigned hexadecimal integers
+* `%p`: Pointers
+* `%n`: Bytes written
+* `%f`/`%F`: Floating-point values
+
+### 
 ## Usage
 
 1. Copy `nanoprintf.h` into your codebase somewhere.
