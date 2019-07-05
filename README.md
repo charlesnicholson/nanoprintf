@@ -13,6 +13,7 @@ Like `printf`, `nanoprintf` expects a conversion specification string of the fol
 `[flags][field width][.precision][length modifier][conversion specifier]`
 
 * **Flags**
+	
 	None or more of the following:
 	* `0`: Pad the field with leading zero characters.
 	* `-`: Left-justify the conversion result in the field.
@@ -20,10 +21,13 @@ Like `printf`, `nanoprintf` expects a conversion specification string of the fol
 	* ` `: (space) A space character is inserted if the first converted character is not a sign.
 	* `#`: Writes extra characters (`0x` for hex, `.` for empty floats, '0' for empty octals, etc).
 * **Field width**
+	
 	A number that specifies the total field width for the conversion, adds padding. If field width is `*`, the field width is read from the next vararg.
 * **Precision**
+	
 	Prefixed with a `.`, a number that specifies the precision of the number or string. If precision is `*`, the precision is read from the next vararg.
 * **Length modifier**
+	
 	None or more of the following:
 	* `h`: Use `short` for integral and write-back vararg width.
 	* `L`: Use `long double` for float vararg width (note: it will then be casted down to `float`)
@@ -34,6 +38,7 @@ Like `printf`, `nanoprintf` expects a conversion specification string of the fol
 	* `z`: (C99-only specifier) Use the `size_t` types for integral and write-back vararg width.
 	* `t`: (C99-only specifier) Use the `ptrdiff_t` types for integral and write-back vararg width.
 * **Conversion specifier**
+	
 	Exactly one of the following:
 	* `%c`: Characters
 	* `%s`: Null-terminated strings
