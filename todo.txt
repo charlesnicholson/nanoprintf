@@ -1,5 +1,6 @@
 nanoprintf todo:
 ================
+make %n optional, and make it actually write :(
 c99 modifier support
 ignore negative precision star args
 negative field width star arg sets adds - flag and sets field width abs
