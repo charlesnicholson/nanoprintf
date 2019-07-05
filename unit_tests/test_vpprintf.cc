@@ -204,25 +204,6 @@ TEST(Pointer, NonNull) {
     }
 }
 
-// Position
-
-TEST_GROUP(Position) { Recorder r; };
-
-TEST(Position, Zero) {
-    CHECK_EQUAL(2, npf_pprintf(r.PutC, &r, "%n"));
-    STRCMP_EQUAL("0", r.String().c_str());
-}
-
-TEST(Position, One) {
-    CHECK_EQUAL(3, npf_pprintf(r.PutC, &r, " %n"));
-    STRCMP_EQUAL(" 1", r.String().c_str());
-}
-
-TEST(Position, AfterString) {
-    CHECK_EQUAL(7, npf_pprintf(r.PutC, &r, "%s%n", "hello"));
-    STRCMP_EQUAL("hello5", r.String().c_str());
-}
-
 // Float
 
 TEST_GROUP(Float) { Recorder r; };

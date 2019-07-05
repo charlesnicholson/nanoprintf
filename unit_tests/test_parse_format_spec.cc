@@ -408,7 +408,7 @@ TEST(npf__parse_format_spec, u) {
 
 TEST(npf__parse_format_spec, n) {
     CHECK_EQUAL(2, npf__parse_format_spec("%n", &spec));
-    CHECK_EQUAL(NPF_FMT_SPEC_CONV_CHARS_WRITTEN, spec.conv_spec);
+    CHECK_EQUAL(NPF_FMT_SPEC_CONV_WRITEBACK, spec.conv_spec);
 }
 
 TEST(npf__parse_format_spec, nClearsPrecision) {

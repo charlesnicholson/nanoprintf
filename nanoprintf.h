@@ -44,6 +44,11 @@
 #error NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS must be #defined to 0 or 1
 #endif
 
+/* %n is an attack vector, allow it to be disabled. */
+#ifndef NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS
+#error NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS must be #defined to 0 or 1
+#endif
+
 #ifdef NANOPRINTF_VISIBILITY_STATIC
 #define NPF_INTERFACE_DEF static
 #else
@@ -106,7 +111,7 @@ typedef enum {
     NPF_FMT_SPEC_LENGTH_MOD_SHORT,      /* 'h' */
     NPF_FMT_SPEC_LENGTH_MOD_LONG,       /* 'l' */
     NPF_FMT_SPEC_LENGTH_MOD_LONG_DOUBLE /* 'L' */
-#if NANOPRINTF_USE_C99_FORMAT_SPECIFIERS
+#if NANOPRINTF_USE_C99_FORMAT_SPECIFIERS == 1
     ,
     NPF_FMT_SPEC_LENGTH_MOD_C99_CHAR,      /* 'hh' */
     NPF_FMT_SPEC_LENGTH_MOD_C99_LONG_LONG, /* 'll' */
@@ -117,21 +122,24 @@ typedef enum {
 } npf__format_spec_length_modifier_t;
 
 typedef enum {
-    NPF_FMT_SPEC_CONV_PERCENT,       /* '%' */
-    NPF_FMT_SPEC_CONV_CHAR,          /* 'c' */
-    NPF_FMT_SPEC_CONV_STRING,        /* 's' */
-    NPF_FMT_SPEC_CONV_SIGNED_INT,    /* 'i', 'd' */
-    NPF_FMT_SPEC_CONV_OCTAL,         /* 'o' */
-    NPF_FMT_SPEC_CONV_HEX_INT,       /* 'x', 'X' */
-    NPF_FMT_SPEC_CONV_UNSIGNED_INT,  /* 'u' */
-    NPF_FMT_SPEC_CONV_CHARS_WRITTEN, /* 'n' */
-    NPF_FMT_SPEC_CONV_POINTER        /* 'p' */
-#if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS
+    NPF_FMT_SPEC_CONV_PERCENT,      /* '%' */
+    NPF_FMT_SPEC_CONV_CHAR,         /* 'c' */
+    NPF_FMT_SPEC_CONV_STRING,       /* 's' */
+    NPF_FMT_SPEC_CONV_SIGNED_INT,   /* 'i', 'd' */
+    NPF_FMT_SPEC_CONV_OCTAL,        /* 'o' */
+    NPF_FMT_SPEC_CONV_HEX_INT,      /* 'x', 'X' */
+    NPF_FMT_SPEC_CONV_UNSIGNED_INT, /* 'u' */
+    NPF_FMT_SPEC_CONV_POINTER       /* 'p' */
+#if NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS == 1
+    ,
+    NPF_FMT_SPEC_CONV_WRITEBACK /* 'n' */
+#endif
+#if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
     ,
     NPF_FMT_SPEC_CONV_FLOAT_DECIMAL,  /* 'f', 'F' */
     NPF_FMT_SPEC_CONV_FLOAT_EXPONENT, /* 'e', 'E' */
     NPF_FMT_SPEC_CONV_FLOAT_DYNAMIC   /* 'g', 'G' */
-#if NANOPRINTF_USE_C99_FORMAT_SPECIFIERS
+#if NANOPRINTF_USE_C99_FORMAT_SPECIFIERS == 1
     ,
     NPF_FMT_SPEC_CONV_C99_FLOAT_HEXPONENT /* 'a', 'A' */
 #endif
@@ -414,11 +422,13 @@ int npf__parse_format_spec(char const *format, npf__format_spec_t *out_spec) {
             out_spec->conv_spec_case = NPF_FMT_SPEC_CONV_CASE_UPPER;
             break;
 #endif
+#if NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS == 1
         case 'n':
             /* todo: reject string if flags or width or precision exist */
-            out_spec->conv_spec = NPF_FMT_SPEC_CONV_CHARS_WRITTEN;
+            out_spec->conv_spec = NPF_FMT_SPEC_CONV_WRITEBACK;
             out_spec->precision_type = NPF_FMT_SPEC_PRECISION_NONE;
             break;
+#endif
         case 'p':
             out_spec->conv_spec = NPF_FMT_SPEC_CONV_POINTER;
             out_spec->precision_type = NPF_FMT_SPEC_PRECISION_NONE;
@@ -752,13 +762,14 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                             }
                         }
                     } break;
-                    case NPF_FMT_SPEC_CONV_CHARS_WRITTEN: /* 'n' */
-                        cbuf_len = npf__utoa_rev(cbuf, (unsigned)n, 10,
-                                                 NPF_FMT_SPEC_CONV_CASE_NONE);
-                        break;
                     case NPF_FMT_SPEC_CONV_POINTER: /* 'p' */
                         cbuf_len = npf__ptoa_rev(cbuf, va_arg(vlist, void *));
                         break;
+#if NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS == 1
+                    case NPF_FMT_SPEC_CONV_WRITEBACK: /* 'n' */
+                        *(va_arg(vlist, int *)) = n;
+                        break;
+#endif
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
                     case NPF_FMT_SPEC_CONV_FLOAT_DECIMAL: { /* 'f', 'F' */
                         float const val = (float)va_arg(vlist, double);
