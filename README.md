@@ -54,7 +54,7 @@ Like `printf`, `nanoprintf` expects a conversion specification string of the fol
 	None or more of the following:
 	* `h`: Use `short` for integral and write-back vararg width.
 	* `L`: Use `long double` for float vararg width (note: it will then be casted down to `float`)
-	* 'l': Use `long`, `double`, or wide vararg width.
+	* `l`: Use `long`, `double`, or wide vararg width.
 	* `hh`: (C99-only specifier) Use `char` for integral and write-back vararg width.
 	* `ll`: (C99-only specifier) Use `long long` for integral and write-back vararg width.
 	* `j`: (C99-only specifier) Use the `[u]intmax_t` types for integral and write-back vararg width.
