@@ -16,7 +16,7 @@ Like `printf`, `nanoprintf` expects a conversion specification string of the fol
 	* `0`: Pad the field with leading zero characters.
 	* `-`: Left-justify the conversion result in the field.
 	* `+`: Signed conversions always begin with `+` or `-` characters.
-	* ` ` (space): A space character is inserted if the first converted character is not a sign.
+	* ` `: (space) A space character is inserted if the first converted character is not a sign.
 
 ### Converstion Specifiers
 * `%c`: Characters
