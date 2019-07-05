@@ -96,14 +96,12 @@ NPF_INTERFACE_DEF int npf_vpprintf(npf_putc pc, void *pc_ctx,
 
 typedef enum {
     NPF_FMT_SPEC_FIELD_WIDTH_NONE,
-    NPF_FMT_SPEC_FIELD_WIDTH_LITERAL,
-    NPF_FMT_SPEC_FIELD_WIDTH_STAR
+    NPF_FMT_SPEC_FIELD_WIDTH_LITERAL
 } npf__format_spec_field_width_t;
 
 typedef enum {
     NPF_FMT_SPEC_PRECISION_NONE,
-    NPF_FMT_SPEC_PRECISION_LITERAL,
-    NPF_FMT_SPEC_PRECISION_STAR
+    NPF_FMT_SPEC_PRECISION_LITERAL
 } npf__format_spec_precision_t;
 
 typedef enum {
@@ -176,7 +174,7 @@ typedef struct {
     npf__format_spec_conversion_case_t conv_spec_case;
 } npf__format_spec_t;
 
-NPF_INTERFACE_DEF int npf__parse_format_spec(char const *format,
+NPF_INTERFACE_DEF int npf__parse_format_spec(char const *format, va_list vlist,
                                              npf__format_spec_t *out_spec);
 
 typedef struct {
@@ -229,7 +227,8 @@ NPF_INTERFACE_DEF int npf__ftoa_rev(char *buf, float f, unsigned base,
 extern "C" {
 #endif
 
-int npf__parse_format_spec(char const *format, npf__format_spec_t *out_spec) {
+int npf__parse_format_spec(char const *format, va_list vlist,
+                           npf__format_spec_t *out_spec) {
     char const *cur = format;
 
     out_spec->left_justified = 0;
@@ -275,14 +274,22 @@ int npf__parse_format_spec(char const *format, npf__format_spec_t *out_spec) {
 
     /* Minimum field width */
     if (*cur == '*') {
-        out_spec->field_width_type = NPF_FMT_SPEC_FIELD_WIDTH_STAR;
+        /* '*' modifiers require more varargs */
+        int const field_width_star = va_arg(vlist, int);
+        out_spec->field_width_type = NPF_FMT_SPEC_FIELD_WIDTH_LITERAL;
+        if (field_width_star >= 0) {
+            out_spec->field_width = field_width_star;
+        } else {
+            out_spec->field_width = -field_width_star;
+            out_spec->left_justified = 1;
+        }
         ++cur;
     } else {
         out_spec->field_width = 0;
-        if (*cur >= '0' && *cur <= '9') {
+        if ((*cur >= '0') && (*cur <= '9')) {
             out_spec->field_width_type = NPF_FMT_SPEC_FIELD_WIDTH_LITERAL;
         }
-        while (*cur >= '0' && *cur <= '9') {
+        while ((*cur >= '0') && (*cur <= '9')) {
             out_spec->field_width =
                 (out_spec->field_width * 10) + (*cur++ - '0');
         }
@@ -292,18 +299,23 @@ int npf__parse_format_spec(char const *format, npf__format_spec_t *out_spec) {
     out_spec->precision = 0;
     if (*cur == '.') {
         ++cur;
-        out_spec->precision_type = NPF_FMT_SPEC_PRECISION_LITERAL;
         if (*cur == '*') {
+            int const star_precision = va_arg(vlist, int);
+            if (star_precision >= 0) {
+                out_spec->precision = star_precision;
+                out_spec->precision_type = NPF_FMT_SPEC_PRECISION_LITERAL;
+            }
             ++cur;
-            out_spec->precision_type = NPF_FMT_SPEC_PRECISION_STAR;
         } else if (*cur == '-') {
+            /* ignore negative precision */
             out_spec->precision_type = NPF_FMT_SPEC_PRECISION_NONE;
             ++cur;
-            while (*cur >= '0' && *cur <= '9') {
+            while ((*cur >= '0') && (*cur <= '9')) {
                 ++cur;
             }
         } else {
-            while (*cur >= '0' && *cur <= '9') {
+            out_spec->precision_type = NPF_FMT_SPEC_PRECISION_LITERAL;
+            while ((*cur >= '0') && (*cur <= '9')) {
                 out_spec->precision =
                     (out_spec->precision * 10) + (*cur++ - '0');
             }
@@ -439,11 +451,10 @@ int npf__parse_format_spec(char const *format, npf__format_spec_t *out_spec) {
 
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
     /* default float precision is 6 */
-    if ((out_spec->conv_spec == NPF_FMT_SPEC_CONV_FLOAT_DECIMAL) ||
-        (out_spec->conv_spec == NPF_FMT_SPEC_CONV_FLOAT_DYNAMIC) ||
-        (out_spec->conv_spec == NPF_FMT_SPEC_CONV_FLOAT_EXPONENT)) {
-        if (out_spec->precision_type == NPF_FMT_SPEC_PRECISION_NONE) {
-            out_spec->precision_type = NPF_FMT_SPEC_PRECISION_LITERAL;
+    if (out_spec->precision_type == NPF_FMT_SPEC_PRECISION_NONE) {
+        if ((out_spec->conv_spec == NPF_FMT_SPEC_CONV_FLOAT_DECIMAL) ||
+            (out_spec->conv_spec == NPF_FMT_SPEC_CONV_FLOAT_DYNAMIC) ||
+            (out_spec->conv_spec == NPF_FMT_SPEC_CONV_FLOAT_EXPONENT)) {
             out_spec->precision = 6;
         }
     }
@@ -669,7 +680,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
             NPF_PUT_CHECKED(*cur++);
         } else {
             /* Might be a format run, try to parse */
-            int const fs_len = npf__parse_format_spec(cur, &fs);
+            int const fs_len = npf__parse_format_spec(cur, vlist, &fs);
             if (fs_len == 0) {
                 /* Invalid format specifier, write and continue */
                 NPF_PUT_CHECKED(*cur++);
@@ -680,18 +691,6 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS
                 int frac_chars = 0, inf_or_nan = 0;
 #endif
-
-                /* '*' modifiers require more varargs */
-                if (fs.field_width_type == NPF_FMT_SPEC_FIELD_WIDTH_STAR) {
-                    fs.field_width = va_arg(vlist, int);
-                    fs.field_width_type = NPF_FMT_SPEC_FIELD_WIDTH_LITERAL;
-                }
-
-                if (fs.precision_type == NPF_FMT_SPEC_PRECISION_STAR) {
-                    fs.precision = va_arg(vlist, int);
-                    fs.precision_type = NPF_FMT_SPEC_PRECISION_LITERAL;
-                }
-
                 /* Convert the argument to string and point cbuf at it */
                 switch (fs.conv_spec) {
                     case NPF_FMT_SPEC_CONV_PERCENT:
@@ -834,10 +833,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                             :
 #endif
                             cbuf_len;
-                    precision =
-                        (fs.precision_type == NPF_FMT_SPEC_PRECISION_LITERAL)
-                            ? NPF_MAX(fs.precision - start, 0)
-                            : 0;
+                    precision = NPF_MAX(0, fs.precision - start);
                     pad = fs.field_width - cbuf_len - !!sign_c - precision;
                 }
 

@@ -185,6 +185,8 @@ TEST(conformance, StarArgs) {
     CheckConformance("01", "%.*i", 2, 1);
     CheckConformance("        07", "%*.*i", 10, 2, 7);
     CheckConformance("h", "%.*s", 1, "hello world");
+    CheckConformance("1", "%.*u", -123, 1);    // ignore negative * precision
+    CheckConformance("5     ", "%*u", -6, 5);  // * fw < 0 => '-' and abs(fw)
 }
 
 TEST(conformance, FloatNan) {

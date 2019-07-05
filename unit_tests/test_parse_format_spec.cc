@@ -1,18 +1,28 @@
 #include "CppUTest/TestHarness.h"
 #include "nanoprintf_in_unit_tests.h"
 
+namespace {
+int ParseFormatSpec(char const *fmt, npf__format_spec_t *out_spec, ...) {
+    va_list v;
+    va_start(v, out_spec);
+    int const r = npf__parse_format_spec(fmt, v, out_spec);
+    va_end(v);
+    return r;
+}
+}  // namespace
+
 TEST_GROUP(npf__parse_format_spec) { npf__format_spec_t spec; };
 
 TEST(npf__parse_format_spec, ReturnsZeroIfEmptyString) {
-    CHECK_EQUAL(0, npf__parse_format_spec("", &spec));
+    CHECK_EQUAL(0, ParseFormatSpec("", &spec));
 }
 
 TEST(npf__parse_format_spec, ReturnsZeroIfFirstCharIsntPercent) {
-    CHECK_EQUAL(0, npf__parse_format_spec("abcd", &spec));
+    CHECK_EQUAL(0, ParseFormatSpec("abcd", &spec));
 }
 
 TEST(npf__parse_format_spec, ReturnsZeroIfPercentEndsString) {
-    CHECK_EQUAL(0, npf__parse_format_spec("%", &spec));
+    CHECK_EQUAL(0, ParseFormatSpec("%", &spec));
 }
 
 // Printf behavior is specified in ISO/IEC 9899:201x 7.21.6.1
@@ -25,21 +35,21 @@ TEST(npf__parse_format_spec, ReturnsZeroIfPercentEndsString) {
 */
 
 TEST(npf__parse_format_spec, FlagLeftJustifiedAloneNotParsed) {
-    CHECK_EQUAL(0, npf__parse_format_spec("%-", &spec));
+    CHECK_EQUAL(0, ParseFormatSpec("%-", &spec));
 }
 
 TEST(npf__parse_format_spec, FlagLeftJustifiedOffByDefault) {
-    CHECK_EQUAL(2, npf__parse_format_spec("%u", &spec));
+    CHECK_EQUAL(2, ParseFormatSpec("%u", &spec));
     CHECK_EQUAL(0, spec.left_justified);
 }
 
 TEST(npf__parse_format_spec, FlagLeftJustified) {
-    CHECK_EQUAL(3, npf__parse_format_spec("%-u", &spec));
+    CHECK_EQUAL(3, ParseFormatSpec("%-u", &spec));
     CHECK_EQUAL(1, spec.left_justified);
 }
 
 TEST(npf__parse_format_spec, FlagLeftJustifiedMultiple) {
-    CHECK_EQUAL(7, npf__parse_format_spec("%-----u", &spec));
+    CHECK_EQUAL(7, ParseFormatSpec("%-----u", &spec));
     CHECK_EQUAL(1, spec.left_justified);
 }
 
@@ -51,21 +61,21 @@ TEST(npf__parse_format_spec, FlagLeftJustifiedMultiple) {
 */
 
 TEST(npf__parse_format_spec, FlagPrependSignAloneNotParsed) {
-    CHECK_EQUAL(0, npf__parse_format_spec("%+", &spec));
+    CHECK_EQUAL(0, ParseFormatSpec("%+", &spec));
 }
 
 TEST(npf__parse_format_spec, FlagPrependSignOffByDefault) {
-    CHECK_EQUAL(2, npf__parse_format_spec("%u", &spec));
+    CHECK_EQUAL(2, ParseFormatSpec("%u", &spec));
     CHECK_EQUAL(0, spec.prepend_sign);
 }
 
 TEST(npf__parse_format_spec, FlagPrependSign) {
-    CHECK_EQUAL(3, npf__parse_format_spec("%+u", &spec));
+    CHECK_EQUAL(3, ParseFormatSpec("%+u", &spec));
     CHECK_EQUAL(1, spec.prepend_sign);
 }
 
 TEST(npf__parse_format_spec, FlagPrependSignMultiple) {
-    CHECK_EQUAL(7, npf__parse_format_spec("%+++++u", &spec));
+    CHECK_EQUAL(7, ParseFormatSpec("%+++++u", &spec));
     CHECK_EQUAL(1, spec.prepend_sign);
 }
 
@@ -76,34 +86,34 @@ TEST(npf__parse_format_spec, FlagPrependSignMultiple) {
 */
 
 TEST(npf__parse_format_spec, FlagPrependSpaceAloneNotParsed) {
-    CHECK_EQUAL(0, npf__parse_format_spec("% ", &spec));
+    CHECK_EQUAL(0, ParseFormatSpec("% ", &spec));
 }
 
 TEST(npf__parse_format_spec, FlagPrependSpaceOffByDefault) {
-    CHECK_EQUAL(2, npf__parse_format_spec("%u", &spec));
+    CHECK_EQUAL(2, ParseFormatSpec("%u", &spec));
     CHECK_EQUAL(0, spec.prepend_space);
 }
 
 TEST(npf__parse_format_spec, FlagPrependSpace) {
-    CHECK_EQUAL(3, npf__parse_format_spec("% u", &spec));
+    CHECK_EQUAL(3, ParseFormatSpec("% u", &spec));
     CHECK_EQUAL(1, spec.prepend_space);
 }
 
 TEST(npf__parse_format_spec, FlagPrependSpaceMultiple) {
-    CHECK_EQUAL(7, npf__parse_format_spec("%     u", &spec));
+    CHECK_EQUAL(7, ParseFormatSpec("%     u", &spec));
     CHECK_EQUAL(1, spec.prepend_space);
 }
 
 TEST(npf__parse_format_spec, FlagPrependSpaceIgnoredIfPrependSignPresent) {
-    CHECK_EQUAL(4, npf__parse_format_spec("%+ u", &spec));
+    CHECK_EQUAL(4, ParseFormatSpec("%+ u", &spec));
     CHECK_EQUAL(1, spec.prepend_sign);
     CHECK_EQUAL(0, spec.prepend_space);
 
-    CHECK_EQUAL(4, npf__parse_format_spec("% +u", &spec));
+    CHECK_EQUAL(4, ParseFormatSpec("% +u", &spec));
     CHECK_EQUAL(1, spec.prepend_sign);
     CHECK_EQUAL(0, spec.prepend_space);
 
-    CHECK_EQUAL(7, npf__parse_format_spec("% + + u", &spec));
+    CHECK_EQUAL(7, ParseFormatSpec("% + + u", &spec));
     CHECK_EQUAL(1, spec.prepend_sign);
     CHECK_EQUAL(0, spec.prepend_space);
 }
@@ -122,21 +132,21 @@ TEST(npf__parse_format_spec, FlagPrependSpaceIgnoredIfPrependSignPresent) {
 */
 
 TEST(npf__parse_format_spec, FlagAlternativeFormAloneNotParsed) {
-    CHECK_EQUAL(0, npf__parse_format_spec("%#", &spec));
+    CHECK_EQUAL(0, ParseFormatSpec("%#", &spec));
 }
 
 TEST(npf__parse_format_spec, FlagAlternativeFormOffByDefault) {
-    CHECK_EQUAL(2, npf__parse_format_spec("%u", &spec));
+    CHECK_EQUAL(2, ParseFormatSpec("%u", &spec));
     CHECK_EQUAL(0, spec.alternative_form);
 }
 
 TEST(npf__parse_format_spec, FlagAlternativeForm) {
-    CHECK_EQUAL(3, npf__parse_format_spec("%#u", &spec));
+    CHECK_EQUAL(3, ParseFormatSpec("%#u", &spec));
     CHECK_EQUAL(1, spec.alternative_form);
 }
 
 TEST(npf__parse_format_spec, FlagAlternativeFormMultiple) {
-    CHECK_EQUAL(7, npf__parse_format_spec("%#####u", &spec));
+    CHECK_EQUAL(7, ParseFormatSpec("%#####u", &spec));
     CHECK_EQUAL(1, spec.alternative_form);
 }
 
@@ -150,34 +160,34 @@ TEST(npf__parse_format_spec, FlagAlternativeFormMultiple) {
 */
 
 TEST(npf__parse_format_spec, FlagLeadingZeroPadAloneNotParsed) {
-    CHECK_EQUAL(0, npf__parse_format_spec("%0", &spec));
+    CHECK_EQUAL(0, ParseFormatSpec("%0", &spec));
 }
 
 TEST(npf__parse_format_spec, FlagLeadingZeroPadOffByDefault) {
-    CHECK_EQUAL(2, npf__parse_format_spec("%u", &spec));
+    CHECK_EQUAL(2, ParseFormatSpec("%u", &spec));
     CHECK_EQUAL(0, spec.leading_zero_pad);
 }
 
 TEST(npf__parse_format_spec, FlagLeadingZeroPad) {
-    CHECK_EQUAL(3, npf__parse_format_spec("%0u", &spec));
+    CHECK_EQUAL(3, ParseFormatSpec("%0u", &spec));
     CHECK_EQUAL(1, spec.leading_zero_pad);
 }
 
 TEST(npf__parse_format_spec, FlagLeadingZeroPadMultiple) {
-    CHECK_EQUAL(7, npf__parse_format_spec("%00000u", &spec));
+    CHECK_EQUAL(7, ParseFormatSpec("%00000u", &spec));
     CHECK_EQUAL(1, spec.leading_zero_pad);
 }
 
 TEST(npf__parse_format_spec, FlagLeadingZeroPadIgnoredWhenLeftJustified) {
-    CHECK_EQUAL(4, npf__parse_format_spec("%0-u", &spec));
+    CHECK_EQUAL(4, ParseFormatSpec("%0-u", &spec));
     CHECK_EQUAL(1, spec.left_justified);
     CHECK_EQUAL(0, spec.leading_zero_pad);
 
-    CHECK_EQUAL(4, npf__parse_format_spec("%-0u", &spec));
+    CHECK_EQUAL(4, ParseFormatSpec("%-0u", &spec));
     CHECK_EQUAL(1, spec.left_justified);
     CHECK_EQUAL(0, spec.leading_zero_pad);
 
-    CHECK_EQUAL(8, npf__parse_format_spec("%0-0-0-u", &spec));
+    CHECK_EQUAL(8, ParseFormatSpec("%0-0-0-u", &spec));
     CHECK_EQUAL(1, spec.left_justified);
     CHECK_EQUAL(0, spec.leading_zero_pad);
 }
@@ -192,17 +202,18 @@ TEST(npf__parse_format_spec, FlagLeadingZeroPadIgnoredWhenLeftJustified) {
 */
 
 TEST(npf__parse_format_spec, FieldWidthIsNoneIfNotSpecified) {
-    CHECK_EQUAL(2, npf__parse_format_spec("%u", &spec));
+    CHECK_EQUAL(2, ParseFormatSpec("%u", &spec));
     CHECK_EQUAL(NPF_FMT_SPEC_FIELD_WIDTH_NONE, spec.field_width_type);
 }
 
-TEST(npf__parse_format_spec, FieldWidthIsStarIfAsterisk) {
-    CHECK_EQUAL(3, npf__parse_format_spec("%*u", &spec));
-    CHECK_EQUAL(NPF_FMT_SPEC_FIELD_WIDTH_STAR, spec.field_width_type);
+TEST(npf__parse_format_spec, FieldWidthReadsFromArgListIfStar) {
+    CHECK_EQUAL(3, ParseFormatSpec("%*u", &spec, 234));
+    CHECK_EQUAL(NPF_FMT_SPEC_FIELD_WIDTH_LITERAL, spec.field_width_type);
+    CHECK_EQUAL(234, spec.field_width);
 }
 
 TEST(npf__parse_format_spec, FieldWidthReadFromLiteral) {
-    CHECK_EQUAL(5, npf__parse_format_spec("%123u", &spec));
+    CHECK_EQUAL(5, ParseFormatSpec("%123u", &spec));
     CHECK_EQUAL(NPF_FMT_SPEC_FIELD_WIDTH_LITERAL, spec.field_width_type);
     CHECK_EQUAL(123, spec.field_width);
 }
@@ -219,32 +230,51 @@ TEST(npf__parse_format_spec, FieldWidthReadFromLiteral) {
    the behavior is undefined.
 */
 
-TEST(npf__parse_format_spec, PrecisionIsNoneIfNotSpecified) {
+TEST(npf__parse_format_spec, PrecisionDefaultIsZeroIfNotFloat) {
     spec.precision = 1234;
-    CHECK_EQUAL(2, npf__parse_format_spec("%u", &spec));
+    CHECK_EQUAL(2, ParseFormatSpec("%u", &spec));
     CHECK_EQUAL(NPF_FMT_SPEC_PRECISION_NONE, spec.precision_type);
     CHECK_EQUAL(0, spec.precision);
 }
 
-TEST(npf__parse_format_spec, PrecisionIsStarIfPeriodAsterisk) {
-    CHECK_EQUAL(4, npf__parse_format_spec("%.*u", &spec));
-    CHECK_EQUAL(NPF_FMT_SPEC_PRECISION_STAR, spec.precision_type);
+TEST(npf__parse_format_spec, PrecisionDefaultIsSixIfFloat) {
+    CHECK_EQUAL(2, ParseFormatSpec("%f", &spec));
+    CHECK_EQUAL(NPF_FMT_SPEC_PRECISION_NONE, spec.precision_type);
+    CHECK_EQUAL(6, spec.precision);
+    CHECK_EQUAL(2, ParseFormatSpec("%g", &spec));
+    CHECK_EQUAL(NPF_FMT_SPEC_PRECISION_NONE, spec.precision_type);
+    CHECK_EQUAL(6, spec.precision);
+    CHECK_EQUAL(2, ParseFormatSpec("%e", &spec));
+    CHECK_EQUAL(NPF_FMT_SPEC_PRECISION_NONE, spec.precision_type);
+    CHECK_EQUAL(6, spec.precision);
+}
+
+TEST(npf__parse_format_spec, PrecisionReadsFromArgListIfStar) {
+    CHECK_EQUAL(4, ParseFormatSpec("%.*u", &spec, 123));
+    CHECK_EQUAL(NPF_FMT_SPEC_PRECISION_LITERAL, spec.precision_type);
+    CHECK_EQUAL(123, spec.precision);
+}
+
+TEST(npf__parse_format_spec, PrecisionFromArgIsNoneDefaultIfNegative) {
+    CHECK_EQUAL(4, ParseFormatSpec("%.*u", &spec, -123));
+    CHECK_EQUAL(NPF_FMT_SPEC_PRECISION_NONE, spec.precision_type);
+    CHECK_EQUAL(0, spec.precision);
 }
 
 TEST(npf__parse_format_spec, PrecisionIsLiteralZeroIfJustPeriod) {
-    CHECK_EQUAL(3, npf__parse_format_spec("%.u", &spec));
+    CHECK_EQUAL(3, ParseFormatSpec("%.u", &spec));
     CHECK_EQUAL(NPF_FMT_SPEC_PRECISION_LITERAL, spec.precision_type);
     CHECK_EQUAL(0, spec.precision);
 }
 
 TEST(npf__parse_format_spec, PrecisionIsLiteralIfPeriodThenNumber) {
-    CHECK_EQUAL(8, npf__parse_format_spec("%.12345u", &spec));
+    CHECK_EQUAL(8, ParseFormatSpec("%.12345u", &spec));
     CHECK_EQUAL(NPF_FMT_SPEC_PRECISION_LITERAL, spec.precision_type);
     CHECK_EQUAL(12345, spec.precision);
 }
 
 TEST(npf__parse_format_spec, PrecisionNoneWhenNegativeLiteral) {
-    CHECK_EQUAL(6, npf__parse_format_spec("%.-34u", &spec));
+    CHECK_EQUAL(6, ParseFormatSpec("%.-34u", &spec));
     CHECK_EQUAL(NPF_FMT_SPEC_PRECISION_NONE, spec.precision_type);
     CHECK_EQUAL(0, spec.precision);
 }
@@ -299,196 +329,178 @@ TEST(npf__parse_format_spec, PrecisionNoneWhenNegativeLiteral) {
 */
 
 TEST(npf__parse_format_spec, LengthModWithoutConversionSpecifierReturnsZero) {
-    CHECK_EQUAL(0, npf__parse_format_spec("%hh", &spec));
+    CHECK_EQUAL(0, ParseFormatSpec("%hh", &spec));
 }
 
 TEST(npf__parse_format_spec, LengthMod_hh) {
-    CHECK_EQUAL(4, npf__parse_format_spec("%hhu", &spec));
+    CHECK_EQUAL(4, ParseFormatSpec("%hhu", &spec));
     CHECK_EQUAL(NPF_FMT_SPEC_LENGTH_MOD_C99_CHAR, spec.length_modifier);
 }
 
 TEST(npf__parse_format_spec, LengthMode_h) {
-    CHECK_EQUAL(3, npf__parse_format_spec("%hu", &spec));
+    CHECK_EQUAL(3, ParseFormatSpec("%hu", &spec));
     CHECK_EQUAL(NPF_FMT_SPEC_LENGTH_MOD_SHORT, spec.length_modifier);
 }
 
 TEST(npf__parse_format_spec, LengthMode_l) {
-    CHECK_EQUAL(3, npf__parse_format_spec("%lu", &spec));
+    CHECK_EQUAL(3, ParseFormatSpec("%lu", &spec));
     CHECK_EQUAL(NPF_FMT_SPEC_LENGTH_MOD_LONG, spec.length_modifier);
 }
 
 TEST(npf__parse_format_spec, LengthMode_ll) {
-    CHECK_EQUAL(4, npf__parse_format_spec("%llu", &spec));
+    CHECK_EQUAL(4, ParseFormatSpec("%llu", &spec));
     CHECK_EQUAL(NPF_FMT_SPEC_LENGTH_MOD_C99_LONG_LONG, spec.length_modifier);
 }
 
 TEST(npf__parse_format_spec, LengthMode_j) {
-    CHECK_EQUAL(3, npf__parse_format_spec("%ju", &spec));
+    CHECK_EQUAL(3, ParseFormatSpec("%ju", &spec));
     CHECK_EQUAL(NPF_FMT_SPEC_LENGTH_MOD_C99_INTMAX, spec.length_modifier);
 }
 
 TEST(npf__parse_format_spec, LengthMode_z) {
-    CHECK_EQUAL(3, npf__parse_format_spec("%zu", &spec));
+    CHECK_EQUAL(3, ParseFormatSpec("%zu", &spec));
     CHECK_EQUAL(NPF_FMT_SPEC_LENGTH_MOD_C99_SIZET, spec.length_modifier);
 }
 
 TEST(npf__parse_format_spec, LengthMode_t) {
-    CHECK_EQUAL(3, npf__parse_format_spec("%tu", &spec));
+    CHECK_EQUAL(3, ParseFormatSpec("%tu", &spec));
     CHECK_EQUAL(NPF_FMT_SPEC_LENGTH_MOD_C99_PTRDIFFT, spec.length_modifier);
 }
 
 TEST(npf__parse_format_spec, LengthMode_L) {
-    CHECK_EQUAL(3, npf__parse_format_spec("%Lu", &spec));
+    CHECK_EQUAL(3, ParseFormatSpec("%Lu", &spec));
     CHECK_EQUAL(NPF_FMT_SPEC_LENGTH_MOD_LONG_DOUBLE, spec.length_modifier);
 }
 
 // All conversion specifiers are defined in 7.21.6.1.8
 
 TEST(npf__parse_format_spec, PercentLiteral) {
-    CHECK_EQUAL(2, npf__parse_format_spec("%%", &spec));
+    CHECK_EQUAL(2, ParseFormatSpec("%%", &spec));
     CHECK_EQUAL(NPF_FMT_SPEC_CONV_PERCENT, spec.conv_spec);
 }
 
 TEST(npf__parse_format_spec, PercentClearsPrecision) {
-    CHECK_EQUAL(4, npf__parse_format_spec("%.9%", &spec));
+    CHECK_EQUAL(4, ParseFormatSpec("%.9%", &spec));
     CHECK_EQUAL(NPF_FMT_SPEC_PRECISION_NONE, spec.precision_type);
 }
 
 TEST(npf__parse_format_spec, c) {
-    CHECK_EQUAL(2, npf__parse_format_spec("%c", &spec));
+    CHECK_EQUAL(2, ParseFormatSpec("%c", &spec));
     CHECK_EQUAL(NPF_FMT_SPEC_CONV_CHAR, spec.conv_spec);
 }
 
 TEST(npf__parse_format_spec, cClearsPrecision) {
-    CHECK_EQUAL(4, npf__parse_format_spec("%.9c", &spec));
+    CHECK_EQUAL(4, ParseFormatSpec("%.9c", &spec));
     CHECK_EQUAL(NPF_FMT_SPEC_PRECISION_NONE, spec.precision_type);
 }
 
 TEST(npf__parse_format_spec, s) {
-    CHECK_EQUAL(2, npf__parse_format_spec("%s", &spec));
+    CHECK_EQUAL(2, ParseFormatSpec("%s", &spec));
     CHECK_EQUAL(NPF_FMT_SPEC_CONV_STRING, spec.conv_spec);
 }
 
 TEST(npf__parse_format_spec, cClearsLeadingZero) {
-    CHECK_EQUAL(3, npf__parse_format_spec("%0s", &spec));
+    CHECK_EQUAL(3, ParseFormatSpec("%0s", &spec));
     CHECK_EQUAL(0, spec.leading_zero_pad);
 }
 
 TEST(npf__parse_format_spec, i) {
-    CHECK_EQUAL(2, npf__parse_format_spec("%i", &spec));
+    CHECK_EQUAL(2, ParseFormatSpec("%i", &spec));
     CHECK_EQUAL(NPF_FMT_SPEC_CONV_SIGNED_INT, spec.conv_spec);
 }
 
 TEST(npf__parse_format_spec, d) {
-    CHECK_EQUAL(2, npf__parse_format_spec("%d", &spec));
+    CHECK_EQUAL(2, ParseFormatSpec("%d", &spec));
     CHECK_EQUAL(NPF_FMT_SPEC_CONV_SIGNED_INT, spec.conv_spec);
 }
 
 TEST(npf__parse_format_spec, o) {
-    CHECK_EQUAL(2, npf__parse_format_spec("%o", &spec));
+    CHECK_EQUAL(2, ParseFormatSpec("%o", &spec));
     CHECK_EQUAL(NPF_FMT_SPEC_CONV_OCTAL, spec.conv_spec);
 }
 
 TEST(npf__parse_format_spec, x) {
-    CHECK_EQUAL(2, npf__parse_format_spec("%x", &spec));
+    CHECK_EQUAL(2, ParseFormatSpec("%x", &spec));
     CHECK_EQUAL(NPF_FMT_SPEC_CONV_HEX_INT, spec.conv_spec);
     CHECK_EQUAL(NPF_FMT_SPEC_CONV_CASE_LOWER, spec.conv_spec_case);
 }
 
 TEST(npf__parse_format_spec, X) {
-    CHECK_EQUAL(2, npf__parse_format_spec("%X", &spec));
+    CHECK_EQUAL(2, ParseFormatSpec("%X", &spec));
     CHECK_EQUAL(NPF_FMT_SPEC_CONV_HEX_INT, spec.conv_spec);
     CHECK_EQUAL(NPF_FMT_SPEC_CONV_CASE_UPPER, spec.conv_spec_case);
 }
 
 TEST(npf__parse_format_spec, u) {
-    CHECK_EQUAL(2, npf__parse_format_spec("%u", &spec));
+    CHECK_EQUAL(2, ParseFormatSpec("%u", &spec));
     CHECK_EQUAL(NPF_FMT_SPEC_CONV_UNSIGNED_INT, spec.conv_spec);
 }
 
 TEST(npf__parse_format_spec, n) {
-    CHECK_EQUAL(2, npf__parse_format_spec("%n", &spec));
+    CHECK_EQUAL(2, ParseFormatSpec("%n", &spec));
     CHECK_EQUAL(NPF_FMT_SPEC_CONV_WRITEBACK, spec.conv_spec);
 }
 
 TEST(npf__parse_format_spec, nClearsPrecision) {
-    CHECK_EQUAL(4, npf__parse_format_spec("%.4n", &spec));
+    CHECK_EQUAL(4, ParseFormatSpec("%.4n", &spec));
     CHECK_EQUAL(NPF_FMT_SPEC_PRECISION_NONE, spec.precision_type);
 }
 
 TEST(npf__parse_format_spec, p) {
-    CHECK_EQUAL(2, npf__parse_format_spec("%p", &spec));
+    CHECK_EQUAL(2, ParseFormatSpec("%p", &spec));
     CHECK_EQUAL(NPF_FMT_SPEC_CONV_POINTER, spec.conv_spec);
 }
 
 TEST(npf__parse_format_spec, pClearsPrecision) {
-    CHECK_EQUAL(4, npf__parse_format_spec("%.4p", &spec));
+    CHECK_EQUAL(4, ParseFormatSpec("%.4p", &spec));
     CHECK_EQUAL(NPF_FMT_SPEC_PRECISION_NONE, spec.precision_type);
 }
 
 TEST(npf__parse_format_spec, f) {
-    CHECK_EQUAL(2, npf__parse_format_spec("%f", &spec));
+    CHECK_EQUAL(2, ParseFormatSpec("%f", &spec));
     CHECK_EQUAL(NPF_FMT_SPEC_CONV_FLOAT_DECIMAL, spec.conv_spec);
     CHECK_EQUAL(NPF_FMT_SPEC_CONV_CASE_LOWER, spec.conv_spec_case);
 }
 
 TEST(npf__parse_format_spec, F) {
-    CHECK_EQUAL(2, npf__parse_format_spec("%F", &spec));
+    CHECK_EQUAL(2, ParseFormatSpec("%F", &spec));
     CHECK_EQUAL(NPF_FMT_SPEC_CONV_FLOAT_DECIMAL, spec.conv_spec);
     CHECK_EQUAL(NPF_FMT_SPEC_CONV_CASE_UPPER, spec.conv_spec_case);
 }
 
-TEST(npf__parse_format_spec, FloatDefaultPrecisionIsSix) {
-    npf__parse_format_spec("%f", &spec);
-    CHECK_EQUAL(NPF_FMT_SPEC_PRECISION_LITERAL, spec.precision_type);
-    CHECK_EQUAL(6, spec.precision);
-}
-
 TEST(npf__parse_format_spec, e) {
-    CHECK_EQUAL(2, npf__parse_format_spec("%e", &spec));
+    CHECK_EQUAL(2, ParseFormatSpec("%e", &spec));
     CHECK_EQUAL(NPF_FMT_SPEC_CONV_FLOAT_EXPONENT, spec.conv_spec);
     CHECK_EQUAL(NPF_FMT_SPEC_CONV_CASE_LOWER, spec.conv_spec_case);
 }
 
 TEST(npf__parse_format_spec, E) {
-    CHECK_EQUAL(2, npf__parse_format_spec("%E", &spec));
+    CHECK_EQUAL(2, ParseFormatSpec("%E", &spec));
     CHECK_EQUAL(NPF_FMT_SPEC_CONV_FLOAT_EXPONENT, spec.conv_spec);
     CHECK_EQUAL(NPF_FMT_SPEC_CONV_CASE_UPPER, spec.conv_spec_case);
 }
 
-TEST(npf__parse_format_spec, ExponentDefaultPrecisionIsSix) {
-    npf__parse_format_spec("%e", &spec);
-    CHECK_EQUAL(NPF_FMT_SPEC_PRECISION_LITERAL, spec.precision_type);
-    CHECK_EQUAL(6, spec.precision);
-}
-
 TEST(npf__parse_format_spec, a) {
-    CHECK_EQUAL(2, npf__parse_format_spec("%a", &spec));
+    CHECK_EQUAL(2, ParseFormatSpec("%a", &spec));
     CHECK_EQUAL(NPF_FMT_SPEC_CONV_C99_FLOAT_HEXPONENT, spec.conv_spec);
     CHECK_EQUAL(NPF_FMT_SPEC_CONV_CASE_LOWER, spec.conv_spec_case);
 }
 
 TEST(npf__parse_format_spec, A) {
-    CHECK_EQUAL(2, npf__parse_format_spec("%A", &spec));
+    CHECK_EQUAL(2, ParseFormatSpec("%A", &spec));
     CHECK_EQUAL(NPF_FMT_SPEC_CONV_C99_FLOAT_HEXPONENT, spec.conv_spec);
     CHECK_EQUAL(NPF_FMT_SPEC_CONV_CASE_UPPER, spec.conv_spec_case);
 }
 
 TEST(npf__parse_format_spec, g) {
-    CHECK_EQUAL(2, npf__parse_format_spec("%g", &spec));
+    CHECK_EQUAL(2, ParseFormatSpec("%g", &spec));
     CHECK_EQUAL(NPF_FMT_SPEC_CONV_FLOAT_DYNAMIC, spec.conv_spec);
     CHECK_EQUAL(NPF_FMT_SPEC_CONV_CASE_LOWER, spec.conv_spec_case);
 }
 
 TEST(npf__parse_format_spec, G) {
-    CHECK_EQUAL(2, npf__parse_format_spec("%G", &spec));
+    CHECK_EQUAL(2, ParseFormatSpec("%G", &spec));
     CHECK_EQUAL(NPF_FMT_SPEC_CONV_FLOAT_DYNAMIC, spec.conv_spec);
     CHECK_EQUAL(NPF_FMT_SPEC_CONV_CASE_UPPER, spec.conv_spec_case);
-}
-
-TEST(npf__parse_format_spec, DynamicDefaultPrecisionIsSix) {
-    npf__parse_format_spec("%g", &spec);
-    CHECK_EQUAL(NPF_FMT_SPEC_PRECISION_LITERAL, spec.precision_type);
-    CHECK_EQUAL(6, spec.precision);
 }
 
