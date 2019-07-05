@@ -1,4 +1,9 @@
-/* https://github.com/nothings/stb/blob/master/docs/stb_howto.txt */
+/*
+    nanoprintf: a tiny embeddable printf replacement written in C.
+    https://github.com/charlesnicholson/nanoprintf
+    charles.nicholson+nanoprintf@gmail.com
+*/
+
 #ifndef NANOPRINTF_IMPLEMENTATION
 
 #ifndef NANOPRINTF_H_INCLUDED
