@@ -2,7 +2,7 @@
 
 [![CircleCI](https://circleci.com/gh/charlesnicholson/nanoprintf.svg?style=shield)](https://circleci.com/gh/charlesnicholson/nanoprintf) [![](https://img.shields.io/badge/license-public_domain-brightgreen.svg)](https://github.com/charlesnicholson/nanoprintf/blob/master/LICENSE)
 
-nanoprintf is an almost-standard-compliant implementation of snprintf and vsnprintf for embedded systems. nanoprintf makes no memory allocations, uses less than 100 bytes of stack, and is around 5KB of ARM Cortex-M object code when optimized with all the bells and whistles turned on (slightly larger on x64).
+nanoprintf is an implementation of snprintf and vsnprintf for embedded systems that aims for C11 standard compliance. nanoprintf makes no memory allocations, uses less than 100 bytes of stack, and is around 5KB of ARM Cortex-M object code when optimized with all the bells and whistles turned on (slightly larger on x64).
 
 nanoprintf is a [single header file](https://github.com/charlesnicholson/nanoprintf/blob/readme/nanoprintf.h) in the style of the [stb libraries](https://github.com/nothings/stb). The rest of the repository is tests and scaffolding and not required for use.
 
@@ -52,7 +52,7 @@ Like `printf`, `nanoprintf` expects a conversion specification string of the fol
 `[flags][field width][.precision][length modifier][conversion specifier]`
 
 * **Flags**
-	
+
 	None or more of the following:
 	* `0`: Pad the field with leading zero characters.
 	* `-`: Left-justify the conversion result in the field.
@@ -60,13 +60,13 @@ Like `printf`, `nanoprintf` expects a conversion specification string of the fol
 	* ` `: (space) A space character is inserted if the first converted character is not a sign.
 	* `#`: Writes extra characters (`0x` for hex, `.` for empty floats, '0' for empty octals, etc).
 * **Field width**
-	
+
 	A number that specifies the total field width for the conversion, adds padding. If field width is `*`, the field width is read from the next vararg.
 * **Precision**
-	
+
 	Prefixed with a `.`, a number that specifies the precision of the number or string. If precision is `*`, the precision is read from the next vararg.
 * **Length modifier**
-	
+
 	None or more of the following:
 	* `h`: Use `short` for integral and write-back vararg width.
 	* `L`: Use `long double` for float vararg width (note: it will then be casted down to `float`)
@@ -77,7 +77,7 @@ Like `printf`, `nanoprintf` expects a conversion specification string of the fol
 	* `z`: (C99-only specifier) Use the `size_t` types for integral and write-back vararg width.
 	* `t`: (C99-only specifier) Use the `ptrdiff_t` types for integral and write-back vararg width.
 * **Conversion specifier**
-	
+
 	Exactly one of the following:
 	* `%%`: Percent-sign literal
 	* `%c`: Characters
