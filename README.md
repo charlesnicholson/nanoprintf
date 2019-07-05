@@ -2,11 +2,13 @@
 
 [![CircleCI](https://circleci.com/gh/charlesnicholson/nanoprintf.svg?style=shield)](https://circleci.com/gh/charlesnicholson/nanoprintf) [![](https://img.shields.io/badge/license-public_domain-brightgreen.svg)](https://github.com/charlesnicholson/nanoprintf/blob/master/LICENSE)
 
-nanoprintf is an almost-standard-compliant implementation of snprintf and vsnprintf for embedded systems. Zero memory allocations, less than 100 bytes of stack, and around 5KB of ARM Cortex-M object code when optimized with all the bells and whistles turned on.
+nanoprintf is an almost-standard-compliant implementation of snprintf and vsnprintf for embedded systems. nanoprintf makes no memory allocations, uses less than 100 bytes of stack, and is around 5KB of ARM Cortex-M object code when optimized with all the bells and whistles turned on (slightly larger on x64).
 
 nanoprintf is a [single header file](https://github.com/charlesnicholson/nanoprintf/blob/readme/nanoprintf.h) in the style of the [stb libraries](https://github.com/nothings/stb). The rest of the repository is tests and scaffolding and not required for use.
 
 nanoprintf is written in C89 for maximal compiler compatibility. C99 or C++11 compilers are required (for `uint64_t` and other types) if floating point conversion or C99 modifiers are enabled. nanoprintf does include standard headers but only uses them for types and argument lists; no calls are made into stdlib / libc, with the possible exception of double-to-float conversion.
+
+nanoprintf is statically configurable so users can find a balance between size, compiler requirements, and feature set. Floating point conversion, C99 length modifiers, and size write-back are all configurable and are only compiled if explicitly requested, see [Configuration](https://github.com/charlesnicholson/nanoprintf/tree/readme#configuration) for details.
 
 ## Usage
 
