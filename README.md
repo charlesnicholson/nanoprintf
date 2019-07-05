@@ -79,6 +79,7 @@ Like `printf`, `nanoprintf` expects a conversion specification string of the fol
 * **Conversion specifier**
 	
 	Exactly one of the following:
+	* `%%`: Percent-sign literal
 	* `%c`: Characters
 	* `%s`: Null-terminated strings
 	* `%i`/`%d`: Signed integers
