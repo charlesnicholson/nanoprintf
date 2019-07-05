@@ -600,46 +600,40 @@ int npf__fsplit_abs(float f, uint64_t *out_int_part, uint64_t *out_frac_part,
         *out_int_part = mantissa_norm;
     }
 
-    uint64_t fraction_bin;
+    uint64_t frac;
     {
         int const shift = NPF_FRACTION_BIN_DIGITS + exponent - 4;
         if ((shift >= (NPF_FRACTION_BIN_DIGITS - 4)) || (shift < 0)) {
-            fraction_bin = 0;
+            frac = 0;
         } else {
-            fraction_bin = ((uint64_t)mantissa_norm) << shift;
+            frac = ((uint64_t)mantissa_norm) << shift;
         }
-        // multiply off the implicit "one"
-        fraction_bin &= 0x0fffffffffffffffllu;
-        fraction_bin *= 10;
+        // multiply off the leading "one"
+        frac &= 0x0fffffffffffffffllu;
+        frac *= 10;
     }
 
     {
+        // Count the number of 0's at the beginning of the fractional part.
         int frac_base10_neg_exp = 0;
-        for (;;) {
-            if (fraction_bin == 0) {
-                break;
-            }
-            if ((fraction_bin >> (NPF_FRACTION_BIN_DIGITS - 4)) != 0) {
-                break;
-            }
+        while (frac && ((frac >> (NPF_FRACTION_BIN_DIGITS - 4))) == 0) {
             ++frac_base10_neg_exp;
-            fraction_bin &= 0x0fffffffffffffffllu;
-            fraction_bin *= 10;
+            frac &= 0x0fffffffffffffffllu;
+            frac *= 10;
         }
         *out_frac_base10_neg_exp = frac_base10_neg_exp;
     }
 
     {
-        unsigned fraction_dec = 0;
-        for (int written = 0;
-             fraction_bin && (written < NPF_MAX_FRACTION_DEC_DIGITS);
-             ++written) {
-            fraction_dec *= 10;
-            fraction_dec += fraction_bin >> (NPF_FRACTION_BIN_DIGITS - 4);
-            fraction_bin &= 0x0fffffffffffffffllu;
-            fraction_bin *= 10;
+        // Convert the fractional part to base 10.
+        unsigned frac_part = 0;
+        for (int i = 0; frac && (i < NPF_MAX_FRACTION_DEC_DIGITS); ++i) {
+            frac_part *= 10;
+            frac_part += frac >> (NPF_FRACTION_BIN_DIGITS - 4);
+            frac &= 0x0fffffffffffffffllu;
+            frac *= 10;
         }
-        *out_frac_part = fraction_dec;
+        *out_frac_part = frac_part;
     }
     return 1;
 }
