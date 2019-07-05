@@ -204,7 +204,8 @@ NPF_VISIBILITY int npf__ptoa_rev(char *buf, void const *p);
 
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
 NPF_VISIBILITY int npf__fsplit_abs(float f, uint64_t *out_int_part,
-                                   uint64_t *out_frac_part);
+                                   uint64_t *out_frac_part,
+                                   int *out_frac_base10_neg_e);
 NPF_VISIBILITY int npf__ftoa_rev(char *buf, float f, unsigned base,
                                  npf__format_spec_conversion_case_t cc,
                                  int *out_frac_chars);
@@ -554,7 +555,8 @@ enum {
     NPF_MAX_FRACTION_DEC_DIGITS = 8
 };
 
-int npf__fsplit_abs(float f, uint64_t *out_int_part, uint64_t *out_frac_part) {
+int npf__fsplit_abs(float f, uint64_t *out_int_part, uint64_t *out_frac_part,
+                    int *out_frac_base10_neg_exp) {
     // conversion algorithm by Wojciech Muła (zdjęcia@garnek.pl)
     // http://0x80.pl/notesen/2015-12-29-float-to-string.html
 
@@ -598,29 +600,47 @@ int npf__fsplit_abs(float f, uint64_t *out_int_part, uint64_t *out_frac_part) {
         *out_int_part = mantissa_norm;
     }
 
-    unsigned fraction_dec = 0;
+    uint64_t fraction_bin;
     {
-        uint64_t fraction_bin;
         int const shift = NPF_FRACTION_BIN_DIGITS + exponent - 4;
         if ((shift >= (NPF_FRACTION_BIN_DIGITS - 4)) || (shift < 0)) {
             fraction_bin = 0;
         } else {
             fraction_bin = ((uint64_t)mantissa_norm) << shift;
         }
+        // multiply off the implicit "one"
+        fraction_bin &= 0x0fffffffffffffffllu;
+        fraction_bin *= 10;
+    }
 
-        for (int written = 0; written < NPF_MAX_FRACTION_DEC_DIGITS;
-             ++written) {
-            fraction_bin &= 0x0fffffffffffffffllu;
-            fraction_bin *= 10;
+    {
+        int frac_base10_neg_exp = 0;
+        for (;;) {
             if (fraction_bin == 0) {
                 break;
             }
-            fraction_dec *= 10;
-            fraction_dec += fraction_bin >> (NPF_FRACTION_BIN_DIGITS - 4);
+            if ((fraction_bin >> (NPF_FRACTION_BIN_DIGITS - 4)) != 0) {
+                break;
+            }
+            ++frac_base10_neg_exp;
+            fraction_bin &= 0x0fffffffffffffffllu;
+            fraction_bin *= 10;
         }
+        *out_frac_base10_neg_exp = frac_base10_neg_exp;
     }
 
-    *out_frac_part = fraction_dec;
+    {
+        unsigned fraction_dec = 0;
+        for (int written = 0;
+             fraction_bin && (written < NPF_MAX_FRACTION_DEC_DIGITS);
+             ++written) {
+            fraction_dec *= 10;
+            fraction_dec += fraction_bin >> (NPF_FRACTION_BIN_DIGITS - 4);
+            fraction_bin &= 0x0fffffffffffffffllu;
+            fraction_bin *= 10;
+        }
+        *out_frac_part = fraction_dec;
+    }
     return 1;
 }
 
@@ -634,7 +654,6 @@ int npf__ftoa_rev(char *buf, float f, unsigned base,
         *buf++ = 'N' + case_c;
         return -3;
     }
-
     if (f == INFINITY) {
         *buf++ = 'F' + case_c;
         *buf++ = 'N' + case_c;
@@ -643,7 +662,8 @@ int npf__ftoa_rev(char *buf, float f, unsigned base,
     }
 
     uint64_t int_part, frac_part;
-    if (npf__fsplit_abs(f, &int_part, &frac_part) == 0) {
+    int frac_base10_neg_exp;
+    if (npf__fsplit_abs(f, &int_part, &frac_part, &frac_base10_neg_exp) == 0) {
         *buf++ = 'R' + case_c;
         *buf++ = 'O' + case_c;
         *buf++ = 'O' + case_c;
@@ -653,13 +673,20 @@ int npf__ftoa_rev(char *buf, float f, unsigned base,
     unsigned const base_c = (cc == NPF_FMT_SPEC_CONV_CASE_LOWER) ? 'a' : 'A';
     char *dst = buf;
 
+    // write the fractional digits
     while (frac_part) {
         unsigned const d = frac_part % base;
         frac_part /= base;
         *dst++ = (d < 10) ? (char)('0' + d) : (char)(base_c + (d - 10));
     }
+    // write the 0 digits between the . and the first fractional digit
+    while (frac_base10_neg_exp-- > 0) {
+        *dst++ = '0';
+    }
     *out_frac_chars = (int)(dst - buf);
+    // write the decimal point
     *dst++ = '.';
+    // write the integer digits
     if (int_part == 0) {
         *dst++ = '0';
     } else {
@@ -733,7 +760,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                         }
 
                         sign = (val < 0) ? -1 : 1;
-                        /* special case, if precision and value are 0, skip */
+                        /* special case, if prec and value are 0, skip */
                         if (!val && !fs.precision &&
                             (fs.precision_type ==
                              NPF_FMT_SPEC_PRECISION_LITERAL)) {
@@ -768,7 +795,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                             !fs.precision && fs.alternative_form) {
                             fs.precision = 1;
                         }
-                        /* special case, if precision and value are 0, skip */
+                        /* special case, if prec and value are 0, skip */
                         if (!val && !fs.precision &&
                             (fs.precision_type ==
                              NPF_FMT_SPEC_PRECISION_LITERAL)) {
@@ -778,7 +805,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                             cbuf_len = npf__ultoa_rev(cbuf, val, base,
                                                       fs.conv_spec_case);
                         }
-                        /* alt form adds '0' octal prefix or '0x' hex prefix */
+                        /* alt form adds '0' octal or '0x' hex prefix */
                         if (val && fs.alternative_form) {
                             if (fs.conv_spec == NPF_FMT_SPEC_CONV_OCTAL) {
                                 cbuf[cbuf_len++] = '0';
@@ -811,7 +838,13 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
 #endif
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
                     case NPF_FMT_SPEC_CONV_FLOAT_DECIMAL: { /* 'f', 'F' */
-                        float const val = (float)va_arg(vlist, double);
+                        float val;
+                        if (fs.length_modifier ==
+                            NPF_FMT_SPEC_LENGTH_MOD_LONG_DOUBLE) {
+                            val = (float)va_arg(vlist, long double);
+                        } else {
+                            val = (float)va_arg(vlist, double);
+                        }
                         sign = (val < 0) ? -1 : 1;
                         cbuf_len = npf__ftoa_rev(
                             cbuf, val, 10, fs.conv_spec_case, &frac_chars);
@@ -825,7 +858,8 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                     case NPF_FMT_SPEC_CONV_FLOAT_DYNAMIC: /* 'g', 'G' */
                         break;
 #if NANOPRINTF_USE_C99_FORMAT_SPECIFIERS == 1
-                    case NPF_FMT_SPEC_CONV_C99_FLOAT_HEXPONENT: /* 'a', 'A' */
+                    case NPF_FMT_SPEC_CONV_C99_FLOAT_HEXPONENT: /* 'a', 'A'
+                                                                 */
                         break;
 #endif
 #endif
