@@ -158,12 +158,26 @@ TEST(conformance, Pointer) {
     CheckConformance(buf, "%p", p);
     snprintf(buf, sizeof(buf), "%30p", (void *)p);
     CheckConformance(buf, "%30p", p);
-    // CheckConformance("%030p", p); 0x comes before zero pad
-    // CheckConformance("%.30p", p); 0x comes before precision
+    // CheckConformance("%030p", p); 0 flag + 'p' is undefined
+    // CheckConformance("%.30p", p); precision + 'p' is undefined
 }
 
-TEST(conformance, BytesWritten) {
-    // CheckConformance("%n"); often unimplemented
+namespace {
+int dummy_putc(int, void *) { return 1; }
+}  // namespace
+
+TEST(conformance, Writeback) {
+    int writeback = -1;
+    npf_pprintf(dummy_putc, nullptr, "%n", &writeback);
+    CHECK_EQUAL(0, writeback);
+    npf_pprintf(dummy_putc, nullptr, " %n", &writeback);
+    CHECK_EQUAL(1, writeback);
+    npf_pprintf(dummy_putc, nullptr, "  %n", &writeback);
+    CHECK_EQUAL(2, writeback);
+    npf_pprintf(dummy_putc, nullptr, "%s%n", "abcd", &writeback);
+    CHECK_EQUAL(4, writeback);
+    npf_pprintf(dummy_putc, nullptr, "%u%s%n", 0, "abcd", &writeback);
+    CHECK_EQUAL(5, writeback);
 }
 
 TEST(conformance, StarArgs) {
