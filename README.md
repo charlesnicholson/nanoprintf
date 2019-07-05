@@ -20,6 +20,16 @@ nanoprintf is written in C89 for maximal compiler compatibility. C99 or C++11 co
 
 1. `#include "path/to/nanoprintf.h"` as usual to expose the function prototypes.
 
+## API
+
+nanoprintf has 4 main functions:
+* `npf_snprintf`: Use like [snprintf](https://en.cppreference.com/w/c/io/fprintf).
+* `npf_vsnprintf`: Use like [vsnprintf](https://en.cppreference.com/w/c/io/vfprintf) (`va_list` support).
+* `npf_pprintf`: Use like [printf](https://en.cppreference.com/w/c/io/fprintf) with a per-character write callback (semihosting, UART, etc).
+* `npf_vpprintf`: Use like `npf_pprintf` but takes a `va_list`.
+
+The `pprintf` variations take a callback that returns an `int`. If the callback returns `NPF_EOF`, the print functions will stop printing and return immediately.
+
 ## Configuration
 
 nanoprintf has the following static configuration flags. You can either inject them into your compiler (usually `-D` flags) or wrap `nanoprintf.h` in [your own header](https://github.com/charlesnicholson/nanoprintf/blob/readme/unit_tests/nanoprintf_in_unit_tests.h) that sets them up, and then `#include` your header instead of `nanoprintf.h` in your application.
