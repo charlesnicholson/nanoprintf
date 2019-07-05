@@ -197,9 +197,9 @@ typedef struct {
 
 NPF_VISIBILITY int npf__bufputc(int c, void *ctx);
 
-NPF_VISIBILITY int npf__itoa_rev(char *buf, int i);
-NPF_VISIBILITY int npf__utoa_rev(char *buf, unsigned i, unsigned base,
-                                 npf__format_spec_conversion_case_t cc);
+NPF_VISIBILITY int npf__ltoa_rev(char *buf, long i);
+NPF_VISIBILITY int npf__ultoa_rev(char *buf, unsigned long i, unsigned base,
+                                  npf__format_spec_conversion_case_t cc);
 NPF_VISIBILITY int npf__ptoa_rev(char *buf, void const *p);
 
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
@@ -484,7 +484,7 @@ int npf__bufputc(int c, void *ctx) {
     return NPF_EOF;
 }
 
-int npf__itoa_rev(char *buf, int i) {
+int npf__ltoa_rev(char *buf, long i) {
     char *dst = buf;
     if (i == 0) {
         *dst++ = '0';
@@ -498,8 +498,8 @@ int npf__itoa_rev(char *buf, int i) {
     return (int)(dst - buf);
 }
 
-int npf__utoa_rev(char *buf, unsigned i, unsigned base,
-                  npf__format_spec_conversion_case_t cc) {
+int npf__ultoa_rev(char *buf, unsigned long i, unsigned base,
+                   npf__format_spec_conversion_case_t cc) {
     char *dst = buf;
     if (i == 0) {
         *dst++ = '0';
@@ -721,10 +721,13 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                         cbuf_len = (int)(s - cbuf);
                     } break;
                     case NPF_FMT_SPEC_CONV_SIGNED_INT: { /* 'i', 'd' */
-                        int val;
+                        long val;
                         if (fs.length_modifier ==
                             NPF_FMT_SPEC_LENGTH_MOD_SHORT) {
                             val = (short)va_arg(vlist, int);
+                        } else if (fs.length_modifier ==
+                                   NPF_FMT_SPEC_LENGTH_MOD_LONG) {
+                            val = (long)va_arg(vlist, long);
                         } else {
                             val = va_arg(vlist, int);
                         }
@@ -737,7 +740,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                             cbuf_len = 0;
                         } else {
                             /* print the number into cbuf */
-                            cbuf_len = npf__itoa_rev(cbuf, val);
+                            cbuf_len = npf__ltoa_rev(cbuf, val);
                         }
                     } break;
                     case NPF_FMT_SPEC_CONV_OCTAL:          /* 'o' */
@@ -749,10 +752,13 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                                 : ((fs.conv_spec == NPF_FMT_SPEC_CONV_HEX_INT)
                                        ? 16
                                        : 10);
-                        unsigned val;
+                        unsigned long val;
                         if (fs.length_modifier ==
                             NPF_FMT_SPEC_LENGTH_MOD_SHORT) {
                             val = (unsigned short)va_arg(vlist, unsigned);
+                        } else if (fs.length_modifier ==
+                                   NPF_FMT_SPEC_LENGTH_MOD_LONG) {
+                            val = (unsigned long)va_arg(vlist, unsigned long);
                         } else {
                             val = va_arg(vlist, unsigned);
                         }
@@ -769,8 +775,8 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                             cbuf_len = 0;
                         } else {
                             /* print the number info cbuf */
-                            cbuf_len = npf__utoa_rev(cbuf, val, base,
-                                                     fs.conv_spec_case);
+                            cbuf_len = npf__ultoa_rev(cbuf, val, base,
+                                                      fs.conv_spec_case);
                         }
                         /* alt form adds '0' octal prefix or '0x' hex prefix */
                         if (val && fs.alternative_form) {
