@@ -833,10 +833,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                             :
 #endif
                             cbuf_len;
-                    precision =
-                        (fs.precision_type == NPF_FMT_SPEC_PRECISION_LITERAL)
-                            ? NPF_MAX(fs.precision - start, 0)
-                            : 0;
+                    precision = NPF_MAX(0, fs.precision - start);
                     pad = fs.field_width - cbuf_len - !!sign_c - precision;
                 }
 
