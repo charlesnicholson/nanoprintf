@@ -230,11 +230,26 @@ TEST(npf__parse_format_spec, FieldWidthReadFromLiteral) {
    the behavior is undefined.
 */
 
-TEST(npf__parse_format_spec, PrecisionDefaultIsZeroIfNotFloat) {
+TEST(npf__parse_format_spec, PrecisionDefaultIsOneForNumbers) {
     spec.precision = 1234;
     CHECK_EQUAL(2, ParseFormatSpec("%u", &spec));
     CHECK_EQUAL(NPF_FMT_SPEC_PRECISION_NONE, spec.precision_type);
-    CHECK_EQUAL(0, spec.precision);
+    CHECK_EQUAL(1, spec.precision);
+
+    spec.precision = 1234;
+    CHECK_EQUAL(2, ParseFormatSpec("%i", &spec));
+    CHECK_EQUAL(NPF_FMT_SPEC_PRECISION_NONE, spec.precision_type);
+    CHECK_EQUAL(1, spec.precision);
+
+    spec.precision = 1234;
+    CHECK_EQUAL(2, ParseFormatSpec("%o", &spec));
+    CHECK_EQUAL(NPF_FMT_SPEC_PRECISION_NONE, spec.precision_type);
+    CHECK_EQUAL(1, spec.precision);
+
+    spec.precision = 1234;
+    CHECK_EQUAL(2, ParseFormatSpec("%x", &spec));
+    CHECK_EQUAL(NPF_FMT_SPEC_PRECISION_NONE, spec.precision_type);
+    CHECK_EQUAL(1, spec.precision);
 }
 
 TEST(npf__parse_format_spec, PrecisionDefaultIsSixIfFloat) {
@@ -258,7 +273,7 @@ TEST(npf__parse_format_spec, PrecisionReadsFromArgListIfStar) {
 TEST(npf__parse_format_spec, PrecisionFromArgIsNoneDefaultIfNegative) {
     CHECK_EQUAL(4, ParseFormatSpec("%.*u", &spec, -123));
     CHECK_EQUAL(NPF_FMT_SPEC_PRECISION_NONE, spec.precision_type);
-    CHECK_EQUAL(0, spec.precision);
+    CHECK_EQUAL(1, spec.precision);
 }
 
 TEST(npf__parse_format_spec, PrecisionIsLiteralZeroIfJustPeriod) {
@@ -273,10 +288,10 @@ TEST(npf__parse_format_spec, PrecisionIsLiteralIfPeriodThenNumber) {
     CHECK_EQUAL(12345, spec.precision);
 }
 
-TEST(npf__parse_format_spec, PrecisionNoneWhenNegativeLiteral) {
+TEST(npf__parse_format_spec, PrecisionNoneDefaultWhenNegativeLiteral) {
     CHECK_EQUAL(6, ParseFormatSpec("%.-34u", &spec));
     CHECK_EQUAL(NPF_FMT_SPEC_PRECISION_NONE, spec.precision_type);
-    CHECK_EQUAL(0, spec.precision);
+    CHECK_EQUAL(1, spec.precision);
 }
 
 /*

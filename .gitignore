@@ -1,3 +1,7 @@
+# CLion junk
+cmake-build*
+.idea
+
 # vim backup files
 *~
 

@@ -2,7 +2,7 @@
 version: 2.1
 
 jobs:
-  build-gcc:
+  build-gcc-debug:
     docker:
       - image: charlesnicholson/circleci-images:latest
     steps:
@@ -11,8 +11,18 @@ jobs:
           command: |
             export CC=/usr/bin/gcc
             export CXX=/usr/bin/g++
-            ./b release -v
-  build-clang:
+            ./b Debug -v
+  build-gcc-release:
+    docker:
+      - image: charlesnicholson/circleci-images:latest
+    steps:
+      - checkout
+      - run:
+          command: |
+            export CC=/usr/bin/gcc
+            export CXX=/usr/bin/g++
+            ./b Release -v
+  build-clang-debug:
     docker:
       - image: charlesnicholson/circleci-images:latest
     steps:
@@ -21,7 +31,18 @@ jobs:
           command: |
             export CC=/usr/bin/clang
             export CXX=/usr/bin/clang++
-            ./b release -v
+            ./b Debug -v
+  build-clang-release:
+    docker:
+      - image: charlesnicholson/circleci-images:latest
+    steps:
+      - checkout
+      - run:
+          command: |
+            export CC=/usr/bin/clang
+            export CXX=/usr/bin/clang++
+            ./b Release -v
+
 
 workflows:
   submit-gate:
