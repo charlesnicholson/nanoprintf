@@ -6,9 +6,9 @@ nanoprintf is an implementation of snprintf and vsnprintf for embedded systems t
 
 nanoprintf is a [single header file](https://github.com/charlesnicholson/nanoprintf/blob/readme/nanoprintf.h) in the style of the [stb libraries](https://github.com/nothings/stb). The rest of the repository is tests and scaffolding and not required for use.
 
-nanoprintf is written in C89 for maximal compiler compatibility. C99 or C++11 compilers are required (for `uint64_t` and other types) if floating point conversion or C99 modifiers are enabled. nanoprintf does include standard headers but only uses them for types and argument lists; no calls are made into stdlib / libc, with the possible exception of double-to-float conversion.
+nanoprintf is written in C89 for maximal compiler compatibility. C99 or C++11 compilers are required (for `uint64_t` and other types) if floating point conversion or large modifiers are enabled. nanoprintf does include standard headers but only uses them for types and argument lists; no calls are made into stdlib / libc, with the possible exception of double-to-float conversion.
 
-nanoprintf is statically configurable so users can find a balance between size, compiler requirements, and feature set. Floating point conversion, C99 length modifiers, and size write-back are all configurable and are only compiled if explicitly requested, see [Configuration](https://github.com/charlesnicholson/nanoprintf/tree/readme#configuration) for details.
+nanoprintf is statically configurable so users can find a balance between size, compiler requirements, and feature set. Floating point conversion, "large" length modifiers, and size write-back are all configurable and are only compiled if explicitly requested, see [Configuration](https://github.com/charlesnicholson/nanoprintf/tree/readme#configuration) for details.
 
 ## Usage
 
@@ -39,7 +39,7 @@ nanoprintf does *not* provide `printf` itself; that's seen as project- or platfo
 nanoprintf has the following static configuration flags. You can either inject them into your compiler (usually `-D` flags) or wrap `nanoprintf.h` in [your own header](https://github.com/charlesnicholson/nanoprintf/blob/readme/unit_tests/nanoprintf_in_unit_tests.h) that sets them up, and then `#include` your header instead of `nanoprintf.h` in your application.
 
 * `NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS`: Set to `0` or `1`. Enables floating-point specifiers.
-* `NANOPRINTF_USE_C99_FORMAT_SPECIFIERS`: Set to `0` or `1`. Enables C99-specific modifiers.
+* `NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS`: Set to `0` or `1`. Enables oversized modifiers.
 * `NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS`: Set to `0` or `1`. Enables `%n` for write-back.
 * `NANOPRINTF_VISIBILITY_STATIC`: Optional define. Marks prototypes as `static` to sandbox nanoprintf.
 
@@ -71,11 +71,11 @@ Like `printf`, `nanoprintf` expects a conversion specification string of the fol
 	* `h`: Use `short` for integral and write-back vararg width.
 	* `L`: Use `long double` for float vararg width (note: it will then be casted down to `float`)
 	* `l`: Use `long`, `double`, or wide vararg width.
-	* `hh`: (C99-only specifier) Use `char` for integral and write-back vararg width.
-	* `ll`: (C99-only specifier) Use `long long` for integral and write-back vararg width.
-	* `j`: (C99-only specifier) Use the `[u]intmax_t` types for integral and write-back vararg width.
-	* `z`: (C99-only specifier) Use the `size_t` types for integral and write-back vararg width.
-	* `t`: (C99-only specifier) Use the `ptrdiff_t` types for integral and write-back vararg width.
+	* `hh`: (large specifier) Use `char` for integral and write-back vararg width.
+	* `ll`: (large specifier) Use `long long` for integral and write-back vararg width.
+	* `j`: (large specifier) Use the `[u]intmax_t` types for integral and write-back vararg width.
+	* `z`: (large specifier) Use the `size_t` types for integral and write-back vararg width.
+	* `t`: (large specifier) Use the `ptrdiff_t` types for integral and write-back vararg width.
 * **Conversion specifier**
 
 	Exactly one of the following:

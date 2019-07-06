@@ -349,7 +349,7 @@ TEST(npf__parse_format_spec, LengthModWithoutConversionSpecifierReturnsZero) {
 
 TEST(npf__parse_format_spec, LengthMod_hh) {
     CHECK_EQUAL(4, ParseFormatSpec("%hhu", &spec));
-    CHECK_EQUAL(NPF_FMT_SPEC_LENGTH_MOD_C99_CHAR, spec.length_modifier);
+    CHECK_EQUAL(NPF_FMT_SPEC_LENGTH_MOD_CHAR, spec.length_modifier);
 }
 
 TEST(npf__parse_format_spec, LengthMode_h) {
@@ -364,22 +364,22 @@ TEST(npf__parse_format_spec, LengthMode_l) {
 
 TEST(npf__parse_format_spec, LengthMode_ll) {
     CHECK_EQUAL(4, ParseFormatSpec("%llu", &spec));
-    CHECK_EQUAL(NPF_FMT_SPEC_LENGTH_MOD_C99_LONG_LONG, spec.length_modifier);
+    CHECK_EQUAL(NPF_FMT_SPEC_LENGTH_MOD_LARGE_LONG_LONG, spec.length_modifier);
 }
 
 TEST(npf__parse_format_spec, LengthMode_j) {
     CHECK_EQUAL(3, ParseFormatSpec("%ju", &spec));
-    CHECK_EQUAL(NPF_FMT_SPEC_LENGTH_MOD_C99_INTMAX, spec.length_modifier);
+    CHECK_EQUAL(NPF_FMT_SPEC_LENGTH_MOD_LARGE_INTMAX, spec.length_modifier);
 }
 
 TEST(npf__parse_format_spec, LengthMode_z) {
     CHECK_EQUAL(3, ParseFormatSpec("%zu", &spec));
-    CHECK_EQUAL(NPF_FMT_SPEC_LENGTH_MOD_C99_SIZET, spec.length_modifier);
+    CHECK_EQUAL(NPF_FMT_SPEC_LENGTH_MOD_LARGE_SIZET, spec.length_modifier);
 }
 
 TEST(npf__parse_format_spec, LengthMode_t) {
     CHECK_EQUAL(3, ParseFormatSpec("%tu", &spec));
-    CHECK_EQUAL(NPF_FMT_SPEC_LENGTH_MOD_C99_PTRDIFFT, spec.length_modifier);
+    CHECK_EQUAL(NPF_FMT_SPEC_LENGTH_MOD_LARGE_PTRDIFFT, spec.length_modifier);
 }
 
 TEST(npf__parse_format_spec, LengthMode_L) {
@@ -497,13 +497,13 @@ TEST(npf__parse_format_spec, E) {
 
 TEST(npf__parse_format_spec, a) {
     CHECK_EQUAL(2, ParseFormatSpec("%a", &spec));
-    CHECK_EQUAL(NPF_FMT_SPEC_CONV_C99_FLOAT_HEXPONENT, spec.conv_spec);
+    CHECK_EQUAL(NPF_FMT_SPEC_CONV_FLOAT_HEXPONENT, spec.conv_spec);
     CHECK_EQUAL(NPF_FMT_SPEC_CONV_CASE_LOWER, spec.conv_spec_case);
 }
 
 TEST(npf__parse_format_spec, A) {
     CHECK_EQUAL(2, ParseFormatSpec("%A", &spec));
-    CHECK_EQUAL(NPF_FMT_SPEC_CONV_C99_FLOAT_HEXPONENT, spec.conv_spec);
+    CHECK_EQUAL(NPF_FMT_SPEC_CONV_FLOAT_HEXPONENT, spec.conv_spec);
     CHECK_EQUAL(NPF_FMT_SPEC_CONV_CASE_UPPER, spec.conv_spec_case);
 }
 
