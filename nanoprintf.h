@@ -557,13 +557,13 @@ enum {
 
 int npf__fsplit_abs(float f, uint64_t *out_int_part, uint64_t *out_frac_part,
                     int *out_frac_base10_neg_exp) {
-    // conversion algorithm by Wojciech Muła (zdjęcia@garnek.pl)
-    // http://0x80.pl/notesen/2015-12-29-float-to-string.html
+    /* conversion algorithm by Wojciech Muła (zdjęcia@garnek.pl)
+       http://0x80.pl/notesen/2015-12-29-float-to-string.html
+       grisu2 (https://bit.ly/2JgMggX) and ryu (https://bit.ly/2RLXSg0)
+       are fast + precise + round, but bigger and require large lookup tables.
+    */
 
-    // grisu2 (https://bit.ly/2JgMggX) and ryu (https://bit.ly/2RLXSg0)
-    // are fast + precise + round, but bigger and require large lookup tables.
-
-    // union-cast is UB, so copy through char*, compiler can optimize.
+    /* union-cast is UB, so copy through char*, compiler can optimize. */
     uint32_t f_bits;
     {
         char const *src = (char const *)&f;
@@ -579,7 +579,7 @@ int npf__fsplit_abs(float f, uint64_t *out_int_part, uint64_t *out_frac_part,
                           NPF_EXPONENT_BIAS) -
                          NPF_MANTISSA_BITS;
 
-    // value is out of range
+    /* value is out of range */
     if (exponent >= (64 - NPF_MANTISSA_BITS)) {
         return 0;
     }
@@ -608,13 +608,13 @@ int npf__fsplit_abs(float f, uint64_t *out_int_part, uint64_t *out_frac_part,
         } else {
             frac = ((uint64_t)mantissa_norm) << shift;
         }
-        // multiply off the leading "one"
+        /* multiply off the leading one's digit */
         frac &= 0x0fffffffffffffffllu;
         frac *= 10;
     }
 
     {
-        // Count the number of 0's at the beginning of the fractional part.
+        /* Count the number of 0s at the beginning of the fractional part. */
         int frac_base10_neg_exp = 0;
         while (frac && ((frac >> (NPF_FRACTION_BIN_DIGITS - 4))) == 0) {
             ++frac_base10_neg_exp;
@@ -625,7 +625,7 @@ int npf__fsplit_abs(float f, uint64_t *out_int_part, uint64_t *out_frac_part,
     }
 
     {
-        // Convert the fractional part to base 10.
+        /* Convert the fractional part to base 10. */
         unsigned frac_part = 0;
         for (int i = 0; frac && (i < NPF_MAX_FRACTION_DEC_DIGITS); ++i) {
             frac_part *= 10;
