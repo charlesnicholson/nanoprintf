@@ -47,5 +47,7 @@ jobs:
 workflows:
   submit-gate:
     jobs:
-      - build-gcc
-      - build-clang
+      - build-gcc-debug
+      - build-gcc-release
+      - build-clang-debug
+      - build-clang-release
