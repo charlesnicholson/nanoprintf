@@ -87,6 +87,9 @@ TEST(conformance, UnsignedInt) {
     CheckConformance("     0", "% 6u", 0);
     CheckConformance("01", "%.2u", 1);
     CheckConformance("    0123", "%8.4u", 123);
+    CheckConformance("13", "%hu", (1 << 21u) + 13u);  // "short" mod clips
+    CheckConformance("4294967296", "%lu",
+                     (unsigned long)UINT_MAX + 1);  // assume ul > u
 }
 
 TEST(conformance, SignedInt) {
@@ -111,6 +114,8 @@ TEST(conformance, SignedInt) {
     CheckConformance("+01", "%+.2i", 1);
     CheckConformance(" +01", "%+4.2i", 1);
     // CheckConformance("%.-123i", 400); xcode libc doesn't ignore negative
+    CheckConformance("2147483648", "%lu",
+                     (long)INT_MAX + 1);  // assume l > i
 }
 
 TEST(conformance, Octal) {
@@ -127,6 +132,9 @@ TEST(conformance, Octal) {
     CheckConformance("1", "%+o", 1);
     CheckConformance("   1", "%+4o", 1);
     CheckConformance("     1", "% 6o", 1);
+    CheckConformance("17", "%ho", (1 << 29u) + 15u);
+    CheckConformance("40000000000", "%lo",
+                     (unsigned long)UINT_MAX + 1);  // assume ul > u
 }
 
 TEST(conformance, Hex) {
@@ -148,6 +156,9 @@ TEST(conformance, Hex) {
     CheckConformance("     1", "% 6x", 1);
     CheckConformance("0", "%+x", 0);
     CheckConformance("1", "%+x", 1);
+    CheckConformance("7b", "%hx", (1 << 26u) + 123u);
+    CheckConformance("100000000", "%lx",
+                     (unsigned long)UINT_MAX + 1);  // assume ul > u
 }
 
 TEST(conformance, Pointer) {
@@ -166,7 +177,7 @@ namespace {
 int dummy_putc(int, void *) { return 1; }
 }  // namespace
 
-TEST(conformance, Writeback) {
+TEST(conformance, WritebackInt) {
     int writeback = -1;
     npf_pprintf(dummy_putc, nullptr, "%n", &writeback);
     CHECK_EQUAL(0, writeback);
@@ -178,6 +189,18 @@ TEST(conformance, Writeback) {
     CHECK_EQUAL(4, writeback);
     npf_pprintf(dummy_putc, nullptr, "%u%s%n", 0, "abcd", &writeback);
     CHECK_EQUAL(5, writeback);
+}
+
+TEST(conformance, WritebackShort) {
+    short writeback = -1;
+    npf_pprintf(dummy_putc, nullptr, "1234%hn", &writeback);
+    CHECK_EQUAL(4, writeback);
+}
+
+TEST(conformance, WritebackLong) {
+    long writeback = -1;
+    npf_pprintf(dummy_putc, nullptr, "1234567%ln", &writeback);
+    CHECK_EQUAL(7, writeback);
 }
 
 TEST(conformance, StarArgs) {
@@ -214,4 +237,6 @@ TEST(conformance, Float) {
     CheckConformance("0001.500", "%08.3f", 1.5);
     CheckConformance("+001.500", "%+08.3f", 1.5);
     CheckConformance("-001.500", "%+08.3f", -1.5);
+    CheckConformance("0.00390625", "%.8f", 0.00390625);
+    CheckConformance("0.00390625", "%.8Lf", (long double)0.00390625);
 }
