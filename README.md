@@ -71,7 +71,7 @@ Like `printf`, `nanoprintf` expects a conversion specification string of the fol
 	* `h`: Use `short` for integral and write-back vararg width.
 	* `L`: Use `long double` for float vararg width (note: it will then be casted down to `float`)
 	* `l`: Use `long`, `double`, or wide vararg width.
-	* `hh`: (large specifier) Use `char` for integral and write-back vararg width.
+	* `hh`: Use `char` for integral and write-back vararg width.
 	* `ll`: (large specifier) Use `long long` for integral and write-back vararg width.
 	* `j`: (large specifier) Use the `[u]intmax_t` types for integral and write-back vararg width.
 	* `z`: (large specifier) Use the `size_t` types for integral and write-back vararg width.
