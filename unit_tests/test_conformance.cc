@@ -90,6 +90,7 @@ TEST(conformance, UnsignedInt) {
     CheckConformance("13", "%hu", (1 << 21u) + 13u);  // "short" mod clips
     CheckConformance("4294967296", "%lu",
                      (unsigned long)UINT_MAX + 1);  // assume ul > u
+    CheckConformance("0", "%hhu", 256u);
 }
 
 TEST(conformance, SignedInt) {
@@ -116,6 +117,7 @@ TEST(conformance, SignedInt) {
     // CheckConformance("%.-123i", 400); xcode libc doesn't ignore negative
     CheckConformance("2147483648", "%lu",
                      (long)INT_MAX + 1);  // assume l > i
+    CheckConformance("-128", "%hhi", 128);
 }
 
 TEST(conformance, Octal) {
@@ -135,6 +137,7 @@ TEST(conformance, Octal) {
     CheckConformance("17", "%ho", (1 << 29u) + 15u);
     CheckConformance("40000000000", "%lo",
                      (unsigned long)UINT_MAX + 1);  // assume ul > u
+    CheckConformance("2", "%hho", 258u);
 }
 
 TEST(conformance, Hex) {
@@ -159,6 +162,7 @@ TEST(conformance, Hex) {
     CheckConformance("7b", "%hx", (1 << 26u) + 123u);
     CheckConformance("100000000", "%lx",
                      (unsigned long)UINT_MAX + 1);  // assume ul > u
+    CheckConformance("b", "%hhx", 256u + 0xb);
 }
 
 TEST(conformance, Pointer) {
