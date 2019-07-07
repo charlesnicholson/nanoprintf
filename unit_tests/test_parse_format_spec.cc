@@ -349,42 +349,42 @@ TEST(npf__parse_format_spec, LengthModWithoutConversionSpecifierReturnsZero) {
 
 TEST(npf__parse_format_spec, LengthMod_hh) {
     CHECK_EQUAL(4, ParseFormatSpec("%hhu", &spec));
-    CHECK_EQUAL(NPF_FMT_SPEC_LENGTH_MOD_CHAR, spec.length_modifier);
+    CHECK_EQUAL(NPF_FMT_SPEC_LEN_MOD_CHAR, spec.length_modifier);
 }
 
 TEST(npf__parse_format_spec, LengthMode_h) {
     CHECK_EQUAL(3, ParseFormatSpec("%hu", &spec));
-    CHECK_EQUAL(NPF_FMT_SPEC_LENGTH_MOD_SHORT, spec.length_modifier);
+    CHECK_EQUAL(NPF_FMT_SPEC_LEN_MOD_SHORT, spec.length_modifier);
 }
 
 TEST(npf__parse_format_spec, LengthMode_l) {
     CHECK_EQUAL(3, ParseFormatSpec("%lu", &spec));
-    CHECK_EQUAL(NPF_FMT_SPEC_LENGTH_MOD_LONG, spec.length_modifier);
+    CHECK_EQUAL(NPF_FMT_SPEC_LEN_MOD_LONG, spec.length_modifier);
 }
 
 TEST(npf__parse_format_spec, LengthMode_ll) {
     CHECK_EQUAL(4, ParseFormatSpec("%llu", &spec));
-    CHECK_EQUAL(NPF_FMT_SPEC_LENGTH_MOD_LARGE_LONG_LONG, spec.length_modifier);
+    CHECK_EQUAL(NPF_FMT_SPEC_LEN_MOD_LARGE_LONG_LONG, spec.length_modifier);
 }
 
 TEST(npf__parse_format_spec, LengthMode_j) {
     CHECK_EQUAL(3, ParseFormatSpec("%ju", &spec));
-    CHECK_EQUAL(NPF_FMT_SPEC_LENGTH_MOD_LARGE_INTMAX, spec.length_modifier);
+    CHECK_EQUAL(NPF_FMT_SPEC_LEN_MOD_LARGE_INTMAX, spec.length_modifier);
 }
 
 TEST(npf__parse_format_spec, LengthMode_z) {
     CHECK_EQUAL(3, ParseFormatSpec("%zu", &spec));
-    CHECK_EQUAL(NPF_FMT_SPEC_LENGTH_MOD_LARGE_SIZET, spec.length_modifier);
+    CHECK_EQUAL(NPF_FMT_SPEC_LEN_MOD_LARGE_SIZET, spec.length_modifier);
 }
 
 TEST(npf__parse_format_spec, LengthMode_t) {
     CHECK_EQUAL(3, ParseFormatSpec("%tu", &spec));
-    CHECK_EQUAL(NPF_FMT_SPEC_LENGTH_MOD_LARGE_PTRDIFFT, spec.length_modifier);
+    CHECK_EQUAL(NPF_FMT_SPEC_LEN_MOD_LARGE_PTRDIFFT, spec.length_modifier);
 }
 
 TEST(npf__parse_format_spec, LengthMode_L) {
     CHECK_EQUAL(3, ParseFormatSpec("%Lu", &spec));
-    CHECK_EQUAL(NPF_FMT_SPEC_LENGTH_MOD_LONG_DOUBLE, spec.length_modifier);
+    CHECK_EQUAL(NPF_FMT_SPEC_LEN_MOD_LONG_DOUBLE, spec.length_modifier);
 }
 
 // All conversion specifiers are defined in 7.21.6.1.8

@@ -91,6 +91,10 @@ TEST(conformance, UnsignedInt) {
     CheckConformance("4294967296", "%lu",
                      (unsigned long)UINT_MAX + 1);  // assume ul > u
     CheckConformance("0", "%hhu", 256u);
+    CheckConformance("18446744073709551615", "%llu", ULLONG_MAX);
+    CheckConformance("18446744073709551615", "%ju", UINTMAX_MAX);
+    CheckConformance("18446744073709551615", "%zu", SIZE_MAX);
+    CheckConformance("18446744073709551615", "%tu", SIZE_MAX);
 }
 
 TEST(conformance, SignedInt) {
@@ -118,6 +122,10 @@ TEST(conformance, SignedInt) {
     CheckConformance("2147483648", "%lu",
                      (long)INT_MAX + 1);  // assume l > i
     CheckConformance("-128", "%hhi", 128);
+    CheckConformance("9223372036854775807", "%lli", LLONG_MAX);
+    CheckConformance("9223372036854775807", "%ji", INTMAX_MAX);
+    CheckConformance("9223372036854775807", "%zi", INTMAX_MAX);
+    CheckConformance("9223372036854775807", "%ti", PTRDIFF_MAX);
 }
 
 TEST(conformance, Octal) {
@@ -138,6 +146,10 @@ TEST(conformance, Octal) {
     CheckConformance("40000000000", "%lo",
                      (unsigned long)UINT_MAX + 1);  // assume ul > u
     CheckConformance("2", "%hho", 258u);
+    CheckConformance("1777777777777777777777", "%llo", ULLONG_MAX);
+    CheckConformance("1777777777777777777777", "%jo", UINTMAX_MAX);
+    CheckConformance("1777777777777777777777", "%zo", SIZE_MAX);
+    CheckConformance("1777777777777777777777", "%to", SIZE_MAX);
 }
 
 TEST(conformance, Hex) {
@@ -163,6 +175,10 @@ TEST(conformance, Hex) {
     CheckConformance("100000000", "%lx",
                      (unsigned long)UINT_MAX + 1);  // assume ul > u
     CheckConformance("b", "%hhx", 256u + 0xb);
+    CheckConformance("ffffffffffffffff", "%llx", ULLONG_MAX);
+    CheckConformance("ffffffffffffffff", "%jx", UINTMAX_MAX);
+    CheckConformance("ffffffffffffffff", "%zx", SIZE_MAX);
+    CheckConformance("ffffffffffffffff", "%tx", SIZE_MAX);
 }
 
 TEST(conformance, Pointer) {
@@ -207,6 +223,36 @@ TEST(conformance, WritebackLong) {
     CHECK_EQUAL(7, writeback);
 }
 
+TEST(conformance, WritebackChar) {
+    signed char writeback = -1;
+    npf_pprintf(dummy_putc, nullptr, "1234567%hhn", &writeback);
+    CHECK_EQUAL(7, writeback);
+}
+
+TEST(conformance, WritebackLongLong) {
+    long long writeback = -1;
+    npf_pprintf(dummy_putc, nullptr, "12345678%lln", &writeback);
+    CHECK_EQUAL(8, writeback);
+}
+
+TEST(conformance, WritebackIntmax) {
+    intmax_t writeback = -1;
+    npf_pprintf(dummy_putc, nullptr, "12345678%jn", &writeback);
+    CHECK_EQUAL(8, writeback);
+}
+
+TEST(conformance, WritebackSizeT) {
+    intmax_t writeback = 100000;
+    npf_pprintf(dummy_putc, nullptr, "12345678%zn", &writeback);
+    CHECK_EQUAL(8, writeback);
+}
+
+TEST(conformance, WritebackPtrdiffT) {
+    ptrdiff_t writeback = -1;
+    npf_pprintf(dummy_putc, nullptr, "12345678%tn", &writeback);
+    CHECK_EQUAL(8, writeback);
+}
+
 TEST(conformance, StarArgs) {
     CheckConformance("         Z", "%*c", 10, 'Z');
     CheckConformance("01", "%.*i", 2, 1);
@@ -243,4 +289,6 @@ TEST(conformance, Float) {
     CheckConformance("-001.500", "%+08.3f", -1.5);
     CheckConformance("0.00390625", "%.8f", 0.00390625);
     CheckConformance("0.00390625", "%.8Lf", (long double)0.00390625);
+    CheckConformance("-0.00390625", "%.8f", -0.00390625);
+    CheckConformance("-0.00390625", "%.8Lf", (long double)-0.00390625);
 }
