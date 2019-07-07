@@ -752,7 +752,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
             } else {
                 /* Format specifier, convert and write argument */
                 char cbuf_mem[32], *cbuf = cbuf_mem, sign_c, pad_c;
-                int cbuf_len = 0, pad = 0, prec_pad = 0;
+                int cbuf_len = 0, field_pad = 0, prec_pad = 0;
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS
                 int frac_chars = 0, inf_or_nan = 0;
 #endif
@@ -776,6 +776,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                         cbuf_len = (int)(s - cbuf);
                         if (fs.precision_type ==
                             NPF_FMT_SPEC_PRECISION_LITERAL) {
+                            /* precision modifier truncates strings */
                             cbuf_len = NPF_MIN(fs.precision, cbuf_len);
                         }
                     } break;
@@ -904,6 +905,12 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                         if (cbuf_len < 0) {
                             cbuf_len = -cbuf_len;
                             inf_or_nan = 1;
+                        } else {
+                            /* truncate lowest frac digits for precision */
+                            if (frac_chars > fs.precision) {
+                                cbuf += (frac_chars - fs.precision);
+                                cbuf_len -= (frac_chars - fs.precision);
+                            }
                         }
                     } break;
 #endif
@@ -951,7 +958,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                     prec_pad = NPF_MAX(0, fs.precision - cbuf_len);
 #endif
                 }
-                pad =
+                field_pad =
                     NPF_MAX(0, fs.field_width - cbuf_len - !!sign_c - prec_pad);
 
                 /* Apply right-justified field width if requested */
@@ -961,7 +968,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                         NPF_PUT_CHECKED(sign_c);
                         sign_c = 0;
                     }
-                    while (pad-- > 0) {
+                    while (field_pad-- > 0) {
                         NPF_PUT_CHECKED(pad_c);
                     }
                 }
@@ -1011,7 +1018,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
 
                 /* Apply left-justified field width if requested */
                 if (fs.left_justified && pad_c) {
-                    while (pad-- > 0) {
+                    while (field_pad-- > 0) {
                         NPF_PUT_CHECKED(pad_c);
                     }
                 }
