@@ -576,7 +576,7 @@ int npf__fsplit_abs(float f, uint64_t *out_int_part, uint64_t *out_frac_part,
     /* conversion algorithm by Wojciech Muła (zdjęcia@garnek.pl)
        http://0x80.pl/notesen/2015-12-29-float-to-string.html
        grisu2 (https://bit.ly/2JgMggX) and ryu (https://bit.ly/2RLXSg0)
-       are fast + precise + round, but bigger and require large lookup tables.
+       are fast + precise + round, but require large lookup tables.
     */
 
     /* union-cast is UB, so copy through char*, compiler can optimize. */
@@ -877,7 +877,10 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
 #endif
 
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
-                    case NPF_FMT_SPEC_CONV_FLOAT_DECIMAL: { /* 'f', 'F' */
+                    case NPF_FMT_SPEC_CONV_FLOAT_DECIMAL:     /* 'f', 'F' */
+                    case NPF_FMT_SPEC_CONV_FLOAT_EXPONENT:    /* 'e', 'E' */
+                    case NPF_FMT_SPEC_CONV_FLOAT_DYNAMIC:     /* 'g', 'G' */
+                    case NPF_FMT_SPEC_CONV_FLOAT_HEXPONENT: { /* 'a', 'A' */
                         float val;
                         if (fs.length_modifier ==
                             NPF_FMT_SPEC_LEN_MOD_LONG_DOUBLE) {
@@ -893,12 +896,6 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                             inf_or_nan = 1;
                         }
                     } break;
-                    case NPF_FMT_SPEC_CONV_FLOAT_EXPONENT: /* 'e', 'E' */
-                        break;
-                    case NPF_FMT_SPEC_CONV_FLOAT_DYNAMIC: /* 'g', 'G' */
-                        break;
-                    case NPF_FMT_SPEC_CONV_FLOAT_HEXPONENT: /* 'a', 'A' */
-                        break;
 #endif
                 }
 
