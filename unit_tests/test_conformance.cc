@@ -223,6 +223,36 @@ TEST(conformance, WritebackLong) {
     CHECK_EQUAL(7, writeback);
 }
 
+TEST(conformance, WritebackChar) {
+    signed char writeback = -1;
+    npf_pprintf(dummy_putc, nullptr, "1234567%hhn", &writeback);
+    CHECK_EQUAL(7, writeback);
+}
+
+TEST(conformance, WritebackLongLong) {
+    long long writeback = -1;
+    npf_pprintf(dummy_putc, nullptr, "12345678%lln", &writeback);
+    CHECK_EQUAL(8, writeback);
+}
+
+TEST(conformance, WritebackIntmax) {
+    intmax_t writeback = -1;
+    npf_pprintf(dummy_putc, nullptr, "12345678%jn", &writeback);
+    CHECK_EQUAL(8, writeback);
+}
+
+TEST(conformance, WritebackSizeT) {
+    intmax_t writeback = 100000;
+    npf_pprintf(dummy_putc, nullptr, "12345678%zn", &writeback);
+    CHECK_EQUAL(8, writeback);
+}
+
+TEST(conformance, WritebackPtrdiffT) {
+    ptrdiff_t writeback = -1;
+    npf_pprintf(dummy_putc, nullptr, "12345678%tn", &writeback);
+    CHECK_EQUAL(8, writeback);
+}
+
 TEST(conformance, StarArgs) {
     CheckConformance("         Z", "%*c", 10, 'Z');
     CheckConformance("01", "%.*i", 2, 1);
