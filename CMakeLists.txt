@@ -56,7 +56,7 @@ set(CMAKE_CXX_FLAGS_RELEASE "-Os")
 
 set(CMAKE_CXX_STANDARD 11)
 
-set(nanoprintf_common_flags -pedantic -Wall -Werror -Wno-padded)
+set(nanoprintf_common_flags -pedantic -Wall -Wextra -Werror -Wno-padded)
 
 string(FIND "${CMAKE_C_COMPILER_ID}" "Clang" is_clang)
 if (${is_clang} GREATER_EQUAL 0)
