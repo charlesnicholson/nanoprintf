@@ -34,6 +34,8 @@ nanoprintf has 4 main functions:
 
 The `pprintf` variations take a callback that returns an `int`. If the callback returns `NPF_EOF`, the print functions will stop printing and return immediately.
 
+Pass `NULL` or `nullptr` to `npf_[v]snprintf` to write nothing, and only return the length of the formatted string.
+
 nanoprintf does *not* provide `printf` itself; that's seen as project- or platform-specific. nanoprintf is hopefully a good building block for rolling your own `printf`, though.
 
 ## Configuration
@@ -47,7 +49,7 @@ nanoprintf has the following static configuration flags. You can either inject t
 
 If a disabled format specifier feature is used, no conversion will occur and the format specifier string simply will be printed instead.
 
-## Features
+## Formatting
 
 Like `printf`, `nanoprintf` expects a conversion specification string of the following form:
 
