@@ -194,7 +194,7 @@ TEST(conformance, Pointer) {
 }
 
 namespace {
-int dummy_putc(int, void *) { return 1; }
+void dummy_putc(int, void *) {}
 }  // namespace
 
 TEST(conformance, WritebackInt) {

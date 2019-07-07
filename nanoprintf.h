@@ -100,8 +100,7 @@ NPF_VISIBILITY int npf_snprintf(char *buffer, size_t bufsz, const char *format,
 NPF_VISIBILITY int npf_vsnprintf(char *buffer, size_t bufsz, char const *format,
                                  va_list vlist) NPF_PRINTF_ATTR(3, 0);
 
-enum { NPF_EOF = -1 };
-typedef int (*npf_putc)(int c, void *ctx);
+typedef void (*npf_putc)(int c, void *ctx);
 NPF_VISIBILITY int npf_pprintf(npf_putc pc, void *pc_ctx, char const *format,
                                ...) NPF_PRINTF_ATTR(3, 4);
 
@@ -204,8 +203,8 @@ typedef struct {
     size_t cur;
 } npf__bufputc_ctx_t;
 
-NPF_VISIBILITY int npf__bufputc(int c, void *ctx);
-NPF_VISIBILITY int npf__bufputc_nop(int c, void *ctx);
+NPF_VISIBILITY void npf__bufputc(int c, void *ctx);
+NPF_VISIBILITY void npf__bufputc_nop(int c, void *ctx);
 NPF_VISIBILITY int npf__itoa_rev(char *buf, npf__int_t i);
 NPF_VISIBILITY int npf__utoa_rev(char *buf, npf__uint_t i, unsigned base,
                                  npf__format_spec_conversion_case_t cc);
@@ -493,18 +492,16 @@ int npf__parse_format_spec(char const *format, va_list vlist,
     return (int)(cur - format);
 }
 
-int npf__bufputc(int c, void *ctx) {
+void npf__bufputc(int c, void *ctx) {
     npf__bufputc_ctx_t *bpc = (npf__bufputc_ctx_t *)ctx;
-    if (bpc->cur < bpc->len) {
+    if (bpc->cur < bpc->len - 1) {
         bpc->dst[bpc->cur++] = (char)c;
-        return c;
     }
-    return NPF_EOF;
 }
 
-int npf__bufputc_nop(int c, void *ctx) {
+void npf__bufputc_nop(int c, void *ctx) {
+    (void)c;
     (void)ctx;
-    return c;
 }
 
 int npf__itoa_rev(char *buf, npf__int_t i) {
@@ -716,12 +713,10 @@ int npf__ftoa_rev(char *buf, float f, unsigned base,
 }
 #endif
 
-#define NPF_PUT_CHECKED(VAL)                \
-    do {                                    \
-        if (pc((VAL), pc_ctx) == NPF_EOF) { \
-            return n;                       \
-        }                                   \
-        ++n;                                \
+#define NPF_PUTC(VAL)      \
+    do {                   \
+        pc((VAL), pc_ctx); \
+        ++n;               \
     } while (0)
 
 #define NPF_EXTRACT(MOD, CAST_TO, EXTRACT_AS)     \
@@ -742,13 +737,13 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
     while (*cur) {
         if (*cur != '%') {
             /* Non-format character, write directly */
-            NPF_PUT_CHECKED(*cur++);
+            NPF_PUTC(*cur++);
         } else {
             /* Might be a format run, try to parse */
             int const fs_len = npf__parse_format_spec(cur, vlist, &fs);
             if (fs_len == 0) {
                 /* Invalid format specifier, write and continue */
-                NPF_PUT_CHECKED(*cur++);
+                NPF_PUTC(*cur++);
             } else {
                 /* Format specifier, convert and write argument */
                 char cbuf_mem[32], *cbuf = cbuf_mem, sign_c, pad_c;
@@ -967,11 +962,11 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                 if (!fs.left_justified && pad_c) {
                     /* If leading zeros pad, sign goes first. */
                     if ((sign_c == '-' || sign_c == '+') && pad_c == '0') {
-                        NPF_PUT_CHECKED(sign_c);
+                        NPF_PUTC(sign_c);
                         sign_c = 0;
                     }
                     while (field_pad-- > 0) {
-                        NPF_PUT_CHECKED(pad_c);
+                        NPF_PUTC(pad_c);
                     }
                 }
 
@@ -979,18 +974,18 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                 if (fs.conv_spec == NPF_FMT_SPEC_CONV_STRING) {
                     /* Strings are not reversed, put directly */
                     for (i = 0; i < cbuf_len; ++i) {
-                        NPF_PUT_CHECKED(cbuf[i]);
+                        NPF_PUTC(cbuf[i]);
                     }
                 } else {
                     if (sign_c) {
-                        NPF_PUT_CHECKED(sign_c);
+                        NPF_PUTC(sign_c);
                     }
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
                     if (fs.conv_spec != NPF_FMT_SPEC_CONV_FLOAT_DECIMAL) {
 #endif
                         /* integral precision comes before the number. */
                         while (prec_pad-- > 0) {
-                            NPF_PUT_CHECKED('0');
+                            NPF_PUTC('0');
                         }
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
                     } else {
@@ -1004,7 +999,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
 #endif
                     /* *toa_rev leaves payloads reversed */
                     while (cbuf_len-- > 0) {
-                        NPF_PUT_CHECKED(cbuf[cbuf_len]);
+                        NPF_PUTC(cbuf[cbuf_len]);
                     }
 
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
@@ -1012,7 +1007,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                     if ((fs.conv_spec == NPF_FMT_SPEC_CONV_FLOAT_DECIMAL) &&
                         !inf_or_nan) {
                         while (prec_pad-- > 0) {
-                            NPF_PUT_CHECKED('0');
+                            NPF_PUTC('0');
                         }
                     }
 #endif
@@ -1021,7 +1016,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                 /* Apply left-justified field width if requested */
                 if (fs.left_justified && pad_c) {
                     while (field_pad-- > 0) {
-                        NPF_PUT_CHECKED(pad_c);
+                        NPF_PUTC(pad_c);
                     }
                 }
 
@@ -1029,11 +1024,11 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
             }
         }
     }
-    NPF_PUT_CHECKED('\0');
-    return n;
+    NPF_PUTC('\0');
+    return n - 1;
 }
 
-#undef NPF_PUT_CHECKED
+#undef NPF_PUTC
 #undef NPF_EXTRACT
 #undef NPF_WRITEBACK
 
@@ -1061,6 +1056,9 @@ int npf_vsnprintf(char *buffer, size_t bufsz, char const *format,
     bufputc_ctx.dst = buffer;
     bufputc_ctx.len = bufsz;
     bufputc_ctx.cur = 0;
+    if (buffer && bufsz) {
+        buffer[bufsz - 1] = 0;
+    }
     return npf_vpprintf(buffer ? npf__bufputc : npf__bufputc_nop, &bufputc_ctx,
                         format, vlist);
 }
