@@ -289,4 +289,6 @@ TEST(conformance, Float) {
     CheckConformance("-001.500", "%+08.3f", -1.5);
     CheckConformance("0.00390625", "%.8f", 0.00390625);
     CheckConformance("0.00390625", "%.8Lf", (long double)0.00390625);
+    CheckConformance("-0.00390625", "%.8f", -0.00390625);
+    CheckConformance("-0.00390625", "%.8Lf", (long double)-0.00390625);
 }
