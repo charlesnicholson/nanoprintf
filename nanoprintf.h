@@ -958,6 +958,8 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                     prec_pad = NPF_MAX(0, fs.precision - cbuf_len);
 #endif
                 }
+
+                /* Given the full converted length, how many pad bytes? */
                 field_pad =
                     NPF_MAX(0, fs.field_width - cbuf_len - !!sign_c - prec_pad);
 
