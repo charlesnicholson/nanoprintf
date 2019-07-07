@@ -102,6 +102,12 @@ Like `printf`, `nanoprintf` expects a conversion specification string of the fol
 	* `%n`: Write the number of bytes written to the pointer vararg
 	* `%f`/`%F`: Floating-point values
 
+## Floating Point
+
+Floating point conversion is performed by extracting the value into 64:64 fixed-point with an extra field that specifies the number of leading zero fractional digits before the first nonzero digit. No rounding is currently performed; values are simply truncated at the specified precision. This is done for simplicity, speed, and code footprint.
+
+Despite `nano` in the name, there's no way to do away with double entirely, since the C language standard says that floats are promoted to double any time they're passed into variadic argument lists. nanoprintf casts all doubles back down to floats before doing any conversions.
+
 ## Development
 
 To get the environment and run tests (linux / mac only for now):
