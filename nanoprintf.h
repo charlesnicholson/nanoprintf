@@ -771,7 +771,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                     } break;
 
                     case NPF_FMT_SPEC_CONV_SIGNED_INT: { /* 'i', 'd' */
-                        npf__int_t val;
+                        npf__int_t val = 0;
                         switch (fs.length_modifier) {
                             NPF_EXTRACT(NONE, int, int);
                             NPF_EXTRACT(SHORT, short, int);
@@ -807,7 +807,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                                 : ((fs.conv_spec == NPF_FMT_SPEC_CONV_HEX_INT)
                                        ? 16
                                        : 10);
-                        npf__uint_t val;
+                        npf__uint_t val = 0;
                         switch (fs.length_modifier) {
                             NPF_EXTRACT(NONE, unsigned, unsigned);
                             NPF_EXTRACT(SHORT, unsigned short, unsigned);
