@@ -124,16 +124,10 @@ nanoprintf uses [CircleCI](https://circleci.com/) for continuous integration bui
 
 ## Limitations
 
-No wide-character support exists: the `%lc` and `%ls` fields behave like `%c` and `%s`, respectively.
+No wide-character support exists: the `%lc` and `%ls` fields require that the arg be converted to a char array as if by a call to [wcrtomb](http://man7.org/linux/man-pages/man3/wcrtomb.3.html). When locale and character set conversions get involved, it's hard to keep the name "nano". Accordingly, `%lc` and `%ls` behave like `%c` and `%s`, respectively.
 
-No decimal exponent notation support exists: `%e` and `%E` behave like `%f` and `%F`, respectively.
-
-No "dynamic" decimal / exponent notation support exists: `%g` and `%G` behave like `%f` and `%F`, respectively.
-
-No hexadecimal exponent notation support exists: `%a` and `%A` behave like `%f` and `%F`, respectively.
-
-Pull requests welcome!
+Currently the only supported float conversions are the decimal forms: `%f` and `%F`. All other float conversions (exponent form, hexadecimal exponent form, dynamic precision form) behave like `%f` and `%F`. Pull requests welcome!
 
 ## Acknowledgments
 
-Float-to-int conversion is done using [Wojciech Muła](mailto:zdjęcia@garnek.pl)'s [algorithm](http://0x80.pl/notesen/2015-12-29-float-to-string.html).
+Float-to-int conversion is done using [Wojciech Muła](mailto:zdjęcia@garnek.pl)'s float -> 64:64 fixed [algorithm](http://0x80.pl/notesen/2015-12-29-float-to-string.html).
