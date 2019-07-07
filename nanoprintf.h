@@ -752,7 +752,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
             } else {
                 /* Format specifier, convert and write argument */
                 char cbuf_mem[32], *cbuf = cbuf_mem, sign_c, pad_c;
-                int cbuf_len = 0, pad = 0, precision;
+                int cbuf_len = 0, pad = 0, prec_pad = 0;
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS
                 int frac_chars = 0, inf_or_nan = 0;
 #endif
@@ -774,6 +774,10 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                         cbuf = s;
                         while (*s) ++s;
                         cbuf_len = (int)(s - cbuf);
+                        if (fs.precision_type ==
+                            NPF_FMT_SPEC_PRECISION_LITERAL) {
+                            cbuf_len = NPF_MIN(fs.precision, cbuf_len);
+                        }
                     } break;
 
                     case NPF_FMT_SPEC_CONV_SIGNED_INT: { /* 'i', 'd' */
@@ -933,31 +937,22 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                 }
 
                 /* Compute the number of bytes to truncate or '0'-pad. */
-                if (fs.conv_spec == NPF_FMT_SPEC_CONV_STRING) {
-                    precision =
-                        (fs.precision_type == NPF_FMT_SPEC_PRECISION_NONE)
-                            ? cbuf_len
-                            : NPF_MIN(fs.precision, cbuf_len);
-                    pad = fs.field_width - precision;
-                } else {
+                if (fs.conv_spec != NPF_FMT_SPEC_CONV_STRING) {
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
-                    if (inf_or_nan) {
-                        /* float is a string, not a number */
-                        precision = 0;
-                    } else {
+                    if (!inf_or_nan) {
                         /* float precision is after the decimal point */
                         int const precision_start =
                             (fs.conv_spec == NPF_FMT_SPEC_CONV_FLOAT_DECIMAL)
                                 ? frac_chars
                                 : cbuf_len;
-                        precision = NPF_MAX(0, fs.precision - precision_start);
+                        prec_pad = NPF_MAX(0, fs.precision - precision_start);
                     }
 #else
-                    precision = NPF_MAX(0, fs.precision - cbuf_len);
+                    prec_pad = NPF_MAX(0, fs.precision - cbuf_len);
 #endif
-                    pad = NPF_MAX(
-                        0, fs.field_width - cbuf_len - !!sign_c - precision);
                 }
+                pad =
+                    NPF_MAX(0, fs.field_width - cbuf_len - !!sign_c - prec_pad);
 
                 /* Apply right-justified field width if requested */
                 if (!fs.left_justified && pad_c) {
@@ -974,7 +969,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                 /* Write the converted payload */
                 if (fs.conv_spec == NPF_FMT_SPEC_CONV_STRING) {
                     /* Strings are not reversed, put directly */
-                    for (i = 0; i < precision; ++i) {
+                    for (i = 0; i < cbuf_len; ++i) {
                         NPF_PUT_CHECKED(cbuf[i]);
                     }
                 } else {
@@ -985,7 +980,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                     if (fs.conv_spec != NPF_FMT_SPEC_CONV_FLOAT_DECIMAL) {
 #endif
                         /* integral precision comes before the number. */
-                        while (precision-- > 0) {
+                        while (prec_pad-- > 0) {
                             NPF_PUT_CHECKED('0');
                         }
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
@@ -1007,7 +1002,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                     /* real precision comes after the number. */
                     if ((fs.conv_spec == NPF_FMT_SPEC_CONV_FLOAT_DECIMAL) &&
                         !inf_or_nan) {
-                        while (precision-- > 0) {
+                        while (prec_pad-- > 0) {
                             NPF_PUT_CHECKED('0');
                         }
                     }
