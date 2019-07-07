@@ -272,6 +272,8 @@ TEST(conformance, FloatNan) {
 
 TEST(conformance, Float) {
     CheckConformance("inf", "%f", 1.0 / 0.0);
+    CheckConformance(" inf", "%4f", 1.0 / 0.0);
+    CheckConformance("inf", "%.100f", 1.0 / 0.0);
     CheckConformance("INF", "%F", 1.0 / 0.0);
     CheckConformance("0.000000", "%f", 0.0);
     CheckConformance("0.00", "%.2f", 0.0);
@@ -279,6 +281,7 @@ TEST(conformance, Float) {
     CheckConformance("1", "%.0f", 1.0);
     CheckConformance("1.", "%#.0f", 1.0);
     CheckConformance("1.00000000000", "%.11f", 1.0);
+    CheckConformance(" 1.0", "%4.1f", 1.0);
     CheckConformance("1.5", "%.1f", 1.5);
     CheckConformance("+1.5", "%+.1f", 1.5);
     CheckConformance("-1.5", "%.1f", -1.5);
@@ -291,4 +294,13 @@ TEST(conformance, Float) {
     CheckConformance("0.00390625", "%.8Lf", (long double)0.00390625);
     CheckConformance("-0.00390625", "%.8f", -0.00390625);
     CheckConformance("-0.00390625", "%.8Lf", (long double)-0.00390625);
+    /*
+    char buf[32];
+    for (int i = 0; i < 1000; ++i) {
+        double const d = -1.0 + (i / 10000.);
+        npf_snprintf(buf, sizeof buf, "%f", d);
+        printf("%f: %s\n", d, buf);
+    }
+    */
 }
+

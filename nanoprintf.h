@@ -940,14 +940,21 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                             : NPF_MIN(fs.precision, cbuf_len);
                     pad = fs.field_width - precision;
                 } else {
-                    int const precision_start =
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
-                        (fs.conv_spec == NPF_FMT_SPEC_CONV_FLOAT_DECIMAL)
-                            ? frac_chars
-                            :
+                    if (inf_or_nan) {
+                        /* float is a string, not a number */
+                        precision = 0;
+                    } else {
+                        /* float precision is after the decimal point */
+                        int const precision_start =
+                            (fs.conv_spec == NPF_FMT_SPEC_CONV_FLOAT_DECIMAL)
+                                ? frac_chars
+                                : cbuf_len;
+                        precision = NPF_MAX(0, fs.precision - precision_start);
+                    }
+#else
+                    precision = NPF_MAX(0, fs.precision - cbuf_len);
 #endif
-                            cbuf_len;
-                    precision = NPF_MAX(0, fs.precision - precision_start);
                     pad = NPF_MAX(
                         0, fs.field_width - cbuf_len - !!sign_c - precision);
                 }
