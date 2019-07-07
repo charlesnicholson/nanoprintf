@@ -205,6 +205,7 @@ typedef struct {
 } npf__bufputc_ctx_t;
 
 NPF_VISIBILITY int npf__bufputc(int c, void *ctx);
+NPF_VISIBILITY int npf__bufputc_nop(int c, void *ctx);
 NPF_VISIBILITY int npf__itoa_rev(char *buf, npf__int_t i);
 NPF_VISIBILITY int npf__utoa_rev(char *buf, npf__uint_t i, unsigned base,
                                  npf__format_spec_conversion_case_t cc);
@@ -499,6 +500,11 @@ int npf__bufputc(int c, void *ctx) {
         return c;
     }
     return NPF_EOF;
+}
+
+int npf__bufputc_nop(int c, void *ctx) {
+    (void)ctx;
+    return c;
 }
 
 int npf__itoa_rev(char *buf, npf__int_t i) {
@@ -1044,7 +1050,8 @@ int npf_vsnprintf(char *buffer, size_t bufsz, char const *format,
     bufputc_ctx.dst = buffer;
     bufputc_ctx.len = bufsz;
     bufputc_ctx.cur = 0;
-    return npf_vpprintf(npf__bufputc, &bufputc_ctx, format, vlist);
+    return npf_vpprintf(buffer ? npf__bufputc : npf__bufputc_nop, &bufputc_ctx,
+                        format, vlist);
 }
 
 #ifdef __cplusplus
