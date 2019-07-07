@@ -745,7 +745,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                 NPF_PUT_CHECKED(*cur++);
             } else {
                 /* Format specifier, convert and write argument */
-                char cbuf_mem[24], *cbuf = cbuf_mem, sign_c, pad_c;
+                char cbuf_mem[32], *cbuf = cbuf_mem, sign_c, pad_c;
                 int cbuf_len = 0, pad = 0, precision;
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS
                 int frac_chars = 0, inf_or_nan = 0;
