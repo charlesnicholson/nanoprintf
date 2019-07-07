@@ -41,11 +41,11 @@ nanoprintf has 4 main functions:
 * `npf_pprintf`: Use like [printf](https://en.cppreference.com/w/c/io/fprintf) with a per-character write callback (semihosting, UART, etc).
 * `npf_vpprintf`: Use like `npf_pprintf` but takes a `va_list`.
 
-The `pprintf` variations take a callback that returns an `int`. If the callback returns `NPF_EOF`, the print functions will stop printing and return immediately.
+The `pprintf` variations take a callback that receives the character to print and a user-provided context pointer.
 
 Pass `NULL` or `nullptr` to `npf_[v]snprintf` to write nothing, and only return the length of the formatted string.
 
-nanoprintf does *not* provide `printf` itself; that's seen as project- or platform-specific. nanoprintf is hopefully a good building block for rolling your own `printf`, though.
+nanoprintf does *not* provide `printf` or `putchar` itself; those are seen as system-level services and nanoprintf is a utility library. nanoprintf is hopefully a good building block for rolling your own `printf`, though.
 
 ## Configuration
 
