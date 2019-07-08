@@ -6,7 +6,7 @@ nanoprintf is an implementation of snprintf and vsnprintf for embedded systems t
 
 nanoprintf makes no memory allocations, uses less than 100 bytes of stack, and is smaller than 5KB of ARM Cortex-M object code when optimized with all the bells and whistles turned on (slightly larger on x64, where you don't want to use it anyway).
 
-nanoprintf is a [single header file](https://github.com/charlesnicholson/nanoprintf/blob/readme/nanoprintf.h) in the style of the [stb libraries](https://github.com/nothings/stb). The rest of the repository is tests and scaffolding and not required for use.
+nanoprintf is a [single header file](https://github.com/charlesnicholson/nanoprintf/blob/master/nanoprintf.h) in the style of the [stb libraries](https://github.com/nothings/stb). The rest of the repository is tests and scaffolding and not required for use.
 
 nanoprintf is written in C89 for maximal compiler compatibility. C99 or C++11 compilers are required (for `uint64_t` and other types) if floating point conversion or large modifiers are enabled. nanoprintf does include standard headers but only uses them for types and argument lists; no calls are made into stdlib / libc, with the exception of any internal double-to-float conversion ABI calls your compiler might emit.
 
