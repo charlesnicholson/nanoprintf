@@ -30,7 +30,7 @@ No other embedded-friendly printf projects that I could fine are in the public d
 	#include "path/to/nanoprintf.h"
 	```
 
-1. `#include "path/to/nanoprintf.h"` as usual to expose the function prototypes.
+1. To call, just `#include "path/to/nanoprintf.h"` as usual and call the functions.
 1. Compile your code with your nanoprintf configuration flags. Alternately, wrap `nanoprintf.h` in your own header that defines all of your configuration flags, and use that everywhere in steps 2-3.
 
 ## API
