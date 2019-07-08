@@ -21,7 +21,13 @@ if [ ! -f "$NINJA" ]; then
         wget --no-check-certificate -P "$NINJA_DIR" "$NINJA_URL_PREFIX/$NINJA_ARCHIVE"
     fi
 
-    unzip "$NINJA_DIR/$NINJA_ARCHIVE" -d "$NINJA_DIR"
-    rm "$NINJA_DIR/$NINJA_ARCHIVE"
+    # Verify SHA256 checksum because wget doesn't check server certificate
+    (cd $NINJA_DIR && sha256sum -c $SCRIPT_PATH/ninja.sha256sum < $NINJA_ARCHIVE)
+    if [ $? == 0 ]; then
+        unzip "$NINJA_DIR/$NINJA_ARCHIVE" -d "$NINJA_DIR"
+        rm "$NINJA_DIR/$NINJA_ARCHIVE"
+    else
+        echo "unknown sha256 checksum on $NINJA_ARCHIVE"
+        exit 1
+    fi
 fi
-

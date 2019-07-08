@@ -27,8 +27,15 @@ if [ ! -f "$CMAKE_DIR/cmake" ]; then
         wget --no-check-certificate -P "$CMAKE_DIR" $CMAKE_URL
     fi
 
-    tar xzf "$CMAKE_DIR/$CMAKE_ARCHIVE" -C "$CMAKE_DIR"
-    rm "$CMAKE_DIR/$CMAKE_ARCHIVE"
-    ln -s "$CMAKE" "$CMAKE_DIR/cmake"
+    # Verify SHA256 checksum because wget doesn't check server certificate
+    (cd $CMAKE_DIR && sha256sum -c $SCRIPT_PATH/cmake.sha256sum < $CMAKE_ARCHIVE)
+    if [ $? == 0 ]; then
+    	tar xzf "$CMAKE_DIR/$CMAKE_ARCHIVE" -C "$CMAKE_DIR"
+    	ln -s "$CMAKE" "$CMAKE_DIR/cmake"
+    	rm "$CMAKE_DIR/$CMAKE_ARCHIVE"
+    else
+	echo "unknown sha256 checksum on $CMAKE_ARCHIVE"
+	exit 1
+    fi
 fi
 
