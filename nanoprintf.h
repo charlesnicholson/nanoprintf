@@ -157,7 +157,6 @@ typedef enum {
 } npf__format_spec_conversion_t;
 
 typedef enum {
-    NPF_FMT_SPEC_CONV_CASE_NONE,
     NPF_FMT_SPEC_CONV_CASE_LOWER,
     NPF_FMT_SPEC_CONV_CASE_UPPER
 } npf__format_spec_conversion_case_t;
@@ -252,16 +251,11 @@ int npf__parse_format_spec(char const *format, va_list vlist,
     out_spec->leading_zero_pad = 0;
     out_spec->field_width_type = NPF_FMT_SPEC_FIELD_WIDTH_NONE;
     out_spec->length_modifier = NPF_FMT_SPEC_LEN_MOD_NONE;
-    out_spec->conv_spec_case = NPF_FMT_SPEC_CONV_CASE_NONE;
 
-    /* Format specifiers start with % */
-    if (*cur++ != '%') {
-        return 0;
-    }
-
-    /* Optional flags */
-    while (*cur) {
-        switch (*cur++) {
+    /* cur points at the leading '%' character */
+    while (*++cur) {
+        /* Optional flags */
+        switch (*cur) {
             case '-':
                 out_spec->left_justified = 1;
                 out_spec->leading_zero_pad = 0;
@@ -282,7 +276,6 @@ int npf__parse_format_spec(char const *format, va_list vlist,
             default:
                 break;
         }
-        --cur;
         break;
     }
 
@@ -829,21 +822,22 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
 #endif
                         }
 
-                        /* octal special case, print a single '0' */
-                        if ((fs.conv_spec == NPF_FMT_SPEC_CONV_OCTAL) && !val &&
-                            !fs.precision && fs.alternative_form) {
-                            fs.precision = 1;
-                        }
-                        /* special case, if prec and value are 0, skip */
-                        if (!val && !fs.precision &&
-                            (fs.precision_type ==
-                             NPF_FMT_SPEC_PRECISION_LITERAL)) {
-                            cbuf_len = 0;
+                        if (!val && !fs.precision) {
+                            if ((fs.conv_spec == NPF_FMT_SPEC_CONV_OCTAL) &&
+                                fs.alternative_form) {
+                                /* octal special case, print a single '0' */
+                                fs.precision = 1;
+                            } else if (fs.precision_type ==
+                                       NPF_FMT_SPEC_PRECISION_LITERAL) {
+                                /* 0 value + 0 precision, print nothing */
+                                cbuf_len = 0;
+                            }
                         } else {
                             /* print the number info cbuf */
                             cbuf_len = npf__utoa_rev(cbuf, val, base,
                                                      fs.conv_spec_case);
                         }
+
                         /* alt form adds '0' octal or '0x' hex prefix */
                         if (val && fs.alternative_form) {
                             if (fs.conv_spec == NPF_FMT_SPEC_CONV_OCTAL) {
