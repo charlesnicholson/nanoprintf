@@ -13,10 +13,6 @@ int ParseFormatSpec(char const *fmt, npf__format_spec_t *out_spec, ...) {
 
 TEST_GROUP(npf__parse_format_spec) { npf__format_spec_t spec; };
 
-TEST(npf__parse_format_spec, ReturnsZeroIfEmptyString) {
-    CHECK_EQUAL(0, ParseFormatSpec("", &spec));
-}
-
 TEST(npf__parse_format_spec, ReturnsZeroIfFirstCharIsntPercent) {
     CHECK_EQUAL(0, ParseFormatSpec("abcd", &spec));
 }
