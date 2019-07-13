@@ -1001,12 +1001,12 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                 }
 
                 /* Given the full converted length, how many pad bytes? */
+                /* Given the full converted length, how many pad bytes? */
+                field_pad = fs.field_width - cbuf_len - !!sign_c;
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
-                field_pad =
-                    NPF_MAX(0, fs.field_width - cbuf_len - !!sign_c - prec_pad);
-#else
-                field_pad = NPF_MAX(0, fs.field_width - cbuf_len - !!sign_c);
+                field_pad -= prec_pad;
 #endif
+                field_pad = NPF_MAX(0, field_pad);
 
                 /* Apply right-justified field width if requested */
                 if (!fs.left_justified && pad_c) {
