@@ -1001,7 +1001,6 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                 }
 
                 /* Given the full converted length, how many pad bytes? */
-                /* Given the full converted length, how many pad bytes? */
                 field_pad = fs.field_width - cbuf_len - !!sign_c;
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
                 field_pad -= prec_pad;
