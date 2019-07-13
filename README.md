@@ -130,6 +130,10 @@ No wide-character support exists: the `%lc` and `%ls` fields require that the ar
 
 Currently the only supported float conversions are the decimal forms: `%f` and `%F`. All other float conversions (exponent form, hexadecimal exponent form, dynamic precision form) behave like `%f` and `%F`. Pull requests welcome!
 
+## Philosophy
+
+This code is optimized for size, not readability or structure. Unfortunately modularity and function-factoring even in C adds overhead at this small scale, so most of the functionality and logic is pushed together into `npf_vpprintf`. This is not what normal embedded systems code should look like; it's `#ifdef` soup and hard to make sense of, and I apologize if you have to spelunk around in the implementation. Hopefully the various tests will serve as guide rails if you hack around in it.
+
 ## Acknowledgments
 
 Float-to-int conversion is done using [Wojciech Muła](mailto:zdjęcia@garnek.pl)'s float -> 64:64 fixed [algorithm](http://0x80.pl/notesen/2015-12-29-float-to-string.html).
