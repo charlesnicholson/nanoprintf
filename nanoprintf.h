@@ -36,6 +36,16 @@
 #ifndef NANOPRINTF_H_INCLUDED
 #define NANOPRINTF_H_INCLUDED
 
+/* Compile with reasonable defaults if nothing's been configured. */
+#if !defined(NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS) && \
+    !defined(NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS) && \
+    !defined(NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS)
+#define NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS 0
+#define NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS 1
+#define NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS 0
+#endif
+
+/* If anything's been configured, require that everything be configured. */
 #ifndef NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS
 #error NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS must be #defined to 0 or 1
 #endif
@@ -44,18 +54,20 @@
 #error NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS must be #defined to 0 or 1
 #endif
 
-/* %n is an attack vector, allow it to be disabled. */
 #ifndef NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS
 #error NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS must be #defined to 0 or 1
 #endif
 
+/* Define this to fully sandbox nanoprintf inside of a translation unit. */
 #ifdef NANOPRINTF_VISIBILITY_STATIC
 #define NPF_VISIBILITY static
 #else
 #define NPF_VISIBILITY extern
 #endif
 
-#if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
+/* Currently float + large support require c99/c++11 types in stdint.h */
+#if (NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1) || \
+    (NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1)
 #ifdef __cplusplus
 #if __cplusplus < 201103L
 #error nanoprintf float support requires fixed-width types from c++11 or later.
