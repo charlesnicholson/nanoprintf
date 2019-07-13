@@ -72,6 +72,7 @@ set(nanoprintf_cxx_flags ${nanoprintf_common_flags} ${nanoprintf_cxx_flags})
 
 add_library(npf_c89 compilation_tests/nanoprintf_compilation_test_c.c)
 target_compile_definitions(npf_c89 PRIVATE
+    NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=1
     NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0
     NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=0
     NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=1)
@@ -79,6 +80,7 @@ target_compile_options(npf_c89 PRIVATE -std=c89 ${nanoprintf_c_flags})
 
 add_library(npf_c99 compilation_tests/nanoprintf_compilation_test_c.c)
 target_compile_definitions(npf_c99 PRIVATE
+    NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=1
     NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=1
     NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=1
     NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=1)
@@ -88,13 +90,23 @@ add_library(npf_c_default_flags compilation_tests/nanoprintf_compilation_test_c.
 
 add_library(npf_c_no_flags compilation_tests/nanoprintf_compilation_test_c.c)
 target_compile_definitions(npf_c_no_flags PRIVATE
+    NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=0
     NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0
     NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=0
     NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=0)
 target_compile_options(npf_c_no_flags PRIVATE ${nanoprintf_c_flags})
 
+add_library(npf_c_precision compilation_tests/nanoprintf_compilation_test_c.c)
+target_compile_definitions(npf_c_precision PRIVATE
+    NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=1
+    NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0
+    NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=0
+    NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=0)
+target_compile_options(npf_c_precision PRIVATE ${nanoprintf_c_flags})
+
 add_library(npf_c_floats compilation_tests/nanoprintf_compilation_test_c.c)
 target_compile_definitions(npf_c_floats PRIVATE
+    NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=1
     NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0
     NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=1
     NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=0)
@@ -102,6 +114,7 @@ target_compile_options(npf_c_floats PRIVATE -std=c99 ${nanoprintf_c_flags})
 
 add_library(npf_c_large compilation_tests/nanoprintf_compilation_test_c.c)
 target_compile_definitions(npf_c_large PRIVATE
+    NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=0
     NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=1
     NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=0
     NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=0)
@@ -109,38 +122,19 @@ target_compile_options(npf_c_large PRIVATE -std=c99 ${nanoprintf_c_flags})
 
 add_library(npf_c_writeback compilation_tests/nanoprintf_compilation_test_c.c)
 target_compile_definitions(npf_c_writeback PRIVATE
+    NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=0
     NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0
     NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=0
     NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=1)
 target_compile_options(npf_c_writeback PRIVATE -std=c99 ${nanoprintf_c_flags})
 
-add_library(npf_cpp_no_flags compilation_tests/nanoprintf_compilation_test_cpp.cpp)
-target_compile_definitions(npf_cpp_no_flags PRIVATE
-    NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0
-    NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=0
-    NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=0)
-target_compile_options(npf_cpp_no_flags PRIVATE ${nanoprintf_cxx_flags})
-
-add_library(npf_cpp_floats compilation_tests/nanoprintf_compilation_test_cpp.cpp)
-target_compile_definitions(npf_cpp_floats PRIVATE
-    NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0
-    NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=1
-    NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=0)
-target_compile_options(npf_cpp_floats PRIVATE ${nanoprintf_cxx_flags})
-
-add_library(npf_cpp_large compilation_tests/nanoprintf_compilation_test_cpp.cpp)
-target_compile_definitions(npf_cpp_large PRIVATE
+add_library(npf_cpp compilation_tests/nanoprintf_compilation_test_cpp.cpp)
+target_compile_definitions(npf_cpp PRIVATE
+    NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=1
     NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=1
-    NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=0
-    NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=0)
-target_compile_options(npf_cpp_large PRIVATE ${nanoprintf_cxx_flags})
-
-add_library(npf_cpp_writeback compilation_tests/nanoprintf_compilation_test_cpp.cpp)
-target_compile_definitions(npf_cpp_writeback PRIVATE
-    NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0
-    NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=0
+    NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=1
     NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=1)
-target_compile_options(npf_cpp_writeback PRIVATE ${nanoprintf_cxx_flags})
+target_compile_options(npf_cpp PRIVATE ${nanoprintf_cxx_flags})
 
 ################ Test driver
 
@@ -209,30 +203,42 @@ set(conformance_test_files
 
 npf_test(conformance_no_flags "${conformance_test_files}")
 target_compile_definitions(conformance_no_flags PRIVATE
+    NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=0
+    NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0
+    NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=0
+    NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=0)
+
+npf_test(conformance_precision "${conformance_test_files}")
+target_compile_definitions(conformance_precision PRIVATE
+    NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=1
     NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0
     NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=0
     NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=0)
 
 npf_test(conformance_float "${conformance_test_files}")
 target_compile_definitions(conformance_float PRIVATE
+    NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=1
     NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0
     NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=1
     NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=0)
 
 npf_test(conformance_large "${conformance_test_files}")
 target_compile_definitions(conformance_large PRIVATE
+    NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=0
     NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=1
     NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=0
     NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=0)
 
 npf_test(conformance_writeback "${conformance_test_files}")
 target_compile_definitions(conformance_writeback PRIVATE
+    NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=0
     NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0
     NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=0
     NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=1)
 
 npf_test(conformance_all "${conformance_test_files}")
 target_compile_definitions(conformance_all PRIVATE
+    NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=1
     NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=1
     NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=1
     NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=1)
