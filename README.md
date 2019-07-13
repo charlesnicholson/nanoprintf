@@ -4,7 +4,7 @@
 
 nanoprintf is an implementation of snprintf and vsnprintf for embedded systems that aims for C11 standard compliance.
 
-nanoprintf makes no memory allocations, uses less than 100 bytes of stack, and is smaller than 5KB of ARM Cortex-M object code when optimized with all the bells and whistles turned on (slightly larger on x64, where you don't want to use it anyway).
+nanoprintf makes no memory allocations and uses less than 100 bytes of stack. Compiling with all optional features disabled yields ~2.8KB of ARM Cortex-M object code, and compiling with all optional features enabled is closer to 5KB. This is all larger on x64, but why are you using nanoprintf on x64? :)
 
 nanoprintf is a [single header file](https://github.com/charlesnicholson/nanoprintf/blob/master/nanoprintf.h) in the style of the [stb libraries](https://github.com/nothings/stb). The rest of the repository is tests and scaffolding and not required for use.
 
@@ -77,7 +77,7 @@ Like `printf`, `nanoprintf` expects a conversion specification string of the fol
 * **Field width**
 
 	A number that specifies the total field width for the conversion, adds padding. If field width is `*`, the field width is read from the next vararg.
-* **Precision**
+* **Precision** (if enabled)
 
 	Prefixed with a `.`, a number that specifies the precision of the number or string. If precision is `*`, the precision is read from the next vararg.
 * **Length modifier**

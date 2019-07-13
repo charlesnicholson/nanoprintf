@@ -70,27 +70,31 @@ TEST(conformance, Char) {
 TEST(conformance, Strings) {
     CheckConformance("one", "%s", "one");
     CheckConformance("       two", "%10s", "two");
+#if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
     CheckConformance("thr", "%.3s", "three");
     CheckConformance("four", "%.100s", "four");
     // CheckConformance("abc", "%010s", "abc");  // undefined
     CheckConformance("", "%.0s", "five");
     CheckConformance("       six", "%10.3s", "sixAAAAAAAA");
+#endif
 }
 
 TEST(conformance, UnsignedInt) {
     CheckConformance("0", "%u", 0);
     CheckConformance("4294967295", "%u", UINT_MAX);
     CheckConformance("0", "%+u", 0);
-    CheckConformance("", "%.0u", 0);
     CheckConformance("1", "%+u", 1);
     CheckConformance("   1", "%+4u", 1);  // undefined but usually skips +
     CheckConformance("     0", "% 6u", 0);
-    CheckConformance("01", "%.2u", 1);
-    CheckConformance("    0123", "%8.4u", 123);
     CheckConformance("13", "%hu", (1 << 21u) + 13u);  // "short" mod clips
     CheckConformance("4294967296", "%lu",
                      (unsigned long)UINT_MAX + 1);  // assume ul > u
     CheckConformance("0", "%hhu", 256u);
+#if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
+    CheckConformance("", "%.0u", 0);
+    CheckConformance("01", "%.2u", 1);
+    CheckConformance("    0123", "%8.4u", 123);
+#endif
 #if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
     CheckConformance("18446744073709551615", "%llu", ULLONG_MAX);
     CheckConformance("18446744073709551615", "%ju", UINTMAX_MAX);
@@ -102,8 +106,6 @@ TEST(conformance, UnsignedInt) {
 TEST(conformance, SignedInt) {
     CheckConformance("-2147483648", "%i", INT_MIN);
     CheckConformance("0", "%i", 0);
-    CheckConformance("", "%.0i", 0);
-    CheckConformance("+", "%+.0i", 0);
     CheckConformance("2147483647", "%i", INT_MAX);
     CheckConformance("-1", "%+i", -1);
     CheckConformance("+0", "%+i", 0);
@@ -118,12 +120,16 @@ TEST(conformance, SignedInt) {
     CheckConformance("0000", "%04i", 0);
     CheckConformance("-001", "%04i", -1);
     CheckConformance("+001", "%+04i", 1);
-    CheckConformance("+01", "%+.2i", 1);
-    CheckConformance(" +01", "%+4.2i", 1);
     // CheckConformance("%.-123i", 400); xcode libc doesn't ignore negative
     CheckConformance("2147483648", "%lu",
                      (long)INT_MAX + 1);  // assume l > i
     CheckConformance("-128", "%hhi", 128);
+#if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
+    CheckConformance("", "%.0i", 0);
+    CheckConformance("+", "%+.0i", 0);
+    CheckConformance("+01", "%+.2i", 1);
+    CheckConformance(" +01", "%+4.2i", 1);
+#endif
 #if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
     CheckConformance("9223372036854775807", "%lli", LLONG_MAX);
     CheckConformance("9223372036854775807", "%ji", INTMAX_MAX);
@@ -135,8 +141,6 @@ TEST(conformance, SignedInt) {
 TEST(conformance, Octal) {
     CheckConformance("0", "%o", 0);
     CheckConformance("0", "%#o", 0);
-    CheckConformance("", "%.0o", 0);
-    CheckConformance("0", "%#.0o", 0);
     CheckConformance("37777777777", "%o", UINT_MAX);
     CheckConformance("      2322", "%10o", 1234);
     CheckConformance("     02322", "%#10o", 1234);
@@ -150,6 +154,10 @@ TEST(conformance, Octal) {
     CheckConformance("40000000000", "%lo",
                      (unsigned long)UINT_MAX + 1);  // assume ul > u
     CheckConformance("2", "%hho", 258u);
+#if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
+    CheckConformance("", "%.0o", 0);
+    CheckConformance("0", "%#.0o", 0);
+#endif
 #if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
     CheckConformance("1777777777777777777777", "%llo", ULLONG_MAX);
     CheckConformance("1777777777777777777777", "%jo", UINTMAX_MAX);
@@ -160,12 +168,9 @@ TEST(conformance, Octal) {
 
 TEST(conformance, Hex) {
     CheckConformance("0", "%x", 0);
-    CheckConformance("", "%.0x", 0);
     CheckConformance("12345678", "%x", 0x12345678);
     CheckConformance("ffffffff", "%x", UINT_MAX);
     CheckConformance("0", "%X", 0);
-    CheckConformance("", "%.0X", 0);
-    CheckConformance("", "%#.0X", 0);
     CheckConformance("90ABCDEF", "%X", 0x90ABCDEF);
     CheckConformance("FFFFFFFF", "%X", UINT_MAX);
     CheckConformance("0", "%#x", 0);
@@ -181,6 +186,11 @@ TEST(conformance, Hex) {
     CheckConformance("100000000", "%lx",
                      (unsigned long)UINT_MAX + 1);  // assume ul > u
     CheckConformance("b", "%hhx", 256u + 0xb);
+#if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
+    CheckConformance("", "%.0x", 0);
+    CheckConformance("", "%.0X", 0);
+    CheckConformance("", "%#.0X", 0);
+#endif
 #if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
     CheckConformance("ffffffffffffffff", "%llx", ULLONG_MAX);
     CheckConformance("ffffffffffffffff", "%jx", UINTMAX_MAX);
@@ -267,11 +277,13 @@ TEST(conformance, WritebackPtrdiffT) {
 
 TEST(conformance, StarArgs) {
     CheckConformance("         Z", "%*c", 10, 'Z');
+    CheckConformance("5     ", "%*u", -6, 5);  // * fw < 0 => '-' and abs(fw)
+#if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
     CheckConformance("01", "%.*i", 2, 1);
     CheckConformance("        07", "%*.*i", 10, 2, 7);
     CheckConformance("h", "%.*s", 1, "hello world");
-    CheckConformance("1", "%.*u", -123, 1);    // ignore negative * precision
-    CheckConformance("5     ", "%*u", -6, 5);  // * fw < 0 => '-' and abs(fw)
+    CheckConformance("1", "%.*u", -123, 1);  // ignore negative * precision
+#endif
 }
 
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
