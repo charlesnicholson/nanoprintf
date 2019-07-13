@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.4)
-project(nanoprintf C CXX)
+project(nanoprintf)
 
 ################ CppUTest
 
@@ -84,13 +84,6 @@ target_compile_definitions(npf_c99 PRIVATE
     NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=1)
 target_compile_options(npf_c99 PRIVATE -std=c99 ${nanoprintf_c_flags})
 
-add_library(npf_c11 compilation_tests/nanoprintf_compilation_test_c.c)
-target_compile_definitions(npf_c11 PRIVATE
-    NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=1
-    NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=1
-    NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=1)
-target_compile_options(npf_c11 PRIVATE -std=c11 ${nanoprintf_c_flags})
-
 add_library(npf_c_no_flags compilation_tests/nanoprintf_compilation_test_c.c)
 target_compile_definitions(npf_c_no_flags PRIVATE
     NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0
@@ -119,84 +112,125 @@ target_compile_definitions(npf_c_writeback PRIVATE
     NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=1)
 target_compile_options(npf_c_writeback PRIVATE -std=c99 ${nanoprintf_c_flags})
 
-add_library(npf_cc_no_flags compilation_tests/nanoprintf_compilation_test_cc.cc)
-target_compile_definitions(npf_cc_no_flags PRIVATE
+add_library(npf_cpp_no_flags compilation_tests/nanoprintf_compilation_test_cpp.cpp)
+target_compile_definitions(npf_cpp_no_flags PRIVATE
     NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0
     NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=0
     NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=0)
-target_compile_options(npf_cc_no_flags PRIVATE ${nanoprintf_cxx_flags})
+target_compile_options(npf_cpp_no_flags PRIVATE ${nanoprintf_cxx_flags})
 
-add_library(npf_cc_floats compilation_tests/nanoprintf_compilation_test_cc.cc)
-target_compile_definitions(npf_cc_floats PRIVATE
+add_library(npf_cpp_floats compilation_tests/nanoprintf_compilation_test_cpp.cpp)
+target_compile_definitions(npf_cpp_floats PRIVATE
     NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0
     NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=1
     NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=0)
-target_compile_options(npf_cc_floats PRIVATE ${nanoprintf_cxx_flags})
+target_compile_options(npf_cpp_floats PRIVATE ${nanoprintf_cxx_flags})
 
-add_library(npf_cc_large compilation_tests/nanoprintf_compilation_test_cc.cc)
-target_compile_definitions(npf_cc_large PRIVATE
+add_library(npf_cpp_large compilation_tests/nanoprintf_compilation_test_cpp.cpp)
+target_compile_definitions(npf_cpp_large PRIVATE
     NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=1
     NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=0
     NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=0)
-target_compile_options(npf_cc_large PRIVATE ${nanoprintf_cxx_flags})
+target_compile_options(npf_cpp_large PRIVATE ${nanoprintf_cxx_flags})
 
-add_library(npf_cc_writeback compilation_tests/nanoprintf_compilation_test_cc.cc)
-target_compile_definitions(npf_cc_writeback PRIVATE
+add_library(npf_cpp_writeback compilation_tests/nanoprintf_compilation_test_cpp.cpp)
+target_compile_definitions(npf_cpp_writeback PRIVATE
     NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0
     NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=0
     NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=1)
-target_compile_options(npf_cc_writeback PRIVATE ${nanoprintf_cxx_flags})
+target_compile_options(npf_cpp_writeback PRIVATE ${nanoprintf_cxx_flags})
+
+################ Test driver
+
+function(npf_test name files)
+    add_executable(${name} ${files})
+
+    target_include_directories(${name} PRIVATE ${CPPUTEST_INCLUDE_DIR})
+    target_link_libraries(${name} libCppUTest libCppUTestExt)
+
+    target_compile_options(${name} PRIVATE
+        ${nanoprintf_cxx_flags}
+        -Wno-old-style-cast     # C style casts are ok
+        -Wno-format
+        -Wno-format-pedantic
+        -Wno-format-nonliteral
+        -std=c++11)
+
+    if (is_clang GREATER_EQUAL 0)
+        target_compile_options(${name} PRIVATE
+            -Wno-c++11-long-long    # CppUTest uses long long
+            -Wno-reserved-id-macro  # CppUTest uses leading __
+            -Wno-keyword-macro      # CppUTest redefines 'new' for memory checks
+            -Wno-disabled-macro-expansion
+            -Wno-weak-vtables
+            -Wno-global-constructors   # CppUTest memory checks
+            -Wno-exit-time-destructors # CppUTest memory checks
+            -Wno-c++98-compat
+            -Wno-missing-prototypes)
+    endif()
+
+    set(timestamp "${CMAKE_CURRENT_BINARY_DIR}/${name}.timstamp")
+    add_custom_target(run_${name} ALL DEPENDS ${timestamp})
+
+    add_custom_command(OUTPUT ${timestamp}
+        COMMAND ${name} && ${CMAKE_COMMAND} -E touch ${timestamp}
+        DEPENDS ${name}
+        COMMENT "Running ${name}")
+endfunction()
 
 ################ Unit tests
 
-add_executable(npf_unit_tests
+set(unit_test_files
     nanoprintf.h
-    unit_tests/test_bufputc.cc
-    unit_tests/test_conformance.cc
-    unit_tests/test_parse_format_spec.cc
-    unit_tests/test_ftoa_rev.cc
-    unit_tests/test_fsplit_abs.cc
-    unit_tests/test_itoa_rev.cc
-    unit_tests/test_ptoa_rev.cc
-    unit_tests/test_utoa_rev.cc
-    unit_tests/test_snprintf.cc
-    unit_tests/test_vpprintf.cc
-    unit_tests/nanoprintf_in_unit_tests.cc
+    unit_tests/test_bufputc.cpp
+    unit_tests/test_parse_format_spec.cpp
+    unit_tests/test_ftoa_rev.cpp
+    unit_tests/test_fsplit_abs.cpp
+    unit_tests/test_itoa_rev.cpp
+    unit_tests/test_ptoa_rev.cpp
+    unit_tests/test_utoa_rev.cpp
+    unit_tests/test_snprintf.cpp
+    unit_tests/test_vpprintf.cpp
+    unit_tests/nanoprintf_in_unit_tests.cpp
     unit_tests/nanoprintf_in_unit_tests.h
-    unit_tests/main.cc)
+    unit_tests/main.cpp)
 
-set_source_files_properties(unit_tests/test_conformance.cc
-    PROPERTIES COMPILE_FLAGS -Wno-format-nonliteral)
+npf_test(unit_tests "${unit_test_files}")
 
-target_include_directories(npf_unit_tests PRIVATE "${CPPUTEST_INCLUDE_DIR}")
-target_link_libraries(npf_unit_tests libCppUTest libCppUTestExt)
+################ Conformance tests
 
-target_compile_options(npf_unit_tests PRIVATE
-    ${nanoprintf_cxx_flags}
-    -Wno-old-style-cast     # C style casts are ok
-    -Wno-format
-    -Wno-format-pedantic
-    -std=c++11
-)
+set(conformance_test_files
+    nanoprintf.h
+    conformance_tests/nanoprintf_in_conformance_tests.cpp
+    conformance_tests/test_conformance.cpp
+    conformance_tests/main.cpp)
 
-if (is_clang GREATER_EQUAL 0)
-    target_compile_options(npf_unit_tests PRIVATE
-        -Wno-c++11-long-long    # CppUTest uses long long
-        -Wno-reserved-id-macro  # CppUTest uses leading __
-        -Wno-keyword-macro      # CppUTest redefines 'new' for memory checks
-        -Wno-disabled-macro-expansion
-        -Wno-weak-vtables
-        -Wno-global-constructors   # CppUTest memory checks
-        -Wno-exit-time-destructors # CppUTest memory checks
-        -Wno-c++98-compat
-        -Wno-missing-prototypes
-    )
-endif()
+npf_test(conformance_no_flags "${conformance_test_files}")
+target_compile_definitions(conformance_no_flags PRIVATE
+    NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0
+    NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=0
+    NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=0)
 
-set(timestamp ${CMAKE_CURRENT_BINARY_DIR}/npf_unit_tests.timestamp)
-add_custom_target(run_npf_unit_tests ALL DEPENDS ${timestamp})
+npf_test(conformance_float "${conformance_test_files}")
+target_compile_definitions(conformance_float PRIVATE
+    NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0
+    NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=1
+    NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=0)
 
-add_custom_command(OUTPUT ${timestamp}
-    COMMAND npf_unit_tests && ${CMAKE_COMMAND} -E touch ${timestamp}
-    DEPENDS npf_unit_tests
-    COMMENT "Running unit tests")
+npf_test(conformance_large "${conformance_test_files}")
+target_compile_definitions(conformance_large PRIVATE
+    NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=1
+    NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=0
+    NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=0)
+
+npf_test(conformance_writeback "${conformance_test_files}")
+target_compile_definitions(conformance_writeback PRIVATE
+    NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0
+    NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=0
+    NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=1)
+
+npf_test(conformance_all "${conformance_test_files}")
+target_compile_definitions(conformance_all PRIVATE
+    NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=1
+    NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=1
+    NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=1)

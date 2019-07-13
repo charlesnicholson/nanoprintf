@@ -1,4 +1,4 @@
-#include "nanoprintf_in_unit_tests.h"
+#include "../nanoprintf.h"
 
 #include "CppUTest/TestHarness.h"
 
@@ -91,10 +91,12 @@ TEST(conformance, UnsignedInt) {
     CheckConformance("4294967296", "%lu",
                      (unsigned long)UINT_MAX + 1);  // assume ul > u
     CheckConformance("0", "%hhu", 256u);
+#if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
     CheckConformance("18446744073709551615", "%llu", ULLONG_MAX);
     CheckConformance("18446744073709551615", "%ju", UINTMAX_MAX);
     CheckConformance("18446744073709551615", "%zu", SIZE_MAX);
     CheckConformance("18446744073709551615", "%tu", SIZE_MAX);
+#endif
 }
 
 TEST(conformance, SignedInt) {
@@ -122,10 +124,12 @@ TEST(conformance, SignedInt) {
     CheckConformance("2147483648", "%lu",
                      (long)INT_MAX + 1);  // assume l > i
     CheckConformance("-128", "%hhi", 128);
+#if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
     CheckConformance("9223372036854775807", "%lli", LLONG_MAX);
     CheckConformance("9223372036854775807", "%ji", INTMAX_MAX);
     CheckConformance("9223372036854775807", "%zi", INTMAX_MAX);
     CheckConformance("9223372036854775807", "%ti", PTRDIFF_MAX);
+#endif
 }
 
 TEST(conformance, Octal) {
@@ -146,10 +150,12 @@ TEST(conformance, Octal) {
     CheckConformance("40000000000", "%lo",
                      (unsigned long)UINT_MAX + 1);  // assume ul > u
     CheckConformance("2", "%hho", 258u);
+#if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
     CheckConformance("1777777777777777777777", "%llo", ULLONG_MAX);
     CheckConformance("1777777777777777777777", "%jo", UINTMAX_MAX);
     CheckConformance("1777777777777777777777", "%zo", SIZE_MAX);
     CheckConformance("1777777777777777777777", "%to", SIZE_MAX);
+#endif
 }
 
 TEST(conformance, Hex) {
@@ -175,10 +181,12 @@ TEST(conformance, Hex) {
     CheckConformance("100000000", "%lx",
                      (unsigned long)UINT_MAX + 1);  // assume ul > u
     CheckConformance("b", "%hhx", 256u + 0xb);
+#if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
     CheckConformance("ffffffffffffffff", "%llx", ULLONG_MAX);
     CheckConformance("ffffffffffffffff", "%jx", UINTMAX_MAX);
     CheckConformance("ffffffffffffffff", "%zx", SIZE_MAX);
     CheckConformance("ffffffffffffffff", "%tx", SIZE_MAX);
+#endif
 }
 
 TEST(conformance, Pointer) {
@@ -193,6 +201,7 @@ TEST(conformance, Pointer) {
     // CheckConformance("%.30p", p); precision + 'p' is undefined
 }
 
+#if NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS == 1
 namespace {
 void dummy_putc(int, void *) {}
 }  // namespace
@@ -229,6 +238,7 @@ TEST(conformance, WritebackChar) {
     CHECK_EQUAL(7, writeback);
 }
 
+#if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
 TEST(conformance, WritebackLongLong) {
     long long writeback = -1;
     npf_pprintf(dummy_putc, nullptr, "12345678%lln", &writeback);
@@ -252,6 +262,8 @@ TEST(conformance, WritebackPtrdiffT) {
     npf_pprintf(dummy_putc, nullptr, "12345678%tn", &writeback);
     CHECK_EQUAL(8, writeback);
 }
+#endif
+#endif
 
 TEST(conformance, StarArgs) {
     CheckConformance("         Z", "%*c", 10, 'Z');
@@ -262,6 +274,7 @@ TEST(conformance, StarArgs) {
     CheckConformance("5     ", "%*u", -6, 5);  // * fw < 0 => '-' and abs(fw)
 }
 
+#if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
 TEST(conformance, FloatNan) {
     char buf[32];
     npf_snprintf(buf, sizeof(buf), "%f", 0.0 / 0.0);
@@ -297,13 +310,6 @@ TEST(conformance, Float) {
     CheckConformance("0.00390625", "%.8Lf", (long double)0.00390625);
     CheckConformance("-0.00390625", "%.8f", -0.00390625);
     CheckConformance("-0.00390625", "%.8Lf", (long double)-0.00390625);
-    /*
-    char buf[32];
-    for (int i = 0; i < 1000; ++i) {
-        double const d = -1.0 + (i / 10000.);
-        npf_snprintf(buf, sizeof buf, "%f", d);
-        printf("%f: %s\n", d, buf);
-    }
-    */
 }
+#endif
 
