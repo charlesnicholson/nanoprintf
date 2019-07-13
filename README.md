@@ -132,7 +132,9 @@ Currently the only supported float conversions are the decimal forms: `%f` and `
 
 ## Philosophy
 
-This code is optimized for size, not readability or structure. Unfortunately modularity and function-factoring even in C adds overhead at this small scale, so most of the functionality and logic is pushed together into `npf_vpprintf`. This is not what normal embedded systems code should look like; it's `#ifdef` soup and hard to make sense of, and I apologize if you have to spelunk around in the implementation. Hopefully the various tests will serve as guide rails if you hack around in it.
+This code is optimized for size, not readability or structure. Unfortunately modularity and "cleanliness" even in C adds overhead at this small scale, so most of the functionality and logic is pushed together into `npf_vpprintf`. This is not what normal embedded systems code should look like; it's `#ifdef` soup and hard to make sense of, and I apologize if you have to spelunk around in the implementation. Hopefully the various tests will serve as guide rails if you hack around in it.
+
+Alternately, perhaps you're a significantly better programmer than I! In that case, please help me make this code smaller and cleaner without making the footprint larger, or nudge me in the right direction. :)
 
 ## Acknowledgments
 
