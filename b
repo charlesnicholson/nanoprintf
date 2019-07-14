@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 set -euo pipefail
-set -x
 
 SCRIPT_PATH=$(cd $(dirname $0); pwd -P)
 
