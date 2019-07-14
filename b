@@ -26,16 +26,17 @@ fi
 
 # Ensure the output directory exists for CMake to configure / build into.
 BUILD_PATH="$SCRIPT_PATH/build/ninja/$BUILD_TYPE"
-#[ ! -d "$BUILD_PATH" ] && mkdir -p "$BUILD_PATH"
+[ ! -d "$BUILD_PATH" ] && mkdir -p "$BUILD_PATH"
 
-# Configure CMake
-[ ! -d "$BUILD_PATH"/CMakeFiles ] &&
+# Configure CMake if necessary.
+if [ ! -d "$BUILD_PATH/CMakeFiles" ]; then
+    (cd "$BUILD_PATH"
     "$CMAKE" \
-        -S "$SCRIPT_PATH" \
-        -B "$BUILD_PATH" \
+        "$SCRIPT_PATH" \
         -G Ninja \
         -DCMAKE_MAKE_PROGRAM="$NINJA" \
-        -DCMAKE_BUILD_TYPE=$BUILD_TYPE
+        -DCMAKE_BUILD_TYPE=$BUILD_TYPE)
+fi
 
 # Build nanoprintf.
 "$CMAKE" --build "$BUILD_PATH" -- "$@"
