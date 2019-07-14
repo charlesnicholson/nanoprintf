@@ -33,42 +33,17 @@
 
 #ifndef NANOPRINTF_IMPLEMENTATION
 
+/*
+    The interface of nanoprintf begins here, to be compiled only if
+    NANOPRINTF_IMPLEMENTATION is not defined. In a multi-file library what
+    follows would be the public-facing nanoprintf.h.
+*/
+
 #ifndef NANOPRINTF_H_INCLUDED
 #define NANOPRINTF_H_INCLUDED
 
-/* Compile with reasonable defaults if nothing's been configured. */
-#if !defined(NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS) && \
-    !defined(NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS) &&     \
-    !defined(NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS) &&     \
-    !defined(NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS)
-#define NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS 1
-#define NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS 1
-#define NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS 0
-#define NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS 0
-#endif
-
-/* If anything's been configured, require that everything be configured. */
-#ifndef NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS
-#error NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS must be #defined to 0 or 1
-#endif
-
-#ifndef NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS
-#error NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS must be #defined to 0 or 1
-#endif
-
-#ifndef NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS
-#error NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS must be #defined to 0 or 1
-#endif
-
-#ifndef NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS
-#error NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS must be #defined to 0 or 1
-#endif
-
-/* Ensure flags are compatible. */
-#if (NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1) && \
-    (NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 0)
-#error Precision format specifiers must be enabled if float support is enabled.
-#endif
+#include <stdarg.h>
+#include <stddef.h>
 
 /* Define this to fully sandbox nanoprintf inside of a translation unit. */
 #ifdef NANOPRINTF_VISIBILITY_STATIC
@@ -77,31 +52,7 @@
 #define NPF_VISIBILITY extern
 #endif
 
-/* Currently float + large support require c99/c++11 types in stdint.h */
-#if (NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1) || \
-    (NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1)
-#ifdef __cplusplus
-#if __cplusplus < 201103L
-#error nanoprintf float support requires fixed-width types from c++11 or later.
-#endif
-#else
-#if __STDC_VERSION__ < 199409L
-#error nanoprintf float support requires fixed-width types from c99 or later.
-#endif
-#endif
-#endif
-
-#include <stdarg.h>
-#include <stddef.h>
-
-#if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
-#include <stdint.h>
-#endif
-
-#if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
-#include <inttypes.h>
-#endif
-
+/* Compilers can warn when printf formatting strings are incorrect. */
 #if defined(__clang__)
 #define NPF_PRINTF_ATTR(FORMAT_INDEX, VARGS_INDEX) \
     __attribute__((__format__(__printf__, FORMAT_INDEX, VARGS_INDEX)))
@@ -131,7 +82,65 @@ NPF_VISIBILITY int npf_pprintf(npf_putc pc, void *pc_ctx, char const *format,
 NPF_VISIBILITY int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format,
                                 va_list vlist) NPF_PRINTF_ATTR(3, 0);
 
-/* Internal */
+/* Public Configuration */
+
+/* Pick reasonable defaults if nothing's been configured. */
+#if !defined(NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS) && \
+    !defined(NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS) &&     \
+    !defined(NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS) &&     \
+    !defined(NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS)
+#define NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS 1
+#define NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS 1
+#define NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS 0
+#define NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS 0
+#endif
+
+/* If anything's been configured, everything must be configured. */
+#ifndef NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS
+#error NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS must be #defined to 0 or 1
+#endif
+
+#ifndef NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS
+#error NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS must be #defined to 0 or 1
+#endif
+
+#ifndef NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS
+#error NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS must be #defined to 0 or 1
+#endif
+
+#ifndef NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS
+#error NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS must be #defined to 0 or 1
+#endif
+
+/* Ensure flags are compatible. */
+#if (NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1) && \
+    (NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 0)
+#error Precision format specifiers must be enabled if float support is enabled.
+#endif
+
+/* Currently float + large support require c99/c++11 types in stdint.h */
+#if (NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1) || \
+    (NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1)
+#ifdef __cplusplus
+#if __cplusplus < 201103L
+#error nanoprintf float support requires fixed-width types from c++11 or later.
+#endif
+#else
+#if __STDC_VERSION__ < 199409L
+#error nanoprintf float support requires fixed-width types from c99 or later.
+#endif
+#endif
+#endif
+
+/* Implementation Details (prototype / config helper functions) */
+
+#if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
+#include <stdint.h>
+#endif
+
+#if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
+#include <inttypes.h>
+#endif
 
 typedef enum {
     NPF_FMT_SPEC_FIELD_WIDTH_NONE,
@@ -253,6 +262,12 @@ NPF_VISIBILITY int npf__ftoa_rev(char *buf, float f, unsigned base,
 
 #else /* NANOPRINTF_IMPLEMENTATION */
 
+/*
+    The implementation of nanoprintf begins here, to be compiled only if
+    NANOPRINTF_IMPLEMENTATION is defined. In a multi-file library what follows
+    would be nanoprintf.c.
+*/
+
 #undef NANOPRINTF_IMPLEMENTATION
 #include "nanoprintf.h"
 #define NANOPRINTF_IMPLEMENTATION
@@ -263,10 +278,6 @@ NPF_VISIBILITY int npf__ftoa_rev(char *buf, float f, unsigned base,
 
 #define NPF_MIN(x, y) ((x) < (y) ? (x) : (y))
 #define NPF_MAX(x, y) ((x) > (y) ? (x) : (y))
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 int npf__parse_format_spec(char const *format, va_list vlist,
                            npf__format_spec_t *out_spec) {
@@ -1115,9 +1126,5 @@ int npf_vsnprintf(char *buffer, size_t bufsz, char const *format,
     return npf_vpprintf(buffer ? npf__bufputc : npf__bufputc_nop, &bufputc_ctx,
                         format, vlist);
 }
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif /* NANOPRINTF_IMPLEMENTATION */
