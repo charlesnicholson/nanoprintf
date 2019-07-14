@@ -26,7 +26,7 @@ fi
 
 # Ensure the output directory exists for CMake to configure / build into.
 BUILD_PATH="$SCRIPT_PATH/build/ninja/$BUILD_TYPE"
-[ ! -d "$BUILD_PATH" ] && mkdir -p "$BUILD_PATH"
+#[ ! -d "$BUILD_PATH" ] && mkdir -p "$BUILD_PATH"
 
 # Configure CMake
 [ ! -d "$BUILD_PATH"/CMakeFiles ] &&
