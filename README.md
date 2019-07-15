@@ -4,7 +4,7 @@
 
 nanoprintf is an implementation of snprintf and vsnprintf for embedded systems that aims for C11 standard compliance.
 
-nanoprintf makes no memory allocations and uses less than 100 bytes of stack. Compiling with all optional features disabled yields ~2.8KB of ARM Cortex-M object code, and compiling with all optional features enabled is closer to 5KB. This is all larger on x64, but why are you using nanoprintf on x64? :)
+nanoprintf makes no memory allocations and uses less than 100 bytes of stack. Compiling with all optional features disabled yields ~2.4KB of ARM Cortex-M object code, and compiling with all optional features enabled is closer to 5KB. This is all larger on x64, but why are you using nanoprintf on x64? :)
 
 nanoprintf is a [single header file](https://github.com/charlesnicholson/nanoprintf/blob/master/nanoprintf.h) in the style of the [stb libraries](https://github.com/nothings/stb). The rest of the repository is tests and scaffolding and not required for use.
 
@@ -53,6 +53,7 @@ nanoprintf has the following static configuration flags. You can either inject t
 
 If no configuration flags are specified, nanoprintf will default to "reasonable" embedded values in an attempt to be helpful: floats enabled, writeback and large formatters disabled. If any configuration flags are explicitly specified, nanoprintf requires that all flags are explicitly specified.
 
+* `NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS`: Set to `0` or `1`. Enables field width specifiers.
 * `NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS`: Set to `0` or `1`. Enables floating-point specifiers.
 * `NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS`: Set to `0` or `1`. Enables oversized modifiers.
 * `NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS`: Set to `0` or `1`. Enables `%n` for write-back.
@@ -74,7 +75,7 @@ Like `printf`, `nanoprintf` expects a conversion specification string of the fol
 	* `+`: Signed conversions always begin with `+` or `-` characters.
 	* ` `: (space) A space character is inserted if the first converted character is not a sign.
 	* `#`: Writes extra characters (`0x` for hex, `.` for empty floats, '0' for empty octals, etc).
-* **Field width**
+* **Field width** (if enabled)
 
 	A number that specifies the total field width for the conversion, adds padding. If field width is `*`, the field width is read from the next vararg.
 * **Precision** (if enabled)
