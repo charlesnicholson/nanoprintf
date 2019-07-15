@@ -2,7 +2,7 @@
 
 [![CircleCI](https://circleci.com/gh/charlesnicholson/nanoprintf.svg?style=shield)](https://circleci.com/gh/charlesnicholson/nanoprintf) [![](https://img.shields.io/badge/license-public_domain-brightgreen.svg)](https://github.com/charlesnicholson/nanoprintf/blob/master/LICENSE)
 
-nanoprintf is an implementation of snprintf and vsnprintf for embedded systems that aims for C11 standard compliance.
+nanoprintf is an implementation of snprintf and vsnprintf for embedded systems that, when fully enabled, aims for C11 standard compliance.
 
 nanoprintf makes no memory allocations and uses less than 100 bytes of stack. Compiling with all optional features disabled yields ~2.4KB of ARM Cortex-M object code, and compiling with all optional features enabled is closer to 5KB. This is all larger on x64, but why are you using nanoprintf on x64? :)
 
