@@ -153,6 +153,12 @@ target_compile_definitions(npf_cpp PRIVATE
     NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=1)
 target_compile_options(npf_cpp PRIVATE ${nanoprintf_cxx_flags})
 
+################ Static compilation test
+
+add_executable(npf_static
+    static_test/nanoprintf_in_static_test.c
+    static_test/main.c)
+
 ################ Test driver
 
 function(npf_test name files)
