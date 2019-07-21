@@ -2,6 +2,8 @@
 
 #include "CppUTest/TestHarness.h"
 
+#include <cstring>
+
 TEST_GROUP(utoa) { char buf[64]; };
 
 #define NPF_UTOA_CHECK(EXPECT_STR, VAL, BASE, CASE)                       \
