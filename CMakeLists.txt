@@ -214,7 +214,13 @@ set(unit_test_files
     unit_tests/nanoprintf_in_unit_tests.h
     unit_tests/main.cpp)
 
-npf_test(unit_tests "${unit_test_files}")
+npf_test(unit_tests_normal_sized_formatters "${unit_test_files}")
+target_compile_definitions(unit_tests_normal_sized_formatters PRIVATE
+    NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0)
+
+npf_test(unit_tests_large_sized_formatters "${unit_test_files}")
+target_compile_definitions(unit_tests_large_sized_formatters PRIVATE
+    NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=1)
 
 ################ Conformance tests
 
