@@ -358,6 +358,7 @@ TEST(npf__parse_format_spec, LengthMode_l) {
     CHECK_EQUAL(NPF_FMT_SPEC_LEN_MOD_LONG, spec.length_modifier);
 }
 
+#if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
 TEST(npf__parse_format_spec, LengthMode_ll) {
     CHECK_EQUAL(4, ParseFormatSpec("%llu", &spec));
     CHECK_EQUAL(NPF_FMT_SPEC_LEN_MOD_LARGE_LONG_LONG, spec.length_modifier);
@@ -382,6 +383,7 @@ TEST(npf__parse_format_spec, LengthMode_L) {
     CHECK_EQUAL(3, ParseFormatSpec("%Lu", &spec));
     CHECK_EQUAL(NPF_FMT_SPEC_LEN_MOD_LONG_DOUBLE, spec.length_modifier);
 }
+#endif
 
 // All conversion specifiers are defined in 7.21.6.1.8
 
