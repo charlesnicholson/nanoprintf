@@ -1,6 +1,17 @@
 cmake_minimum_required(VERSION 3.4)
 project(nanoprintf)
 
+option(NPF_32BIT "Compile nanoprintf tests in 32-bit mode")
+
+if (NPF_32BIT AND CMAKE_HOST_APPLE)
+    message(FATAL_ERROR "Apple doesn't support 32-bit mode anymore.")
+endif()
+
+if (NPF_32BIT)
+    set(CMAKE_C_FLAGS ${CMAKE_C_FLAGS} "-m32")
+    set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "-m32")
+endif()
+
 ################ CppUTest
 
 include(ExternalProject)
