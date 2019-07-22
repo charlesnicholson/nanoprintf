@@ -10,7 +10,7 @@ jobs:
     steps:
       - checkout
       - run:
-          command: ./b Debug -v
+          command: ./b --cfg Debug -v
 
   build-gcc-release:
     docker:
@@ -21,7 +21,29 @@ jobs:
     steps:
       - checkout
       - run:
-          command: ./b Release -v
+          command: ./b --cfg Release -v
+
+  build-gcc-32-debug:
+    docker:
+      - image: charlesnicholson/circleci-images:latest
+    environment:
+      CC: /usr/bin/gcc
+      CXX: /usr/bin/g++
+    steps:
+      - checkout
+      - run:
+          command: ./b --build-32-bit --cfg Debug -v
+
+  build-gcc-32-release:
+    docker:
+      - image: charlesnicholson/circleci-images:latest
+    environment:
+      CC: /usr/bin/gcc
+      CXX: /usr/bin/g++
+    steps:
+      - checkout
+      - run:
+          command: ./b --build-32-bit --cfg Release -v
 
   build-clang-debug:
     docker:
@@ -32,7 +54,7 @@ jobs:
     steps:
       - checkout
       - run:
-          command: ./b Debug -v
+          command: ./b --cfg Debug -v
 
   build-clang-release:
     docker:
@@ -43,7 +65,7 @@ jobs:
     steps:
       - checkout
       - run:
-          command: ./b Release -v
+          command: ./b --cfg Release -v
 
 workflows:
   submit-gate:
