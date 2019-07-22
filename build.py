@@ -34,25 +34,6 @@ def parse_args():
     return parser.parse_args()
 
 
-def verify_sha256sum(file_to_sum, file_of_sums):
-    sums = {}
-    with open(file_of_sums, 'rt') as file:
-        for line in file:
-            (sha, filename) = line.split()
-            sums[filename] = sha
-
-    sha256 = hashlib.sha256()
-    with open(file_to_sum, 'rb') as file:
-        chunk = file.read(sha256.block_size)
-        while chunk:
-            sha256.update(chunk)
-            chunk = file.read(sha256.block_size)
-
-    actual_sha256sum = sha256.hexdigest()
-    expected_sha256sum = sums[os.path.basename(file_to_sum)]
-    return actual_sha256sum == expected_sha256sum
-
-
 def download_file(url, local_path):
     with urllib.request.urlopen(url) as rsp, open(local_path, 'wb') as file:
         shutil.copyfileobj(rsp, file)
@@ -82,10 +63,6 @@ def get_cmake(download):
             download_file(
                 'https://cmake.org/files/v3.14/{}'.format(cmake_file),
                 cmake_local_tgz)
-        if not verify_sha256sum(cmake_local_tgz, os.path.join(
-                SCRIPT_PATH, 'cmake.sha256sum')):
-            print('"{}" SHA256 sum did not match, aborting.'.format(cmake_file))
-            return None
         with tarfile.open(cmake_local_tgz, 'r') as tar:
             tar.extractall(path=cmake_local_dir)
 

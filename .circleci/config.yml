@@ -1,17 +1,6 @@
 version: 2.1
 
 jobs:
-  build-gcc-download:
-    docker:
-      - image: charlesnicholson/circleci-images:latest
-    environment:
-      CC: /usr/bin/gcc
-      CXX: /usr/bin/g++
-    steps:
-      - checkout
-      - run:
-          command: ./b --download -v
-
   build-gcc-debug:
     docker:
       - image: charlesnicholson/circleci-images:latest
@@ -59,7 +48,6 @@ jobs:
 workflows:
   submit-gate:
     jobs:
-      - build-gcc-download
       - build-gcc-debug
       - build-gcc-release
       - build-clang-debug
