@@ -23,6 +23,28 @@ jobs:
       - run:
           command: ./b --cfg Release -v
 
+  build-gcc-32-debug:
+    docker:
+      - image: charlesnicholson/circleci-images:latest
+    environment:
+      CC: /usr/bin/gcc
+      CXX: /usr/bin/g++
+    steps:
+      - checkout
+      - run:
+          command: ./b --build-32-bit --cfg Debug -v
+
+  build-gcc-32-release:
+    docker:
+      - image: charlesnicholson/circleci-images:latest
+    environment:
+      CC: /usr/bin/gcc
+      CXX: /usr/bin/g++
+    steps:
+      - checkout
+      - run:
+          command: ./b --build-32-bit --cfg Release -v
+
   build-clang-debug:
     docker:
       - image: charlesnicholson/circleci-images:latest
@@ -50,5 +72,7 @@ workflows:
     jobs:
       - build-gcc-debug
       - build-gcc-release
+      - build-gcc-32-debug
+      - build-gcc-32-release
       - build-clang-debug
       - build-clang-release
