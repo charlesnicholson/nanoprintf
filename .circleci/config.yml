@@ -10,7 +10,7 @@ jobs:
     steps:
       - checkout
       - run:
-          command: ./b Debug -v
+          command: ./b --cfg Debug -v
 
   build-gcc-release:
     docker:
@@ -21,7 +21,7 @@ jobs:
     steps:
       - checkout
       - run:
-          command: ./b Release -v
+          command: ./b --cfg Release -v
 
   build-clang-debug:
     docker:
@@ -32,7 +32,7 @@ jobs:
     steps:
       - checkout
       - run:
-          command: ./b Debug -v
+          command: ./b --cfg Debug -v
 
   build-clang-release:
     docker:
@@ -43,7 +43,7 @@ jobs:
     steps:
       - checkout
       - run:
-          command: ./b Release -v
+          command: ./b --cfg Release -v
 
 workflows:
   submit-gate:
