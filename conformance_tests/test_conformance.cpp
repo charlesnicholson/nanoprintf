@@ -134,10 +134,8 @@ TEST(conformance, SignedInt) {
     CheckConformance("+0", "%+i", 0);
     CheckConformance("+1", "%+i", 1);
     // CheckConformance("%.-123i", 400); xcode libc doesn't ignore negative
-#if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
     CheckConformance("2147483648", "%lu",
-                     (long)INT_MAX + 1);  // assume l > i
-#endif
+                     (long)INT_MAX + 1u);  // assume l > i
     CheckConformance("-128", "%hhi", 128);
 
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
