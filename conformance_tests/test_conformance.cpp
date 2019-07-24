@@ -28,9 +28,7 @@ void CheckConformance(char const *output, char const *fmt, ...) {
         actual = conformance_buf;
     }
 
-    printf("comparing expected against output...\n");
     CHECK_EQUAL(expected, std::string(output));
-    printf("comparing expected against actual...\n");
     CHECK_EQUAL(expected, actual);
 }
 }  // namespace
@@ -178,29 +176,24 @@ TEST(conformance, SignedInt) {
 #endif
 
 #if (NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1)
-    printf("%%lli:\n");
 #if LLONG_MAX == 9223372036854775807ll
     CheckConformance("9223372036854775807", "%lli", LLONG_MAX);
 #else
     CheckConformance("2147483647", "%lli", LLONG_MAX);
 #endif
 
-    printf("%%ji:\n");
 #if INTMAX_MAX == 9223372036854775807ll
     CheckConformance("9223372036854775807", "%ji", INTMAX_MAX);
 #else
     CheckConformance("2147483647", "%ji", INTMAX_MAX);
 #endif
 
-    printf("SSIZE_MAX == %zi, %%zi:\n", SSIZE_MAX);
 #if SSIZE_MAX == 2147483647
-    printf("ssize is small:\n");
     CheckConformance("2147483647", "%zi", SSIZE_MAX);
 #else
     CheckConformance("9223372036854775807", "%zi", SSIZE_MAX);
 #endif
 
-    printf("%%ti:\n");
 #if PTRDIFF_MAX == 9223372036854775807ll
     CheckConformance("9223372036854775807", "%ti", PTRDIFF_MAX);
 #else
