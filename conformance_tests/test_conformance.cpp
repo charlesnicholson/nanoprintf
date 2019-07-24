@@ -236,7 +236,7 @@ TEST(conformance, Hex) {
     CheckConformance("", "%#.0X", 0);
 #endif
 
-#if (NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1) && (ULLONG_MAX > ULONG_MAX)
+#if (NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1) && __LP64__
     CheckConformance("ffffffffffffffff", "%llx", ULLONG_MAX);
     CheckConformance("ffffffffffffffff", "%jx", UINTMAX_MAX);
     CheckConformance("ffffffffffffffff", "%zx", SIZE_MAX);
