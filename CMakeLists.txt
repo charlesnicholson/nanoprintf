@@ -8,8 +8,9 @@ if (NPF_32BIT AND CMAKE_HOST_APPLE)
 endif()
 
 if (NPF_32BIT)
-    set(CMAKE_C_FLAGS ${CMAKE_C_FLAGS} "-m32")
-    set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "-m32")
+    set(NPF_32BIT_FLAG -m32)
+    set(CMAKE_C_FLAGS ${CMAKE_C_FLAGS} ${NPF_32BIT_FLAG})
+    set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} ${NPF_32BIT_FLAG})
 endif()
 
 ################ CppUTest
@@ -23,6 +24,8 @@ set(CPPUTEST_CMAKE_ARGS -DCMAKE_BINARY_DIR=${CMAKE_BINARY_DIR}
                         -DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
                         -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
                         -DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}/CppUTest
+                        -DCPPUTEST_C_FLAGS=${NPF_32BIT_FLAG}
+                        -DCPPUTEST_CXX_FLAGS=${NPF_32BIT_FLAG}
                         -DC++11=ON
                         -DTESTS=OFF)
 set(CPPUTEST_LIB_NAME
