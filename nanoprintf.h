@@ -242,7 +242,7 @@ typedef intmax_t npf__int_t;
 typedef uintmax_t npf__uint_t;
 #endif
 
-NPF_VISIBILITY int npf__parse_format_spec(char const *format, va_list vlist,
+NPF_VISIBILITY int npf__parse_format_spec(char const *format,
                                           npf__format_spec_t *out_spec);
 
 typedef struct {
@@ -291,10 +291,8 @@ NPF_VISIBILITY int npf__ftoa_rev(char *buf, float f, unsigned base,
 #define NPF_MIN(x, y) ((x) < (y) ? (x) : (y))
 #define NPF_MAX(x, y) ((x) > (y) ? (x) : (y))
 
-int npf__parse_format_spec(char const *format, va_list vlist,
-                           npf__format_spec_t *out_spec) {
+int npf__parse_format_spec(char const *format, npf__format_spec_t *out_spec) {
     char const *cur = format;
-    (void)vlist; /* not always used depending on configuration. */
 
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
     out_spec->left_justified = 0;
@@ -795,7 +793,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
             NPF_PUTC(*cur++);
         } else {
             /* Might be a format run, try to parse */
-            int const fs_len = npf__parse_format_spec(cur, vlist, &fs);
+            int const fs_len = npf__parse_format_spec(cur, &fs);
             if (fs_len == 0) {
                 /* Invalid format specifier, write and continue */
                 NPF_PUTC(*cur++);
