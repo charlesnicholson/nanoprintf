@@ -288,6 +288,10 @@ NPF_VISIBILITY int npf__ftoa_rev(char *buf, float f, unsigned base,
 #include <math.h>
 #endif
 
+#if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
+#include <sys/types.h>
+#endif
+
 #define NPF_MIN(x, y) ((x) < (y) ? (x) : (y))
 #define NPF_MAX(x, y) ((x) > (y) ? (x) : (y))
 
@@ -880,7 +884,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
 #if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
                             NPF_EXTRACT(LARGE_LONG_LONG, long long, long long);
                             NPF_EXTRACT(LARGE_INTMAX, intmax_t, intmax_t);
-                            NPF_EXTRACT(LARGE_SIZET, intmax_t, intmax_t);
+                            NPF_EXTRACT(LARGE_SIZET, ssize_t, ssize_t);
                             NPF_EXTRACT(LARGE_PTRDIFFT, ptrdiff_t, ptrdiff_t);
 #endif
                         }
