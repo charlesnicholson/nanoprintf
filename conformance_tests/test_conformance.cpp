@@ -176,22 +176,30 @@ TEST(conformance, SignedInt) {
 
 #if (NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1)
 #if LLONG_MAX == 9223372036854775807ll
+    printf("%%lli:\n");
     CheckConformance("9223372036854775807", "%lli", LLONG_MAX);
 #else
+    printf("%%lli:\n");
     CheckConformance("2147483647", "%lli", LLONG_MAX);
 #endif
 
 #if INTMAX_MAX == 9223372036854775807ll
+    printf("%%ji:\n");
     CheckConformance("9223372036854775807", "%ji", INTMAX_MAX);
+    printf("%%zi:\n");
     CheckConformance("9223372036854775807", "%zi", INTMAX_MAX);
 #else
+    printf("%%ji:\n");
     CheckConformance("2147483647", "%ji", INTMAX_MAX);
+    printf("%%zi:\n");
     CheckConformance("2147483647", "%zi", INTMAX_MAX);
 #endif
 
 #if PTRDIFF_MAX == 9223372036854775807ll
+    printf("%%ti:\n");
     CheckConformance("9223372036854775807", "%ti", PTRDIFF_MAX);
 #else
+    printf("%%ti:\n");
     CheckConformance("2147483647", "%ti", PTRDIFF_MAX);
 #endif
 #endif
