@@ -99,8 +99,9 @@ TEST(conformance, UnsignedInt) {
     CheckConformance("0", "%+u", 0);
     CheckConformance("1", "%+u", 1);
     CheckConformance("13", "%hu", (1 << 21u) + 13u);  // "short" mod clips
-    CheckConformance("4294967296", "%lu",
-                     (unsigned long)UINT_MAX + 1);  // assume ul > u
+#if ULONG_MAX > UINT_MAX
+    CheckConformance("4294967296", "%lu", (unsigned long)UINT_MAX + 1u);
+#endif
     CheckConformance("0", "%hhu", 256u);
 
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
