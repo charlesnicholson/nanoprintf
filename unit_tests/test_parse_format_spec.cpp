@@ -202,10 +202,9 @@ TEST(npf__parse_format_spec, FieldWidthIsNoneIfNotSpecified) {
     CHECK_EQUAL(NPF_FMT_SPEC_FIELD_WIDTH_NONE, spec.field_width_type);
 }
 
-TEST(npf__parse_format_spec, FieldWidthReadsFromArgListIfStar) {
+TEST(npf__parse_format_spec, FieldWidthStar) {
     CHECK_EQUAL(3, ParseFormatSpec("%*u", &spec, 234));
-    CHECK_EQUAL(NPF_FMT_SPEC_FIELD_WIDTH_LITERAL, spec.field_width_type);
-    CHECK_EQUAL(234, spec.field_width);
+    CHECK_EQUAL(NPF_FMT_SPEC_FIELD_WIDTH_STAR, spec.field_width_type);
 }
 
 TEST(npf__parse_format_spec, FieldWidthReadFromLiteral) {
@@ -260,16 +259,9 @@ TEST(npf__parse_format_spec, PrecisionDefaultIsSixIfFloat) {
     CHECK_EQUAL(6, spec.precision);
 }
 
-TEST(npf__parse_format_spec, PrecisionReadsFromArgListIfStar) {
+TEST(npf__parse_format_spec, PrecisionStar) {
     CHECK_EQUAL(4, ParseFormatSpec("%.*u", &spec, 123));
-    CHECK_EQUAL(NPF_FMT_SPEC_PRECISION_LITERAL, spec.precision_type);
-    CHECK_EQUAL(123, spec.precision);
-}
-
-TEST(npf__parse_format_spec, PrecisionFromArgIsNoneDefaultIfNegative) {
-    CHECK_EQUAL(4, ParseFormatSpec("%.*u", &spec, -123));
-    CHECK_EQUAL(NPF_FMT_SPEC_PRECISION_NONE, spec.precision_type);
-    CHECK_EQUAL(1, spec.precision);
+    CHECK_EQUAL(NPF_FMT_SPEC_PRECISION_STAR, spec.precision_type);
 }
 
 TEST(npf__parse_format_spec, PrecisionIsLiteralZeroIfJustPeriod) {
