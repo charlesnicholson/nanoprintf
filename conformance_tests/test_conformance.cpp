@@ -119,7 +119,7 @@ TEST(conformance, UnsignedInt) {
     CheckConformance("    0123", "%8.4u", 123);
 #endif
 
-#if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
+#if (NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1) && (ULLONG_MAX > ULONG_MAX)
     CheckConformance("18446744073709551615", "%llu", ULLONG_MAX);
     CheckConformance("18446744073709551615", "%ju", UINTMAX_MAX);
     CheckConformance("18446744073709551615", "%zu", SIZE_MAX);
@@ -197,7 +197,7 @@ TEST(conformance, Octal) {
     CheckConformance("0", "%#.0o", 0);
 #endif
 
-#if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
+#if (NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1) && (ULLONG_MAX > ULONG_MAX)
     CheckConformance("1777777777777777777777", "%llo", ULLONG_MAX);
     CheckConformance("1777777777777777777777", "%jo", UINTMAX_MAX);
     CheckConformance("1777777777777777777777", "%zo", SIZE_MAX);
@@ -236,7 +236,7 @@ TEST(conformance, Hex) {
     CheckConformance("", "%#.0X", 0);
 #endif
 
-#if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
+#if (NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1) && (ULLONG_MAX > ULONG_MAX)
     CheckConformance("ffffffffffffffff", "%llx", ULLONG_MAX);
     CheckConformance("ffffffffffffffff", "%jx", UINTMAX_MAX);
     CheckConformance("ffffffffffffffff", "%zx", SIZE_MAX);
