@@ -2,6 +2,7 @@
 
 #include "CppUTest/TestHarness.h"
 
+#include <limits.h>
 #include <cstring>
 
 TEST_GROUP(conformance){};
@@ -175,31 +176,31 @@ TEST(conformance, SignedInt) {
 #endif
 
 #if (NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1)
-#if LLONG_MAX == 9223372036854775807ll
     printf("%%lli:\n");
+#if LLONG_MAX == 9223372036854775807ll
     CheckConformance("9223372036854775807", "%lli", LLONG_MAX);
 #else
-    printf("%%lli:\n");
     CheckConformance("2147483647", "%lli", LLONG_MAX);
 #endif
 
+    printf("%%ji:\n");
 #if INTMAX_MAX == 9223372036854775807ll
-    printf("%%ji:\n");
     CheckConformance("9223372036854775807", "%ji", INTMAX_MAX);
-    printf("%%zi:\n");
-    CheckConformance("9223372036854775807", "%zi", INTMAX_MAX);
 #else
-    printf("%%ji:\n");
     CheckConformance("2147483647", "%ji", INTMAX_MAX);
-    printf("%%zi:\n");
-    CheckConformance("2147483647", "%zi", INTMAX_MAX);
 #endif
 
-#if PTRDIFF_MAX == 9223372036854775807ll
+    printf("%%zi:\n");
+#if SSIZE_MAX == 9223372036854775807ll
+    CheckConformance("9223372036854775807", "%zi", SSIZE_MAX);
+#else
+    CheckConformance("2147483647", "%zi", SIZE_MAX);
+#endif
+
     printf("%%ti:\n");
+#if PTRDIFF_MAX == 9223372036854775807ll
     CheckConformance("9223372036854775807", "%ti", PTRDIFF_MAX);
 #else
-    printf("%%ti:\n");
     CheckConformance("2147483647", "%ti", PTRDIFF_MAX);
 #endif
 #endif
