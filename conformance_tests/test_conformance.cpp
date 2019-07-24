@@ -2,21 +2,8 @@
 
 #include "CppUTest/TestHarness.h"
 
+#include <limits.h>
 #include <cstring>
-
-#if (NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1)
-#if UINTMAX_MAX == 18446744073709551615ULL
-#define NPF_LARGE_HEX_MAX "ffffffffffffffff"
-#define NPF_LARGE_OCTAL_MAX "1777777777777777777777"
-#define NPF_LARGE_UINT_MAX "18446744073709551615"
-#define NPF_LARGE_INT_MAX "9223372036854775807"
-#else
-#define NPF_LARGE_HEX_MAX "ffffffff"
-#define NPF_LARGE_OCTAL_MAX "37777777777"
-#define NPF_LARGE_UINT_MAX "4294967295"
-#define NPF_LARGE_INT_MAX "2147483647"
-#endif
-#endif
 
 TEST_GROUP(conformance){};
 
@@ -134,10 +121,23 @@ TEST(conformance, UnsignedInt) {
 #endif
 
 #if (NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1)
-    CheckConformance(NPF_LARGE_UINT_MAX, "%llu", ULLONG_MAX);
-    CheckConformance(NPF_LARGE_UINT_MAX, "%ju", UINTMAX_MAX);
-    CheckConformance(NPF_LARGE_UINT_MAX, "%zu", SIZE_MAX);
-    CheckConformance(NPF_LARGE_UINT_MAX, "%tu", SIZE_MAX);
+#if ULLONG_MAX == 18446744073709551615llu
+    CheckConformance("18446744073709551615", "%llu", ULLONG_MAX);
+#else
+    CheckConformance("4294967295", "%llu", ULLONG_MAX);
+#endif
+#if UINTMAX_MAX == 18446744073709551615llu
+    CheckConformance("18446744073709551615", "%ju", UINTMAX_MAX);
+#else
+    CheckConformance("4294967295", "%ju", UINTMAX_MAX);
+#endif
+#if SIZE_MAX == 18446744073709551615llu
+    CheckConformance("18446744073709551615", "%zu", SIZE_MAX);
+    CheckConformance("18446744073709551615", "%tu", SIZE_MAX);
+#else
+    CheckConformance("4294967295", "%zu", SIZE_MAX);
+    CheckConformance("4294967295", "%tu", SIZE_MAX);
+#endif
 #endif
 }
 
@@ -149,8 +149,6 @@ TEST(conformance, SignedInt) {
     CheckConformance("+0", "%+i", 0);
     CheckConformance("+1", "%+i", 1);
     // CheckConformance("%.-123i", 400); xcode libc doesn't ignore negative
-    CheckConformance("2147483648", "%lu",
-                     (long)INT_MAX + 1u);  // assume l > i
     CheckConformance("-128", "%hhi", 128);
 
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
@@ -178,10 +176,29 @@ TEST(conformance, SignedInt) {
 #endif
 
 #if (NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1)
-    CheckConformance(NPF_LARGE_INT_MAX, "%lli", LLONG_MAX);
-    CheckConformance(NPF_LARGE_INT_MAX, "%ji", INTMAX_MAX);
-    CheckConformance(NPF_LARGE_INT_MAX, "%zi", INTMAX_MAX);
-    CheckConformance(NPF_LARGE_INT_MAX, "%ti", PTRDIFF_MAX);
+#if LLONG_MAX == 9223372036854775807ll
+    CheckConformance("9223372036854775807", "%lli", LLONG_MAX);
+#else
+    CheckConformance("2147483647", "%lli", LLONG_MAX);
+#endif
+
+#if INTMAX_MAX == 9223372036854775807ll
+    CheckConformance("9223372036854775807", "%ji", INTMAX_MAX);
+#else
+    CheckConformance("2147483647", "%ji", INTMAX_MAX);
+#endif
+
+#if SSIZE_MAX == 2147483647
+    CheckConformance("2147483647", "%zi", SSIZE_MAX);
+#else
+    CheckConformance("9223372036854775807", "%zi", SSIZE_MAX);
+#endif
+
+#if PTRDIFF_MAX == 9223372036854775807ll
+    CheckConformance("9223372036854775807", "%ti", PTRDIFF_MAX);
+#else
+    CheckConformance("2147483647", "%ti", PTRDIFF_MAX);
+#endif
 #endif
 }
 
@@ -212,10 +229,25 @@ TEST(conformance, Octal) {
 #endif
 
 #if (NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1)
-    CheckConformance(NPF_LARGE_OCTAL_MAX, "%llo", ULLONG_MAX);
-    CheckConformance(NPF_LARGE_OCTAL_MAX, "%jo", UINTMAX_MAX);
-    CheckConformance(NPF_LARGE_OCTAL_MAX, "%zo", SIZE_MAX);
-    CheckConformance(NPF_LARGE_OCTAL_MAX, "%to", SIZE_MAX);
+#if ULLONG_MAX == 01777777777777777777777llu
+    CheckConformance("1777777777777777777777", "%llo", ULLONG_MAX);
+#else
+    CheckConformance("37777777777", "%llo", ULLONG_MAX);
+#endif
+
+#if UINTMAX_MAX == 01777777777777777777777llu
+    CheckConformance("1777777777777777777777", "%jo", UINTMAX_MAX);
+#else
+    CheckConformance("37777777777", "%jo", UINTMAX_MAX);
+#endif
+
+#if SIZE_MAX == 01777777777777777777777llu
+    CheckConformance("1777777777777777777777", "%zo", SIZE_MAX);
+    CheckConformance("1777777777777777777777", "%to", SIZE_MAX);
+#else
+    CheckConformance("37777777777", "%zo", SIZE_MAX);
+    CheckConformance("37777777777", "%to", SIZE_MAX);
+#endif
 #endif
 }
 
@@ -251,10 +283,25 @@ TEST(conformance, Hex) {
 #endif
 
 #if (NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1)
-    CheckConformance(NPF_LARGE_HEX_MAX, "%llx", ULLONG_MAX);
-    CheckConformance(NPF_LARGE_HEX_MAX, "%jx", UINTMAX_MAX);
-    CheckConformance(NPF_LARGE_HEX_MAX, "%zx", SIZE_MAX);
-    CheckConformance(NPF_LARGE_HEX_MAX, "%tx", SIZE_MAX);
+#if ULLONG_MAX == 0xffffffffffffffffllu
+    CheckConformance("ffffffffffffffff", "%llx", ULLONG_MAX);
+#else
+    CheckConformance("ffffffff", "%llx", ULLONG_MAX);
+#endif
+
+#if UINTMAX_MAX == 0xffffffffffffffffllu
+    CheckConformance("ffffffffffffffff", "%jx", UINTMAX_MAX);
+#else
+    CheckConformance("ffffffff", "%jx", UINTMAX_MAX);
+#endif
+
+#if SIZE_MAX == 0xffffffffffffffffllu
+    CheckConformance("ffffffffffffffff", "%zx", SIZE_MAX);
+    CheckConformance("ffffffffffffffff", "%tx", SIZE_MAX);
+#else
+    CheckConformance("ffffffff", "%zx", SIZE_MAX);
+    CheckConformance("ffffffff", "%tx", SIZE_MAX);
+#endif
 #endif
 }
 

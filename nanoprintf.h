@@ -151,6 +151,7 @@ NPF_VISIBILITY int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format,
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
 typedef enum {
     NPF_FMT_SPEC_FIELD_WIDTH_NONE,
+    NPF_FMT_SPEC_FIELD_WIDTH_STAR,
     NPF_FMT_SPEC_FIELD_WIDTH_LITERAL
 } npf__format_spec_field_width_t;
 #endif
@@ -158,6 +159,7 @@ typedef enum {
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
 typedef enum {
     NPF_FMT_SPEC_PRECISION_NONE,
+    NPF_FMT_SPEC_PRECISION_STAR,
     NPF_FMT_SPEC_PRECISION_LITERAL
 } npf__format_spec_precision_t;
 #endif
@@ -240,7 +242,7 @@ typedef intmax_t npf__int_t;
 typedef uintmax_t npf__uint_t;
 #endif
 
-NPF_VISIBILITY int npf__parse_format_spec(char const *format, va_list vlist,
+NPF_VISIBILITY int npf__parse_format_spec(char const *format,
                                           npf__format_spec_t *out_spec);
 
 typedef struct {
@@ -286,13 +288,15 @@ NPF_VISIBILITY int npf__ftoa_rev(char *buf, float f, unsigned base,
 #include <math.h>
 #endif
 
+#if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
+#include <sys/types.h>
+#endif
+
 #define NPF_MIN(x, y) ((x) < (y) ? (x) : (y))
 #define NPF_MAX(x, y) ((x) > (y) ? (x) : (y))
 
-int npf__parse_format_spec(char const *format, va_list vlist,
-                           npf__format_spec_t *out_spec) {
+int npf__parse_format_spec(char const *format, npf__format_spec_t *out_spec) {
     char const *cur = format;
-    (void)vlist; /* not always used depending on configuration. */
 
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
     out_spec->left_justified = 0;
@@ -337,14 +341,7 @@ int npf__parse_format_spec(char const *format, va_list vlist,
     out_spec->field_width_type = NPF_FMT_SPEC_FIELD_WIDTH_NONE;
     if (*cur == '*') {
         /* '*' modifiers require more varargs */
-        int const field_width_star = va_arg(vlist, int);
-        out_spec->field_width_type = NPF_FMT_SPEC_FIELD_WIDTH_LITERAL;
-        if (field_width_star >= 0) {
-            out_spec->field_width = field_width_star;
-        } else {
-            out_spec->field_width = -field_width_star;
-            out_spec->left_justified = 1;
-        }
+        out_spec->field_width_type = NPF_FMT_SPEC_FIELD_WIDTH_STAR;
         ++cur;
     } else {
         out_spec->field_width = 0;
@@ -364,11 +361,7 @@ int npf__parse_format_spec(char const *format, va_list vlist,
     if (*cur == '.') {
         ++cur;
         if (*cur == '*') {
-            int const star_precision = va_arg(vlist, int);
-            if (star_precision >= 0) {
-                out_spec->precision_type = NPF_FMT_SPEC_PRECISION_LITERAL;
-                out_spec->precision = star_precision;
-            }
+            out_spec->precision_type = NPF_FMT_SPEC_PRECISION_STAR;
             ++cur;
         } else if (*cur == '-') {
             /* ignore negative precision */
@@ -523,7 +516,8 @@ int npf__parse_format_spec(char const *format, va_list vlist,
     }
 
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
-    if (out_spec->precision_type == NPF_FMT_SPEC_PRECISION_NONE) {
+    if ((out_spec->precision_type == NPF_FMT_SPEC_PRECISION_NONE) ||
+        (out_spec->precision_type == NPF_FMT_SPEC_PRECISION_STAR)) {
         switch (out_spec->conv_spec) {
             case NPF_FMT_SPEC_CONV_PERCENT:
             case NPF_FMT_SPEC_CONV_CHAR:
@@ -696,7 +690,8 @@ int npf__fsplit_abs(float f, uint64_t *out_int_part, uint64_t *out_frac_part,
     }
 
     {
-        /* Count the number of 0s at the beginning of the fractional part. */
+        /* Count the number of 0s at the beginning of the fractional part.
+         */
         int frac_base10_neg_exp = 0;
         while (frac && ((frac >> (NPF_FRACTION_BIN_DIGITS - 4))) == 0) {
             ++frac_base10_neg_exp;
@@ -803,7 +798,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
             NPF_PUTC(*cur++);
         } else {
             /* Might be a format run, try to parse */
-            int const fs_len = npf__parse_format_spec(cur, vlist, &fs);
+            int const fs_len = npf__parse_format_spec(cur, &fs);
             if (fs_len == 0) {
                 /* Invalid format specifier, write and continue */
                 NPF_PUTC(*cur++);
@@ -821,6 +816,36 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
                 int frac_chars = 0, inf_or_nan = 0;
 #endif
+
+#if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
+                if (fs.field_width_type == NPF_FMT_SPEC_FIELD_WIDTH_STAR) {
+                    /* If '*' was used as field width, read it from args. */
+                    int const field_width = va_arg(vlist, int);
+                    fs.field_width_type = NPF_FMT_SPEC_FIELD_WIDTH_LITERAL;
+                    if (field_width >= 0) {
+                        fs.field_width = field_width;
+                    } else {
+                        /* Negative field width is left-justified. */
+                        fs.field_width = -field_width;
+                        fs.left_justified = 1;
+                    }
+                }
+#endif
+
+#if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
+                if (fs.precision_type == NPF_FMT_SPEC_PRECISION_STAR) {
+                    /* If '*' was used as precision, read from args. */
+                    int const precision = va_arg(vlist, int);
+                    if (precision >= 0) {
+                        fs.precision_type = NPF_FMT_SPEC_PRECISION_LITERAL;
+                        fs.precision = precision;
+                    } else {
+                        /* Negative precision is ignored. */
+                        fs.precision_type = NPF_FMT_SPEC_PRECISION_NONE;
+                    }
+                }
+#endif
+
                 /* Convert the argument to string and point cbuf at it */
                 switch (fs.conv_spec) {
                     case NPF_FMT_SPEC_CONV_PERCENT:
@@ -859,7 +884,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
 #if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
                             NPF_EXTRACT(LARGE_LONG_LONG, long long, long long);
                             NPF_EXTRACT(LARGE_INTMAX, intmax_t, intmax_t);
-                            NPF_EXTRACT(LARGE_SIZET, intmax_t, intmax_t);
+                            NPF_EXTRACT(LARGE_SIZET, ssize_t, ssize_t);
                             NPF_EXTRACT(LARGE_PTRDIFFT, ptrdiff_t, ptrdiff_t);
 #endif
                         }

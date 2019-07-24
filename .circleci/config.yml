@@ -71,8 +71,8 @@ workflows:
   submit-gate:
     jobs:
       - build-gcc-debug
-        # - build-gcc-32-debug
+      - build-gcc-32-debug
       - build-gcc-release
-        # - build-gcc-32-release
+      - build-gcc-32-release
       - build-clang-debug
       - build-clang-release
