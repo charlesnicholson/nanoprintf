@@ -194,7 +194,7 @@ TEST(conformance, SignedInt) {
 #if SSIZE_MAX == 9223372036854775807ll
     CheckConformance("9223372036854775807", "%zi", SSIZE_MAX);
 #else
-    CheckConformance("2147483647", "%zi", SIZE_MAX);
+    CheckConformance("2147483647", "%zi", SSIZE_MAX);
 #endif
 
     printf("%%ti:\n");
