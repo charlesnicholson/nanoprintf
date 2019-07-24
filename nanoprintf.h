@@ -512,7 +512,8 @@ int npf__parse_format_spec(char const *format, npf__format_spec_t *out_spec) {
     }
 
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
-    if (out_spec->precision_type == NPF_FMT_SPEC_PRECISION_NONE) {
+    if ((out_spec->precision_type == NPF_FMT_SPEC_PRECISION_NONE) ||
+        (out_spec->precision_type == NPF_FMT_SPEC_PRECISION_STAR)) {
         switch (out_spec->conv_spec) {
             case NPF_FMT_SPEC_CONV_PERCENT:
             case NPF_FMT_SPEC_CONV_CHAR:
@@ -815,13 +816,13 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
                 if (fs.field_width_type == NPF_FMT_SPEC_FIELD_WIDTH_STAR) {
                     /* If '*' was used as field width, read it from args. */
-                    int const field_width_star = va_arg(vlist, int);
+                    int const field_width = va_arg(vlist, int);
                     fs.field_width_type = NPF_FMT_SPEC_FIELD_WIDTH_LITERAL;
-                    if (field_width_star >= 0) {
-                        fs.field_width = field_width_star;
+                    if (field_width >= 0) {
+                        fs.field_width = field_width;
                     } else {
                         /* Negative field width is left-justified. */
-                        fs.field_width = -field_width_star;
+                        fs.field_width = -field_width;
                         fs.left_justified = 1;
                     }
                 }
@@ -830,10 +831,10 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
                 if (fs.precision_type == NPF_FMT_SPEC_PRECISION_STAR) {
                     /* If '*' was used as precision, read from args. */
-                    int const star_precision = va_arg(vlist, int);
-                    if (star_precision >= 0) {
+                    int const precision = va_arg(vlist, int);
+                    if (precision >= 0) {
                         fs.precision_type = NPF_FMT_SPEC_PRECISION_LITERAL;
-                        fs.precision = star_precision;
+                        fs.precision = precision;
                     } else {
                         /* Negative precision is ignored. */
                         fs.precision_type = NPF_FMT_SPEC_PRECISION_NONE;
