@@ -6,10 +6,8 @@
 
 #if (NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1)
 #if UINTMAX_MAX == 18446744073709551615ULL
-#define NPF_LARGE_UINT_MAX "18446744073709551615"
 #define NPF_LARGE_INT_MAX "9223372036854775807"
 #else
-#define NPF_LARGE_UINT_MAX "4294967295"
 #define NPF_LARGE_INT_MAX "2147483647"
 #endif
 #endif
@@ -130,10 +128,23 @@ TEST(conformance, UnsignedInt) {
 #endif
 
 #if (NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1)
-    CheckConformance(NPF_LARGE_UINT_MAX, "%llu", ULLONG_MAX);
-    CheckConformance(NPF_LARGE_UINT_MAX, "%ju", UINTMAX_MAX);
-    CheckConformance(NPF_LARGE_UINT_MAX, "%zu", SIZE_MAX);
-    CheckConformance(NPF_LARGE_UINT_MAX, "%tu", SIZE_MAX);
+#if ULLONG_MAX == 18446744073709551615llu
+    CheckConformance("18446744073709551615", "%llu", ULLONG_MAX);
+#else
+    CheckConformance("4294967295", "%llu", ULLONG_MAX);
+#endif
+#if UINTMAX_MAX == 18446744073709551615llu
+    CheckConformance("18446744073709551615", "%ju", UINTMAX_MAX);
+#else
+    CheckConformance("4294967295", "%ju", UINTMAX_MAX);
+#endif
+#if SIZE_MAX == 18446744073709551615llu
+    CheckConformance("18446744073709551615", "%zu", SIZE_MAX);
+    CheckConformance("18446744073709551615", "%tu", SIZE_MAX);
+#else
+    CheckConformance("4294967295", "%zu", SIZE_MAX);
+    CheckConformance("4294967295", "%tu", SIZE_MAX);
+#endif
 #endif
 }
 
