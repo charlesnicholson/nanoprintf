@@ -4,14 +4,6 @@
 
 #include <cstring>
 
-#if (NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1)
-#if UINTMAX_MAX == 18446744073709551615ULL
-#define NPF_LARGE_INT_MAX "9223372036854775807"
-#else
-#define NPF_LARGE_INT_MAX "2147483647"
-#endif
-#endif
-
 TEST_GROUP(conformance){};
 
 namespace {
@@ -183,10 +175,25 @@ TEST(conformance, SignedInt) {
 #endif
 
 #if (NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1)
-    CheckConformance(NPF_LARGE_INT_MAX, "%lli", LLONG_MAX);
-    CheckConformance(NPF_LARGE_INT_MAX, "%ji", INTMAX_MAX);
-    CheckConformance(NPF_LARGE_INT_MAX, "%zi", INTMAX_MAX);
-    CheckConformance(NPF_LARGE_INT_MAX, "%ti", PTRDIFF_MAX);
+#if LLONG_MAX == 9223372036854775807ll
+    CheckConformance("9223372036854775807", "%lli", LLONG_MAX);
+#else
+    CheckConformance("2147483647", "%lli", LLONG_MAX);
+#endif
+
+#if INTMAX_MAX == 9223372036854775807ll
+    CheckConformance("9223372036854775807", "%ji", INTMAX_MAX);
+    CheckConformance("9223372036854775807", "%zi", INTMAX_MAX);
+#else
+    CheckConformance("2147483647", "%ji", INTMAX_MAX);
+    CheckConformance("2147483647", "%zi", INTMAX_MAX);
+#endif
+
+#if PTRDIFF_MAX == 9223372036854775807ll
+    CheckConformance("9223372036854775807", "%ti", PTRDIFF_MAX);
+#else
+    CheckConformance("2147483647", "%ti", PTRDIFF_MAX);
+#endif
 #endif
 }
 
