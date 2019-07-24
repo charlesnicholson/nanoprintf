@@ -192,6 +192,7 @@ TEST(conformance, SignedInt) {
 
     printf("SSIZE_MAX == %zi, %%zi:\n", SSIZE_MAX);
 #if SSIZE_MAX == 2147483647
+    printf("ssize is small:\n");
     CheckConformance("2147483647", "%zi", SSIZE_MAX);
 #else
     CheckConformance("9223372036854775807", "%zi", SSIZE_MAX);
