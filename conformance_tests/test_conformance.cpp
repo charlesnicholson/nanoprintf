@@ -6,12 +6,10 @@
 
 #if (NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1)
 #if UINTMAX_MAX == 18446744073709551615ULL
-#define NPF_LARGE_HEX_MAX "ffffffffffffffff"
 #define NPF_LARGE_OCTAL_MAX "1777777777777777777777"
 #define NPF_LARGE_UINT_MAX "18446744073709551615"
 #define NPF_LARGE_INT_MAX "9223372036854775807"
 #else
-#define NPF_LARGE_HEX_MAX "ffffffff"
 #define NPF_LARGE_OCTAL_MAX "37777777777"
 #define NPF_LARGE_UINT_MAX "4294967295"
 #define NPF_LARGE_INT_MAX "2147483647"
@@ -251,10 +249,25 @@ TEST(conformance, Hex) {
 #endif
 
 #if (NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1)
-    CheckConformance(NPF_LARGE_HEX_MAX, "%llx", ULLONG_MAX);
-    CheckConformance(NPF_LARGE_HEX_MAX, "%jx", UINTMAX_MAX);
-    CheckConformance(NPF_LARGE_HEX_MAX, "%zx", SIZE_MAX);
-    CheckConformance(NPF_LARGE_HEX_MAX, "%tx", SIZE_MAX);
+#if ULLONG_MAX == 0xffffffffffffffffllu
+    CheckConformance("ffffffffffffffff", "%llx", ULLONG_MAX);
+#else
+    CheckConformance("ffffffff", "%llx", ULLONG_MAX);
+#endif
+
+#if UINTMAX_MAX == 0xffffffffffffffffllu
+    CheckConformance("ffffffffffffffff", "%jx", UINTMAX_MAX);
+#else
+    CheckConformance("ffffffff", "%jx", UINTMAX_MAX);
+#endif
+
+#if SIZE_MAX == 0xffffffffffffffffllu
+    CheckConformance("ffffffffffffffff", "%zx", SIZE_MAX);
+    CheckConformance("ffffffffffffffff", "%tx", SIZE_MAX);
+#else
+    CheckConformance("ffffffff", "%zx", SIZE_MAX);
+    CheckConformance("ffffffff", "%tx", SIZE_MAX);
+#endif
 #endif
 }
 
