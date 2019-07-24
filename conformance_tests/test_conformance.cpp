@@ -28,7 +28,9 @@ void CheckConformance(char const *output, char const *fmt, ...) {
         actual = conformance_buf;
     }
 
+    printf("comparing expected against output...\n");
     CHECK_EQUAL(expected, std::string(output));
+    printf("comparing expected against actual...\n");
     CHECK_EQUAL(expected, actual);
 }
 }  // namespace
