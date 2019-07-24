@@ -162,7 +162,7 @@ TEST(conformance, SignedInt) {
     CheckConformance(" +01", "%+4.2i", 1);
 #endif
 
-#if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
+#if (NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1) && (LLONG_MAX > LONG_MAX)
     CheckConformance("9223372036854775807", "%lli", LLONG_MAX);
     CheckConformance("9223372036854775807", "%ji", INTMAX_MAX);
     CheckConformance("9223372036854775807", "%zi", INTMAX_MAX);
@@ -175,8 +175,9 @@ TEST(conformance, Octal) {
     CheckConformance("0", "%#o", 0);
     CheckConformance("37777777777", "%o", UINT_MAX);
     CheckConformance("17", "%ho", (1 << 29u) + 15u);
-    CheckConformance("40000000000", "%lo",
-                     (unsigned long)UINT_MAX + 1);  // assume ul > u
+#if ULONG_MAX > UINT_MAX
+    CheckConformance("40000000000", "%lo", (unsigned long)UINT_MAX + 1u);
+#endif
     CheckConformance("2", "%hho", 258u);
 
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
@@ -214,8 +215,9 @@ TEST(conformance, Hex) {
     CheckConformance("0", "%+x", 0);
     CheckConformance("1", "%+x", 1);
     CheckConformance("7b", "%hx", (1 << 26u) + 123u);
-    CheckConformance("100000000", "%lx",
-                     (unsigned long)UINT_MAX + 1);  // assume ul > u
+#if ULONG_MAX > UINT_MAX
+    CheckConformance("100000000", "%lx", (unsigned long)UINT_MAX + 1u);
+#endif
     CheckConformance("b", "%hhx", 256u + 0xb);
 
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
