@@ -194,10 +194,7 @@ typedef enum {
 #endif
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
     ,
-    NPF_FMT_SPEC_CONV_FLOAT_DECIMAL,  /* 'f', 'F' */
-    NPF_FMT_SPEC_CONV_FLOAT_EXPONENT, /* 'e', 'E' */
-    NPF_FMT_SPEC_CONV_FLOAT_DYNAMIC,  /* 'g', 'G' */
-    NPF_FMT_SPEC_CONV_FLOAT_HEXPONENT /* 'a', 'A' */
+    NPF_FMT_SPEC_CONV_FLOAT_DECIMAL /* 'f', 'F' */
 #endif
 } npf__format_spec_conversion_t;
 
@@ -471,30 +468,6 @@ int npf__parse_format_spec(char const *format, npf__format_spec_t *out_spec) {
             out_spec->conv_spec = NPF_FMT_SPEC_CONV_FLOAT_DECIMAL;
             out_spec->conv_spec_case = NPF_FMT_SPEC_CONV_CASE_UPPER;
             break;
-        case 'e':
-            out_spec->conv_spec = NPF_FMT_SPEC_CONV_FLOAT_EXPONENT;
-            out_spec->conv_spec_case = NPF_FMT_SPEC_CONV_CASE_LOWER;
-            break;
-        case 'E':
-            out_spec->conv_spec = NPF_FMT_SPEC_CONV_FLOAT_EXPONENT;
-            out_spec->conv_spec_case = NPF_FMT_SPEC_CONV_CASE_UPPER;
-            break;
-        case 'a':
-            out_spec->conv_spec = NPF_FMT_SPEC_CONV_FLOAT_HEXPONENT;
-            out_spec->conv_spec_case = NPF_FMT_SPEC_CONV_CASE_LOWER;
-            break;
-        case 'A':
-            out_spec->conv_spec = NPF_FMT_SPEC_CONV_FLOAT_HEXPONENT;
-            out_spec->conv_spec_case = NPF_FMT_SPEC_CONV_CASE_UPPER;
-            break;
-        case 'g':
-            out_spec->conv_spec = NPF_FMT_SPEC_CONV_FLOAT_DYNAMIC;
-            out_spec->conv_spec_case = NPF_FMT_SPEC_CONV_CASE_LOWER;
-            break;
-        case 'G':
-            out_spec->conv_spec = NPF_FMT_SPEC_CONV_FLOAT_DYNAMIC;
-            out_spec->conv_spec_case = NPF_FMT_SPEC_CONV_CASE_UPPER;
-            break;
 #endif
 #if NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS == 1
         case 'n':
@@ -536,12 +509,9 @@ int npf__parse_format_spec(char const *format, npf__format_spec_t *out_spec) {
                 break;
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
             case NPF_FMT_SPEC_CONV_FLOAT_DECIMAL:
-            case NPF_FMT_SPEC_CONV_FLOAT_EXPONENT:
-            case NPF_FMT_SPEC_CONV_FLOAT_DYNAMIC:
-            case NPF_FMT_SPEC_CONV_FLOAT_HEXPONENT:
-#endif
                 out_spec->precision = 6;
                 break;
+#endif
         }
     }
 #endif
@@ -988,10 +958,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
 #endif
 
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
-                    case NPF_FMT_SPEC_CONV_FLOAT_DECIMAL:     /* 'f', 'F' */
-                    case NPF_FMT_SPEC_CONV_FLOAT_EXPONENT:    /* 'e', 'E' */
-                    case NPF_FMT_SPEC_CONV_FLOAT_DYNAMIC:     /* 'g', 'G' */
-                    case NPF_FMT_SPEC_CONV_FLOAT_HEXPONENT: { /* 'a', 'A' */
+                    case NPF_FMT_SPEC_CONV_FLOAT_DECIMAL: { /* 'f', 'F' */
                         float val;
                         if (fs.length_modifier ==
                             NPF_FMT_SPEC_LEN_MOD_LONG_DOUBLE) {

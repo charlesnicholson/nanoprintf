@@ -241,12 +241,16 @@ TEST(npf__parse_format_spec, PrecisionDefaultIsSixIfFloat) {
     CHECK_EQUAL(2, npf__parse_format_spec("%f", &spec));
     CHECK_EQUAL(NPF_FMT_SPEC_PRECISION_NONE, spec.precision_type);
     CHECK_EQUAL(6, spec.precision);
-    CHECK_EQUAL(2, npf__parse_format_spec("%g", &spec));
-    CHECK_EQUAL(NPF_FMT_SPEC_PRECISION_NONE, spec.precision_type);
-    CHECK_EQUAL(6, spec.precision);
-    CHECK_EQUAL(2, npf__parse_format_spec("%e", &spec));
-    CHECK_EQUAL(NPF_FMT_SPEC_PRECISION_NONE, spec.precision_type);
-    CHECK_EQUAL(6, spec.precision);
+    /*
+        Not supported yet
+
+        CHECK_EQUAL(2, npf__parse_format_spec("%g", &spec));
+        CHECK_EQUAL(NPF_FMT_SPEC_PRECISION_NONE, spec.precision_type);
+        CHECK_EQUAL(6, spec.precision);
+        CHECK_EQUAL(2, npf__parse_format_spec("%e", &spec));
+        CHECK_EQUAL(NPF_FMT_SPEC_PRECISION_NONE, spec.precision_type);
+        CHECK_EQUAL(6, spec.precision);
+    */
 }
 
 TEST(npf__parse_format_spec, PrecisionStar) {
@@ -463,6 +467,9 @@ TEST(npf__parse_format_spec, F) {
     CHECK_EQUAL(NPF_FMT_SPEC_CONV_CASE_UPPER, spec.conv_spec_case);
 }
 
+/*
+    Not implemented yet
+
 TEST(npf__parse_format_spec, e) {
     CHECK_EQUAL(2, npf__parse_format_spec("%e", &spec));
     CHECK_EQUAL(NPF_FMT_SPEC_CONV_FLOAT_EXPONENT, spec.conv_spec);
@@ -498,4 +505,5 @@ TEST(npf__parse_format_spec, G) {
     CHECK_EQUAL(NPF_FMT_SPEC_CONV_FLOAT_DYNAMIC, spec.conv_spec);
     CHECK_EQUAL(NPF_FMT_SPEC_CONV_CASE_UPPER, spec.conv_spec_case);
 }
+*/
 
