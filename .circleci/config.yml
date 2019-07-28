@@ -1,6 +1,14 @@
 version: 2.1
 
 jobs:
+  pylint-buildpy:
+    docker:
+      - image: charlesnicholson/circleci-images:latest
+    steps:
+      - checkout
+      - run:
+          command: python3 -m pylint build.py
+
   build-gcc-debug:
     docker:
       - image: charlesnicholson/circleci-images:latest
@@ -70,6 +78,7 @@ jobs:
 workflows:
   submit-gate:
     jobs:
+      - pylint-buildpy
       - build-gcc-debug
       - build-gcc-32-debug
       - build-gcc-release

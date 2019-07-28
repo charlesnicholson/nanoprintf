@@ -1,3 +1,5 @@
+"""Build script for nanoprintf. Configures and runs CMake to build tests."""
+
 import argparse
 import os
 import shutil
@@ -10,8 +12,12 @@ import zipfile
 
 SCRIPT_PATH = os.path.dirname(os.path.realpath(__file__))
 
+NINJA_URL = 'https://github.com/ninja-build/ninja/releases/download/v1.9.0/{}'
+CMAKE_URL = 'https://cmake.org/files/v3.14/{}'
+
 
 def parse_args():
+    """Parse command-line arguments."""
     parser = argparse.ArgumentParser()
     parser.add_argument(
         '--cfg',
@@ -34,6 +40,7 @@ def parse_args():
 
 
 def download_file(url, local_path, verbose):
+    """Download a file from url to local_path."""
     if verbose:
         print("Downloading:\n  Remote: {}\n  Local: {}".format(url, local_path))
     with urllib.request.urlopen(url) as rsp, open(local_path, 'wb') as file:
@@ -41,6 +48,7 @@ def download_file(url, local_path, verbose):
 
 
 def get_cmake(download, verbose):
+    """Return the path to system CMake, or download and unpack a local copy."""
     if not download:
         cmake = shutil.which('cmake')
         if cmake:
@@ -62,7 +70,7 @@ def get_cmake(download, verbose):
         if not os.path.exists(cmake_local_tgz):
             os.makedirs(cmake_local_dir, exist_ok=True)
             download_file(
-                'https://cmake.org/files/v3.14/{}'.format(cmake_file),
+                CMAKE_URL.format(cmake_file),
                 cmake_local_tgz,
                 verbose)
         with tarfile.open(cmake_local_tgz, 'r') as tar:
@@ -72,6 +80,7 @@ def get_cmake(download, verbose):
 
 
 def get_ninja(download, verbose):
+    """Return the path to system Ninja, or download and unpack a local copy."""
     if not download:
         ninja = shutil.which('ninja')
         if ninja:
@@ -88,8 +97,7 @@ def get_ninja(download, verbose):
         if not os.path.exists(ninja_local_zip):
             os.makedirs(ninja_local_dir, exist_ok=True)
             download_file(
-                'https://github.com/ninja-build/ninja/releases/download/v1.9.0/{}'.format(
-                    ninja_file),
+                NINJA_URL.format(ninja_file),
                 ninja_local_zip,
                 verbose)
         with zipfile.ZipFile(ninja_local_zip, 'r') as zip_file:
@@ -101,6 +109,7 @@ def get_ninja(download, verbose):
 
 
 def configure_cmake(cmake_exe, ninja, args):
+    """Prepare CMake for building nanoprintf tests under 'build/ninja/<cfg>'."""
     build_path = os.path.join(SCRIPT_PATH, 'build', 'ninja', args.cfg)
     if os.path.exists(os.path.join(build_path, 'CMakeFiles')):
         return True
@@ -118,14 +127,15 @@ def configure_cmake(cmake_exe, ninja, args):
 
 
 def build_cmake(cmake_exe, args):
+    """Run CMake in build mode to compile and run the nanoprintf test suite."""
     build_path = os.path.join(SCRIPT_PATH, 'build', 'ninja', args.cfg)
-    cmake_args = [cmake_exe, '--build', build_path]
-    if args.v:
-        cmake_args += ['--', '-v']
+    cmake_args = [cmake_exe, '--build', build_path] + \
+        (['--', '-v'] if args.v else [])
     return not subprocess.run(cmake_args).returncode
 
 
 def main():
+    """Parse args, find or get tools, configure CMake, build and run tests."""
     args = parse_args()
     cmake = get_cmake(args.download, args.v)
     ninja = get_ninja(args.download, args.v)
