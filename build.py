@@ -35,6 +35,7 @@ def parse_args():
 
 
 def download_file(url, local_path):
+    print("Downloading '{}' to '{}'".format(url, local_path))
     with urllib.request.urlopen(url) as rsp, open(local_path, 'wb') as file:
         shutil.copyfileobj(rsp, file)
 

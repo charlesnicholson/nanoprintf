@@ -3,6 +3,7 @@
 #include "CppUTest/TestHarness.h"
 
 #include <limits.h>
+#include <cmath>
 #include <cstring>
 
 TEST_GROUP(conformance){};
@@ -188,6 +189,10 @@ TEST(conformance, SignedInt) {
     CheckConformance("2147483647", "%ji", INTMAX_MAX);
 #endif
 
+#ifdef _MSC_VER
+#define SSIZE_MAX LONG_MAX
+#endif
+
 #if SSIZE_MAX == 2147483647
     CheckConformance("2147483647", "%zi", SSIZE_MAX);
 #else
@@ -305,6 +310,7 @@ TEST(conformance, Hex) {
 #endif
 }
 
+#if !defined(_MSC_VER)  // Visual Studio prints "00000ABCDEF" (upper, no 0x)
 TEST(conformance, Pointer) {
     // CheckConformance("%p", nullptr); implementation defined
     int x, *p = &x;
@@ -319,6 +325,7 @@ TEST(conformance, Pointer) {
     CheckConformance(buf, "%30p", p);
 #endif
 }
+#endif
 
 #if NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS == 1
 namespace {
@@ -405,17 +412,17 @@ TEST(conformance, StarArgs) {
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
 TEST(conformance, FloatNan) {
     char buf[32];
-    npf_snprintf(buf, sizeof(buf), "%f", 0.0 / 0.0);
+    npf_snprintf(buf, sizeof(buf), "%f", (double)NAN);
     CHECK(!strcmp(buf, "nan") || !strcmp(buf, "-nan"));
-    npf_snprintf(buf, sizeof(buf), "%F", 0.0 / 0.0);
+    npf_snprintf(buf, sizeof(buf), "%F", (double)NAN);
     CHECK(!strcmp(buf, "NAN") || !strcmp(buf, "-NAN"));
 }
 
 TEST(conformance, Float) {
-    CheckConformance("inf", "%f", 1.0 / 0.0);
-    CheckConformance(" inf", "%4f", 1.0 / 0.0);
-    CheckConformance("inf", "%.100f", 1.0 / 0.0);
-    CheckConformance("INF", "%F", 1.0 / 0.0);
+    CheckConformance("inf", "%f", (double)INFINITY);
+    CheckConformance(" inf", "%4f", (double)INFINITY);
+    CheckConformance("inf", "%.100f", (double)INFINITY);
+    CheckConformance("INF", "%F", (double)INFINITY);
     CheckConformance("0.000000", "%f", 0.0);
     CheckConformance("0.00", "%.2f", 0.0);
     CheckConformance("1.0", "%.1f", 1.0);

@@ -1,0 +1,9 @@
+version: 0.0.1.{build}
+image: Visual Studio 2017
+shallow_clone: true
+
+init:
+  - call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvars64.bat"
+
+build_script:
+  - C:\Python37\python build.py

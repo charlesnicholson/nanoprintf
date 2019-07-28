@@ -7,7 +7,7 @@ if (NPF_32BIT AND CMAKE_HOST_APPLE)
     message(FATAL_ERROR "Apple doesn't support 32-bit mode anymore.")
 endif()
 
-if (NPF_32BIT)
+if (NPF_32BIT AND NOT MSVC)
     set(NPF_32BIT_FLAG -m32)
     set(CMAKE_C_FLAGS ${CMAKE_C_FLAGS} ${NPF_32BIT_FLAG})
     set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} ${NPF_32BIT_FLAG})
@@ -61,16 +61,19 @@ add_dependencies(libCppUTestExt CppUTest_external)
 
 ################ Common compile flags
 
-set(CMAKE_C_FLAGS_DEBUG "-O0 -g")
-set(CMAKE_C_FLAGS_RELWITHDEBINFO "-Os -g")
-set(CMAKE_C_FLAGS_RELEASE "-Os")
-set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g")
-set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-Os -g")
-set(CMAKE_CXX_FLAGS_RELEASE "-Os")
-
 set(CMAKE_CXX_STANDARD 11)
 
-set(nanoprintf_common_flags -pedantic -Wall -Wextra -Werror -Wno-padded)
+if (MSVC)
+    set(nanoprintf_common_flags /W4)
+else()
+    set(CMAKE_C_FLAGS_DEBUG "-O0 -g")
+    set(CMAKE_C_FLAGS_RELWITHDEBINFO "-Os -g")
+    set(CMAKE_C_FLAGS_RELEASE "-Os")
+    set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g")
+    set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-Os -g")
+    set(CMAKE_CXX_FLAGS_RELEASE "-Os")
+    set(nanoprintf_common_flags -pedantic -Wall -Wextra -Werror -Wno-padded)
+endif()
 
 string(FIND "${CMAKE_C_COMPILER_ID}" "Clang" is_clang)
 if (${is_clang} GREATER_EQUAL 0)
@@ -82,81 +85,31 @@ endif()
 set(nanoprintf_c_flags ${nanoprintf_common_flags})
 set(nanoprintf_cxx_flags ${nanoprintf_common_flags} ${nanoprintf_cxx_flags})
 
-################ Flag / language compilation tests
+################ Language compilation tests
 
-add_library(npf_c89 compilation_tests/nanoprintf_compilation_test_c.c)
+function(npf_c_language_test target standard)
+    add_library(${target} compilation_tests/nanoprintf_compilation_test_c.c)
+    target_compile_options(${target} PRIVATE ${nanoprintf_c_flags})
+    if (NOT MSVC)
+        target_compile_options(${target} PRIVATE -std=${standard})
+    endif()
+endfunction()
+
+npf_c_language_test(npf_c89 c89)
 target_compile_definitions(npf_c89 PRIVATE
     NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=1
     NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=1
     NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0
     NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=0
     NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=1)
-target_compile_options(npf_c89 PRIVATE -std=c89 ${nanoprintf_c_flags})
 
-add_library(npf_c99 compilation_tests/nanoprintf_compilation_test_c.c)
+npf_c_language_test(npf_c99 c99)
 target_compile_definitions(npf_c99 PRIVATE
     NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=1
     NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=1
     NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=1
     NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=1
     NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=1)
-target_compile_options(npf_c99 PRIVATE -std=c99 ${nanoprintf_c_flags})
-
-add_library(npf_c_default_flags compilation_tests/nanoprintf_compilation_test_c.c)
-
-add_library(npf_c_no_flags compilation_tests/nanoprintf_compilation_test_c.c)
-target_compile_definitions(npf_c_no_flags PRIVATE
-    NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=0
-    NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=0
-    NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0
-    NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=0
-    NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=0)
-target_compile_options(npf_c_no_flags PRIVATE ${nanoprintf_c_flags})
-
-add_library(npf_c_field_width compilation_tests/nanoprintf_compilation_test_c.c)
-target_compile_definitions(npf_c_field_width PRIVATE
-    NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=1
-    NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=0
-    NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0
-    NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=0
-    NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=0)
-target_compile_options(npf_c_field_width PRIVATE ${nanoprintf_c_flags})
-
-add_library(npf_c_precision compilation_tests/nanoprintf_compilation_test_c.c)
-target_compile_definitions(npf_c_precision PRIVATE
-    NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=0
-    NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=1
-    NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0
-    NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=0
-    NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=0)
-target_compile_options(npf_c_precision PRIVATE ${nanoprintf_c_flags})
-
-add_library(npf_c_floats compilation_tests/nanoprintf_compilation_test_c.c)
-target_compile_definitions(npf_c_floats PRIVATE
-    NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=0
-    NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=1
-    NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0
-    NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=1
-    NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=0)
-target_compile_options(npf_c_floats PRIVATE -std=c99 ${nanoprintf_c_flags})
-
-add_library(npf_c_large compilation_tests/nanoprintf_compilation_test_c.c)
-target_compile_definitions(npf_c_large PRIVATE
-    NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=0
-    NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=0
-    NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=1
-    NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=0
-    NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=0)
-target_compile_options(npf_c_large PRIVATE -std=c99 ${nanoprintf_c_flags})
-
-add_library(npf_c_writeback compilation_tests/nanoprintf_compilation_test_c.c)
-target_compile_definitions(npf_c_writeback PRIVATE
-    NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=0
-    NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=0
-    NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0
-    NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=0
-    NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=1)
-target_compile_options(npf_c_writeback PRIVATE -std=c99 ${nanoprintf_c_flags})
 
 add_library(npf_cpp compilation_tests/nanoprintf_compilation_test_cpp.cpp)
 target_compile_definitions(npf_cpp PRIVATE
@@ -166,6 +119,58 @@ target_compile_definitions(npf_cpp PRIVATE
     NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=1
     NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=1)
 target_compile_options(npf_cpp PRIVATE ${nanoprintf_cxx_flags})
+
+################ Flag combination compilation tests
+
+npf_c_language_test(npf_c_default_flags c99)
+
+npf_c_language_test(npf_c_no_flags c89)
+target_compile_definitions(npf_c_no_flags PRIVATE
+    NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=0
+    NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=0
+    NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0
+    NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=0
+    NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=0)
+
+npf_c_language_test(npf_c_field_width c89)
+target_compile_definitions(npf_c_field_width PRIVATE
+    NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=1
+    NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=0
+    NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0
+    NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=0
+    NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=0)
+
+npf_c_language_test(npf_c_precision c89)
+target_compile_definitions(npf_c_precision PRIVATE
+    NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=0
+    NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=1
+    NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0
+    NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=0
+    NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=0)
+
+npf_c_language_test(npf_c_floats c99)
+target_compile_definitions(npf_c_floats PRIVATE
+    NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=0
+    NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=1
+    NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0
+    NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=1
+    NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=0)
+
+npf_c_language_test(npf_c_large c99)
+target_compile_definitions(npf_c_large PRIVATE
+    NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=0
+    NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=0
+    NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=1
+    NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=0
+    NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=0)
+
+npf_c_language_test(npf_c_writeback c99)
+target_compile_definitions(npf_c_writeback PRIVATE
+    NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=0
+    NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=0
+    NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0
+    NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=0
+    NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=1)
 
 ################ Static compilation test
 
@@ -181,13 +186,17 @@ function(npf_test name files)
     target_include_directories(${name} PRIVATE ${CPPUTEST_INCLUDE_DIR})
     target_link_libraries(${name} libCppUTest libCppUTestExt)
 
-    target_compile_options(${name} PRIVATE
-        ${nanoprintf_cxx_flags}
-        -Wno-old-style-cast     # C style casts are ok
-        -Wno-format
-        -Wno-format-pedantic
-        -Wno-format-nonliteral
-        -std=c++11)
+    if (MSVC)
+        target_link_libraries(${name} winmm.lib)
+    else()
+        target_compile_options(${name} PRIVATE
+            ${nanoprintf_cxx_flags}
+            -Wno-old-style-cast     # C style casts are ok
+            -Wno-format
+            -Wno-format-pedantic
+            -Wno-format-nonliteral
+            -std=c++11)
+    endif()
 
     if (is_clang GREATER_EQUAL 0)
         target_compile_options(${name} PRIVATE
