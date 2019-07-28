@@ -125,14 +125,15 @@ NPF_VISIBILITY int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format,
 #endif
 
 /* Currently float + large support require c99/c++11 types in stdint.h */
-#if (NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1) || \
-    (NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1)
+#if ((NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1) ||  \
+     (NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1)) && \
+    !defined(_MSC_VER)
 #ifdef __cplusplus
 #if __cplusplus < 201103L
 #error nanoprintf float support requires fixed-width types from c++11 or later.
 #endif
 #else
-#if (__STDC_VERSION__ < 199409L) && !defined(_MSC_VER)
+#if __STDC_VERSION__ < 199409L
 #error nanoprintf float support requires fixed-width types from c99 or later.
 #endif
 #endif
