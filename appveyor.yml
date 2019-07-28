@@ -2,8 +2,15 @@ version: 0.0.1.{build}
 image: Visual Studio 2017
 shallow_clone: true
 
+environment:
+  matrix:
+    - build_config: Debug
+    - build_config: Release
+
 init:
   - call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvars64.bat"
 
 build_script:
-  - C:\Python37\python build.py
+  - C:\Python37\python build.py --cfg %build_config%
+
+test: off
