@@ -135,7 +135,7 @@ For Windows builds, nanoprintf uses [AppVeyor](https://ci.appveyor.com/project/c
 
 No wide-character support exists: the `%lc` and `%ls` fields require that the arg be converted to a char array as if by a call to [wcrtomb](http://man7.org/linux/man-pages/man3/wcrtomb.3.html). When locale and character set conversions get involved, it's hard to keep the name "nano". Accordingly, `%lc` and `%ls` behave like `%c` and `%s`, respectively.
 
-Currently the only supported float conversions are the decimal forms: `%f` and `%F`. All other float conversions (exponent form, hexadecimal exponent form, dynamic precision form) behave like `%f` and `%F`. Pull requests welcome!
+Currently the only supported float conversions are the decimal forms: `%f` and `%F`. Pull requests welcome!
 
 ## Philosophy
 
