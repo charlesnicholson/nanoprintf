@@ -286,7 +286,12 @@ NPF_VISIBILITY int npf__ftoa_rev(char *buf, float f, unsigned base,
 #endif
 
 #if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
+#ifdef _MSC_VER
+#include <BaseTsd.h>
+typedef SSIZE_T ssize_t;
+#else
 #include <sys/types.h>
+#endif
 #endif
 
 #define NPF_MIN(x, y) ((x) < (y) ? (x) : (y))
