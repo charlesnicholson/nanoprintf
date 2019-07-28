@@ -186,7 +186,9 @@ function(npf_test name files)
     target_include_directories(${name} PRIVATE ${CPPUTEST_INCLUDE_DIR})
     target_link_libraries(${name} libCppUTest libCppUTestExt)
 
-    if (NOT MSVC)
+    if (MSVC)
+        target_link_libraries(${name} winmm.lib)
+    else()
         target_compile_options(${name} PRIVATE
             ${nanoprintf_cxx_flags}
             -Wno-old-style-cast     # C style casts are ok
