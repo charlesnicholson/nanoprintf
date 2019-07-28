@@ -310,6 +310,7 @@ TEST(conformance, Hex) {
 #endif
 }
 
+#if !defined(_MSC_VER)  // Visual Studio prints "00000ABCDEF" (upper, no 0x)
 TEST(conformance, Pointer) {
     // CheckConformance("%p", nullptr); implementation defined
     int x, *p = &x;
@@ -324,6 +325,7 @@ TEST(conformance, Pointer) {
     CheckConformance(buf, "%30p", p);
 #endif
 }
+#endif
 
 #if NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS == 1
 namespace {
