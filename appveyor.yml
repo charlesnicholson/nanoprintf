@@ -4,3 +4,6 @@ shallow_clone: true
 init:
   - call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvars64.bat"
 
+build_script:
+  - cmake --version
+  - C:\Python37\python --version
