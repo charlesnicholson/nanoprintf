@@ -417,10 +417,10 @@ TEST(conformance, FloatNan) {
 }
 
 TEST(conformance, Float) {
-    CheckConformance("inf", "%f", 1.0 / 0.0);
-    CheckConformance(" inf", "%4f", 1.0 / 0.0);
-    CheckConformance("inf", "%.100f", 1.0 / 0.0);
-    CheckConformance("INF", "%F", 1.0 / 0.0);
+    CheckConformance("inf", "%f", (double)INFINITY);
+    CheckConformance(" inf", "%4f", (double)INFINITY);
+    CheckConformance("inf", "%.100f", (double)INFINITY);
+    CheckConformance("INF", "%F", (double)INFINITY);
     CheckConformance("0.000000", "%f", 0.0);
     CheckConformance("0.00", "%.2f", 0.0);
     CheckConformance("1.0", "%.1f", 1.0);
