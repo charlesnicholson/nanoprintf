@@ -189,6 +189,10 @@ TEST(conformance, SignedInt) {
     CheckConformance("2147483647", "%ji", INTMAX_MAX);
 #endif
 
+#ifdef _MSC_VER
+#define SSIZE_MAX LONG_MAX
+#endif
+
 #if SSIZE_MAX == 2147483647
     CheckConformance("2147483647", "%zi", SSIZE_MAX);
 #else
