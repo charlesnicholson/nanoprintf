@@ -7,7 +7,7 @@ if (NPF_32BIT AND CMAKE_HOST_APPLE)
     message(FATAL_ERROR "Apple doesn't support 32-bit mode anymore.")
 endif()
 
-if (NPF_32BIT)
+if (NPF_32BIT AND NOT CMAKE_HOST_WIN32)
     set(NPF_32BIT_FLAG -m32)
     set(CMAKE_C_FLAGS ${CMAKE_C_FLAGS} ${NPF_32BIT_FLAG})
     set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} ${NPF_32BIT_FLAG})
@@ -61,16 +61,19 @@ add_dependencies(libCppUTestExt CppUTest_external)
 
 ################ Common compile flags
 
-set(CMAKE_C_FLAGS_DEBUG "-O0 -g")
-set(CMAKE_C_FLAGS_RELWITHDEBINFO "-Os -g")
-set(CMAKE_C_FLAGS_RELEASE "-Os")
-set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g")
-set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-Os -g")
-set(CMAKE_CXX_FLAGS_RELEASE "-Os")
-
 set(CMAKE_CXX_STANDARD 11)
 
-set(nanoprintf_common_flags -pedantic -Wall -Wextra -Werror -Wno-padded)
+if (MSVC)
+    set(nanoprintf_common_flags /W4)
+else()
+    set(CMAKE_C_FLAGS_DEBUG "-O0 -g")
+    set(CMAKE_C_FLAGS_RELWITHDEBINFO "-Os -g")
+    set(CMAKE_C_FLAGS_RELEASE "-Os")
+    set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g")
+    set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-Os -g")
+    set(CMAKE_CXX_FLAGS_RELEASE "-Os")
+    set(nanoprintf_common_flags -pedantic -Wall -Wextra -Werror -Wno-padded)
+endif()
 
 string(FIND "${CMAKE_C_COMPILER_ID}" "Clang" is_clang)
 if (${is_clang} GREATER_EQUAL 0)
@@ -181,13 +184,15 @@ function(npf_test name files)
     target_include_directories(${name} PRIVATE ${CPPUTEST_INCLUDE_DIR})
     target_link_libraries(${name} libCppUTest libCppUTestExt)
 
-    target_compile_options(${name} PRIVATE
-        ${nanoprintf_cxx_flags}
-        -Wno-old-style-cast     # C style casts are ok
-        -Wno-format
-        -Wno-format-pedantic
-        -Wno-format-nonliteral
-        -std=c++11)
+    if (NOT MSVC)
+        target_compile_options(${name} PRIVATE
+            ${nanoprintf_cxx_flags}
+            -Wno-old-style-cast     # C style casts are ok
+            -Wno-format
+            -Wno-format-pedantic
+            -Wno-format-nonliteral
+            -std=c++11)
+    endif()
 
     if (is_clang GREATER_EQUAL 0)
         target_compile_options(${name} PRIVATE
