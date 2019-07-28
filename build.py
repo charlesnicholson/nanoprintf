@@ -33,13 +33,14 @@ def parse_args():
     return parser.parse_args()
 
 
-def download_file(url, local_path):
-    print("Downloading '{}' to '{}'".format(url, local_path))
+def download_file(url, local_path, verbose):
+    if verbose:
+        print("Downloading:\n  Remote: {}\n  Local: {}".format(url, local_path))
     with urllib.request.urlopen(url) as rsp, open(local_path, 'wb') as file:
         shutil.copyfileobj(rsp, file)
 
 
-def get_cmake(download):
+def get_cmake(download, verbose):
     if not download:
         cmake = shutil.which('cmake')
         if cmake:
@@ -62,14 +63,15 @@ def get_cmake(download):
             os.makedirs(cmake_local_dir, exist_ok=True)
             download_file(
                 'https://cmake.org/files/v3.14/{}'.format(cmake_file),
-                cmake_local_tgz)
+                cmake_local_tgz,
+                verbose)
         with tarfile.open(cmake_local_tgz, 'r') as tar:
             tar.extractall(path=cmake_local_dir)
 
     return cmake_local_exe
 
 
-def get_ninja(download):
+def get_ninja(download, verbose):
     if not download:
         ninja = shutil.which('ninja')
         if ninja:
@@ -88,7 +90,8 @@ def get_ninja(download):
             download_file(
                 'https://github.com/ninja-build/ninja/releases/download/v1.9.0/{}'.format(
                     ninja_file),
-                ninja_local_zip)
+                ninja_local_zip,
+                verbose)
         with zipfile.ZipFile(ninja_local_zip, 'r') as zip_file:
             zip_file.extractall(ninja_local_dir)
         os.chmod(ninja_local_exe, os.stat(
@@ -124,8 +127,8 @@ def build_cmake(cmake_exe, args):
 
 def main():
     args = parse_args()
-    cmake = get_cmake(args.download)
-    ninja = get_ninja(args.download)
+    cmake = get_cmake(args.download, args.v)
+    ninja = get_ninja(args.download, args.v)
     built_ok = configure_cmake(cmake, ninja, args) and build_cmake(cmake, args)
     return int(not built_ok)  # 0 is success
 
