@@ -4,13 +4,15 @@
 
 nanoprintf is an implementation of snprintf and vsnprintf for embedded systems that, when fully enabled, aims for C11 standard compliance.
 
-nanoprintf makes no memory allocations and uses less than 100 bytes of stack. Compiling with all optional features disabled yields ~2.4KB of ARM Cortex-M object code, and compiling with all optional features enabled is closer to 5KB. This is all larger on x64, but why are you using nanoprintf on x64? :)
+nanoprintf makes no memory allocations and uses less than 100 bytes of stack. Compiling with all optional features disabled yields ~2.4KB of ARM Cortex-M object code, and compiling with all optional features enabled is closer to 5KB.
 
 nanoprintf is a [single header file](https://github.com/charlesnicholson/nanoprintf/blob/master/nanoprintf.h) in the style of the [stb libraries](https://github.com/nothings/stb). The rest of the repository is tests and scaffolding and not required for use.
 
 nanoprintf is written in C89 for maximal compiler compatibility. C99 or C++11 compilers are required (for `uint64_t` and other types) if floating point conversion or large modifiers are enabled. nanoprintf does include standard headers but only uses them for types and argument lists; no calls are made into stdlib / libc, with the exception of any internal double-to-float conversion ABI calls your compiler might emit.
 
 nanoprintf is statically configurable so users can find a balance between size, compiler requirements, and feature set. Floating point conversion, "large" length modifiers, and size write-back are all configurable and are only compiled if explicitly requested, see [Configuration](https://github.com/charlesnicholson/nanoprintf/tree/readme#configuration) for details.
+
+nanoprintf compiles cleanly at the highest warning levels on clang, gcc, msvc.
 
 ## Motivation
 
@@ -124,7 +126,9 @@ This will build all of the unit, conformance, and compilation tests for your hos
 
 The nanoprintf development environment uses [cmake](https://cmake.org/) and [ninja](https://ninja-build.org/). If you have these in your path, `./b` will use them. If not, `./b` will download and deploy them into `path/to/your/nanoprintf/external`.
 
-nanoprintf uses [CircleCI](https://circleci.com/) for continuous integration builds. The CircleCI builds use [this](https://hub.docker.com/r/charlesnicholson/circleci-images) Docker image on [Docker Hub](https://hub.docker.com/). The Dockerfile for the CircleCI builds lives [here](https://github.com/charlesnicholson/circleci-images).
+nanoprintf uses [CircleCI](https://circleci.com/) for Linux clang / gcc continuous integration builds. The CircleCI builds use [this](https://hub.docker.com/r/charlesnicholson/circleci-images) Docker image on [Docker Hub](https://hub.docker.com/). The Dockerfile for the CircleCI builds lives [here](https://github.com/charlesnicholson/circleci-images).
+
+For Windows builds, nanoprintf uses [AppVeyor](https://ci.appveyor.com/project/charlesnicholson/nanoprintf). A build matrix of [Debug, Release] x [32-bit, 64-bit] is compiled against Visual Studio 2017.
 
 ## Limitations
 
