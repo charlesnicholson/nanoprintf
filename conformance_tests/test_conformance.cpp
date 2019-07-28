@@ -3,6 +3,7 @@
 #include "CppUTest/TestHarness.h"
 
 #include <limits.h>
+#include <cmath>
 #include <cstring>
 
 TEST_GROUP(conformance){};
@@ -405,9 +406,9 @@ TEST(conformance, StarArgs) {
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
 TEST(conformance, FloatNan) {
     char buf[32];
-    npf_snprintf(buf, sizeof(buf), "%f", 0.0 / 0.0);
+    npf_snprintf(buf, sizeof(buf), "%f", (double)NAN);
     CHECK(!strcmp(buf, "nan") || !strcmp(buf, "-nan"));
-    npf_snprintf(buf, sizeof(buf), "%F", 0.0 / 0.0);
+    npf_snprintf(buf, sizeof(buf), "%F", (double)NAN);
     CHECK(!strcmp(buf, "NAN") || !strcmp(buf, "-NAN"));
 }
 
