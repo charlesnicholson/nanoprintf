@@ -7,7 +7,7 @@ if (NPF_32BIT AND CMAKE_HOST_APPLE)
     message(FATAL_ERROR "Apple doesn't support 32-bit mode anymore.")
 endif()
 
-if (NPF_32BIT AND NOT CMAKE_HOST_WIN32)
+if (NPF_32BIT AND NOT MSVC)
     set(NPF_32BIT_FLAG -m32)
     set(CMAKE_C_FLAGS ${CMAKE_C_FLAGS} ${NPF_32BIT_FLAG})
     set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} ${NPF_32BIT_FLAG})
