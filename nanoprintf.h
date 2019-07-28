@@ -132,7 +132,7 @@ NPF_VISIBILITY int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format,
 #error nanoprintf float support requires fixed-width types from c++11 or later.
 #endif
 #else
-#if __STDC_VERSION__ < 199409L
+#if (__STDC_VERSION__ < 199409L) && !defined(_MSC_VER)
 #error nanoprintf float support requires fixed-width types from c99 or later.
 #endif
 #endif
