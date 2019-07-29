@@ -14,13 +14,15 @@ nanoprintf is statically configurable so users can find a balance between size, 
 
 nanoprintf compiles cleanly at the highest warning levels on clang, gcc, msvc.
 
+nanoprintf works on 32- and 64-bit architectures, though on a 64-bit architecture you can hopefully just use printf.
+
 ## Motivation
 
 [tinyprintf](https://github.com/cjlano/tinyprintf) doesn't print floating point values.
 
-[printf](https://github.com/mpaland/printf) defines the actual standard library `printf` symbol, which isn't always what you want. It stores the final converted string (with padding and precision) in a temporary buffer, which makes supporting longer strings more costly. It also doesn't support the `%n` "write-back" specifier.
+"[printf](https://github.com/mpaland/printf)" defines the actual standard library `printf` symbol, which isn't always what you want. It stores the final converted string (with padding and precision) in a temporary buffer, which makes supporting longer strings more costly. It also doesn't support the `%n` "write-back" specifier.
 
-No other embedded-friendly printf projects that I could fine are in the public domain *and* have single-file implementations. Really though, I've just wanted to try my hand at a really small printf system for a while now.
+Also, no embedded-friendly printf projects that I could find are both in the public domain *and* have single-file implementations.
 
 ## Usage
 
