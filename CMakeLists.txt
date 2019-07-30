@@ -72,7 +72,17 @@ else()
     set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g")
     set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-Os -g")
     set(CMAKE_CXX_FLAGS_RELEASE "-Os")
-    set(nanoprintf_common_flags -pedantic -Wall -Wextra -Werror -Wno-padded)
+    set(nanoprintf_common_flags
+        -pedantic
+        -Wall
+        -Wextra
+        -Werror
+        -Wconversion
+        -Wsign-conversion
+        -Wswitch-default
+        -Wswitch-enum
+        -Wno-padded
+        -Wno-covered-switch-default)
 endif()
 
 string(FIND "${CMAKE_C_COMPILER_ID}" "Clang" is_clang)
