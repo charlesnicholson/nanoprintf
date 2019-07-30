@@ -77,11 +77,12 @@ else()
         -Wall
         -Wextra
         -Werror
-        -Wno-padded
         -Wconversion
         -Wsign-conversion
         -Wswitch-default
-        -Wswitch-enum)
+        -Wswitch-enum
+        -Wno-padded
+        -Wno-covered-switch-default)
 endif()
 
 string(FIND "${CMAKE_C_COMPILER_ID}" "Clang" is_clang)

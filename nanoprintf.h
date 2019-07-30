@@ -560,7 +560,7 @@ int npf__utoa_rev(char *buf, npf__uint_t i, unsigned base,
         unsigned const base_c =
             (cc == NPF_FMT_SPEC_CONV_CASE_LOWER) ? 'a' : 'A';
         while (i) {
-            unsigned const d = i % base;
+            unsigned const d = (unsigned)(i % base);
             i /= base;
             *dst++ = (d < 10) ? (char)('0' + d) : (char)(base_c + (d - 10));
         }
@@ -682,7 +682,7 @@ int npf__fsplit_abs(float f, uint64_t *out_int_part, uint64_t *out_frac_part,
         unsigned frac_part = 0;
         for (int i = 0; frac && (i < NPF_MAX_FRACTION_DEC_DIGITS); ++i) {
             frac_part *= 10;
-            frac_part += frac >> (NPF_FRACTION_BIN_DIGITS - 4);
+            frac_part += (unsigned)(frac >> (NPF_FRACTION_BIN_DIGITS - 4));
             frac &= 0x0fffffffffffffffllu;
             frac *= 10;
         }
@@ -696,24 +696,24 @@ int npf__ftoa_rev(char *buf, float f, unsigned base,
     char const case_c = (cc == NPF_FMT_SPEC_CONV_CASE_LOWER) ? 'a' - 'A' : 0;
 
     if (f != f) {
-        *buf++ = 'N' + case_c;
-        *buf++ = 'A' + case_c;
-        *buf++ = 'N' + case_c;
+        *buf++ = (char)('N' + case_c);
+        *buf++ = (char)('A' + case_c);
+        *buf++ = (char)('N' + case_c);
         return -3;
     }
     if (f == INFINITY) {
-        *buf++ = 'F' + case_c;
-        *buf++ = 'N' + case_c;
-        *buf++ = 'I' + case_c;
+        *buf++ = (char)('F' + case_c);
+        *buf++ = (char)('N' + case_c);
+        *buf++ = (char)('I' + case_c);
         return -3;
     }
 
     uint64_t int_part, frac_part;
     int frac_base10_neg_exp;
     if (npf__fsplit_abs(f, &int_part, &frac_part, &frac_base10_neg_exp) == 0) {
-        *buf++ = 'R' + case_c;
-        *buf++ = 'O' + case_c;
-        *buf++ = 'O' + case_c;
+        *buf++ = (char)('R' + case_c);
+        *buf++ = (char)('O' + case_c);
+        *buf++ = (char)('O' + case_c);
         return -3;
     }
 
@@ -722,7 +722,7 @@ int npf__ftoa_rev(char *buf, float f, unsigned base,
 
     // write the fractional digits
     while (frac_part) {
-        unsigned const d = frac_part % base;
+        unsigned const d = (unsigned)(frac_part % base);
         frac_part /= base;
         *dst++ = (d < 10) ? (char)('0' + d) : (char)(base_c + (d - 10));
     }
@@ -738,7 +738,7 @@ int npf__ftoa_rev(char *buf, float f, unsigned base,
         *dst++ = '0';
     } else {
         while (int_part) {
-            unsigned const d = int_part % base;
+            unsigned const d = (unsigned)(int_part % base);
             int_part /= base;
             *dst++ = (d < 10) ? (char)('0' + d) : (char)(base_c + (d - 10));
         }
@@ -863,6 +863,8 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                             NPF_EXTRACT(LARGE_SIZET, ssize_t, ssize_t);
                             NPF_EXTRACT(LARGE_PTRDIFFT, ptrdiff_t, ptrdiff_t);
 #endif
+                            default:
+                                break;
                         }
 
                         sign = (val < 0) ? -1 : 1;
@@ -904,6 +906,8 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                             NPF_EXTRACT(LARGE_SIZET, size_t, size_t);
                             NPF_EXTRACT(LARGE_PTRDIFFT, size_t, size_t);
 #endif
+                            default:
+                                break;
                         }
 
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
@@ -959,6 +963,8 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                             NPF_WRITEBACK(LARGE_SIZET, size_t);
                             NPF_WRITEBACK(LARGE_PTRDIFFT, ptrdiff_t);
 #endif
+                            default:
+                                break;
                         }
                         break;
 #endif
@@ -987,6 +993,8 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                         }
                     } break;
 #endif
+                    default:
+                        break;
                 }
 
                 /* Compute the leading symbol (+, -, ' ') */
