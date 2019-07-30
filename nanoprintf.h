@@ -518,6 +518,8 @@ int npf__parse_format_spec(char const *format, npf__format_spec_t *out_spec) {
                 out_spec->precision = 6;
                 break;
 #endif
+            default:
+                break;
         }
     }
 #endif
