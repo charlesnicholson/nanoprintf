@@ -10,7 +10,7 @@ TEST_GROUP(utoa) { char buf[64]; };
     do {                                                                  \
         int const n =                                                     \
             npf__utoa_rev(buf, VAL, BASE, NPF_FMT_SPEC_CONV_CASE_##CASE); \
-        CHECK_EQUAL(strlen(EXPECT_STR), (size_t)n);                       \
+        CHECK_EQUAL((int)strlen(EXPECT_STR), n);                          \
         buf[n] = 0;                                                       \
         STRCMP_EQUAL(EXPECT_STR, buf);                                    \
     } while (0)
