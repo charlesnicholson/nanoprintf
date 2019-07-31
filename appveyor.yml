@@ -21,7 +21,7 @@ init:
   - if "%build_target%" == "32_bit" call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvars32.bat"
 
 build_script:
-  - C:\Python37\python build.py --cfg %build_config%
+  - C:\Python37\python build.py --cfg %build_config% -v
 
 test: off
 

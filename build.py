@@ -52,6 +52,8 @@ def get_cmake(download, verbose):
     if not download:
         cmake = shutil.which('cmake')
         if cmake:
+            if verbose:
+                print("Found CMake at {}".format(cmake))
             return cmake
 
     cmake_prefix = 'cmake-3.14.5-{}-x86_64'.format(
@@ -84,6 +86,8 @@ def get_ninja(download, verbose):
     if not download:
         ninja = shutil.which('ninja')
         if ninja:
+            if verbose:
+                print("Found ninja at {}".format(ninja))
             return ninja
 
     ninja_local_dir = os.path.join(SCRIPT_PATH, 'external', 'ninja')
