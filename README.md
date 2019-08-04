@@ -8,13 +8,11 @@ nanoprintf makes no memory allocations and uses less than 100 bytes of stack. Co
 
 nanoprintf is a [single header file](https://github.com/charlesnicholson/nanoprintf/blob/master/nanoprintf.h) in the style of the [stb libraries](https://github.com/nothings/stb). The rest of the repository is tests and scaffolding and not required for use.
 
-nanoprintf is written in C89 for maximal compiler compatibility. C99 or C++11 compilers are required (for `uint64_t` and other types) if floating point conversion or large modifiers are enabled. nanoprintf does include standard headers but only uses them for types and argument lists; no calls are made into stdlib / libc, with the exception of any internal double-to-float conversion ABI calls your compiler might emit.
+nanoprintf is written in C89 for maximal compiler compatibility, and compiles cleanly at the highest warning levels on clang, gcc, and msvc in both 32- and 64-bit modes. C99 or C++11 compilers are required (for `uint64_t` and other types) if floating point conversion or large modifiers are enabled, but [pull requests that fix this](https://github.com/charlesnicholson/nanoprintf/issues/21) are welcome!
+
+nanoprintf does include C standard headers but only uses them for C99 types and argument lists; no calls are made into stdlib / libc, with the exception of any internal double-to-float conversion ABI calls your compiler might emit. As usual, some Windows-specific headers are required if you're compiling natively for msvc.
 
 nanoprintf is statically configurable so users can find a balance between size, compiler requirements, and feature set. Floating point conversion, "large" length modifiers, and size write-back are all configurable and are only compiled if explicitly requested, see [Configuration](https://github.com/charlesnicholson/nanoprintf/tree/readme#configuration) for details.
-
-nanoprintf compiles cleanly at the highest warning levels on clang, gcc, msvc.
-
-nanoprintf works on 32- and 64-bit architectures, though on a 64-bit architecture you can hopefully just use printf.
 
 ## Motivation
 
