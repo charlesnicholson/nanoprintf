@@ -420,7 +420,9 @@ TEST(conformance, FloatNan) {
 
 TEST(conformance, Float) {
     CheckConformance("inf", "%f", (double)INFINITY);
+#if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
     CheckConformance(" inf", "%4f", (double)INFINITY);
+#endif
     CheckConformance("inf", "%.100f", (double)INFINITY);
     CheckConformance("INF", "%F", (double)INFINITY);
     CheckConformance("0.000000", "%f", 0.0);
@@ -429,15 +431,17 @@ TEST(conformance, Float) {
     CheckConformance("1", "%.0f", 1.0);
     CheckConformance("1.", "%#.0f", 1.0);
     CheckConformance("1.00000000000", "%.11f", 1.0);
-    CheckConformance(" 1.0", "%4.1f", 1.0);
     CheckConformance("1.5", "%.1f", 1.5);
     CheckConformance("+1.5", "%+.1f", 1.5);
     CheckConformance("-1.5", "%.1f", -1.5);
     CheckConformance(" 1.5", "% .1f", 1.5);
+#if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
+    CheckConformance(" 1.0", "%4.1f", 1.0);
     CheckConformance(" 1.500", "%6.3f", 1.5);
     CheckConformance("0001.500", "%08.3f", 1.5);
     CheckConformance("+001.500", "%+08.3f", 1.5);
     CheckConformance("-001.500", "%+08.3f", -1.5);
+#endif
     CheckConformance("1.50000000000000000", "%.17f", 1.5);
     CheckConformance("0.003906", "%f", 0.00390625);
     CheckConformance("0.0039", "%.4f", 0.00390625);
