@@ -137,6 +137,14 @@ function(npf_test name files)
         COMMENT "Running ${name}")
 endfunction()
 
+################ Conformance test sources
+
+set(conformance_test_files
+    nanoprintf.h
+    conformance_tests/nanoprintf_in_conformance_tests.cpp
+    conformance_tests/test_conformance.cpp
+    conformance_tests/main.cpp)
+
 ################ Language compilation tests
 
 function(npf_c_language_test target standard)
@@ -160,26 +168,38 @@ foreach(fw 0 1)
                     if ((float EQUAL 1) OR (large EQUAL 1))
                         set(standard c99)
                     endif()
-                    set(compilation_test_name "npf_compile_${standard}")
+
+                    set(test_name "${standard}")
                     if (fw EQUAL 1)
-                        string(APPEND compilation_test_name "_fieldwidth")
+                        string(APPEND test_name "_fieldwidth")
                     endif()
                     if (precision EQUAL 1)
-                        string(APPEND compilation_test_name "_precision")
+                        string(APPEND test_name "_precision")
                     endif()
                     if (large EQUAL 1)
-                        string(APPEND compilation_test_name "_large")
+                        string(APPEND test_name "_large")
                     endif()
                     if (float EQUAL 1)
-                        string(APPEND compilation_test_name "_float")
+                        string(APPEND test_name "_float")
                     endif()
                     if (wb EQUAL 1)
-                        string(APPEND compilation_test_name "_writeback")
+                        string(APPEND test_name "_writeback")
                     endif()
 
+                    # Run a simple compilation test (c89/c99 compat)
+                    set(compilation_test_name "npf_compile_${test_name}")
                     npf_c_language_test(${compilation_test_name} ${standard})
-
                     target_compile_definitions(${compilation_test_name} PRIVATE
+                        NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=${fw}
+                        NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=${precision}
+                        NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=${large}
+                        NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=${float}
+                        NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=${wb})
+
+                    # Run conformance tests (c++)
+                    set(conformance_test_name "npf_conform_${test_name}")
+                    npf_test(${conformance_test_name} "${conformance_test_files}")
+                    target_compile_definitions(${conformance_test_name} PRIVATE
                         NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=${fw}
                         NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=${precision}
                         NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=${large}
@@ -190,16 +210,6 @@ foreach(fw 0 1)
         endforeach()
     endforeach()
 endforeach()
-
-# Test C++ with everything turned on
-add_library(npf_cpp compilation_tests/nanoprintf_compilation_test_cpp.cpp)
-target_compile_definitions(npf_cpp PRIVATE
-    NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=1
-    NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=1
-    NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=1
-    NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=1
-    NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=1)
-target_compile_options(npf_cpp PRIVATE ${nanoprintf_cxx_flags})
 
 # Test default flags (nothing specified)
 npf_c_language_test(npf_c_default_flags c99)
@@ -234,75 +244,3 @@ target_compile_definitions(unit_tests_normal_sized_formatters PRIVATE
 npf_test(unit_tests_large_sized_formatters "${unit_test_files}")
 target_compile_definitions(unit_tests_large_sized_formatters PRIVATE
     NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=1)
-
-################ Conformance tests
-
-set(conformance_test_files
-    nanoprintf.h
-    conformance_tests/nanoprintf_in_conformance_tests.cpp
-    conformance_tests/test_conformance.cpp
-    conformance_tests/main.cpp)
-
-npf_test(conformance_no_flags "${conformance_test_files}")
-target_compile_definitions(conformance_no_flags PRIVATE
-    NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=0
-    NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=0
-    NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0
-    NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=0
-    NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=0)
-
-npf_test(conformance_field_width "${conformance_test_files}")
-target_compile_definitions(conformance_field_width PRIVATE
-    NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=1
-    NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=0
-    NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0
-    NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=0
-    NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=0)
-
-npf_test(conformance_precision "${conformance_test_files}")
-target_compile_definitions(conformance_precision PRIVATE
-    NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=0
-    NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=1
-    NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0
-    NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=0
-    NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=0)
-
-npf_test(conformance_field_width_precision "${conformance_test_files}")
-target_compile_definitions(conformance_field_width_precision PRIVATE
-    NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=1
-    NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=1
-    NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0
-    NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=0
-    NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=0)
-
-npf_test(conformance_float "${conformance_test_files}")
-target_compile_definitions(conformance_float PRIVATE
-    NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=1
-    NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=1
-    NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0
-    NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=1
-    NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=0)
-
-npf_test(conformance_large "${conformance_test_files}")
-target_compile_definitions(conformance_large PRIVATE
-    NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=0
-    NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=0
-    NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=1
-    NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=0
-    NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=0)
-
-npf_test(conformance_writeback "${conformance_test_files}")
-target_compile_definitions(conformance_writeback PRIVATE
-    NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=0
-    NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=0
-    NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0
-    NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=0
-    NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=1)
-
-npf_test(conformance_all "${conformance_test_files}")
-target_compile_definitions(conformance_all PRIVATE
-    NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=1
-    NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=1
-    NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=1
-    NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=1
-    NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=1)
