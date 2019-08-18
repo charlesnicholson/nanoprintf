@@ -229,7 +229,6 @@ set(unit_test_files
     unit_tests/test_ftoa_rev.cpp
     unit_tests/test_fsplit_abs.cpp
     unit_tests/test_itoa_rev.cpp
-    unit_tests/test_ptoa_rev.cpp
     unit_tests/test_utoa_rev.cpp
     unit_tests/test_snprintf.cpp
     unit_tests/test_vpprintf.cpp
