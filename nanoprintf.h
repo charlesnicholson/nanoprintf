@@ -297,6 +297,12 @@ typedef SSIZE_T ssize_t;
 #define NPF_MIN(x, y) ((x) < (y) ? (x) : (y))
 #define NPF_MAX(x, y) ((x) > (y) ? (x) : (y))
 
+#define NANOPRINTF__STATIC_ASSERT(COND, MSG) \
+    typedef char npf__static_assert_##MSG[(COND) ? 1 : -1]
+
+NANOPRINTF__STATIC_ASSERT(sizeof(npf__uint_t) >= sizeof(void *),
+                          pointer_fits_in_npf_uint);
+
 int npf__parse_format_spec(char const *format, npf__format_spec_t *out_spec) {
     char const *cur = format;
 
