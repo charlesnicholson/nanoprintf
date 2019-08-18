@@ -916,13 +916,13 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                         }
                     } break;
 
-                    case NPF_FMT_SPEC_CONV_POINTER: { /* 'p' */
-                        void *val = va_arg(vlist, void *);
-                        cbuf_len = npf__utoa_rev(cbuf, (npf__uint_t)val, 16,
-                                                 NPF_FMT_SPEC_CONV_CASE_LOWER);
+                    case NPF_FMT_SPEC_CONV_POINTER: /* 'p' */
+                        cbuf_len = npf__utoa_rev(
+                            cbuf, (npf__uint_t)va_arg(vlist, void *), 16,
+                            NPF_FMT_SPEC_CONV_CASE_LOWER);
                         cbuf[cbuf_len++] = 'x';
                         cbuf[cbuf_len++] = '0';
-                    } break;
+                        break;
 
 #if NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS == 1
                     case NPF_FMT_SPEC_CONV_WRITEBACK: /* 'n' */
