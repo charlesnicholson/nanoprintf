@@ -748,6 +748,8 @@ int npf__ftoa_rev(char *buf, float f, unsigned base,
         *(va_arg(vlist, TYPE *)) = (TYPE)n; \
         break
 
+#include <stdio.h>
+
 int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
     npf__format_spec_t fs;
     char const *cur = format;
@@ -930,22 +932,24 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                         }
                     } break;
 
-                    case NPF_FMT_SPEC_CONV_POINTER: /* 'p' */
+                    case NPF_FMT_SPEC_CONV_POINTER: { /* 'p' */
+                        void *val = va_arg(vlist, void *);
 /* GCC complains that in 32-bit, void * doesn't fit in npf__uint_t.
    We've already statically asserted that it does, so disable the warning. */
 #if defined(NANOPRINTF__GCC) && !defined(__cplusplus)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpointer-to-int-cast"
 #endif
-                        cbuf_len = npf__utoa_rev(
-                            cbuf, (npf__uint_t)va_arg(vlist, void *), 16,
-                            NPF_FMT_SPEC_CONV_CASE_LOWER);
+                        npf__uint_t uint_val = (npf__uint_t)val;
 #if defined(NANOPRINTF__GCC) && !defined(__cplusplus)
 #pragma GCC diagnostic pop
 #endif
+                        printf("val: %p uint_val: %lx\n", val, uint_val);
+                        cbuf_len = npf__utoa_rev(cbuf, uint_val, 16,
+                                                 NPF_FMT_SPEC_CONV_CASE_LOWER);
                         cbuf[cbuf_len++] = 'x';
                         cbuf[cbuf_len++] = '0';
-                        break;
+                    } break;
 
 #if NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS == 1
                     case NPF_FMT_SPEC_CONV_WRITEBACK: /* 'n' */
