@@ -318,7 +318,7 @@ TEST(conformance, Pointer) {
     snprintf(buf, sizeof(buf), "%p", (void *)p);
 
     // Even with -m32, printf pointer sometimes prints 64-bit.
-    if ((sizeof(p) == 4) && (strlen(buf) == 10)) {
+    if ((sizeof(p) == 4) && (strlen(buf) == 18)) {
         // "0x0123456789ABCDEF" => "0x89ABCDEF"
         memmove(&buf[2], &buf[2 + 8], 9);
     }
