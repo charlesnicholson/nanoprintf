@@ -933,14 +933,14 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                     case NPF_FMT_SPEC_CONV_POINTER: /* 'p' */
 /* GCC complains that in 32-bit, void * doesn't fit in npf__uint_t.
    We've already statically asserted that it does, so disable the warning. */
-#ifdef NANOPRINTF__GCC
+#if defined(NANOPRINTF__GCC) && !defined(__cplusplus)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wpointer-to-int-cast"
 #endif
                         cbuf_len = npf__utoa_rev(
                             cbuf, (npf__uint_t)va_arg(vlist, void *), 16,
                             NPF_FMT_SPEC_CONV_CASE_LOWER);
-#ifdef NANOPRINTF__GCC
+#if defined(NANOPRINTF__GCC) && !defined(__cplusplus)
 #pragma GCC diagnostic pop
 #endif
                         cbuf[cbuf_len++] = 'x';
