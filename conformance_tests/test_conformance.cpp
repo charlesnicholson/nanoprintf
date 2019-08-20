@@ -318,6 +318,8 @@ TEST(conformance, Pointer) {
     snprintf(buf, sizeof(buf), "%p", (void *)p);
 
     // Even with -m32, printf pointer on some platforms prints 64-bit.
+    printf("Sizeof pointer is %d, strlen buf is %d\n", (int)sizeof(p),
+           (int)strlen(buf));
     if ((sizeof(p) == 4) && (strlen(buf) == 18)) {
         printf("Doing the stupid hack. Before: %s\n", buf);
         // "0x0123456789ABCDEF" => "0x89ABCDEF"
