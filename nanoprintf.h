@@ -294,6 +294,14 @@ typedef SSIZE_T ssize_t;
 #endif
 #endif
 
+#ifdef NANOPRINTF__GCC
+#error Don't define NANOPRINTF__GCC.
+#endif
+
+#if (defined(__GNUC__) || defined(__GNUG__)) && !defined(__clang__)
+#define NANOPRINTF__GCC
+#endif
+
 #define NPF_MIN(x, y) ((x) < (y) ? (x) : (y))
 #define NPF_MAX(x, y) ((x) > (y) ? (x) : (y))
 
@@ -923,9 +931,18 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                     } break;
 
                     case NPF_FMT_SPEC_CONV_POINTER: /* 'p' */
+/* GCC complains that in 32-bit, void * doesn't fit in npf__uint_t.
+   We've already statically asserted that it does, so disable the warning. */
+#ifdef NANOPRINTF__GCC
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpointer-to-int-cast"
+#endif
                         cbuf_len = npf__utoa_rev(
                             cbuf, (npf__uint_t)va_arg(vlist, void *), 16,
                             NPF_FMT_SPEC_CONV_CASE_LOWER);
+#ifdef NANOPRINTF__GCC
+#pragma GCC diagnostic pop
+#endif
                         cbuf[cbuf_len++] = 'x';
                         cbuf[cbuf_len++] = '0';
                         break;
