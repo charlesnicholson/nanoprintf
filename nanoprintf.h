@@ -295,7 +295,7 @@ typedef SSIZE_T ssize_t;
 #endif
 
 #ifdef NANOPRINTF__GCC
-#error Don't define NANOPRINTF__GCC.
+#error Do not define NANOPRINTF__GCC externally.
 #endif
 
 #if (defined(__GNUC__) || defined(__GNUG__)) && !defined(__clang__)
