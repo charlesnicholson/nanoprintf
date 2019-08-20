@@ -944,7 +944,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
 #if defined(NANOPRINTF__GCC) && !defined(__cplusplus)
 #pragma GCC diagnostic pop
 #endif
-                        printf("val: %p uint_val: %lx\n", val, uint_val);
+                        printf("val: %p uint_val: %llx\n", val, uint_val);
                         cbuf_len = npf__utoa_rev(cbuf, uint_val, 16,
                                                  NPF_FMT_SPEC_CONV_CASE_LOWER);
                         cbuf[cbuf_len++] = 'x';
