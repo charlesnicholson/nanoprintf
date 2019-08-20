@@ -317,10 +317,12 @@ TEST(conformance, Pointer) {
     char buf[32];
     snprintf(buf, sizeof(buf), "%p", (void *)p);
 
-    // Even with -m32, printf pointer sometimes prints 64-bit.
+    // Even with -m32, printf pointer on some platforms prints 64-bit.
     if ((sizeof(p) == 4) && (strlen(buf) == 18)) {
+        printf("Doing the stupid hack. Before: %s\n", buf);
         // "0x0123456789ABCDEF" => "0x89ABCDEF"
         memmove(&buf[2], &buf[2 + 8], 9);
+        printf("After: %s\n", buf);
     }
     CheckConformance(buf, "%p", p);
     // CheckConformance("%030p", p); 0 flag + 'p' is undefined
