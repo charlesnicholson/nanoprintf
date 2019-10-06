@@ -124,30 +124,23 @@ NPF_VISIBILITY int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format,
 #error Precision format specifiers must be enabled if float support is enabled.
 #endif
 
-/* Currently float + large support require c99/c++11 types in stdint.h */
-#if ((NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1) ||  \
-     (NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1)) && \
-    !defined(_MSC_VER)
+/* intmax_t / uintmax_t require stdint from c99 / c++11 */
+#ifndef _MSC_VER
 #ifdef __cplusplus
 #if __cplusplus < 201103L
-#error nanoprintf float support requires fixed-width types from c++11 or later.
+#error nanoprintf requires C++11 or later.
 #endif
 #else
 #if __STDC_VERSION__ < 199409L
-#error nanoprintf float support requires fixed-width types from c99 or later.
+#error nanoprintf requires C99 or later.
 #endif
 #endif
 #endif
 
 /* Implementation Details (prototype / config helper functions) */
 
-#if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
-#include <stdint.h>
-#endif
-
-#if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
 #include <inttypes.h>
-#endif
+#include <stdint.h>
 
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
 typedef enum {
@@ -254,7 +247,6 @@ NPF_VISIBILITY void npf__bufputc_nop(int c, void *ctx);
 NPF_VISIBILITY int npf__itoa_rev(char *buf, npf__int_t i);
 NPF_VISIBILITY int npf__utoa_rev(char *buf, npf__uint_t i, unsigned base,
                                  npf__format_spec_conversion_case_t cc);
-NPF_VISIBILITY int npf__ptoa_rev(char *buf, void const *p);
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
 NPF_VISIBILITY int npf__fsplit_abs(float f, uint64_t *out_int_part,
                                    uint64_t *out_frac_part,
@@ -568,36 +560,6 @@ int npf__utoa_rev(char *buf, npf__uint_t i, unsigned base,
         }
     }
     return (int)(dst - buf);
-}
-
-int npf__ptoa_rev(char *buf, void const *p) {
-    if (!p) {
-        *buf++ = ')';
-        *buf++ = 'l';
-        *buf++ = 'l';
-        *buf++ = 'u';
-        *buf++ = 'n';
-        *buf++ = '(';
-        return 6;
-    } else {
-        /* c89 requires configuration to learn what uint a void* fits in.
-        Instead, just alias to char* and print nibble-by-nibble. */
-        unsigned i;
-        char const *pb = (char const *)&p;
-        char *dst = buf;
-        for (i = 0; i < sizeof(void *); ++i) {
-            unsigned const d1 = pb[i] & 0xF;
-            unsigned const d2 = (pb[i] >> 4) & 0xF;
-            *dst++ = (d1 < 10) ? (char)('0' + d1) : (char)('a' + (d1 - 10));
-            *dst++ = (d2 < 10) ? (char)('0' + d2) : (char)('a' + (d2 - 10));
-        }
-        while (*--dst == '0')
-            ;
-        ++dst;
-        *dst++ = 'x';
-        *dst++ = '0';
-        return (int)(dst - buf);
-    }
 }
 
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
@@ -947,9 +909,13 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                         }
                     } break;
 
-                    case NPF_FMT_SPEC_CONV_POINTER: /* 'p' */
-                        cbuf_len = npf__ptoa_rev(cbuf, va_arg(vlist, void *));
-                        break;
+                    case NPF_FMT_SPEC_CONV_POINTER: { /* 'p' */
+                        cbuf_len = npf__utoa_rev(
+                            cbuf, (npf__uint_t)(uintptr_t)va_arg(vlist, void *),
+                            16, NPF_FMT_SPEC_CONV_CASE_LOWER);
+                        cbuf[cbuf_len++] = 'x';
+                        cbuf[cbuf_len++] = '0';
+                    } break;
 
 #if NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS == 1
                     case NPF_FMT_SPEC_CONV_WRITEBACK: /* 'n' */
