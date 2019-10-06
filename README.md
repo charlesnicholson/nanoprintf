@@ -4,7 +4,7 @@
 
 nanoprintf is an implementation of snprintf and vsnprintf for embedded systems that, when fully enabled, aims for C11 standard compliance.
 
-nanoprintf makes no memory allocations and uses less than 100 bytes of stack. Compiling with all optional features disabled yields ~2.4KB of ARM Cortex-M object code, and compiling with all optional features enabled is closer to 5KB.
+nanoprintf makes no memory allocations and uses less than 100 bytes of stack. Compiling with all optional features disabled yields ~2.3KB of ARM Cortex-M object code, and compiling with all optional features enabled is closer to 5KB.
 
 nanoprintf is a [single header file](https://github.com/charlesnicholson/nanoprintf/blob/master/nanoprintf.h) in the style of the [stb libraries](https://github.com/nothings/stb). The rest of the repository is tests and scaffolding and not required for use.
 
