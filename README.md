@@ -8,7 +8,7 @@ nanoprintf makes no memory allocations and uses less than 100 bytes of stack. Co
 
 nanoprintf is a [single header file](https://github.com/charlesnicholson/nanoprintf/blob/master/nanoprintf.h) in the style of the [stb libraries](https://github.com/nothings/stb). The rest of the repository is tests and scaffolding and not required for use.
 
-nanoprintf is written in C89 for maximal compiler compatibility, and compiles cleanly at the highest warning levels on clang, gcc, and msvc in both 32- and 64-bit modes. C99 or C++11 compilers are required (for `uint64_t` and other types) if floating point conversion or large modifiers are enabled, but [pull requests that fix this](https://github.com/charlesnicholson/nanoprintf/issues/21) are welcome!
+nanoprintf is written in a minimal dialect of C99 for maximal compiler compatibility, and compiles cleanly at the highest warning levels on clang, gcc, and msvc in both 32- and 64-bit modes. It's _really_ hard to write portable C89 code, btw, when you don't have any guarantee about what integral type to use to hold a converted pointer representation.
 
 nanoprintf does include C standard headers but only uses them for C99 types and argument lists; no calls are made into stdlib / libc, with the exception of any internal double-to-float conversion ABI calls your compiler might emit. As usual, some Windows-specific headers are required if you're compiling natively for msvc.
 
