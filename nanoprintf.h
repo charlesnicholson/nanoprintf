@@ -124,30 +124,21 @@ NPF_VISIBILITY int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format,
 #error Precision format specifiers must be enabled if float support is enabled.
 #endif
 
-/* Currently float + large support require c99/c++11 types in stdint.h */
-#if ((NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1) ||  \
-     (NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1)) && \
-    !defined(_MSC_VER)
+/* intmax_t / uintmax_t require stdint from c99 / c++11 */
 #ifdef __cplusplus
 #if __cplusplus < 201103L
-#error nanoprintf float support requires fixed-width types from c++11 or later.
+#error nanoprintf C++11 or later.
 #endif
 #else
 #if __STDC_VERSION__ < 199409L
-#error nanoprintf float support requires fixed-width types from c99 or later.
-#endif
+#error nanoprintf requires C99 or later.
 #endif
 #endif
 
 /* Implementation Details (prototype / config helper functions) */
 
-#if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
-#include <stdint.h>
-#endif
-
-#if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
 #include <inttypes.h>
-#endif
+#include <stdint.h>
 
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
 typedef enum {
@@ -232,13 +223,8 @@ typedef struct {
     npf__format_spec_conversion_case_t conv_spec_case;
 } npf__format_spec_t;
 
-#if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 0
-typedef long npf__int_t;
-typedef unsigned long npf__uint_t;
-#else
 typedef intmax_t npf__int_t;
 typedef uintmax_t npf__uint_t;
-#endif
 
 NPF_VISIBILITY int npf__parse_format_spec(char const *format,
                                           npf__format_spec_t *out_spec);
@@ -254,7 +240,6 @@ NPF_VISIBILITY void npf__bufputc_nop(int c, void *ctx);
 NPF_VISIBILITY int npf__itoa_rev(char *buf, npf__int_t i);
 NPF_VISIBILITY int npf__utoa_rev(char *buf, npf__uint_t i, unsigned base,
                                  npf__format_spec_conversion_case_t cc);
-NPF_VISIBILITY int npf__ptoa_rev(char *buf, void const *p);
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
 NPF_VISIBILITY int npf__fsplit_abs(float f, uint64_t *out_int_part,
                                    uint64_t *out_frac_part,
@@ -568,36 +553,6 @@ int npf__utoa_rev(char *buf, npf__uint_t i, unsigned base,
         }
     }
     return (int)(dst - buf);
-}
-
-int npf__ptoa_rev(char *buf, void const *p) {
-    if (!p) {
-        *buf++ = ')';
-        *buf++ = 'l';
-        *buf++ = 'l';
-        *buf++ = 'u';
-        *buf++ = 'n';
-        *buf++ = '(';
-        return 6;
-    } else {
-        /* c89 requires configuration to learn what uint a void* fits in.
-        Instead, just alias to char* and print nibble-by-nibble. */
-        unsigned i;
-        char const *pb = (char const *)&p;
-        char *dst = buf;
-        for (i = 0; i < sizeof(void *); ++i) {
-            unsigned const d1 = pb[i] & 0xF;
-            unsigned const d2 = (pb[i] >> 4) & 0xF;
-            *dst++ = (d1 < 10) ? (char)('0' + d1) : (char)('a' + (d1 - 10));
-            *dst++ = (d2 < 10) ? (char)('0' + d2) : (char)('a' + (d2 - 10));
-        }
-        while (*--dst == '0')
-            ;
-        ++dst;
-        *dst++ = 'x';
-        *dst++ = '0';
-        return (int)(dst - buf);
-    }
 }
 
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
@@ -947,9 +902,13 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                         }
                     } break;
 
-                    case NPF_FMT_SPEC_CONV_POINTER: /* 'p' */
-                        cbuf_len = npf__ptoa_rev(cbuf, va_arg(vlist, void *));
-                        break;
+                    case NPF_FMT_SPEC_CONV_POINTER: { /* 'p' */
+                        cbuf_len = npf__utoa_rev(
+                            cbuf, (npf__uint_t)(uintptr_t)va_arg(vlist, void *),
+                            16, NPF_FMT_SPEC_CONV_CASE_LOWER);
+                        cbuf[cbuf_len++] = 'x';
+                        cbuf[cbuf_len++] = '0';
+                    } break;
 
 #if NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS == 1
                     case NPF_FMT_SPEC_CONV_WRITEBACK: /* 'n' */
@@ -1027,7 +986,8 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                     }
                 }
 #endif
-                /* Compute the number of bytes to truncate or '0'-pad. */
+                /* Compute the number of bytes to truncate or '0'-pad.
+                 */
                 if (fs.conv_spec != NPF_FMT_SPEC_CONV_STRING) {
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
                     if (!inf_or_nan) {
@@ -1044,7 +1004,8 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                 }
 
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
-                /* Given the full converted length, how many pad bytes? */
+                /* Given the full converted length, how many pad bytes?
+                 */
                 field_pad = fs.field_width - cbuf_len - !!sign_c;
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
                 field_pad -= prec_pad;
@@ -1080,7 +1041,8 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
 #endif
 
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
-                        /* integral precision comes before the number. */
+                        /* integral precision comes before the number.
+                         */
                         while (prec_pad-- > 0) {
                             NPF_PUTC('0');
                         }
@@ -1088,8 +1050,9 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
 
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
                     } else {
-                        /* if 0 precision, skip the fractional part and '.'
-                           if 0 prec + alternative form, keep the '.' */
+                        /* if 0 precision, skip the fractional part and
+                           '.' if 0 prec + alternative form, keep the
+                           '.' */
                         if (fs.precision == 0) {
                             cbuf += frac_chars + !fs.alternative_form;
                             cbuf_len -= frac_chars + !fs.alternative_form;

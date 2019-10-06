@@ -147,12 +147,9 @@ set(conformance_test_files
 
 ################ Language compilation tests
 
-function(npf_c_language_test target standard)
+function(npf_c_language_test target)
     add_library(${target} compilation_tests/nanoprintf_compilation_test_c.c)
     target_compile_options(${target} PRIVATE ${nanoprintf_c_flags})
-    if (NOT MSVC)
-        target_compile_options(${target} PRIVATE -std=${standard})
-    endif()
 endfunction()
 
 # Test every combination of compatible flags.
@@ -164,11 +161,7 @@ foreach(fw 0 1)
                     if ((precision EQUAL 0) AND (float EQUAL 1))
                         continue()
                     endif()
-                    set(standard c89)
-                    if ((float EQUAL 1) OR (large EQUAL 1))
-                        set(standard c99)
-                    endif()
-
+                    set(standard c99)
                     set(test_name "${standard}")
                     if (fw EQUAL 1)
                         string(APPEND test_name "_fieldwidth")
@@ -186,9 +179,9 @@ foreach(fw 0 1)
                         string(APPEND test_name "_writeback")
                     endif()
 
-                    # Run a simple compilation test (c89/c99 compat)
+                    # Run a simple compilation test
                     set(compilation_test_name "npf_compile_${test_name}")
-                    npf_c_language_test(${compilation_test_name} ${standard})
+                    npf_c_language_test(${compilation_test_name})
                     target_compile_definitions(${compilation_test_name} PRIVATE
                         NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=${fw}
                         NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=${precision}
@@ -212,7 +205,7 @@ foreach(fw 0 1)
 endforeach()
 
 # Test default flags (nothing specified)
-npf_c_language_test(npf_c_default_flags c99)
+npf_c_language_test(npf_c_default_flags)
 
 ################ Static compilation test
 

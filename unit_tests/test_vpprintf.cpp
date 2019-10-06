@@ -173,8 +173,8 @@ TEST(Hex, Uppercase) {
 TEST_GROUP(Pointer) { Recorder r; };
 
 TEST(Pointer, Null) {
-    CHECK_EQUAL(6, npf_pprintf(r.PutC, &r, "%p", nullptr));
-    STRCMP_EQUAL("(null)", r.String().c_str());
+    CHECK_EQUAL(3, npf_pprintf(r.PutC, &r, "%p", nullptr));
+    STRCMP_EQUAL("0x0", r.String().c_str());
 }
 
 TEST(Pointer, NonNull) {
