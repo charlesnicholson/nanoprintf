@@ -1054,8 +1054,8 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
 
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
                     } else {
-                        /* if 0 precision, skip the fractional part and '.' if 0
-                         * prec + alternative form, keep the '.' */
+                        /* if 0 precision, skip the fractional part and '.'
+                           if 0 prec + alternative form, keep the '.' */
                         if (fs.precision == 0) {
                             cbuf += frac_chars + !fs.alternative_form;
                             cbuf_len -= frac_chars + !fs.alternative_form;
