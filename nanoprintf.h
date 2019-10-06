@@ -993,8 +993,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                     }
                 }
 #endif
-                /* Compute the number of bytes to truncate or '0'-pad.
-                 */
+                /* Compute the number of bytes to truncate or '0'-pad. */
                 if (fs.conv_spec != NPF_FMT_SPEC_CONV_STRING) {
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
                     if (!inf_or_nan) {
@@ -1011,8 +1010,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                 }
 
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
-                /* Given the full converted length, how many pad bytes?
-                 */
+                /* Given the full converted length, how many pad bytes? */
                 field_pad = fs.field_width - cbuf_len - !!sign_c;
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
                 field_pad -= prec_pad;
@@ -1048,8 +1046,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
 #endif
 
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
-                        /* integral precision comes before the number.
-                         */
+                        /* integral precision comes before the number. */
                         while (prec_pad-- > 0) {
                             NPF_PUTC('0');
                         }
@@ -1057,9 +1054,8 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
 
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
                     } else {
-                        /* if 0 precision, skip the fractional part and
-                           '.' if 0 prec + alternative form, keep the
-                           '.' */
+                        /* if 0 precision, skip the fractional part and '.' if 0
+                         * prec + alternative form, keep the '.' */
                         if (fs.precision == 0) {
                             cbuf += frac_chars + !fs.alternative_form;
                             cbuf_len -= frac_chars + !fs.alternative_form;
