@@ -223,8 +223,13 @@ typedef struct {
     npf__format_spec_conversion_case_t conv_spec_case;
 } npf__format_spec_t;
 
+#if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 0
+typedef long npf__int_t;
+typedef unsigned long npf__uint_t;
+#else
 typedef intmax_t npf__int_t;
 typedef uintmax_t npf__uint_t;
+#endif
 
 NPF_VISIBILITY int npf__parse_format_spec(char const *format,
                                           npf__format_spec_t *out_spec);
