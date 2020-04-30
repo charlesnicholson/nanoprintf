@@ -850,6 +850,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                     case NPF_FMT_SPEC_CONV_OCTAL:          /* 'o' */
                     case NPF_FMT_SPEC_CONV_HEX_INT:        /* 'x', 'X' */
                     case NPF_FMT_SPEC_CONV_UNSIGNED_INT: { /* 'u' */
+                        sign = 0;
                         unsigned const base =
                             (fs.conv_spec == NPF_FMT_SPEC_CONV_OCTAL)
                                 ? 8
