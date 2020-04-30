@@ -20,5 +20,6 @@ TEST(npf_snprintf, ReturnsLenIfBufIsNull) {
 }
 
 TEST(npf_snprintf, PrintingPositiveAndNegativeNumbers) {
-    CHECK_EQUAL(11, npf_snprintf(buf, sizeof(buf), "%i %u", -100, 100u));
+    npf_snprintf(buf, sizeof(buf), "%i %u", -100, 100u);
+    STRCMP_EQUAL("-100 100", buf);
 }
