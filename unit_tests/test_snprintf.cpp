@@ -18,3 +18,8 @@ TEST(npf_snprintf, PrintsStringToBuf) {
 TEST(npf_snprintf, ReturnsLenIfBufIsNull) {
     CHECK_EQUAL(11, npf_snprintf(nullptr, 0, "hello %s", "world"));
 }
+
+TEST(npf_snprintf, PrintingPositiveAndNegativeNumbers) {
+    npf_snprintf(buf, sizeof(buf), "%i %u", -100, 100u);
+    STRCMP_EQUAL("-100 100", buf);
+}
