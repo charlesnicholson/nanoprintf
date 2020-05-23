@@ -4,54 +4,7 @@
 
 nanoprintf is an implementation of snprintf and vsnprintf for embedded systems that, when fully enabled, aims for C11 standard compliance.
 
-nanoprintf makes no memory allocations and uses less than 100 bytes of stack.
-
-Compiling with all optional features disabled yields ~1KB of ARM Cortex-M0 object code:
-```
-Minimal configuration:
- .text.npf__bufputc_nop         0x2
- .text.npf__bufputc             0x16
- .text.npf_pprintf              0x2c
- .text.npf_snprintf             0x2c
- .text.npf__itoa_rev            0x42
- .text.npf_vsnprintf            0x48
- .text.npf__utoa_rev            0x4a
- .text.npf__parse_format_spec   0xca
- .text.npf_vpprintf             0x210
-total:                          0x41e (1054 bytes)
-```
-
-Compiling with field width and precision specifiers enabled yields ~1.7KB:
-```
-"Small" configuration: (field witdh + precision)
- .text.npf__bufputc_nop         0x2
- .text.npf__bufputc             0x16
- .text.npf_pprintf              0x2c
- .text.npf_snprintf             0x2c
- .text.npf__itoa_rev            0x42
- .text.npf_vsnprintf            0x48
- .text.npf__utoa_rev            0x4a
- .text.npf__parse_format_spec   0x1a0
- .text.npf_vpprintf             0x3c4
-total:                          0x6a8 (1704 bytes)
-```
-
-Compiling with all optional features enabled is closer to ~2.8KB:
-```
-Everything:
- .text.npf__bufputc_nop         0x2
- .text.npf__bufputc             0x16
- .text.npf_snprintf             0x2c
- .text.npf_pprintf              0x2c
- .text.npf_vsnprintf            0x48
- .text.npf__itoa_rev            0x5a
- .text.npf__utoa_rev            0x6c
- .text.npf__fsplit_abs          0x100
- .text.npf__ftoa_rev            0x130
- .text.npf__parse_format_spec   0x204
- .text.npf_vpprintf             0x528
-total:                          0xada (2778 bytes)
-```
+nanoprintf makes no memory allocations and uses less than 100 bytes of stack. nanoprintf compiles to somewhere between 1-3KB of code on a Cortex-M architecture.
 
 nanoprintf is a [single header file](https://github.com/charlesnicholson/nanoprintf/blob/master/nanoprintf.h) in the style of the [stb libraries](https://github.com/nothings/stb). The rest of the repository is tests and scaffolding and not required for use.
 
@@ -161,6 +114,55 @@ Like `printf`, `nanoprintf` expects a conversion specification string of the fol
 Floating point conversion is performed by extracting the value into 64:64 fixed-point with an extra field that specifies the number of leading zero fractional digits before the first nonzero digit. No rounding is currently performed; values are simply truncated at the specified precision. This is done for simplicity, speed, and code footprint.
 
 Despite `nano` in the name, there's no way to do away with double entirely, since the C language standard says that floats are promoted to double any time they're passed into variadic argument lists. nanoprintf casts all doubles back down to floats before doing any conversions.
+
+## Measurement
+
+Compiling with all optional features disabled yields ~1KB of ARM Cortex-M0 object code:
+```
+Minimal configuration:
+ .text.npf__bufputc_nop         0x2
+ .text.npf__bufputc             0x16
+ .text.npf_pprintf              0x2c
+ .text.npf_snprintf             0x2c
+ .text.npf__itoa_rev            0x42
+ .text.npf_vsnprintf            0x48
+ .text.npf__utoa_rev            0x4a
+ .text.npf__parse_format_spec   0xca
+ .text.npf_vpprintf             0x210
+total:                          0x41e (1054 bytes)
+```
+
+Compiling with field width and precision specifiers enabled yields ~1.7KB:
+```
+"Small" configuration: (field witdh + precision)
+ .text.npf__bufputc_nop         0x2
+ .text.npf__bufputc             0x16
+ .text.npf_pprintf              0x2c
+ .text.npf_snprintf             0x2c
+ .text.npf__itoa_rev            0x42
+ .text.npf_vsnprintf            0x48
+ .text.npf__utoa_rev            0x4a
+ .text.npf__parse_format_spec   0x1a0
+ .text.npf_vpprintf             0x3c4
+total:                          0x6a8 (1704 bytes)
+```
+
+Compiling with all optional features enabled is closer to ~2.8KB:
+```
+Everything:
+ .text.npf__bufputc_nop         0x2
+ .text.npf__bufputc             0x16
+ .text.npf_snprintf             0x2c
+ .text.npf_pprintf              0x2c
+ .text.npf_vsnprintf            0x48
+ .text.npf__itoa_rev            0x5a
+ .text.npf__utoa_rev            0x6c
+ .text.npf__fsplit_abs          0x100
+ .text.npf__ftoa_rev            0x130
+ .text.npf__parse_format_spec   0x204
+ .text.npf_vpprintf             0x528
+total:                          0xada (2778 bytes)
+```
 
 ## Development
 
