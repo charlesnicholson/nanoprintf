@@ -21,7 +21,7 @@ Minimal configuration: (field witdh + precision)
 total:                          0x6a8 (1704 bytes)
 ```
 
-Compiling with all optional features enabled is closer to ~2.7KB:
+Compiling with all optional features enabled is closer to ~2.8KB:
 ```
 Everything:
  .text.npf__parse_format_spec   0x204
