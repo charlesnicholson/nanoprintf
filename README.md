@@ -6,35 +6,50 @@ nanoprintf is an implementation of snprintf and vsnprintf for embedded systems t
 
 nanoprintf makes no memory allocations and uses less than 100 bytes of stack.
 
-Compiling with all optional features disabled yields ~1.7KB of ARM Cortex-M0 object code:
+Compiling with all optional features disabled yields ~1KB of ARM Cortex-M0 object code:
 ```
-Minimal configuration: (field witdh + precision)
- .text.npf__parse_format_spec   0x1a0
- .text.npf__itoa_rev            0x42
- .text.npf__utoa_rev            0x4a
- .text.npf__bufputc             0x16
+Minimal configuration:
  .text.npf__bufputc_nop         0x2
- .text.npf_vpprintf             0x3c4
- .text.npf_vsnprintf            0x48
- .text.npf_snprintf             0x2c
+ .text.npf__bufputc             0x16
  .text.npf_pprintf              0x2c
+ .text.npf_snprintf             0x2c
+ .text.npf__itoa_rev            0x42
+ .text.npf_vsnprintf            0x48
+ .text.npf__utoa_rev            0x4a
+ .text.npf__parse_format_spec   0xca
+ .text.npf_vpprintf             0x210
+total:                          0x41e (1054 bytes)
+```
+
+Compiling with field width and precision specifiers enabled yields ~1.7KB:
+```
+"Small" configuration: (field witdh + precision)
+ .text.npf__bufputc_nop         0x2
+ .text.npf__bufputc             0x16
+ .text.npf_pprintf              0x2c
+ .text.npf_snprintf             0x2c
+ .text.npf__itoa_rev            0x42
+ .text.npf_vsnprintf            0x48
+ .text.npf__utoa_rev            0x4a
+ .text.npf__parse_format_spec   0x1a0
+ .text.npf_vpprintf             0x3c4
 total:                          0x6a8 (1704 bytes)
 ```
 
 Compiling with all optional features enabled is closer to ~2.8KB:
 ```
 Everything:
- .text.npf__parse_format_spec   0x204
+ .text.npf__bufputc_nop         0x2
+ .text.npf__bufputc             0x16
+ .text.npf_snprintf             0x2c
+ .text.npf_pprintf              0x2c
+ .text.npf_vsnprintf            0x48
  .text.npf__itoa_rev            0x5a
  .text.npf__utoa_rev            0x6c
  .text.npf__fsplit_abs          0x100
  .text.npf__ftoa_rev            0x130
- .text.npf__bufputc             0x16
- .text.npf__bufputc_nop         0x2
+ .text.npf__parse_format_spec   0x204
  .text.npf_vpprintf             0x528
- .text.npf_vsnprintf            0x48
- .text.npf_snprintf             0x2c
- .text.npf_pprintf              0x2c
 total:                          0xada (2778 bytes)
 ```
 
