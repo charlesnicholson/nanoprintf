@@ -6,7 +6,7 @@ nanoprintf is an implementation of snprintf and vsnprintf for embedded systems t
 
 nanoprintf makes no memory allocations and uses less than 100 bytes of stack.
 
-Compiling with all optional features disabled yields ~1.5KB of ARM Cortex-M0 object code:
+Compiling with all optional features disabled yields ~1.7KB of ARM Cortex-M0 object code:
 ```
 Minimal configuration: (field witdh + precision)
  .text.npf__parse_format_spec   0x1a0
