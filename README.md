@@ -35,6 +35,8 @@ Also, no embedded-friendly printf projects that I could find are both in the pub
 1. To call, just `#include "path/to/nanoprintf.h"` as usual and call the functions.
 1. Compile your code with your nanoprintf configuration flags. Alternately, wrap `nanoprintf.h` in your own header that defines all of your configuration flags, and use that everywhere in steps 2-3.
 
+If you prefer a more hermetic integration, nanoprintf can also be fully sandboxed inside of your own code and not leak any symbols. In this case, create your own header file in your own style that defines functions like `your_vsnprintf` and `your_snprintf` but don't include nanoprintf.h. In your source file, set up your nanoprintf flags (including `NANOPRINTF_VISIBILITY_STATIC=1`), include nanoprintf with `NANOPRINTF_IMPLEMENTATION` defined, and have the implementations of `your_vsnprintf` forward into nanoprintf.
+
 ## API
 
 nanoprintf has 4 main functions:
