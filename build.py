@@ -57,7 +57,7 @@ def get_cmake(download, verbose):
             return cmake
 
     cmake_prefix = 'cmake-3.14.5-{}-x86_64'.format(
-        {'darwin': 'Darwin', 'linux': 'linux', 'win32': 'win64'}[sys.platform])
+        {'darwin': 'Darwin', 'linux': 'Linux', 'win32': 'win64'}[sys.platform])
     cmake_local_dir = os.path.join(SCRIPT_PATH, 'external', 'cmake')
     cmake_file = cmake_prefix + '.tar.gz'
     cmake_local_tgz = os.path.join(cmake_local_dir, cmake_file)
