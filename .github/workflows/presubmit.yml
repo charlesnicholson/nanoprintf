@@ -6,20 +6,21 @@ on:
 
 jobs:
   pylint:
-    runs-on: docker://charlesnicholson/circleci-images:latest
+    container: charlesnicholson/circleci-images:latest
+#    runs-on: docker://charlesnicholson/circleci-images:latest
     steps:
       - uses: actions/checkout@v2
       - name: Pylint build.py
         run: python3 -m pylint build.py
-  gcc-x64-debug:
-    runs-on: docker://charlesnicholson/circleci-images:latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Build
-        env:
-          CC: /usr/bin/gcc
-          CXX: /usr/bin/g++
-        run: ./b --cfg Debug -v
+#  gcc-x64-debug:
+#    runs-on: docker://charlesnicholson/circleci-images:latest
+#    steps:
+#      - uses: actions/checkout@v2
+#      - name: Build
+#        env:
+#          CC: /usr/bin/gcc
+#          CXX: /usr/bin/g++
+#        run: ./b --cfg Debug -v
 #  gcc-x64-release:
 #    runs-on: charlesnicholson/circleci-images:latest
 #    steps:
