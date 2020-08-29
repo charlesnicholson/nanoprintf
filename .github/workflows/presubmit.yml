@@ -14,6 +14,7 @@ jobs:
         run: python3 -m pylint build.py
   linux-gcc:
     runs-on: ubuntu-latest
+    container: charlesnicholson/circleci-images:latest
     strategy:
       matrix:
         configuration: [Debug, Release]
