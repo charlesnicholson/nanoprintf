@@ -12,6 +12,18 @@ jobs:
       - uses: actions/checkout@v2
       - name: Pylint build.py
         run: python3 -m pylint build.py
+  linux-gcc:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        configuration: [Debug, Release]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build
+        env:
+          CC: /usr/bin/gcc
+          CXX: /usr/bin/g++
+        run: ./b --cfg {{ matrix.configuration }} -v
   linux-gcc-x64-debug:
     runs-on: ubuntu-latest
     container: charlesnicholson/circleci-images:latest
