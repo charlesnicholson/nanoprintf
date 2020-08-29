@@ -52,7 +52,7 @@ jobs:
           CC: /usr/bin/gcc
           CXX: /usr/bin/g++
         run: ./b --build-32-bit --cfg Release -v
- clang-debug:
+  clang-debug:
     runs-on: ubuntu-latest
     container: charlesnicholson/circleci-images:latest
     steps:
@@ -62,7 +62,7 @@ jobs:
           CC: /usr/bin/clang
           CXX: /usr/bin/clang++
         run: ./b --cfg Debug -v
- clang-release:
+  clang-release:
     runs-on: ubuntu-latest
     container: charlesnicholson/circleci-images:latest
     steps:
