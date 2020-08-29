@@ -1,4 +1,4 @@
-name: CI
+name: Presubmit Checks
 
 on:
   pull_request:
@@ -12,7 +12,7 @@ jobs:
       - uses: actions/checkout@v2
       - name: Pylint build.py
         run: python3 -m pylint build.py
-  gcc-x64-debug:
+  linux-gcc-x64-debug:
     runs-on: ubuntu-latest
     container: charlesnicholson/circleci-images:latest
     steps:
@@ -22,7 +22,7 @@ jobs:
           CC: /usr/bin/gcc
           CXX: /usr/bin/g++
         run: ./b --cfg Debug -v
-  gcc-x64-release:
+  linux-gcc-x64-release:
     runs-on: ubuntu-latest
     container: charlesnicholson/circleci-images:latest
     steps:
@@ -32,7 +32,7 @@ jobs:
           CC: /usr/bin/gcc
           CXX: /usr/bin/g++
         run: ./b --cfg Release -v
-  gcc-x86-debug:
+  linux-gcc-x86-debug:
     runs-on: ubuntu-latest
     container: charlesnicholson/circleci-images:latest
     steps:
@@ -42,7 +42,7 @@ jobs:
           CC: /usr/bin/gcc
           CXX: /usr/bin/g++
         run: ./b --build-32-bit --cfg Debug -v
-  gcc-x86-release:
+  linux-gcc-x86-release:
     runs-on: ubuntu-latest
     container: charlesnicholson/circleci-images:latest
     steps:
@@ -52,7 +52,7 @@ jobs:
           CC: /usr/bin/gcc
           CXX: /usr/bin/g++
         run: ./b --build-32-bit --cfg Release -v
-  clang-debug:
+  linux-clang-debug:
     runs-on: ubuntu-latest
     container: charlesnicholson/circleci-images:latest
     steps:
@@ -62,7 +62,7 @@ jobs:
           CC: /usr/bin/clang
           CXX: /usr/bin/clang++
         run: ./b --cfg Debug -v
-  clang-release:
+  linux-clang-release:
     runs-on: ubuntu-latest
     container: charlesnicholson/circleci-images:latest
     steps:
@@ -71,4 +71,16 @@ jobs:
         env:
           CC: /usr/bin/clang
           CXX: /usr/bin/clang++
+        run: ./b --cfg Release -v
+  macos-debug:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build
+        run: ./b --cfg Debug -v
+  macos-release:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build
         run: ./b --cfg Release -v
