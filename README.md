@@ -177,7 +177,7 @@ This will build all of the unit, conformance, and compilation tests for your hos
 
 The nanoprintf development environment uses [cmake](https://cmake.org/) and [ninja](https://ninja-build.org/). If you have these in your path, `./b` will use them. If not, `./b` will download and deploy them into `path/to/your/nanoprintf/external`.
 
-nanoprintf uses [CircleCI](https://circleci.com/) for Linux clang / gcc continuous integration builds. The CircleCI builds use [this](https://hub.docker.com/r/charlesnicholson/circleci-images) Docker image on [Docker Hub](https://hub.docker.com/). The Dockerfile for the CircleCI builds lives [here](https://github.com/charlesnicholson/circleci-images). The CircleCI build matrix builds [Debug, Release] x [32-bit, 64-bit] x [gcc, clang], minus the 32-bit clang configurations.
+nanoprintf uses GitHub Actions for Linux clang / gcc continuous integration builds. The GitHub Linux builds use [this](https://hub.docker.com/r/charlesnicholson/circleci-images) Docker image on [Docker Hub](https://hub.docker.com/). The Dockerfile lives [here](https://github.com/charlesnicholson/circleci-images). The matrix builds [Debug, Release] x [32-bit, 64-bit] x [gcc, clang], minus the 32-bit clang configurations.
 
 For Windows builds, nanoprintf uses [AppVeyor](https://ci.appveyor.com/project/charlesnicholson/nanoprintf). A build matrix of [Debug, Release] x [32-bit, 64-bit] is compiled against Visual Studio 2017.
 
