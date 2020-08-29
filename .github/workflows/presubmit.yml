@@ -24,7 +24,7 @@ jobs:
         env:
           CC: /usr/bin/gcc
           CXX: /usr/bin/g++
-        run: ./b --cfg ${{ matrix.architecture }} ${{ matrix.configuration }} -v
+        run: ./b --cfg ${{ matrix.configuration }} ${{ matrix.architecture }} -v
   linux-gcc-x64-debug:
     runs-on: ubuntu-latest
     container: charlesnicholson/circleci-images:latest
