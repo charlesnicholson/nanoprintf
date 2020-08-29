@@ -1,0 +1,74 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  pylint:
+    runs-on: ubuntu-latest
+    container: charlesnicholson/circleci-images:latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Pylint build.py
+        run: python3 -m pylint build.py
+  gcc-x64-debug:
+    runs-on: ubuntu-latest
+    container: charlesnicholson/circleci-images:latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build
+        env:
+          CC: /usr/bin/gcc
+          CXX: /usr/bin/g++
+        run: ./b --cfg Debug -v
+  gcc-x64-release:
+    runs-on: ubuntu-latest
+    container: charlesnicholson/circleci-images:latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build
+        env:
+          CC: /usr/bin/gcc
+          CXX: /usr/bin/g++
+        run: ./b --cfg Release -v
+  gcc-x86-debug:
+    runs-on: ubuntu-latest
+    container: charlesnicholson/circleci-images:latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build
+        env:
+          CC: /usr/bin/gcc
+          CXX: /usr/bin/g++
+        run: ./b --build-32-bit --cfg Debug -v
+  gcc-x86-release:
+    runs-on: ubuntu-latest
+    container: charlesnicholson/circleci-images:latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build
+        env:
+          CC: /usr/bin/gcc
+          CXX: /usr/bin/g++
+        run: ./b --build-32-bit --cfg Release -v
+  clang-debug:
+    runs-on: ubuntu-latest
+    container: charlesnicholson/circleci-images:latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build
+        env:
+          CC: /usr/bin/clang
+          CXX: /usr/bin/clang++
+        run: ./b --cfg Debug -v
+  clang-release:
+    runs-on: ubuntu-latest
+    container: charlesnicholson/circleci-images:latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build
+        env:
+          CC: /usr/bin/clang
+          CXX: /usr/bin/clang++
+        run: ./b --cfg Release -v
