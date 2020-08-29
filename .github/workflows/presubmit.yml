@@ -12,75 +12,39 @@ jobs:
       - uses: actions/checkout@v2
       - name: Pylint build.py
         run: python3 -m pylint build.py
-  linux-gcc-x64-debug:
+  linux-gcc:
     runs-on: ubuntu-latest
     container: charlesnicholson/circleci-images:latest
+    strategy:
+      matrix:
+        configuration: [Debug, Release]
+        architecture: ['', --build-32-bit]
     steps:
       - uses: actions/checkout@v2
       - name: Build
         env:
           CC: /usr/bin/gcc
           CXX: /usr/bin/g++
-        run: ./b --cfg Debug -v
-  linux-gcc-x64-release:
+        run: ./b --cfg ${{ matrix.configuration }} ${{ matrix.architecture }} -v
+  linux-clang:
     runs-on: ubuntu-latest
     container: charlesnicholson/circleci-images:latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Build
-        env:
-          CC: /usr/bin/gcc
-          CXX: /usr/bin/g++
-        run: ./b --cfg Release -v
-  linux-gcc-x86-debug:
-    runs-on: ubuntu-latest
-    container: charlesnicholson/circleci-images:latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Build
-        env:
-          CC: /usr/bin/gcc
-          CXX: /usr/bin/g++
-        run: ./b --build-32-bit --cfg Debug -v
-  linux-gcc-x86-release:
-    runs-on: ubuntu-latest
-    container: charlesnicholson/circleci-images:latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Build
-        env:
-          CC: /usr/bin/gcc
-          CXX: /usr/bin/g++
-        run: ./b --build-32-bit --cfg Release -v
-  linux-clang-debug:
-    runs-on: ubuntu-latest
-    container: charlesnicholson/circleci-images:latest
+    strategy:
+      matrix:
+        configuration: [Debug, Release]
     steps:
       - uses: actions/checkout@v2
       - name: Build
         env:
           CC: /usr/bin/clang
           CXX: /usr/bin/clang++
-        run: ./b --cfg Debug -v
-  linux-clang-release:
-    runs-on: ubuntu-latest
-    container: charlesnicholson/circleci-images:latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Build
-        env:
-          CC: /usr/bin/clang
-          CXX: /usr/bin/clang++
-        run: ./b --cfg Release -v
-  macos-debug:
+        run: ./b --cfg ${{ matrix.configuration }} -v
+  macos:
     runs-on: macos-latest
+    strategy:
+      matrix:
+        configuration: [Debug, Release]
     steps:
       - uses: actions/checkout@v2
       - name: Build
-        run: ./b --cfg Debug -v
-  macos-release:
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Build
-        run: ./b --cfg Release -v
+        run: ./b --cfg ${{ matrix.configuration }} -v
