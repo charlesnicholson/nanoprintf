@@ -1,6 +1,6 @@
 # nanoprintf
 
-[![Presubmit Checks](https://github.com/charlesnicholson/nanoprintf/workflows/Presubmit%20Checks/badge.svg)]() [![Build status](https://ci.appveyor.com/api/projects/status/3ao6yd73kayp17p7?svg=true)](https://ci.appveyor.com/project/charlesnicholson/nanoprintf) [![](https://img.shields.io/badge/pylint-10.0-brightgreen.svg)](https://www.pylint.org/) [![](https://img.shields.io/badge/license-public_domain-brightgreen.svg)](https://github.com/charlesnicholson/nanoprintf/blob/master/LICENSE)
+[![Presubmit Checks](https://github.com/charlesnicholson/nanoprintf/workflows/Presubmit%20Checks/badge.svg)](https://github.com/charlesnicholson/nanoprintf/tree/master/.github/workflows) [![Build status](https://ci.appveyor.com/api/projects/status/3ao6yd73kayp17p7?svg=true)](https://ci.appveyor.com/project/charlesnicholson/nanoprintf) [![](https://img.shields.io/badge/pylint-10.0-brightgreen.svg)](https://www.pylint.org/) [![](https://img.shields.io/badge/license-public_domain-brightgreen.svg)](https://github.com/charlesnicholson/nanoprintf/blob/master/LICENSE)
 
 nanoprintf is an implementation of snprintf and vsnprintf for embedded systems that, when fully enabled, aims for C11 standard compliance.
 
