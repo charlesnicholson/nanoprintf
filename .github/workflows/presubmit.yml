@@ -48,15 +48,3 @@ jobs:
       - uses: actions/checkout@v2
       - name: Build
         run: ./b --cfg ${{ matrix.configuration }} -v
-  macos-debug:
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Build
-        run: ./b --cfg Debug -v
-  macos-release:
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Build
-        run: ./b --cfg Release -v
