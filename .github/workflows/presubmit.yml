@@ -6,13 +6,13 @@ on:
 
 jobs:
   pylint:
-    runs-on: docker://charlesnicholson/circleci-images
+    runs-on: docker://charlesnicholson/circleci-images:latest
     steps:
       - uses: actions/checkout@v2
       - name: Pylint build.py
         run: python3 -m pylint build.py
   gcc-x64-debug:
-    runs-on: docker://charlesnicholson/circleci-images
+    runs-on: docker://charlesnicholson/circleci-images:latest
     steps:
       - uses: actions/checkout@v2
       - name: Build
