@@ -54,7 +54,7 @@ jobs:
       CXX: /usr/bin/clang++
     steps:
       - checkout
-      - run:
+      - run: ./b --cfg Debug -v
           command: ./b --cfg Debug -v
   clang-release:
     runs-on: charlesnicholson/circleci-images:latest
