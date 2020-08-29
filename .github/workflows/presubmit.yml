@@ -6,6 +6,7 @@ on:
 
 jobs:
   pylint:
+    runs-on: ubuntu-latest
     container: charlesnicholson/circleci-images:latest
 #    runs-on: docker://charlesnicholson/circleci-images:latest
     steps:
