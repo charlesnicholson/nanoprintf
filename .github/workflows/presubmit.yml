@@ -17,13 +17,14 @@ jobs:
     strategy:
       matrix:
         configuration: [Debug, Release]
+        architecture: ['', --build-32-bit]
     steps:
       - uses: actions/checkout@v2
       - name: Build
         env:
           CC: /usr/bin/gcc
           CXX: /usr/bin/g++
-        run: ./b --cfg {{ matrix.configuration }} -v
+        run: ./b --cfg ${{ matrix.architecture }} ${{ matrix.configuration }} -v
   linux-gcc-x64-debug:
     runs-on: ubuntu-latest
     container: charlesnicholson/circleci-images:latest
