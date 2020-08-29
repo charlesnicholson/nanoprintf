@@ -42,29 +42,33 @@ jobs:
           CC: /usr/bin/gcc
           CXX: /usr/bin/g++
         run: ./b --build-32-bit --cfg Debug -v
-#  gcc-x86-release:
-#    runs-on: charlesnicholson/circleci-images:latest
-#    steps:
-#      - uses: actions/checkout@v2
-#      - name: Build
-#        env:
-#          CC: /usr/bin/gcc
-#          CXX: /usr/bin/g++
-#        run: ./b --build-32-bit --cfg Release -v
-# clang-debug:
-#    runs-on: charlesnicholson/circleci-images:latest
-#    environment:
-#      CC: /usr/bin/clang
-#      CXX: /usr/bin/clang++
-#    steps:
-#      - checkout
-#      - run: ./b --cfg Debug -v
-#  clang-release:
-#    runs-on: charlesnicholson/circleci-images:latest
-#    environment:
-#      CC: /usr/bin/clang
-#      CXX: /usr/bin/clang++
-#    steps:
-#      - checkout
-#      - run:
-#          command: ./b --cfg Release -v
+  gcc-x86-release:
+    runs-on: ubuntu-latest
+    container: charlesnicholson/circleci-images:latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build
+        env:
+          CC: /usr/bin/gcc
+          CXX: /usr/bin/g++
+        run: ./b --build-32-bit --cfg Release -v
+ clang-debug:
+    runs-on: ubuntu-latest
+    container: charlesnicholson/circleci-images:latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build
+        env:
+          CC: /usr/bin/clang
+          CXX: /usr/bin/clang++
+        run: ./b --cfg Debug -v
+ clang-release:
+    runs-on: ubuntu-latest
+    container: charlesnicholson/circleci-images:latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build
+        env:
+          CC: /usr/bin/clang
+          CXX: /usr/bin/clang++
+        run: ./b --cfg Release -v
