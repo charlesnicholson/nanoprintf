@@ -39,26 +39,15 @@ jobs:
           CC: /usr/bin/clang
           CXX: /usr/bin/clang++
         run: ./b --cfg ${{ matrix.configuration }} -v
-  linux-clang-debug:
-    runs-on: ubuntu-latest
-    container: charlesnicholson/circleci-images:latest
+  macos:
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        configuration: [Debug, Release]
     steps:
       - uses: actions/checkout@v2
       - name: Build
-        env:
-          CC: /usr/bin/clang
-          CXX: /usr/bin/clang++
-        run: ./b --cfg Debug -v
-  linux-clang-release:
-    runs-on: ubuntu-latest
-    container: charlesnicholson/circleci-images:latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: Build
-        env:
-          CC: /usr/bin/clang
-          CXX: /usr/bin/clang++
-        run: ./b --cfg Release -v
+        run: ./b --cfg ${{ matrix.configuration }} -v
   macos-debug:
     runs-on: macos-latest
     steps:
