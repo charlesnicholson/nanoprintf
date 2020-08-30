@@ -46,6 +46,10 @@ jobs:
         configuration: [Debug, Release]
     steps:
       - uses: actions/checkout@v2
+      - name: Set up Python 3.x
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
       - name: Build
         run: ./b --cfg ${{ matrix.configuration }} -v
   win:
