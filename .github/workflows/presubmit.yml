@@ -57,6 +57,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Build
+        shell: cmd
         run: |
-          cmd.exe /c "call `"C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars${{ matrix.architecture }}.bat`"
-          cmd.exe /c "python3 build.py --cfg ${{ matrix.configuration }} -v"
+          call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars${{ matrix.architecture }}.bat"
+          python3 build.py --cfg ${{ matrix.configuration }} -v
