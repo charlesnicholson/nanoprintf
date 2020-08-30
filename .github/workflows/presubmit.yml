@@ -56,8 +56,12 @@ jobs:
         configuration: [Debug, Release]
     steps:
       - uses: actions/checkout@v2
+      - name: Set up Python 3.x
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
       - name: Build
         shell: cmd
         run: |
           call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars${{ matrix.architecture }}.bat"
-          python3.exe build.py --cfg ${{ matrix.configuration }} -v
+          python.exe build.py --cfg ${{ matrix.configuration }} -v
