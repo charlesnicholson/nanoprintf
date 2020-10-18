@@ -22,6 +22,12 @@ nanoprintf is statically configurable so users can find a balance between size, 
 
 Also, no embedded-friendly printf projects that I could find are both in the public domain *and* have single-file implementations.
 
+## Philosophy
+
+This code is optimized for size, not readability or structure. Unfortunately modularity and "cleanliness" even in C adds overhead at this small scale, so most of the functionality and logic is pushed together into `npf_vpprintf`. This is not what normal embedded systems code should look like; it's `#ifdef` soup and hard to make sense of, and I apologize if you have to spelunk around in the implementation. Hopefully the various tests will serve as guide rails if you hack around in it.
+
+Alternately, perhaps you're a significantly better programmer than I! In that case, please help me make this code smaller and cleaner without making the footprint larger, or nudge me in the right direction. :)
+
 ## Usage
 
 1. Copy `nanoprintf.h` into your codebase somewhere.
@@ -186,12 +192,6 @@ The matrix builds [Debug, Release] x [32-bit, 64-bit] x [Mac, Windows, Linux] x 
 No wide-character support exists: the `%lc` and `%ls` fields require that the arg be converted to a char array as if by a call to [wcrtomb](http://man7.org/linux/man-pages/man3/wcrtomb.3.html). When locale and character set conversions get involved, it's hard to keep the name "nano". Accordingly, `%lc` and `%ls` behave like `%c` and `%s`, respectively.
 
 Currently the only supported float conversions are the decimal forms: `%f` and `%F`. Pull requests welcome!
-
-## Philosophy
-
-This code is optimized for size, not readability or structure. Unfortunately modularity and "cleanliness" even in C adds overhead at this small scale, so most of the functionality and logic is pushed together into `npf_vpprintf`. This is not what normal embedded systems code should look like; it's `#ifdef` soup and hard to make sense of, and I apologize if you have to spelunk around in the implementation. Hopefully the various tests will serve as guide rails if you hack around in it.
-
-Alternately, perhaps you're a significantly better programmer than I! In that case, please help me make this code smaller and cleaner without making the footprint larger, or nudge me in the right direction. :)
 
 ## Acknowledgments
 
