@@ -15,7 +15,6 @@ SCRIPT_PATH = os.path.dirname(os.path.realpath(__file__))
 NINJA_URL = 'https://github.com/ninja-build/ninja/releases/download/v1.9.0/{}'
 CMAKE_URL = 'https://cmake.org/files/v3.14/{}'
 
-
 def parse_args():
     """Parse command-line arguments."""
     parser = argparse.ArgumentParser()
@@ -124,6 +123,7 @@ def configure_cmake(cmake_exe, ninja, args):
                   SCRIPT_PATH,
                   '-G',
                   'Ninja',
+                  '-DCMAKE_EXPORT_COMPILE_COMMANDS=ON',
                   '-DCMAKE_MAKE_PROGRAM={}'.format(ninja),
                   '-DCMAKE_BUILD_TYPE={}'.format(args.cfg),
                   '-DNPF_32BIT={}'.format('ON' if args.build_32_bit else 'OFF')]
