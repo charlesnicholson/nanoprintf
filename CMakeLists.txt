@@ -13,7 +13,7 @@ if (NPF_32BIT AND NOT MSVC)
     set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} ${NPF_32BIT_FLAG})
 endif()
 
-if (NOT MSVC)
+if (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-poison-system-directories")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-poison-system-directories")
 endif()
