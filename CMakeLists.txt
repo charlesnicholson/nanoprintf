@@ -116,8 +116,7 @@ function(npf_test name files)
             -Wno-old-style-cast     # C style casts are ok
             -Wno-format
             -Wno-format-pedantic
-            -Wno-format-nonliteral
-            -std=c++11)
+            -Wno-format-nonliteral)
     endif()
 
     if (is_clang GREATER_EQUAL 0)
