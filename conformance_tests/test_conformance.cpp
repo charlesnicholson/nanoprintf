@@ -80,6 +80,8 @@ TEST(conformance, Strings) {
 
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
     CheckConformance("       two", "%10s", "two");
+    CheckConformance("B---       E", "B%-10sE", "---");
+    CheckConformance("B       ---E", "B%10sE", "---");
 #endif
 
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1

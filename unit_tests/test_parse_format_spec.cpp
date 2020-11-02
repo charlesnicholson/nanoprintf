@@ -403,6 +403,13 @@ TEST(npf__parse_format_spec, cClearsLeadingZero) {
     CHECK_EQUAL(0, spec.leading_zero_pad);
 }
 
+TEST(npf__parse_format_spec, StringLeftJustifyFieldWidth) {
+    CHECK_EQUAL(5, npf__parse_format_spec("%-15s", &spec));
+    CHECK_EQUAL(NPF_FMT_SPEC_CONV_STRING, spec.conv_spec);
+    CHECK_EQUAL(1, spec.left_justified);
+    CHECK_EQUAL(15, spec.field_width);
+}
+
 TEST(npf__parse_format_spec, i) {
     CHECK_EQUAL(2, npf__parse_format_spec("%i", &spec));
     CHECK_EQUAL(NPF_FMT_SPEC_CONV_SIGNED_INT, spec.conv_spec);

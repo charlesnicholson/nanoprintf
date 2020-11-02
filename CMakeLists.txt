@@ -13,6 +13,11 @@ if (NPF_32BIT AND NOT MSVC)
     set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} ${NPF_32BIT_FLAG})
 endif()
 
+if (NOT MSVC)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-poison-system-directories")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-poison-system-directories")
+endif()
+
 ################ CppUTest
 
 include(ExternalProject)
@@ -61,7 +66,7 @@ add_dependencies(libCppUTestExt CppUTest_external)
 
 ################ Common compile flags
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
 
 if (MSVC)
     set(nanoprintf_common_flags /W4)
