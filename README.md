@@ -40,8 +40,7 @@ Add the following code to one of your `.c` or `.cpp` files to compile the nanopr
 #define NANOPRINTF_IMPLEMENTATION
 #include "path/to/nanoprintf.h"
 ```
-
-See the "Use nanoprintf directly" and "Wrap nanoprintf" examples for more details.
+See the "[Use nanoprintf directly](https://github.com/charlesnicholson/nanoprintf/blob/master/examples/use_npf_directly/main.cpp)" and "[Wrap nanoprintf](https://github.com/charlesnicholson/nanoprintf/blob/master/examples/wrap_npf/main.cpp)" examples for more details.
 
 ## API
 
