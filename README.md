@@ -32,14 +32,13 @@ Alternately, perhaps you're a significantly better programmer than I! In that ca
 
 Integrate nanoprintf into your codebase in one of two ways:
 1. Create a header file that sets up the flags and includes `nanoprintf.h`. Call the nanoprintf API directly wherever you want to use it. Add a c/c++ file that compiles the nanoprintf implementation.
-1. Create your own header file that wraps the parts of the nanoprintf API. Sandbox all of nanoprintf inside a single c/c++ file that forwards your function to nanoprintf.
+1. Create your own header file that wraps the parts of the nanoprintf API that you want to expose. Sandbox all of nanoprintf inside a single c/c++ file that forwards your function to nanoprintf.
 
 Add the following code to one of your `.c` or `.cpp` files to compile the nanoprintf implementation:
 
-	```
 	#define NANOPRINTF_IMPLEMENTATION
 	#include "path/to/nanoprintf.h"
-	```
+	
 
 See the "Use nanoprintf directly" and "Wrap nanoprintf" examples for more details.
 
