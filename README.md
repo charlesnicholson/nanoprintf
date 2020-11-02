@@ -36,9 +36,10 @@ Integrate nanoprintf into your codebase in one of two ways:
 
 Add the following code to one of your `.c` or `.cpp` files to compile the nanoprintf implementation:
 
-	#define NANOPRINTF_IMPLEMENTATION
-	#include "path/to/nanoprintf.h"
-	
+```
+#define NANOPRINTF_IMPLEMENTATION
+#include "path/to/nanoprintf.h"
+```
 
 See the "Use nanoprintf directly" and "Wrap nanoprintf" examples for more details.
 
