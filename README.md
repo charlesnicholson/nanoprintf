@@ -30,18 +30,17 @@ Alternately, perhaps you're a significantly better programmer than I! In that ca
 
 ## Usage
 
-1. Copy `nanoprintf.h` into your codebase somewhere.
-1. Add the following code to one of your `.c` or `.cpp` files to compile the nanoprintf implementation:
+Integrate nanoprintf into your codebase in one of two ways:
+1. Create a header file that sets up the flags and includes `nanoprintf.h`. Call the nanoprintf API directly wherever you want to use it. Add a c/c++ file that compiles the nanoprintf implementation.
+1. Create your own header file that wraps the parts of the nanoprintf API that you want to expose. Sandbox all of nanoprintf inside a single c/c++ file that forwards your function to nanoprintf.
 
-	```
-	#define NANOPRINTF_IMPLEMENTATION
-	#include "path/to/nanoprintf.h"
-	```
+Add the following code to one of your `.c` or `.cpp` files to compile the nanoprintf implementation:
 
-1. To call, just `#include "path/to/nanoprintf.h"` as usual and call the functions.
-1. Compile your code with your nanoprintf configuration flags. Alternately, wrap `nanoprintf.h` in your own header that defines all of your configuration flags, and use that everywhere in steps 2-3.
-
-If you prefer a more hermetic integration, nanoprintf can also be fully sandboxed inside of your own code and not leak any symbols. In this case, create your own header file in your own style that defines functions like `your_vsnprintf` and `your_snprintf` but don't include nanoprintf.h. In your source file, set up your nanoprintf flags (including `NANOPRINTF_VISIBILITY_STATIC=1`), include nanoprintf with `NANOPRINTF_IMPLEMENTATION` defined, and have the implementations of `your_vsnprintf` forward into nanoprintf.
+```
+#define NANOPRINTF_IMPLEMENTATION
+#include "path/to/nanoprintf.h"
+```
+See the "[Use nanoprintf directly](https://github.com/charlesnicholson/nanoprintf/blob/master/examples/use_npf_directly/main.cpp)" and "[Wrap nanoprintf](https://github.com/charlesnicholson/nanoprintf/blob/master/examples/wrap_npf/main.cpp)" examples for more details.
 
 ## API
 

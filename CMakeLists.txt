@@ -241,3 +241,16 @@ target_compile_definitions(unit_tests_normal_sized_formatters PRIVATE
 npf_test(unit_tests_large_sized_formatters "${unit_test_files}")
 target_compile_definitions(unit_tests_large_sized_formatters PRIVATE
     NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=1)
+
+################ Examples
+
+add_executable(use_npf_directly
+    examples/use_npf_directly/your_project_nanoprintf.h
+    examples/use_npf_directly/your_project_nanoprintf.cpp
+    examples/use_npf_directly/main.cpp)
+
+add_executable(wrap_npf
+    examples/wrap_npf/your_project_printf.h
+    examples/wrap_npf/your_project_printf.cpp
+    examples/wrap_npf/main.cpp)
+

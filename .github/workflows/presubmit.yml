@@ -2,7 +2,7 @@ name: Presubmit Checks
 
 on:
   pull_request:
-    branches: [ master ]
+    branches: [ main ]
 
 jobs:
   pylint:
