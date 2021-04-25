@@ -103,6 +103,8 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     list(APPEND nanoprintf_cxx_flags
         -Wno-old-style-cast
         -Wno-c++98-compat-pedantic
+        -Wno-exit-time-destructors
+        -Wno-global-constructors
         -Wno-weak-vtables
         -Wno-suggest-override)
 endif()
