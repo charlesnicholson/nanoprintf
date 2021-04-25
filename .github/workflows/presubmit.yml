@@ -3,6 +3,8 @@ name: Presubmit Checks
 on:
   pull_request:
     branches: [ main ]
+  schedule:
+    - cron: '0 2 * * 0'  # Weekly
 
 jobs:
   pylint:
