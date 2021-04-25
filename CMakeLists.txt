@@ -94,7 +94,8 @@ else()
         -Wswitch-default
         -Wswitch-enum
         -Wno-padded
-        -Wno-covered-switch-default)
+        -Wno-covered-switch-default
+        -Wno-suggest-override)
 endif()
 
 string(FIND "${CMAKE_C_COMPILER_ID}" "Clang" is_clang)
