@@ -22,6 +22,13 @@ endif()
 
 include(ExternalProject)
 
+set(NPF_CPPUTEST_C_FLAGS "${NPF_32BIT_FLAG}")
+set(NPF_CPPUTEST_CXX_FLAGS "${NPF_32BIT_FLAG}")
+
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    set(NPF_CPPUTEST_CXX_FLAGS "${NPF_CPPUTEST_CXX_FLAGS} -Wno-suggest-override")
+endif()
+
 set(CPPUTEST_ROOT_DIR ${CMAKE_SOURCE_DIR}/external/CppUTest)
 set(CPPUTEST_LIB_DIR ${CMAKE_BINARY_DIR}/CppUTest/lib)
 set(CPPUTEST_INCLUDE_DIR ${CMAKE_BINARY_DIR}/CppUTest/include)
@@ -29,8 +36,8 @@ set(CPPUTEST_CMAKE_ARGS -DCMAKE_BINARY_DIR=${CMAKE_BINARY_DIR}
                         -DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
                         -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
                         -DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}/CppUTest
-                        -DCPPUTEST_C_FLAGS=${NPF_32BIT_FLAG}
-                        -DCPPUTEST_CXX_FLAGS=${NPF_32BIT_FLAG}
+                        -DCPPUTEST_C_FLAGS=${NPF_CPPUTEST_C_FLAGS}
+                        -DCPPUTEST_CXX_FLAGS=${NPF_CPPUTEST_CXX_FLAGS}
                         -DC++11=ON
                         -DTESTS=OFF)
 set(CPPUTEST_LIB_NAME
