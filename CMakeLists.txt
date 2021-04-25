@@ -22,6 +22,13 @@ endif()
 
 include(ExternalProject)
 
+set(NPF_CPPUTEST_C_FLAGS "${NPF_32BIT_FLAG}")
+set(NPF_CPPUTEST_CXX_FLAGS "${NPF_32BIT_FLAG}")
+
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    set(NPF_CPPUTEST_CXX_FLAGS "${NPF_CPPUTEST_CXX_FLAGS} -Wno-suggest-override")
+endif()
+
 set(CPPUTEST_ROOT_DIR ${CMAKE_SOURCE_DIR}/external/CppUTest)
 set(CPPUTEST_LIB_DIR ${CMAKE_BINARY_DIR}/CppUTest/lib)
 set(CPPUTEST_INCLUDE_DIR ${CMAKE_BINARY_DIR}/CppUTest/include)
@@ -29,8 +36,8 @@ set(CPPUTEST_CMAKE_ARGS -DCMAKE_BINARY_DIR=${CMAKE_BINARY_DIR}
                         -DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
                         -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
                         -DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}/CppUTest
-                        -DCPPUTEST_C_FLAGS=${NPF_32BIT_FLAG}
-                        -DCPPUTEST_CXX_FLAGS=${NPF_32BIT_FLAG}
+                        -DCPPUTEST_C_FLAGS=${NPF_CPPUTEST_C_FLAGS}
+                        -DCPPUTEST_CXX_FLAGS=${NPF_CPPUTEST_CXX_FLAGS}
                         -DC++11=ON
                         -DTESTS=OFF)
 set(CPPUTEST_LIB_NAME
@@ -46,7 +53,7 @@ set(CPPUTESTEXT_LIB "${CPPUTEST_LIB_DIR}/${CPPUTESTEXT_LIB_NAME}")
 ExternalProject_Add(CppUTest_external
                     PREFIX ${CPPUTEST_ROOT_DIR}
                     GIT_REPOSITORY "https://github.com/cpputest/cpputest.git"
-                    GIT_TAG "8baa7645cc7fe4c18cdaf0c91eccec72438f6ce8"
+                    GIT_TAG "v4.0"
                     UPDATE_COMMAND ""
                     PATCH_COMMAND ""
                     TEST_COMMAND ""
@@ -87,14 +94,20 @@ else()
         -Wswitch-default
         -Wswitch-enum
         -Wno-padded
+        -Wno-keyword-macro
         -Wno-covered-switch-default)
 endif()
 
-string(FIND "${CMAKE_C_COMPILER_ID}" "Clang" is_clang)
-if (${is_clang} GREATER_EQUAL 0)
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     list(APPEND nanoprintf_common_flags -Weverything)
     list(APPEND nanoprintf_cxx_flags
-        -Wno-old-style-cast -Wno-c++98-compat-pedantic)
+        -Wno-old-style-cast
+        -Wno-c++98-compat-pedantic
+        -Wno-exit-time-destructors
+        -Wno-global-constructors
+        -Wno-disabled-macro-expansion
+        -Wno-weak-vtables
+        -Wno-suggest-override)
 endif()
 
 set(nanoprintf_c_flags ${nanoprintf_common_flags})

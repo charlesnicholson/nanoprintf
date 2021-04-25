@@ -127,7 +127,10 @@ def configure_cmake(cmake_exe, ninja, args):
                   '-DCMAKE_MAKE_PROGRAM={}'.format(ninja),
                   '-DCMAKE_BUILD_TYPE={}'.format(args.cfg),
                   '-DNPF_32BIT={}'.format('ON' if args.build_32_bit else 'OFF')]
-    return not subprocess.run(cmake_args, cwd=build_path).returncode
+    try:
+        return subprocess.run(cmake_args, cwd=build_path, check=True).returncode == 0
+    except subprocess.CalledProcessError as cpe:
+        return cpe.returncode == 0
 
 
 def build_cmake(cmake_exe, args):
@@ -135,7 +138,10 @@ def build_cmake(cmake_exe, args):
     build_path = os.path.join(SCRIPT_PATH, 'build', 'ninja', args.cfg)
     cmake_args = [cmake_exe, '--build', build_path] + \
         (['--', '-v'] if args.v else [])
-    return not subprocess.run(cmake_args).returncode
+    try:
+        return subprocess.run(cmake_args, check=True).returncode == 0
+    except subprocess.CalledProcessError as cpe:
+        return cpe.returncode == 0
 
 
 def main():
