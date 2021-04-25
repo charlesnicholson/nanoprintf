@@ -101,7 +101,10 @@ endif()
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     list(APPEND nanoprintf_common_flags -Weverything)
     list(APPEND nanoprintf_cxx_flags
-        -Wno-old-style-cast -Wno-c++98-compat-pedantic -Wno-suggest-override)
+        -Wno-old-style-cast
+        -Wno-c++98-compat-pedantic
+        -Wno-weak-vtables
+        -Wno-suggest-override)
 endif()
 
 set(nanoprintf_c_flags ${nanoprintf_common_flags})
