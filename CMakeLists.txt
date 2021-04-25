@@ -105,6 +105,7 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
         -Wno-c++98-compat-pedantic
         -Wno-exit-time-destructors
         -Wno-global-constructors
+        -Wno-disabled-macro-expansion
         -Wno-weak-vtables
         -Wno-suggest-override)
 endif()
