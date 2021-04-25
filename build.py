@@ -128,8 +128,7 @@ def configure_cmake(cmake_exe, ninja, args):
                   '-DCMAKE_BUILD_TYPE={}'.format(args.cfg),
                   '-DNPF_32BIT={}'.format('ON' if args.build_32_bit else 'OFF')]
     try:
-      rc = subprocess.run(cmake_args, cwd=build_path, check=True).returncode
-      return rc == 0
+      return subprocess.run(cmake_args, cwd=build_path, check=True).returncode == 0
     except subprocess.CalledProcessError as cpe:
       return cpe.returncode == 0
 
