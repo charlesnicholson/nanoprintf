@@ -53,7 +53,7 @@ set(CPPUTESTEXT_LIB "${CPPUTEST_LIB_DIR}/${CPPUTESTEXT_LIB_NAME}")
 ExternalProject_Add(CppUTest_external
                     PREFIX ${CPPUTEST_ROOT_DIR}
                     GIT_REPOSITORY "https://github.com/cpputest/cpputest.git"
-                    GIT_TAG "8baa7645cc7fe4c18cdaf0c91eccec72438f6ce8"
+                    GIT_TAG "v4.0"
                     UPDATE_COMMAND ""
                     PATCH_COMMAND ""
                     TEST_COMMAND ""
@@ -94,15 +94,14 @@ else()
         -Wswitch-default
         -Wswitch-enum
         -Wno-padded
-        -Wno-covered-switch-default
-        -Wno-suggest-override)
+        -Wno-keyword-macro
+        -Wno-covered-switch-default)
 endif()
 
-string(FIND "${CMAKE_C_COMPILER_ID}" "Clang" is_clang)
-if (${is_clang} GREATER_EQUAL 0)
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     list(APPEND nanoprintf_common_flags -Weverything)
     list(APPEND nanoprintf_cxx_flags
-        -Wno-old-style-cast -Wno-c++98-compat-pedantic)
+        -Wno-old-style-cast -Wno-c++98-compat-pedantic -Wno-suggest-override)
 endif()
 
 set(nanoprintf_c_flags ${nanoprintf_common_flags})
