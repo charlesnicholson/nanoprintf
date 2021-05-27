@@ -7,7 +7,7 @@ on:
     - cron: '0 2 * * 0'  # Weekly
 
 permissions:
-  packages:read
+  packages: read
 
 jobs:
   pylint:
