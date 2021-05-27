@@ -6,29 +6,38 @@ on:
   schedule:
     - cron: '0 2 * * 0'  # Weekly
 
+permissions:
+  packages:read
+
 jobs:
   pylint:
     runs-on: ubuntu-latest
+
     container:
-      image: docker.pkg.github.com/charlesnicholson/docker-images/docker-image:latest
+      image: ghcr.io/charlesnicholson/docker-images/docker-image:latest
       credentials:
         username: ${{ github.actor }}
-        password: ${{ secrets.PACKAGE_READ_TOKEN }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
     steps:
       - uses: actions/checkout@v2
       - name: Pylint build.py
         run: python3 -m pylint build.py
+
   linux-gcc:
     runs-on: ubuntu-latest
+
     container:
-      image: docker.pkg.github.com/charlesnicholson/docker-images/docker-image:latest
+      image: ghcr.io/charlesnicholson/docker-images/docker-image:latest
       credentials:
         username: ${{ github.actor }}
-        password: ${{ secrets.PACKAGE_READ_TOKEN }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
     strategy:
       matrix:
         configuration: [Debug, Release]
         architecture: ['', --build-32-bit]
+
     steps:
       - uses: actions/checkout@v2
       - name: Build
@@ -36,16 +45,20 @@ jobs:
           CC: /usr/bin/gcc
           CXX: /usr/bin/g++
         run: ./b --cfg ${{ matrix.configuration }} ${{ matrix.architecture }} -v
+
   linux-clang:
     runs-on: ubuntu-latest
+
     container:
-      image: docker.pkg.github.com/charlesnicholson/docker-images/docker-image:latest
+      image: ghcr.io/charlesnicholson/docker-images/docker-image:latest
       credentials:
         username: ${{ github.actor }}
-        password: ${{ secrets.PACKAGE_READ_TOKEN }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
     strategy:
       matrix:
         configuration: [Debug, Release]
+
     steps:
       - uses: actions/checkout@v2
       - name: Build
@@ -53,6 +66,7 @@ jobs:
           CC: /usr/bin/clang
           CXX: /usr/bin/clang++
         run: ./b --cfg ${{ matrix.configuration }} -v
+
   macos:
     runs-on: macos-latest
     strategy:
