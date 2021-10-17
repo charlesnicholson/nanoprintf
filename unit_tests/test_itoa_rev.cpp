@@ -8,7 +8,7 @@ TEST_GROUP(itoa) { char buf[64]; };
 
 #define NPF_ITOA_CHECK(EXPECT_STR, VAL)          \
     do {                                         \
-        int const n = npf__itoa_rev(buf, VAL);   \
+        int const n = npf_itoa_rev(buf, VAL);    \
         CHECK_EQUAL((int)strlen(EXPECT_STR), n); \
         buf[n] = 0;                              \
         STRCMP_EQUAL(EXPECT_STR, buf);           \
