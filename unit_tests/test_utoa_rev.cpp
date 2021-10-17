@@ -6,20 +6,17 @@
 
 TEST_GROUP(utoa) { char buf[64]; };
 
-#define NPF_UTOA_CHECK(EXPECT_STR, VAL, BASE, CASE)                       \
-    do {                                                                  \
-        int const n =                                                     \
-            npf__utoa_rev(buf, VAL, BASE, NPF_FMT_SPEC_CONV_CASE_##CASE); \
-        CHECK_EQUAL((int)strlen(EXPECT_STR), n);                          \
-        buf[n] = 0;                                                       \
-        STRCMP_EQUAL(EXPECT_STR, buf);                                    \
+#define NPF_UTOA_CHECK(EXPECT_STR, VAL, BASE, CASE)                      \
+    do {                                                                 \
+        int const n =                                                    \
+            npf_utoa_rev(buf, VAL, BASE, NPF_FMT_SPEC_CONV_CASE_##CASE); \
+        CHECK_EQUAL((int)strlen(EXPECT_STR), n);                         \
+        buf[n] = 0;                                                      \
+        STRCMP_EQUAL(EXPECT_STR, buf);                                   \
     } while (0)
 
-#define NPF_UTOA_CHECK_OCT(EXPECT_STR, VAL) \
-    NPF_UTOA_CHECK(EXPECT_STR, VAL, 8, LOWER)
-
-#define NPF_UTOA_CHECK_B10(EXPECT_STR, VAL) \
-    NPF_UTOA_CHECK(EXPECT_STR, VAL, 10, LOWER)
+#define NPF_UTOA_CHECK_OCT(EXPECT_STR, VAL) NPF_UTOA_CHECK(EXPECT_STR, VAL, 8, LOWER)
+#define NPF_UTOA_CHECK_B10(EXPECT_STR, VAL) NPF_UTOA_CHECK(EXPECT_STR, VAL, 10, LOWER)
 
 #define NPF_UTOA_CHECK_HEX(EXPECT_STR, VAL, CASE) \
     NPF_UTOA_CHECK(EXPECT_STR, VAL, 16, CASE)
