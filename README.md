@@ -18,7 +18,7 @@ nanoprintf is statically configurable so users can find a balance between size, 
 
 [tinyprintf](https://github.com/cjlano/tinyprintf) doesn't print floating point values.
 
-"[printf](https://github.com/mpaland/printf)" defines the actual standard library `printf` symbol, which isn't always what you want. It stores the final converted string (with padding and precision) in a temporary buffer, which makes supporting longer strings more costly. It also doesn't support the `%n` "write-back" specifier.
+Paland's "[printf](https://github.com/mpaland/printf)" defines the actual standard library `printf` symbol, which isn't always what you want. It stores the final converted string (with padding and precision) in a temporary buffer, which makes supporting longer strings more costly. It also doesn't support the `%n` "write-back" specifier.
 
 Also, no embedded-friendly printf projects that I could find are both in the public domain *and* have single-file implementations.
 
