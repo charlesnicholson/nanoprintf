@@ -124,51 +124,51 @@ Despite `nano` in the name, there's no way to do away with double entirely, sinc
 
 ## Measurement
 
-Compiling with all optional features disabled yields ~1KB of ARM Cortex-M0 object code:
+Compiling with all optional features disabled yields < 1000 bytes of ARM Cortex-M0 object code:
 ```
 Minimal configuration:
- .text.npf_bufputc_nop         0x2
- .text.npf_bufputc             0x16
- .text.npf_pprintf             0x2c
- .text.npf_snprintf            0x2c
- .text.npf_itoa_rev            0x42
- .text.npf_vsnprintf           0x48
- .text.npf_utoa_rev            0x4a
- .text.npf_parse_format_spec   0xca
- .text.npf_vpprintf            0x210
-total:                         0x41e (1054 bytes)
+00000016 00000002 T npf_bufputc_nop
+00000000 00000016 T npf_bufputc
+00000384 00000016 T npf_pprintf
+000003cc 00000016 T npf_snprintf
+0000039a 00000032 T npf_vsnprintf
+000000e8 0000004e T npf_itoa_rev
+00000136 00000054 T npf_utoa_rev
+00000018 000000d0 T npf_parse_format_spec
+0000018a 000001fa T npf_vpprintf
+total:   0x3e2 (994 bytes)
 ```
 
-Compiling with field width and precision specifiers enabled yields ~1.7KB:
+Compiling with field width and precision specifiers enabled yields ~1.6KB:
 ```
 "Small" configuration: (field witdh + precision)
- .text.npf_bufputc_nop         0x2
- .text.npf_bufputc             0x16
- .text.npf_pprintf             0x2c
- .text.npf_snprintf            0x2c
- .text.npf_itoa_rev            0x42
- .text.npf_vsnprintf           0x48
- .text.npf_utoa_rev            0x4a
- .text.npf_parse_format_spec   0x1a0
- .text.npf_vpprintf            0x3c4
-total:                         0x6a8 (1704 bytes)
+00000016 00000002 T npf_bufputc_nop
+00000000 00000016 T npf_bufputc
+000005ee 00000016 T npf_pprintf
+00000638 00000016 T npf_snprintf
+00000604 00000034 T npf_vsnprintf
+000001ae 0000004e T npf_itoa_rev
+000001fc 00000054 T npf_utoa_rev
+00000018 00000196 T npf_parse_format_spec
+00000250 0000039e T npf_vpprintf
+total:   0x6a8 (1614 bytes)
 ```
 
-Compiling with all optional features enabled is closer to ~2.8KB:
+Compiling with all optional features enabled is closer to ~2.5KB:
 ```
 Everything:
- .text.npf_bufputc_nop         0x2
- .text.npf_bufputc             0x16
- .text.npf_snprintf            0x2c
- .text.npf_pprintf             0x2c
- .text.npf_vsnprintf           0x48
- .text.npf_itoa_rev            0x5a
- .text.npf_utoa_rev            0x6c
- .text.npf_fsplit_abs          0x100
- .text.npf_ftoa_rev            0x130
- .text.npf_parse_format_spec   0x204
- .text.npf_vpprintf            0x528
-total:                         0xada (2778 bytes)
+00000016 00000002 T npf_bufputc_nop
+00000000 00000016 T npf_bufputc
+000009ca 00000016 T npf_pprintf
+00000a14 00000016 T npf_snprintf
+000009e0 00000034 T npf_vsnprintf
+00000204 0000005c T npf_itoa_rev
+00000260 00000078 T npf_utoa_rev
+000002d8 000000e0 T npf_fsplit_abs
+000003b8 00000108 T npf_ftoa_rev
+00000018 000001ec T npf_parse_format_spec
+000004c0 0000050a T npf_vpprintf
+total:   0xa2a (2602 bytes)
 ```
 
 ## Development
