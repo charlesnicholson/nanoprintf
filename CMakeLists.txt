@@ -258,7 +258,6 @@ target_compile_definitions(unit_tests_large_sized_formatters PRIVATE
 ################ Examples
 
 add_executable(use_npf_directly
-    examples/use_npf_directly/your_project_nanoprintf.h
     examples/use_npf_directly/your_project_nanoprintf.cpp
     examples/use_npf_directly/main.cpp)
 

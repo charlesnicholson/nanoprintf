@@ -82,7 +82,9 @@ NPF_VISIBILITY int npf_pprintf(npf_putc pc, void *pc_ctx, char const *format,
 NPF_VISIBILITY int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format,
                                 va_list vlist) NPF_PRINTF_ATTR(3, 0);
 
-/* Public Configuration */
+#ifdef NANOPRINTF_EXPOSE_INTERNALS
+
+/* Configuration */
 
 /* Pick reasonable defaults if nothing's been configured. */
 #if !defined(NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS) && \
@@ -256,6 +258,8 @@ NPF_VISIBILITY int npf_ftoa_rev(char *buf, float f, unsigned base,
                                  int *out_frac_chars);
 #endif
 
+#endif /* NANOPRINTF_EXPOSE_INTERNALS */
+
 #ifdef __cplusplus
 }
 #endif
@@ -271,7 +275,9 @@ NPF_VISIBILITY int npf_ftoa_rev(char *buf, float f, unsigned base,
 */
 
 #undef NANOPRINTF_IMPLEMENTATION
+#define NANOPRINTF_EXPOSE_INTERNALS
 #include "nanoprintf.h"
+#undef NANOPRINTF_EXPOSE_INTERNALS
 #define NANOPRINTF_IMPLEMENTATION
 
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1

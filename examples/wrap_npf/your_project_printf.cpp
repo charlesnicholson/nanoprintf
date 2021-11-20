@@ -5,6 +5,9 @@
 #define NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS 1
 #define NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS 1
 #define NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS 0
+
+// Compile nanoprintf in this translation unit.
+#define NANOPRINTF_IMPLEMENTATION
 #include "../../nanoprintf.h"
 
 int your_project_snprintf(char *buffer, size_t bufsz, char const *fmt, ...) {
@@ -14,8 +17,3 @@ int your_project_snprintf(char *buffer, size_t bufsz, char const *fmt, ...) {
     va_end(val);
     return rv;
 }
-
-// Compile nanoprintf in this translation unit.
-
-#define NANOPRINTF_IMPLEMENTATION
-#include "../../nanoprintf.h"
