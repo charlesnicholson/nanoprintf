@@ -6,7 +6,7 @@
 #include <string>
 #include <iostream>
 
-void require_npf_itoa(char const *expected, intmax_t val) {
+void require_npf_itoa(char const *expected, npf_int_t val) {
   char buf[64];
   int const n = npf_itoa_rev(buf, val);
   buf[n] = '\0';
