@@ -208,7 +208,7 @@ function(npf_doctest name files)
         COMMENT "Running ${name}")
 endfunction()
 
-set(unit_test_files_doctest
+set(unit_test_files
     nanoprintf.h
     tests/unit_nanoprintf.c
     tests/unit_parse_format_spec.cc
@@ -218,16 +218,15 @@ set(unit_test_files_doctest
     tests/unit_utoa_rev.cc
     tests/unit_fsplit_abs.cc
     tests/unit_snprintf.cc
-    tests/unit_vpprintf.cc
-    )
+    tests/unit_vpprintf.cc)
 
 ############### Unit tests
 
-npf_doctest(unit_tests_normal_sized_formatters_doctest "${unit_test_files_doctest}")
+npf_doctest(unit_tests_normal_sized_formatters_doctest "${unit_test_files}")
 target_compile_definitions(unit_tests_normal_sized_formatters_doctest PRIVATE
     NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0)
 
-npf_doctest(unit_tests_large_sized_formatters_doctest "${unit_test_files_doctest}")
+npf_doctest(unit_tests_large_sized_formatters_doctest "${unit_test_files}")
 target_compile_definitions(unit_tests_large_sized_formatters_doctest PRIVATE
     NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=1)
 
