@@ -7,7 +7,7 @@
 
 void require_npf_utoa(
     std::string const &expected,
-    uintmax_t val,
+    npf_uint_t val,
     unsigned base,
     npf_format_spec_conversion_case_t conv_case = NPF_FMT_SPEC_CONV_CASE_LOWER) {
   char buf[64];
