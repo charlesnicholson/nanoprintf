@@ -13,64 +13,6 @@ if (NPF_32BIT AND NOT MSVC)
     set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} ${NPF_32BIT_FLAG})
 endif()
 
-#if (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
-#    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-poison-system-directories")
-#    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-poison-system-directories")
-#endif()
-
-################ CppUTest
-
-#include(ExternalProject)
-#
-#set(NPF_CPPUTEST_C_FLAGS "${NPF_32BIT_FLAG}")
-#set(NPF_CPPUTEST_CXX_FLAGS "${NPF_32BIT_FLAG}")
-#
-#if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-#    set(NPF_CPPUTEST_CXX_FLAGS "${NPF_CPPUTEST_CXX_FLAGS} -Wno-suggest-override")
-#endif()
-#
-#set(CPPUTEST_ROOT_DIR ${CMAKE_SOURCE_DIR}/external/CppUTest)
-#set(CPPUTEST_LIB_DIR ${CMAKE_BINARY_DIR}/CppUTest/lib)
-#set(CPPUTEST_INCLUDE_DIR ${CMAKE_BINARY_DIR}/CppUTest/include)
-#set(CPPUTEST_CMAKE_ARGS -DCMAKE_BINARY_DIR=${CMAKE_BINARY_DIR}
-#                        -DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
-#                        -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
-#                        -DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}/CppUTest
-#                        -DCPPUTEST_C_FLAGS=${NPF_CPPUTEST_C_FLAGS}
-#                        -DCPPUTEST_CXX_FLAGS=${NPF_CPPUTEST_CXX_FLAGS}
-#                        -DC++11=ON
-#                        -DTESTS=OFF)
-#set(CPPUTEST_LIB_NAME
-#    ${CMAKE_STATIC_LIBRARY_PREFIX}CppUTest${CMAKE_STATIC_LIBRARY_SUFFIX})
-#
-#set(CPPUTEST_LIB "${CPPUTEST_LIB_DIR}/${CPPUTEST_LIB_NAME}")
-#
-#set(CPPUTESTEXT_LIB_NAME
-#    ${CMAKE_STATIC_LIBRARY_PREFIX}CppUTestExt${CMAKE_STATIC_LIBRARY_SUFFIX})
-#
-#set(CPPUTESTEXT_LIB "${CPPUTEST_LIB_DIR}/${CPPUTESTEXT_LIB_NAME}")
-#
-#ExternalProject_Add(CppUTest_external
-#                    PREFIX ${CPPUTEST_ROOT_DIR}
-#                    GIT_REPOSITORY "https://github.com/cpputest/cpputest.git"
-#                    GIT_TAG "v4.0"
-#                    UPDATE_COMMAND ""
-#                    PATCH_COMMAND ""
-#                    TEST_COMMAND ""
-#                    CMAKE_ARGS ${CPPUTEST_CMAKE_ARGS}
-#                    BINARY_DIR ${CMAKE_BINARY_DIR}/CppUTest
-#                    INSTALL_DIR ${CMAKE_BINARY_DIR}/CppUTest
-#                    BUILD_BYPRODUCTS "${CPPUTEST_LIB}" "${CPPUTESTEXT_LIB}")
-#
-#add_library(libCppUTest STATIC IMPORTED)
-#set_target_properties(libCppUTest PROPERTIES IMPORTED_LOCATION "${CPPUTEST_LIB}")
-#
-#add_library(libCppUTestExt STATIC IMPORTED)
-#set_target_properties(libCppUTestExt PROPERTIES IMPORTED_LOCATION "${CPPUTESTEXT_LIB}")
-#
-#add_dependencies(libCppUTest CppUTest_external)
-#add_dependencies(libCppUTestExt CppUTest_external)
-
 ################ Common compile flags
 
 set(CMAKE_CXX_STANDARD 17)
@@ -94,8 +36,6 @@ else()
         -Wswitch-default
         -Wswitch-enum
         -Wno-padded)
-        #        -Wno-keyword-macro
-        #-Wno-covered-switch-default)
 endif()
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
@@ -103,11 +43,6 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     list(APPEND nanoprintf_cxx_flags
         -Wno-old-style-cast
         -Wno-c++98-compat-pedantic)
-        #-Wno-exit-time-destructors
-        #-Wno-global-constructors
-        #-Wno-disabled-macro-expansion
-        #-Wno-weak-vtables
-        #-Wno-suggest-override)
 endif()
 
 set(nanoprintf_c_flags ${nanoprintf_common_flags})
@@ -278,13 +213,15 @@ set(unit_test_files_doctest
     tests/unit_nanoprintf.c
     tests/unit_parse_format_spec.cc
     tests/unit_bufputc.cc
+    tests/unit_ftoa_rev.cc
+    tests/unit_itoa_rev.cc
     tests/unit_snprintf.cc
     )
-    #unit_tests/test_ftoa_rev.cpp
     #unit_tests/test_fsplit_abs.cpp
-    #unit_tests/test_itoa_rev.cpp
     #unit_tests/test_utoa_rev.cpp
     #unit_tests/test_vpprintf.cpp
+
+############### Unit tests
 
 npf_doctest(unit_tests_normal_sized_formatters_doctest "${unit_test_files_doctest}")
 target_compile_definitions(unit_tests_normal_sized_formatters_doctest PRIVATE
