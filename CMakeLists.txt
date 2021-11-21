@@ -80,7 +80,7 @@ if (MSVC)
 else()
     set(CMAKE_C_FLAGS_DEBUG "-O0 -g")
     set(CMAKE_C_FLAGS_RELWITHDEBINFO "-Os -g")
-        set(CMAKE_C_FLAGS_RELEASE "-Os")
+    set(CMAKE_C_FLAGS_RELEASE "-Os")
     set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g")
     set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-Os -g")
     set(CMAKE_CXX_FLAGS_RELEASE "-Os")
@@ -302,17 +302,14 @@ set(unit_test_files_doctest
     nanoprintf.h
     tests/unit_nanoprintf.c
     tests/unit_parse_format_spec.cc
-    tests/unit_bufputc.cc)
-    #unit_tests/test_parse_format_spec.cpp
+    tests/unit_bufputc.cc
+    tests/unit_snprintf.cc
+    )
     #unit_tests/test_ftoa_rev.cpp
     #unit_tests/test_fsplit_abs.cpp
     #unit_tests/test_itoa_rev.cpp
-    #unit_tests/test_ptoa_rev.cpp
     #unit_tests/test_utoa_rev.cpp
-    #unit_tests/test_snprintf.cpp
     #unit_tests/test_vpprintf.cpp
-    #unit_tests/nanoprintf_in_unit_tests.cpp
-    #unit_tests/nanoprintf_in_unit_tests.h)
 
 npf_doctest(unit_tests_normal_sized_formatters_doctest "${unit_test_files_doctest}")
 target_compile_definitions(unit_tests_normal_sized_formatters_doctest PRIVATE
