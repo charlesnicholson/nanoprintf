@@ -248,14 +248,14 @@ NPF_VISIBILITY void npf_bufputc(int c, void *ctx);
 NPF_VISIBILITY void npf_bufputc_nop(int c, void *ctx);
 NPF_VISIBILITY int npf_itoa_rev(char *buf, npf_int_t i);
 NPF_VISIBILITY int npf_utoa_rev(char *buf, npf_uint_t i, unsigned base,
-                                 npf_format_spec_conversion_case_t cc);
+                                npf_format_spec_conversion_case_t cc);
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
 NPF_VISIBILITY int npf_fsplit_abs(float f, uint64_t *out_int_part,
-                                   uint64_t *out_frac_part,
-                                   int *out_frac_base10_neg_e);
+                                  uint64_t *out_frac_part,
+                                  int *out_frac_base10_neg_e);
 NPF_VISIBILITY int npf_ftoa_rev(char *buf, float f, unsigned base,
-                                 npf_format_spec_conversion_case_t cc,
-                                 int *out_frac_chars);
+                                npf_format_spec_conversion_case_t cc,
+                                int *out_frac_chars);
 #endif
 
 #endif /* NANOPRINTF_EXPOSE_INTERNALS */
