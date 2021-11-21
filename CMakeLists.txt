@@ -18,6 +18,7 @@ endif()
 set(CMAKE_CXX_STANDARD 17)
 
 if (MSVC)
+  cmake_policy(set CMP0092 NEW) # take /W3 off of the cl.exe invocation
   set(nanoprintf_common_flags /W4)
 else()
   set(CMAKE_C_FLAGS_DEBUG "-O0 -g")
@@ -69,10 +70,6 @@ function(npf_test name files)
                            -Wno-format-pedantic
                            -Wno-format-nonliteral)
   endif()
-
-  #if (is_clang GREATER_EQUAL 0)
-  #    target_compile_options(${name} PRIVATE -Wno-c++98-compat)
-  #endif()
 
   # Set up a target that automatically runs + timestamps successful tests.
 
