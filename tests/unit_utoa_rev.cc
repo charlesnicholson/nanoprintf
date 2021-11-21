@@ -1,6 +1,7 @@
 #include "unit_nanoprintf.h"
 #include "doctest.h"
 
+#include <climits>
 #include <string>
 #include <iostream>
 
