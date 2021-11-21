@@ -13,7 +13,7 @@ import zipfile
 SCRIPT_PATH = os.path.dirname(os.path.realpath(__file__))
 
 NINJA_URL = 'https://github.com/ninja-build/ninja/releases/download/v1.9.0/{}'
-CMAKE_URL = 'https://cmake.org/files/v3.14/{}'
+CMAKE_URL = 'https://cmake.org/files/v3.15/{}'
 
 def parse_args():
     """Parse command-line arguments."""
@@ -56,7 +56,7 @@ def get_cmake(download, verbose):
             return cmake
 
     plat = {'darwin': 'Darwin', 'linux': 'Linux', 'win32': 'win64'}[sys.platform]
-    cmake_prefix = f'cmake-3.14.5-{plat}-x86_64'
+    cmake_prefix = f'cmake-3.15.7-{plat}-x86_64'
     cmake_local_dir = os.path.join(SCRIPT_PATH, 'external', 'cmake')
     cmake_file = cmake_prefix + '.tar.gz'
     cmake_local_tgz = os.path.join(cmake_local_dir, cmake_file)
