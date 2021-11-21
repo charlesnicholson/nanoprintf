@@ -59,9 +59,7 @@ function(npf_test name files)
   add_executable(${name} ${files})
   target_link_libraries(${name} libdoctest_main)
 
-  if (MSVC)
-    target_link_libraries(${name} winmm.lib)
-  else()
+  if (NOT MSVC)
     # The tests use format strings that anger clang + gcc
     target_compile_options(${name} PRIVATE
                            ${nanoprintf_cxx_flags}
