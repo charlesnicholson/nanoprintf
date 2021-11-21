@@ -224,47 +224,22 @@ set(nanoprintf_cxx_flags ${nanoprintf_common_flags} ${nanoprintf_cxx_flags})
 ## Test default flags (nothing specified)
 #npf_c_language_test(npf_c_default_flags)
 #
-################# Static compilation test
-#
-#add_executable(npf_static
-#    static_test/nanoprintf_in_static_test.c
-#    static_test/main.c)
-#
-################# Unit tests
-#
-#set(unit_test_files
-#    nanoprintf.h
-#    unit_tests/test_bufputc.cpp
-#    unit_tests/test_parse_format_spec.cpp
-#    unit_tests/test_ftoa_rev.cpp
-#    unit_tests/test_fsplit_abs.cpp
-#    unit_tests/test_itoa_rev.cpp
-#    unit_tests/test_ptoa_rev.cpp
-#    unit_tests/test_utoa_rev.cpp
-#    unit_tests/test_snprintf.cpp
-#    unit_tests/test_vpprintf.cpp
-#    unit_tests/nanoprintf_in_unit_tests.cpp
-#    unit_tests/nanoprintf_in_unit_tests.h
-#    unit_tests/main.cpp)
-#
-#npf_test(unit_tests_normal_sized_formatters "${unit_test_files}")
-#target_compile_definitions(unit_tests_normal_sized_formatters PRIVATE
-#    NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0)
-#
-#npf_test(unit_tests_large_sized_formatters "${unit_test_files}")
-#target_compile_definitions(unit_tests_large_sized_formatters PRIVATE
-#    NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=1)
-#
+################ Static compilation test
+
+add_executable(npf_static
+    static_test/nanoprintf_in_static_test.c
+    static_test/main.c)
+
 ################# Examples
-#
-#add_executable(use_npf_directly
-#    examples/use_npf_directly/your_project_nanoprintf.cpp
-#    examples/use_npf_directly/main.cpp)
-#
-#add_executable(wrap_npf
-#    examples/wrap_npf/your_project_printf.h
-#    examples/wrap_npf/your_project_printf.cpp
-#    examples/wrap_npf/main.cpp)
+
+add_executable(use_npf_directly
+    examples/use_npf_directly/your_project_nanoprintf.cpp
+    examples/use_npf_directly/main.cpp)
+
+add_executable(wrap_npf
+    examples/wrap_npf/your_project_printf.h
+    examples/wrap_npf/your_project_printf.cpp
+    examples/wrap_npf/main.cpp)
 
 ################ Doctest
 
@@ -285,9 +260,9 @@ function(npf_doctest name files)
             -Wno-format-nonliteral)
     endif()
 
-    ##if (is_clang GREATER_EQUAL 0)
-    ##    target_compile_options(${name} PRIVATE -Wno-c++98-compat)
-    ##endif()
+    #if (is_clang GREATER_EQUAL 0)
+    #    target_compile_options(${name} PRIVATE -Wno-c++98-compat)
+    #endif()
 
     set(timestamp "${CMAKE_CURRENT_BINARY_DIR}/${name}.timestamp")
     add_custom_target(run_${name} ALL DEPENDS ${timestamp})
