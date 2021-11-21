@@ -218,8 +218,8 @@ set(unit_test_files_doctest
     tests/unit_utoa_rev.cc
     tests/unit_fsplit_abs.cc
     tests/unit_snprintf.cc
+    tests/unit_vpprintf.cc
     )
-    #unit_tests/test_vpprintf.cpp
 
 ############### Unit tests
 
