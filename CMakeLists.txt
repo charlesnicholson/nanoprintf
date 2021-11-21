@@ -62,9 +62,9 @@ function(npf_test name files)
   if (MSVC)
     target_link_libraries(${name} winmm.lib)
   else()
+    # The tests use format strings that anger clang + gcc
     target_compile_options(${name} PRIVATE
                            ${nanoprintf_cxx_flags}
-                           -Wno-old-style-cast     # C style casts are ok
                            -Wno-format
                            -Wno-format-pedantic
                            -Wno-format-nonliteral)
