@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.4)
+cmake_minimum_required(VERSION 3.15)
 project(nanoprintf)
 
 option(NPF_32BIT "Compile nanoprintf tests in 32-bit mode")
@@ -18,7 +18,6 @@ endif()
 set(CMAKE_CXX_STANDARD 17)
 
 if (MSVC)
-  cmake_policy(set CMP0092 NEW) # take /W3 off of the cl.exe invocation
   set(nanoprintf_common_flags /W4)
 else()
   set(CMAKE_C_FLAGS_DEBUG "-O0 -g")
