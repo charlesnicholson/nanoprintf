@@ -1,21 +1,17 @@
-cmake_minimum_required(VERSION 3.22) #3.4)
-#set(HAVE_FLAG_SEARCH_PATHS_FIRST 0)
+cmake_minimum_required(VERSION 3.4)
 project(nanoprintf)
-#set(CMAKE_CXX_LINK_FLAGS "")
-#set(CMAKE_C_COMPILER cc)
-#set(CMAKE_CXX_COMPILER c++)
 
 option(NPF_32BIT "Compile nanoprintf tests in 32-bit mode")
 
-#if (NPF_32BIT AND CMAKE_HOST_APPLE)
-#    message(FATAL_ERROR "Apple doesn't support 32-bit mode anymore.")
-#endif()
-#
-#if (NPF_32BIT AND NOT MSVC)
-#    set(NPF_32BIT_FLAG -m32)
-#    set(CMAKE_C_FLAGS ${CMAKE_C_FLAGS} ${NPF_32BIT_FLAG})
-#    set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} ${NPF_32BIT_FLAG})
-#endif()
+if (NPF_32BIT AND CMAKE_HOST_APPLE)
+    message(FATAL_ERROR "Apple doesn't support 32-bit mode anymore.")
+endif()
+
+if (NPF_32BIT AND NOT MSVC)
+    set(NPF_32BIT_FLAG -m32)
+    set(CMAKE_C_FLAGS ${CMAKE_C_FLAGS} ${NPF_32BIT_FLAG})
+    set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} ${NPF_32BIT_FLAG})
+endif()
 
 #if (CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
 #    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-poison-system-directories")
@@ -82,41 +78,40 @@ set(CMAKE_CXX_STANDARD 17)
 if (MSVC)
     set(nanoprintf_common_flags /W4)
 else()
-    #set(CMAKE_C_FLAGS_DEBUG "-O0 -g")
-    #set(CMAKE_C_FLAGS_RELWITHDEBINFO "-Os -g")
-    #    set(CMAKE_C_FLAGS_RELEASE "-Os")
-    #set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g")
-    #set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-Os -g")
-    #set(CMAKE_CXX_FLAGS_RELEASE "-Os")
-    #set(nanoprintf_common_flags
-    #    -pedantic
-    #    -Wall
-    #    -Wextra
-    #    -Werror
-    #    -Wconversion
-    #    -Wsign-conversion
-    #    -Wswitch-default
-    #    -Wswitch-enum
-    #    -Wno-padded
-    #    -Wno-keyword-macro
-    #    -Wno-covered-switch-default)
+    set(CMAKE_C_FLAGS_DEBUG "-O0 -g")
+    set(CMAKE_C_FLAGS_RELWITHDEBINFO "-Os -g")
+        set(CMAKE_C_FLAGS_RELEASE "-Os")
+    set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g")
+    set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-Os -g")
+    set(CMAKE_CXX_FLAGS_RELEASE "-Os")
+    set(nanoprintf_common_flags
+        -pedantic
+        -Wall
+        -Wextra
+        -Werror
+        -Wconversion
+        -Wsign-conversion
+        -Wswitch-default
+        -Wswitch-enum
+        -Wno-padded)
+        #        -Wno-keyword-macro
+        #-Wno-covered-switch-default)
 endif()
 
-#if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-#    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
-#    list(APPEND nanoprintf_common_flags -Weverything)
-#    list(APPEND nanoprintf_cxx_flags
-#        -Wno-old-style-cast
-#        -Wno-c++98-compat-pedantic
-#        -Wno-exit-time-destructors
-#        -Wno-global-constructors
-#        -Wno-disabled-macro-expansion
-#        -Wno-weak-vtables
-#        -Wno-suggest-override)
-#endif()
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    list(APPEND nanoprintf_common_flags -Weverything)
+    list(APPEND nanoprintf_cxx_flags
+        -Wno-old-style-cast
+        -Wno-c++98-compat-pedantic)
+        #-Wno-exit-time-destructors
+        #-Wno-global-constructors
+        #-Wno-disabled-macro-expansion
+        #-Wno-weak-vtables
+        #-Wno-suggest-override)
+endif()
 
-#set(nanoprintf_c_flags ${nanoprintf_common_flags})
-#set(nanoprintf_cxx_flags ${nanoprintf_common_flags} ${nanoprintf_cxx_flags})
+set(nanoprintf_c_flags ${nanoprintf_common_flags})
+set(nanoprintf_cxx_flags ${nanoprintf_common_flags} ${nanoprintf_cxx_flags})
 
 ################ CppUtest test driver
 
@@ -273,39 +268,40 @@ endif()
 
 ################ Doctest
 
-#add_library(libdoctest_main OBJECT tests/doctest_main.cc)
+add_library(libdoctest_main OBJECT tests/doctest_main.cc)
 
 function(npf_doctest name files)
-    add_executable(${name} ${files} tests/doctest_main.cc)
-    #    target_link_libraries(${name} libdoctest_main)
+    add_executable(${name} ${files})
+    target_link_libraries(${name} libdoctest_main)
 
-    #if (MSVC)
-    #    target_link_libraries(${name} winmm.lib)
-    #else()
-    #    #target_compile_options(${name} PRIVATE
-    #    #    ${nanoprintf_cxx_flags}
-    #    #    -Wno-old-style-cast     # C style casts are ok
-    #    #    -Wno-format
-    #    #    -Wno-format-pedantic
-    #    #    -Wno-format-nonliteral)
-    #endif()
+    if (MSVC)
+        target_link_libraries(${name} winmm.lib)
+    else()
+        target_compile_options(${name} PRIVATE
+            ${nanoprintf_cxx_flags}
+            -Wno-old-style-cast     # C style casts are ok
+            -Wno-format
+            -Wno-format-pedantic
+            -Wno-format-nonliteral)
+    endif()
 
     ##if (is_clang GREATER_EQUAL 0)
     ##    target_compile_options(${name} PRIVATE -Wno-c++98-compat)
     ##endif()
 
-    #set(timestamp "${CMAKE_CURRENT_BINARY_DIR}/${name}.timestamp")
-    #add_custom_target(run_${name} ALL DEPENDS ${timestamp})
+    set(timestamp "${CMAKE_CURRENT_BINARY_DIR}/${name}.timestamp")
+    add_custom_target(run_${name} ALL DEPENDS ${timestamp})
 
-    #add_custom_command(OUTPUT ${timestamp}
-    #    COMMAND ${name} && ${CMAKE_COMMAND} -E touch ${timestamp}
-    #    DEPENDS ${name}
-    #    COMMENT "Running ${name}")
+    add_custom_command(OUTPUT ${timestamp}
+        COMMAND ${name} && ${CMAKE_COMMAND} -E touch ${timestamp}
+        DEPENDS ${name}
+        COMMENT "Running ${name}")
 endfunction()
 
 set(unit_test_files_doctest
     nanoprintf.h
     tests/unit_nanoprintf.c
+    tests/unit_parse_format_spec.cc
     tests/unit_bufputc.cc)
     #unit_tests/test_parse_format_spec.cpp
     #unit_tests/test_ftoa_rev.cpp
@@ -322,7 +318,7 @@ npf_doctest(unit_tests_normal_sized_formatters_doctest "${unit_test_files_doctes
 target_compile_definitions(unit_tests_normal_sized_formatters_doctest PRIVATE
     NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0)
 
-#npf_doctest(unit_tests_large_sized_formatters_doctest "${unit_test_files_doctest}")
-#target_compile_definitions(unit_tests_large_sized_formatters_doctest PRIVATE
-#    NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=1)
+npf_doctest(unit_tests_large_sized_formatters_doctest "${unit_test_files_doctest}")
+target_compile_definitions(unit_tests_large_sized_formatters_doctest PRIVATE
+    NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=1)
 

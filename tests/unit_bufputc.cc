@@ -1,7 +1,8 @@
 #include "unit_nanoprintf.h"
-
 #include "doctest.h"
+
 #include <string>
+#include <iostream>
 
 TEST_CASE("npf_bufputc") {
   npf_bufputc_ctx_t bpc;
@@ -36,7 +37,6 @@ TEST_CASE("npf_bufputc") {
     npf_bufputc('F', &bpc);
     REQUIRE(bpc.cur == 6);
     bpc.dst[6] = '\0';
-//    REQUIRE(strcmp(bpc.dst, "ABCDEF") == 0);
     REQUIRE(std::string(bpc.dst) == "ABCDEF");
   }
 }
