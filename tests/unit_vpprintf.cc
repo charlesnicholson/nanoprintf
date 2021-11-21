@@ -204,88 +204,69 @@ TEST_CASE("npf_vpprintf") {
     REQUIRE(npf_pprintf(r.PutC, &r, "%-2c", 'A') == 2);
     REQUIRE(r.String() == std::string{"A "});
   }
+
+  SUBCASE("prepend sign flag negative") {
+    REQUIRE(npf_pprintf(r.PutC, &r, "%+d", -2) == 2);
+    REQUIRE(r.String() == std::string{"-2"});
+  }
+
+  SUBCASE("prepend sign flag positive for signed conversion") {
+    REQUIRE(npf_pprintf(r.PutC, &r, "%+d", 2) == 2);
+    REQUIRE(r.String() == std::string{"+2"});
+  }
+
+  SUBCASE("prepend sign flag zero") {
+    REQUIRE(npf_pprintf(r.PutC, &r, "%+d", 0) == 2);
+    REQUIRE(r.String() == std::string{"+0"});
+  }
+
+  SUBCASE("prepend sign flag does nothing for unsigned conversion") {
+    REQUIRE(npf_pprintf(r.PutC, &r, "%+u", 1) == 1);
+    REQUIRE(r.String() == std::string{"1"});
+  }
+
+  SUBCASE("prepend space emits space instead of sign when positive") {
+    REQUIRE(npf_pprintf(r.PutC, &r, "% d", 1) == 2);
+    REQUIRE(r.String() == std::string{" 1"});
+  }
+
+  SUBCASE("prepend space emits minus sign when negative") {
+    REQUIRE(npf_pprintf(r.PutC, &r, "% d", -1) == 2);
+    REQUIRE(r.String() == std::string{"-1"});
+  }
+
+  SUBCASE("leading zero-pad flag does nothing on char (undefined)") {
+    REQUIRE(npf_pprintf(r.PutC, &r, "%010c", 'A') == 1);
+    REQUIRE(r.String() == std::string{"A"});
+  }
+
+  SUBCASE("leading zero-pad flag does nothing on string (undefined)") {
+    REQUIRE(npf_pprintf(r.PutC, &r, "%0s", "ABCD") == 4);
+    REQUIRE(r.String() == std::string{"ABCD"});
+  }
+
+  SUBCASE("alternative flag: hex doesn't prepend 0x if value is 0") {
+    REQUIRE(npf_pprintf(r.PutC, &r, "%#x", 0) == 1);
+    REQUIRE(r.String() == std::string{"0"});
+  }
+
+  SUBCASE("alternative flag: hex uppercase 0X") {
+    REQUIRE(npf_pprintf(r.PutC, &r, "%#X", 1) == 3);
+    REQUIRE(r.String() == std::string{"0X1"});
+  }
+
+  SUBCASE("alternative flag: hex lowercase 0x") {
+    REQUIRE(npf_pprintf(r.PutC, &r, "%#x", 1) == 3);
+    REQUIRE(r.String() == std::string{"0x1"});
+  }
+
+  SUBCASE("alternative flag: octal doesn't prepend 0 if value is 0") {
+    REQUIRE(npf_pprintf(r.PutC, &r, "%#o", 0) == 1);
+    REQUIRE(r.String() == std::string{"0"});
+  }
+
+  SUBCASE("alterinative flag: octal non-zero value") {
+    REQUIRE(npf_pprintf(r.PutC, &r, "%#o", 2) == 2);
+    REQUIRE(r.String() == std::string{"02"});
+  }
 }
-
-#if 0
-
-// Prepend Sign flag
-
-TEST_GROUP(PrependSignFlag) { Recorder r; };
-
-TEST(PrependSignFlag, Negative) {
-    CHECK_EQUAL(2, npf_pprintf(r.PutC, &r, "%+d", -2));
-    STRCMP_EQUAL("-2", r.String().c_str());
-}
-
-TEST(PrependSignFlag, PositiveForSignedConversion) {
-    CHECK_EQUAL(2, npf_pprintf(r.PutC, &r, "%+d", 2));
-    STRCMP_EQUAL("+2", r.String().c_str());
-}
-
-TEST(PrependSignFlag, Zero) {
-    CHECK_EQUAL(2, npf_pprintf(r.PutC, &r, "%+d", 0));
-    STRCMP_EQUAL("+0", r.String().c_str());
-}
-
-TEST(PrependSignFlag, NothingForUnsignedConversion) {
-    CHECK_EQUAL(1, npf_pprintf(r.PutC, &r, "%+u", 1));
-    STRCMP_EQUAL("1", r.String().c_str());
-}
-
-// Prepend space flag
-
-TEST_GROUP(PrependSpaceFlag) { Recorder r; };
-
-TEST(PrependSpaceFlag, SpaceInsteadOfSignWhenPositive) {
-    CHECK_EQUAL(2, npf_pprintf(r.PutC, &r, "% d", 1));
-    STRCMP_EQUAL(" 1", r.String().c_str());
-}
-
-TEST(PrependSpaceFlag, MinusWhenNegative) {
-    CHECK_EQUAL(2, npf_pprintf(r.PutC, &r, "% d", -1));
-    STRCMP_EQUAL("-1", r.String().c_str());
-}
-
-// Leading zero pad flag
-
-TEST_GROUP(LeadingZeroPadFlag) { Recorder r; };
-
-TEST(LeadingZeroPadFlag, DoesNothingOnChar_Undefined) {
-    CHECK_EQUAL(1, npf_pprintf(r.PutC, &r, "%010c", 'A'));
-    STRCMP_EQUAL("A", r.String().c_str());
-}
-
-TEST(LeadingZeroPadFlag, DoesNothingOnString_Undefined) {
-    CHECK_EQUAL(4, npf_pprintf(r.PutC, &r, "%0s", "ABCD"));
-    STRCMP_EQUAL("ABCD", r.String().c_str());
-}
-
-// Alternative implementation
-
-TEST_GROUP(AlternativeImplementationFlag) { Recorder r; };
-
-TEST(AlternativeImplementationFlag, HexDoesntPrepend0xIfValueIsZero) {
-    CHECK_EQUAL(1, npf_pprintf(r.PutC, &r, "%#x", 0));
-    STRCMP_EQUAL("0", r.String().c_str());
-}
-
-TEST(AlternativeImplementationFlag, HexUppercase0X) {
-    CHECK_EQUAL(3, npf_pprintf(r.PutC, &r, "%#X", 1));
-    STRCMP_EQUAL("0X1", r.String().c_str());
-}
-
-TEST(AlternativeImplementationFlag, HexLowercase0x) {
-    CHECK_EQUAL(3, npf_pprintf(r.PutC, &r, "%#x", 1));
-    STRCMP_EQUAL("0x1", r.String().c_str());
-}
-
-TEST(AlternativeImplementationFlag, OctalDoesntPrepent0IfValueIsZero) {
-    CHECK_EQUAL(1, npf_pprintf(r.PutC, &r, "%#o", 0));
-    STRCMP_EQUAL("0", r.String().c_str());
-}
-
-TEST(AlternativeImplementationFlag, OctalNonZero) {
-    CHECK_EQUAL(2, npf_pprintf(r.PutC, &r, "%#o", 2));
-    STRCMP_EQUAL("02", r.String().c_str());
-}
-#endif
