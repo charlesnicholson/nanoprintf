@@ -150,7 +150,7 @@ npf_compilation_c_test(npf_c_default_flags)
 
 ################ Static compilation test
 
-add_executable(npf_static static_test/nanoprintf_in_static_test.c static_test/main.c)
+add_executable(npf_static tests/static_nanoprintf.c tests/static_main.c)
 
 ################# Examples
 
