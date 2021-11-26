@@ -33,11 +33,9 @@
 
 #ifndef NANOPRINTF_IMPLEMENTATION
 
-/*
-  The interface of nanoprintf begins here, to be compiled only if
-  NANOPRINTF_IMPLEMENTATION is not defined. In a multi-file library what
-  follows would be the public-facing nanoprintf.h.
-*/
+/* The interface of nanoprintf begins here, to be compiled only if
+   NANOPRINTF_IMPLEMENTATION is not defined. In a multi-file library what
+   follows would be the public-facing nanoprintf.h. */
 
 #ifndef NANOPRINTF_H_INCLUDED
 #define NANOPRINTF_H_INCLUDED
@@ -267,11 +265,9 @@ NPF_VISIBILITY int npf_ftoa_rev(char *buf, float f, unsigned base,
 
 #else // NANOPRINTF_IMPLEMENTATION
 
-/*
-  The implementation of nanoprintf begins here, to be compiled only if
-  NANOPRINTF_IMPLEMENTATION is defined. In a multi-file library what follows
-  would be nanoprintf.c.
-*/
+/* The implementation of nanoprintf begins here, to be compiled only if
+   NANOPRINTF_IMPLEMENTATION is defined. In a multi-file library what follows would
+   be nanoprintf.c. */
 
 #undef NANOPRINTF_IMPLEMENTATION
 #define NANOPRINTF_EXPOSE_INTERNALS
@@ -576,12 +572,10 @@ int npf_fsplit_abs(float f, uint64_t *out_int_part, uint64_t *out_frac_part,
   /* conversion algorithm by Wojciech Muła (zdjęcia@garnek.pl)
      http://0x80.pl/notesen/2015-12-29-float-to-string.html
      grisu2 (https://bit.ly/2JgMggX) and ryu (https://bit.ly/2RLXSg0)
-     are fast + precise + round, but require large lookup tables.
-  */
+     are fast + precise + round, but require large lookup tables. */
 
   // union-cast is UB, so copy through char*, compiler can optimize.
-  uint32_t f_bits;
-  {
+  uint32_t f_bits; {
     char const *src = (char const *)&f;
     char *dst = (char *)&f_bits;
     *dst++ = *src++;
@@ -706,14 +700,10 @@ int npf_ftoa_rev(char *buf, float f, unsigned base,
 #define NPF_PUTC(VAL) do { pc((VAL), pc_ctx); ++n; } while (0)
 
 #define NPF_EXTRACT(MOD, CAST_TO, EXTRACT_AS) \
-  case NPF_FMT_SPEC_LEN_MOD_##MOD:            \
-    val = (CAST_TO)va_arg(vlist, EXTRACT_AS); \
-    break
+  case NPF_FMT_SPEC_LEN_MOD_##MOD: val = (CAST_TO)va_arg(vlist, EXTRACT_AS); break
 
-#define NPF_WRITEBACK(MOD, TYPE)        \
-  case NPF_FMT_SPEC_LEN_MOD_##MOD:      \
-    *(va_arg(vlist, TYPE *)) = (TYPE)n; \
-    break
+#define NPF_WRITEBACK(MOD, TYPE) \
+  case NPF_FMT_SPEC_LEN_MOD_##MOD: *(va_arg(vlist, TYPE *)) = (TYPE)n; break
 
 int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
   npf_format_spec_t fs;
