@@ -896,21 +896,17 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
 #endif
                         {
                             /* print the number info cbuf */
-                            cbuf_len = npf_utoa_rev(cbuf, val, base,
-                                                     fs.conv_spec_case);
+                            cbuf_len = npf_utoa_rev(cbuf, val, base, fs.conv_spec_case);
                         }
 
                         /* alt form adds '0' octal or '0x' hex prefix */
                         if (val && fs.alternative_form) {
                             if (fs.conv_spec == NPF_FMT_SPEC_CONV_OCTAL) {
                                 cbuf[cbuf_len++] = '0';
-                            } else if (fs.conv_spec ==
-                                       NPF_FMT_SPEC_CONV_HEX_INT) {
+                            } else if (fs.conv_spec == NPF_FMT_SPEC_CONV_HEX_INT) {
                                 cbuf[cbuf_len++] =
-                                    (fs.conv_spec_case ==
-                                     NPF_FMT_SPEC_CONV_CASE_LOWER)
-                                        ? 'x'
-                                        : 'X';
+                                    (fs.conv_spec_case == NPF_FMT_SPEC_CONV_CASE_LOWER) ?
+                                      'x' : 'X';
                                 cbuf[cbuf_len++] = '0';
                             }
                         }
@@ -947,8 +943,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
                     case NPF_FMT_SPEC_CONV_FLOAT_DECIMAL: { /* 'f', 'F' */
                         float val;
-                        if (fs.length_modifier ==
-                            NPF_FMT_SPEC_LEN_MOD_LONG_DOUBLE) {
+                        if (fs.length_modifier == NPF_FMT_SPEC_LEN_MOD_LONG_DOUBLE) {
                             val = (float)va_arg(vlist, long double);
                         } else {
                             val = (float)va_arg(vlist, double);
@@ -1006,9 +1001,8 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                     if (!inf_or_nan) {
                         /* float precision is after the decimal point */
                         int const precision_start =
-                            (fs.conv_spec == NPF_FMT_SPEC_CONV_FLOAT_DECIMAL)
-                                ? frac_chars
-                                : cbuf_len;
+                            (fs.conv_spec == NPF_FMT_SPEC_CONV_FLOAT_DECIMAL) ?
+                                frac_chars : cbuf_len;
                         prec_pad = NPF_MAX(0, fs.precision - precision_start);
                     }
 #elif NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
@@ -1064,8 +1058,8 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                         /* if 0 precision, skip the fractional part and '.'
                            if 0 prec + alternative form, keep the '.' */
                         if (fs.precision == 0) {
-                            cbuf += frac_chars + !fs.alternative_form;
-                            cbuf_len -= frac_chars + !fs.alternative_form;
+                            cbuf += !fs.alternative_form;
+                            cbuf_len -= !fs.alternative_form;
                         }
                     }
 #endif
@@ -1076,8 +1070,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
 
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
                     /* real precision comes after the number. */
-                    if ((fs.conv_spec == NPF_FMT_SPEC_CONV_FLOAT_DECIMAL) &&
-                        !inf_or_nan) {
+                    if ((fs.conv_spec == NPF_FMT_SPEC_CONV_FLOAT_DECIMAL) && !inf_or_nan) {
                         while (prec_pad-- > 0) {
                             NPF_PUTC('0');
                         }
@@ -1093,7 +1086,6 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
                     }
                 }
 #endif
-
                 cur += fs_len;
             }
         }
@@ -1133,8 +1125,8 @@ int npf_vsnprintf(char *buffer, size_t bufsz, char const *format,
     if (buffer && bufsz) {
         buffer[bufsz - 1] = 0;
     }
-    return npf_vpprintf(buffer ? npf_bufputc : npf_bufputc_nop, &bufputc_ctx,
-                        format, vlist);
+    return npf_vpprintf(
+        buffer ? npf_bufputc : npf_bufputc_nop, &bufputc_ctx, format, vlist);
 }
 
 #endif /* NANOPRINTF_IMPLEMENTATION */

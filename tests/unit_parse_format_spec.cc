@@ -475,6 +475,16 @@ TEST_CASE("npf_parse_format_spec") {
       REQUIRE(spec.conv_spec_case == NPF_FMT_SPEC_CONV_CASE_UPPER);
     }
   }
+
+  SUBCASE("paland regression") {
+    SUBCASE("%.0f") {
+      REQUIRE(npf_parse_format_spec("%.0f", &spec) == 4);
+      REQUIRE(spec.conv_spec == NPF_FMT_SPEC_CONV_FLOAT_DECIMAL);
+      REQUIRE(spec.field_width_type == NPF_FMT_SPEC_FIELD_WIDTH_NONE);
+      REQUIRE(spec.precision_type == NPF_FMT_SPEC_PRECISION_LITERAL);
+      REQUIRE(spec.precision == 0);
+    }
+  }
 }
 
 /*
