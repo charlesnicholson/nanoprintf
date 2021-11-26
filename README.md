@@ -181,7 +181,7 @@ nanoprintf uses GitHub Actions for all continuous integration builds. The GitHub
 
 The matrix builds [Debug, Release] x [32-bit, 64-bit] x [Mac, Windows, Linux] x [gcc, clang, msvc], minus the 32-bit clang Mac configurations.
 
-The very thorough test suite from the [printf](https://github.com/eyalroz/printf/blob/master/test/test_suite.cpp) library exists as a submodule for licensing purposes- nanoprintf is public domain, and "printf" is MIT, so the modified test suite is optional and excluded by default unless you retrieve it by updating submodules. CI uses it; build with it locally by running `./b --paland`.
+I took the very thorough test suite from the [printf](https://github.com/eyalroz/printf/blob/master/test/test_suite.cpp) library and ported it to nanoprintf. It exists as a submodule for licensing purposes- nanoprintf is public domain, and "printf" is MIT, so the modified test suite is optional and excluded by default unless you retrieve it by updating submodules. CI uses it; build with it locally by running `./b --paland`.
 
 ## Limitations
 
