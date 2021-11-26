@@ -16,11 +16,7 @@ nanoprintf is statically configurable so users can find a balance between size, 
 
 ## Motivation
 
-[tinyprintf](https://github.com/cjlano/tinyprintf) doesn't print floating point values.
-
-[Eyal Rozenberg](https://github.com/eyalroz) forked Paland's popular `printf` library [here](https://github.com/eyalroz/printf) and fixed a bunch of issues. The `printf` symbols are no longer hard-coded and the results are no longer stored in a temporary buffer; both are very welcome changes! The `%n` write-back specifier is still absent, and the compiled binaries are ~1.5-2x larger. It does support the scientific floating-point specifiers `%e` and `%g`, which nanoprintf does not.
-
-Also, no embedded-friendly printf projects that I could find are both in the public domain *and* have single-file implementations.
+I wanted a single-file public-domain drop-in printf that came in at under 1000 bytes in the minimal configuration (bootloaders etc), and under 3000 bytes with the floating-point bells and whistles enabled.
 
 ## Philosophy
 
@@ -30,16 +26,15 @@ Alternately, perhaps you're a significantly better programmer than I! In that ca
 
 ## Usage
 
-Integrate nanoprintf into your codebase in one of two ways:
-1. Create a header file that sets up the flags and includes `nanoprintf.h`. Call the nanoprintf API directly wherever you want to use it. Add a c/c++ file that compiles the nanoprintf implementation.
-1. Create your own header file that wraps the parts of the nanoprintf API that you want to expose. Sandbox all of nanoprintf inside a single c/c++ file that forwards your function to nanoprintf.
-
-Add the following code to one of your `.c` or `.cpp` files to compile the nanoprintf implementation:
-
+Add the following code to one of your source files to compile the nanoprintf implementation:
 ```
+// define your nanoprintf configuration macros here (see "Configuration" below)
 #define NANOPRINTF_IMPLEMENTATION
 #include "path/to/nanoprintf.h"
 ```
+
+Then, in any file where you want to use nanoprintf, simply include the header and call the npf_ functions.
+
 See the "[Use nanoprintf directly](https://github.com/charlesnicholson/nanoprintf/blob/master/examples/use_npf_directly/main.cpp)" and "[Wrap nanoprintf](https://github.com/charlesnicholson/nanoprintf/blob/master/examples/wrap_npf/main.cpp)" examples for more details.
 
 ## API
@@ -58,9 +53,7 @@ nanoprintf does *not* provide `printf` or `putchar` itself; those are seen as sy
 
 ## Configuration
 
-nanoprintf has the following static configuration flags. You can either inject them into your compiler (usually `-D` flags) or wrap `nanoprintf.h` in [your own header](https://github.com/charlesnicholson/nanoprintf/blob/master/unit_tests/nanoprintf_in_unit_tests.h) that sets them up, and then `#include` your header instead of `nanoprintf.h` in your application.
-
-If no configuration flags are specified, nanoprintf will default to "reasonable" embedded values in an attempt to be helpful: floats enabled, writeback and large formatters disabled. If any configuration flags are explicitly specified, nanoprintf requires that all flags are explicitly specified.
+nanoprintf has the following static configuration flags.
 
 * `NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS`: Set to `0` or `1`. Enables field width specifiers.
 * `NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS`: Set to `0` or `1`. Enables precision specifiers.
@@ -68,6 +61,8 @@ If no configuration flags are specified, nanoprintf will default to "reasonable"
 * `NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS`: Set to `0` or `1`. Enables oversized modifiers.
 * `NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS`: Set to `0` or `1`. Enables `%n` for write-back.
 * `NANOPRINTF_VISIBILITY_STATIC`: Optional define. Marks prototypes as `static` to sandbox nanoprintf.
+
+If no configuration flags are specified, nanoprintf will default to "reasonable" embedded values in an attempt to be helpful: floats enabled, writeback and large formatters disabled. If any configuration flags are explicitly specified, nanoprintf requires that all flags are explicitly specified.
 
 If a disabled format specifier feature is used, no conversion will occur and the format specifier string simply will be printed instead.
 

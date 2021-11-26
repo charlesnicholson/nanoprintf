@@ -152,13 +152,13 @@ add_executable(npf_static tests/static_nanoprintf.c tests/static_main.c)
 ################# Examples
 
 add_executable(use_npf_directly
-               examples/use_npf_directly/your_project_nanoprintf.cpp
-               examples/use_npf_directly/main.cpp)
+               examples/use_npf_directly/your_project_nanoprintf.cc
+               examples/use_npf_directly/main.cc)
 
 add_executable(wrap_npf
                examples/wrap_npf/your_project_printf.h
-               examples/wrap_npf/your_project_printf.cpp
-               examples/wrap_npf/main.cpp)
+               examples/wrap_npf/your_project_printf.cc
+               examples/wrap_npf/main.cc)
 
 set(unit_test_files
     nanoprintf.h
