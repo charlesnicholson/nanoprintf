@@ -46,7 +46,7 @@ jobs:
         env:
           CC: /usr/bin/gcc
           CXX: /usr/bin/g++
-        run: ./b --cfg ${{ matrix.configuration }} ${{ matrix.architecture }} -v --paland
+        run: ./b --cfg ${{ matrix.configuration }} ${{ matrix.architecture }} --paland -v
 
   linux-clang:
     runs-on: ubuntu-latest
@@ -63,11 +63,13 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
+        with:
+          submodules: recursive
       - name: Build
         env:
           CC: /usr/bin/clang
           CXX: /usr/bin/clang++
-        run: ./b --cfg ${{ matrix.configuration }} -v
+        run: ./b --cfg ${{ matrix.configuration }} --paland -v
 
   macos:
     runs-on: macos-latest
@@ -78,12 +80,14 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
+        with:
+          submodules: recursive
       - name: Set up Python 3.x
         uses: actions/setup-python@v2
         with:
           python-version: '3.x'
       - name: Build
-        run: ./b --cfg ${{ matrix.configuration }} -v
+        run: ./b --cfg ${{ matrix.configuration }} --paland -v
 
   win:
     runs-on: windows-latest
@@ -95,6 +99,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
+        with:
+          submodules: recursive
       - name: Set up Python 3.x
         uses: actions/setup-python@v2
         with:
@@ -103,4 +109,4 @@ jobs:
         shell: cmd
         run: |
           call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars${{ matrix.architecture }}.bat"
-          python.exe build.py --cfg ${{ matrix.configuration }} -v
+          python.exe build.py --cfg ${{ matrix.configuration }} --paland -v
