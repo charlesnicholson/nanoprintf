@@ -40,11 +40,13 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
+        with:
+          submodules: recursive
       - name: Build
         env:
           CC: /usr/bin/gcc
           CXX: /usr/bin/g++
-        run: ./b --cfg ${{ matrix.configuration }} ${{ matrix.architecture }} -v
+        run: ./b --cfg ${{ matrix.configuration }} ${{ matrix.architecture }} -v --paland
 
   linux-clang:
     runs-on: ubuntu-latest
