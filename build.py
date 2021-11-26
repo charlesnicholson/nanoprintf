@@ -31,6 +31,10 @@ def parse_args():
     parser.add_argument(
         '--build-32-bit', help='Compile in 32-bit mode', action='store_true')
     parser.add_argument(
+        '--paland',
+        help='Compile with Paland\'s printf conformance suite',
+        action='store_true')
+    parser.add_argument(
         '--download',
         help='Download CMake and Ninja, don\'t use local copies',
         action='store_true')
@@ -125,6 +129,7 @@ def configure_cmake(cmake_exe, ninja, args):
                   '-DCMAKE_EXPORT_COMPILE_COMMANDS=ON',
                   f'-DCMAKE_MAKE_PROGRAM={ninja}',
                   f'-DCMAKE_BUILD_TYPE={args.cfg}',
+                  f'-DNPF_PALAND={"ON" if args.paland else "OFF"}',
                   f'-DNPF_32BIT={"ON" if args.build_32_bit else "OFF"}']
     try:
         return subprocess.run(cmake_args, cwd=build_path, check=True).returncode == 0

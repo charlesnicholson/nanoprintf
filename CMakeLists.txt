@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.15)
 project(nanoprintf)
 
 option(NPF_32BIT "Compile nanoprintf tests in 32-bit mode")
+option(NPF_PALAND "Compile and run the mpaland printf test suite")
 
 if (NPF_32BIT AND CMAKE_HOST_APPLE)
   message(FATAL_ERROR "Apple doesn't support 32-bit mode anymore.")
@@ -183,3 +184,9 @@ npf_test(unit_tests_large_sized_formatters "${unit_test_files}")
 target_compile_definitions(unit_tests_large_sized_formatters
                            PRIVATE
                            NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=1)
+
+############## Paland conformance tests
+
+if (NPF_PALAND)
+  npf_test(paland_conformance tests/mpaland-conformance/paland.cc)
+endif()
