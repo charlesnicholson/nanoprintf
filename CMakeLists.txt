@@ -183,3 +183,8 @@ npf_test(unit_tests_large_sized_formatters "${unit_test_files}")
 target_compile_definitions(unit_tests_large_sized_formatters
                            PRIVATE
                            NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=1)
+
+############## Paland conformance tests
+
+npf_test(paland_conformance tests/paland.cc)
+
