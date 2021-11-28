@@ -949,7 +949,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
       if (!inf_or_nan) { // float precision is after the decimal point
         int const precision_start =
-          (fs.conv_spec == NPF_FMT_SPEC_CONV_FLOAT_DECIMAL) ?  frac_chars : cbuf_len;
+          (fs.conv_spec == NPF_FMT_SPEC_CONV_FLOAT_DECIMAL) ? frac_chars : cbuf_len;
         prec_pad = NPF_MAX(0, fs.precision - precision_start);
       }
 #elif NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
@@ -960,11 +960,16 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
     // Given the full converted length, how many pad bytes?
     field_pad = fs.field_width - cbuf_len - !!sign_c;
+#if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
+    if (fs.conv_spec == NPF_FMT_SPEC_CONV_FLOAT_DECIMAL) {
+      field_pad += (!fs.precision && !fs.alternative_form); // 0-pad, no decimal point.
+    }
+#endif // NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
     field_pad -= prec_pad;
-#endif
+#endif // NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS
     field_pad = NPF_MAX(0, field_pad);
-#endif
+#endif // NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS
 
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
     // Apply right-justified field width if requested
