@@ -2,6 +2,7 @@
 
 import argparse
 import os
+import pathlib
 import shutil
 import subprocess
 import stat
@@ -10,10 +11,11 @@ import tarfile
 import urllib.request
 import zipfile
 
-SCRIPT_PATH = os.path.dirname(os.path.realpath(__file__))
+SCRIPT_PATH = pathlib.Path(__file__).resolve().parent
 
 NINJA_URL = 'https://github.com/ninja-build/ninja/releases/download/v1.9.0/{}'
 CMAKE_URL = 'https://cmake.org/files/v3.15/{}'
+
 
 def parse_args():
     """Parse command-line arguments."""
@@ -59,21 +61,21 @@ def get_cmake(download, verbose):
                 print(f'Found CMake at {cmake}')
             return cmake
 
-    plat = {'darwin': 'Darwin', 'linux': 'Linux', 'win32': 'win64'}[sys.platform]
+    plat = {
+        'darwin': 'Darwin',
+        'linux': 'Linux',
+        'win32': 'win64'}[
+        sys.platform]
     cmake_prefix = f'cmake-3.15.7-{plat}-x86_64'
-    cmake_local_dir = os.path.join(SCRIPT_PATH, 'external', 'cmake')
-    cmake_file = cmake_prefix + '.tar.gz'
-    cmake_local_tgz = os.path.join(cmake_local_dir, cmake_file)
-    cmake_local_exe = os.path.join(
-        cmake_local_dir,
-        cmake_prefix,
-        'CMake.app/Contents' if sys.platform == 'darwin' else '',
-        'bin',
-        'cmake')
+    cmake_local_dir = SCRIPT_PATH / 'external' / 'cmake'
+    cmake_file = f'{cmake_prefix}.tar.gz'
+    cmake_local_tgz = cmake_local_dir / cmake_file
+    cmake_local_exe = cmake_local_dir / cmake_prefix / \
+        ('CMake.app/Contents' if sys.platform == 'darwin' else '') / 'bin' / 'cmake'
 
-    if not os.path.exists(cmake_local_exe):
-        if not os.path.exists(cmake_local_tgz):
-            os.makedirs(cmake_local_dir, exist_ok=True)
+    if not cmake_local_exe.exists():
+        if not cmake_local_tgz.exists():
+            cmake_local_dir.mkdir(parents=True, exist_ok=True)
             download_file(
                 CMAKE_URL.format(cmake_file),
                 cmake_local_tgz,
@@ -93,15 +95,15 @@ def get_ninja(download, verbose):
                 print(f'Found ninja at {ninja}')
             return ninja
 
-    ninja_local_dir = os.path.join(SCRIPT_PATH, 'external', 'ninja')
+    ninja_local_dir = SCRIPT_PATH / 'external' / 'ninja'
     plat = {'darwin': 'mac', 'linux': 'linux', 'win32': 'win'}[sys.platform]
     ninja_file = f'ninja-{plat}.zip'
-    ninja_local_zip = os.path.join(ninja_local_dir, ninja_file)
-    ninja_local_exe = os.path.join(ninja_local_dir, 'ninja')
+    ninja_local_zip = ninja_local_dir / ninja_file
+    ninja_local_exe = ninja_local_dir / 'ninja'
 
-    if not os.path.exists(ninja_local_exe):
-        if not os.path.exists(ninja_local_zip):
-            os.makedirs(ninja_local_dir, exist_ok=True)
+    if not ninja_local_exe.exists():
+        if not ninja_local_zip.exists():
+            ninja_local_dir.mkdir(parents=True, exist_ok=True)
             download_file(
                 NINJA_URL.format(ninja_file),
                 ninja_local_zip,
@@ -109,18 +111,18 @@ def get_ninja(download, verbose):
         with zipfile.ZipFile(ninja_local_zip, 'r') as zip_file:
             zip_file.extractall(ninja_local_dir)
         os.chmod(ninja_local_exe, os.stat(
-            ninja_local_exe).st_mode | stat.S_IEXEC)  # zipfile loses +x
+            ninja_local_exe).st_mode | stat.S_IEXEC)
 
     return ninja_local_exe
 
 
 def configure_cmake(cmake_exe, ninja, args):
     """Prepare CMake for building nanoprintf tests under 'build/ninja/<cfg>'."""
-    build_path = os.path.join(SCRIPT_PATH, 'build', 'ninja', args.cfg)
-    if os.path.exists(os.path.join(build_path, 'CMakeFiles')):
+    build_path = SCRIPT_PATH / 'build' / 'ninja' / args.cfg
+    if (build_path / 'CMakeFiles').exists():
         return True
 
-    os.makedirs(build_path)
+    build_path.mkdir(parents=True)
 
     cmake_args = [cmake_exe,
                   SCRIPT_PATH,
@@ -132,14 +134,17 @@ def configure_cmake(cmake_exe, ninja, args):
                   f'-DNPF_PALAND={"ON" if args.paland else "OFF"}',
                   f'-DNPF_32BIT={"ON" if args.build_32_bit else "OFF"}']
     try:
-        return subprocess.run(cmake_args, cwd=build_path, check=True).returncode == 0
+        return subprocess.run(
+            cmake_args,
+            cwd=build_path,
+            check=True).returncode == 0
     except subprocess.CalledProcessError as cpe:
         return cpe.returncode == 0
 
 
 def build_cmake(cmake_exe, args):
     """Run CMake in build mode to compile and run the nanoprintf test suite."""
-    build_path = os.path.join(SCRIPT_PATH, 'build', 'ninja', args.cfg)
+    build_path = SCRIPT_PATH / 'build' / 'ninja' / args.cfg
     cmake_args = [cmake_exe, '--build', build_path] + \
         (['--', '-v'] if args.v else [])
     try:
