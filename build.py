@@ -40,6 +40,7 @@ def parse_args():
         '--download',
         help='Download CMake and Ninja, don\'t use local copies',
         action='store_true')
+    parser.add_argument('--generator', help='CMake generator', default='Ninja')
     parser.add_argument('-v', help='verbose', action='store_true')
     return parser.parse_args()
 
