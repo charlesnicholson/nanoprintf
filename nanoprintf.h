@@ -854,14 +854,17 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
 #endif
         { cbuf_len = npf_utoa_rev(cbuf, val, base, fs.conv_spec_case); }
 
-        // alt form adds '0' octal
+        // alt form adds '0' octal, ok to add immediately
         if (val && fs.alternative_form) {
           if (fs.conv_spec == NPF_FMT_SPEC_CONV_OCTAL) {
             cbuf[cbuf_len++] = '0';
           }
         }
 
-        need_0x = (val != 0) && fs.alternative_form && (fs.conv_spec == NPF_FMT_SPEC_CONV_HEX_INT);
+        // alt form adds '0x' hex but can't write it yet.
+        if (val && fs.alternative_form && (fs.conv_spec == NPF_FMT_SPEC_CONV_HEX_INT)) {
+          need_0x = (fs.conv_spec_case == NPF_FMT_SPEC_CONV_CASE_LOWER) ? 'x' : 'X';
+        }
       } break;
 
       case NPF_FMT_SPEC_CONV_POINTER: { // 'p'
@@ -971,12 +974,6 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
     field_pad = NPF_MAX(0, field_pad);
 #endif // NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS
 
-// else if (fs.conv_spec == NPF_FMT_SPEC_CONV_HEX_INT) {
-//            cbuf[cbuf_len++] = (fs.conv_spec_case == NPF_FMT_SPEC_CONV_CASE_LOWER) ?
-//              'x' : 'X';
-//            cbuf[cbuf_len++] = '0';
-//          }
-
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
     // Apply right-justified field width if requested
     if (!fs.left_justified && pad_c) { // If leading zeros pad, sign goes first.
@@ -985,19 +982,19 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
           NPF_PUTC(sign_c);
           sign_c = 0;
         }
-        if (need_0x) { NPF_PUTC('0'); NPF_PUTC((fs.conv_spec_case == NPF_FMT_SPEC_CONV_CASE_LOWER) ? 'x' : 'X'); need_0x = 0; }
+        // Pad byte is '0', write '0x' before '0' pad chars.
+        if (need_0x) { NPF_PUTC('0'); NPF_PUTC(need_0x); need_0x = 0; }
       }
       while (field_pad-- > 0) { NPF_PUTC(pad_c); }
-      if (need_0x) { NPF_PUTC('0'); NPF_PUTC((fs.conv_spec_case == NPF_FMT_SPEC_CONV_CASE_LOWER) ? 'x' : 'X'); need_0x = 0; }
+      // Pad byte is ' ', write '0x' after ' ' pad chars but before number.
+      if (need_0x) { NPF_PUTC('0'); NPF_PUTC(need_0x); }
     } else
 #endif
-    { if (need_0x) { NPF_PUTC('0'); NPF_PUTC((fs.conv_spec_case == NPF_FMT_SPEC_CONV_CASE_LOWER) ? 'x' : 'X'); } }
+    { if (need_0x) { NPF_PUTC('0'); NPF_PUTC(need_0x); } } // no pad, '0x' requested.
 
     // Write the converted payload
     if (fs.conv_spec == NPF_FMT_SPEC_CONV_STRING) {
-      for (i = 0; i < cbuf_len; ++i) {
-        NPF_PUTC(cbuf[i]);
-      }
+      for (i = 0; i < cbuf_len; ++i) { NPF_PUTC(cbuf[i]); }
     } else {
       if (sign_c) { NPF_PUTC(sign_c); }
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
