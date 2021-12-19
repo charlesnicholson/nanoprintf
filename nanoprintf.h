@@ -651,7 +651,7 @@ int npf_ftoa_rev(char *buf, float f, unsigned base,
     *buf++ = (char)('N' + case_c);
     return -3;
   }
-  if (f == INFINITY) {
+  if ((f == INFINITY) || (f == -INFINITY)) {
     *buf++ = (char)('F' + case_c);
     *buf++ = (char)('N' + case_c);
     *buf++ = (char)('I' + case_c);
