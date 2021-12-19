@@ -46,7 +46,8 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
        -Wno-old-style-cast
        -Wno-c++98-compat-pedantic
        -Wno-missing-prototypes
-       -Wno-reserved-identifier)
+       -Wno-reserved-identifier
+       -Wno-float-equal)
 endif()
 
 set(nanoprintf_c_flags ${nanoprintf_common_flags})
