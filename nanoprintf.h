@@ -578,10 +578,7 @@ int npf_fsplit_abs(float f, uint64_t *out_int_part, uint64_t *out_frac_part,
   uint32_t f_bits; {
     char const *src = (char const *)&f;
     char *dst = (char *)&f_bits;
-    *dst++ = *src++;
-    *dst++ = *src++;
-    *dst++ = *src++;
-    *dst++ = *src++;
+    for (unsigned i = 0; i < sizeof(f_bits); ++i) { dst[i] = src[i]; }
   }
 
   int const exponent =
