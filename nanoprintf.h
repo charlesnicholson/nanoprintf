@@ -728,7 +728,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
     char pad_c;
 #endif
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
-    int prec_pad = 0, zero = 0;
+    int prec_pad = 0, zero;
 #endif
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
     int frac_chars = 0, inf_or_nan = 0;
@@ -902,6 +902,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
         }
 
         sign = (val < 0) ? -1 : 1;
+        zero = (val == 0.f);
         cbuf_len = npf_ftoa_rev(cbuf, val, 10, fs.conv_spec_case, &frac_chars);
 
         if (cbuf_len < 0) {
