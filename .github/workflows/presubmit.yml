@@ -22,7 +22,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Pylint build.py
-        run: python3 -m pylint build.py
+        run: . /work/venv/bin/activate && python -m pylint build.py
 
   linux-gcc:
     runs-on: ubuntu-latest
