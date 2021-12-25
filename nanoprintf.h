@@ -298,6 +298,7 @@ int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
   out_spec->left_justified = 0;
   out_spec->leading_zero_pad = 0;
 #endif
+  out_spec->conv_spec_case = NPF_FMT_SPEC_CONV_CASE_LOWER;
   out_spec->prepend_sign = 0;
   out_spec->prepend_space = 0;
   out_spec->alternative_form = 0;
@@ -445,7 +446,6 @@ int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
       break;
     case 'x':
       out_spec->conv_spec = NPF_FMT_SPEC_CONV_HEX_INT;
-      out_spec->conv_spec_case = NPF_FMT_SPEC_CONV_CASE_LOWER;
       break;
     case 'X':
       out_spec->conv_spec = NPF_FMT_SPEC_CONV_HEX_INT;
@@ -457,7 +457,6 @@ int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
     case 'f':
       out_spec->conv_spec = NPF_FMT_SPEC_CONV_FLOAT_DECIMAL;
-      out_spec->conv_spec_case = NPF_FMT_SPEC_CONV_CASE_LOWER;
       break;
     case 'F':
       out_spec->conv_spec = NPF_FMT_SPEC_CONV_FLOAT_DECIMAL;
