@@ -125,35 +125,11 @@ jobs:
       - name: Cortex-M0 Minimal
         shell: bash
         run: |
-          arm-none-eabi-gcc \
-            -mcpu=cortex-m0 \
-            -Os \
-            -x c \
-            -c \
-            -o cm0-min.o \
-            -DNANOPRINTF_IMPLEMENTATION \
-            -DNANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=0 \
-            -DNANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=0 \
-            -DNANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=0 \
-            -DNANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0 \
-            -DNANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=0 \
-            - <<< '#include "nanoprintf.h"'
+          arm-none-eabi-gcc -mcpu=cortex-m0 -Os -x c -c -o cm0-min.o -DNANOPRINTF_IMPLEMENTATION -DNANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=0 - <<< '#include "nanoprintf.h"'
           arm-none-eabi-nm --print-size --size-sort cm0-min.o
 
       - name: Cortex-M0 Everything
         shell: bash
         run:
-          arm-none-eabi-gcc \
-            -mcpu=cortex-m0 \
-            -Os \
-            -x c \
-            -c \
-            -o cm0-max.o \
-            -DNANOPRINTF_IMPLEMENTATION \
-            -DNANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=1 \
-            -DNANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=1 \
-            -DNANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=1 \
-            -DNANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=1 \
-            -DNANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=1 \
-            - <<< '#include "nanoprintf.h"'
+          arm-none-eabi-gcc -mcpu=cortex-m0 -Os -x c -c -o cm0-max.o -DNANOPRINTF_IMPLEMENTATION -DNANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=1 - <<< '#include "nanoprintf.h"'
           arm-none-eabi-nm --print-size --size-sort cm0-max.o
