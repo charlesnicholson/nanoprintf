@@ -730,7 +730,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
     int prec_pad = 0;
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
-    int zero;
+    int zero = 0; // A precision of 0 means that no character is written for the value 0.
 #endif
 #endif
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
