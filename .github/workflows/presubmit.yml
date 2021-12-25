@@ -123,6 +123,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Cortex-M0 Minimal
+        shell: bash
         run: |
           arm-none-eabi-gcc \
             -mcpu=cortex-m0 \
@@ -139,6 +140,7 @@ jobs:
           arm-none-eabi-nm --print-size --size-sort cm0-min.o
 
       - name: Cortex-M0 Everything
+        shell: bash
         run:
           arm-none-eabi-gcc \
             -mcpu=cortex-m0 \
