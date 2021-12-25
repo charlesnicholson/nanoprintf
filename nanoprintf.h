@@ -728,7 +728,10 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
     char pad_c;
 #endif
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
-    int prec_pad = 0, zero;
+    int prec_pad = 0;
+#if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
+    int zero;
+#endif
 #endif
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
     int frac_chars = 0, inf_or_nan = 0;
@@ -807,7 +810,9 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
         sign = (val < 0) ? -1 : 1;
 
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
+#if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
         zero = !val;
+#endif
         // special case, if prec and value are 0, skip
         if (!val && !fs.precision &&
             (fs.precision_type == NPF_FMT_SPEC_PRECISION_LITERAL)) {
@@ -842,7 +847,9 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
         }
 
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
+#if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
         zero = !val;
+#endif
         if (!val && !fs.precision) {
           if ((fs.conv_spec == NPF_FMT_SPEC_CONV_OCTAL) && fs.alternative_form) {
             fs.precision = 1; // octal special case, print a single '0'
@@ -902,7 +909,9 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
         }
 
         sign = (val < 0) ? -1 : 1;
+#if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
         zero = (val == 0.f);
+#endif
         cbuf_len = npf_ftoa_rev(cbuf, val, 10, fs.conv_spec_case, &frac_chars);
 
         if (cbuf_len < 0) {
