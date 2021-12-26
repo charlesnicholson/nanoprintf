@@ -73,10 +73,14 @@ NPF_VISIBILITY int npf_pprintf(npf_putc pc, void *pc_ctx, char const *format,
 NPF_VISIBILITY int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format,
                                 va_list vlist) NPF_PRINTF_ATTR(3, 0);
 
-// Implementation begins here
+/* The implementation of nanoprintf begins here, to be compiled only if
+   NANOPRINTF_IMPLEMENTATION is defined. In a multi-file library what follows would
+   be nanoprintf.c. */
+
 #ifdef NANOPRINTF_IMPLEMENTATION
 
-// Configuration
+#include <inttypes.h>
+#include <stdint.h>
 
 // Pick reasonable defaults if nothing's been configured.
 #if !defined(NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS) && \
@@ -130,11 +134,6 @@ NPF_VISIBILITY int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format,
     #endif
   #endif
 #endif
-
-// Implementation Details (prototype / config helper functions)
-
-#include <stdint.h>
-#include <inttypes.h>
 
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
 typedef enum {
@@ -248,11 +247,6 @@ NPF_VISIBILITY int npf_ftoa_rev(char *buf, float f, unsigned base,
                                 npf_format_spec_conversion_case_t cc,
                                 int *out_frac_chars);
 #endif
-
-
-/* The implementation of nanoprintf begins here, to be compiled only if
-   NANOPRINTF_IMPLEMENTATION is defined. In a multi-file library what follows would
-   be nanoprintf.c. */
 
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
   #include <math.h>
