@@ -22,7 +22,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Pylint build.py
-        run: . /work/venv/bin/activate && python -m pylint build.py
+        run: . /work/venv/bin/activate && python -m pylint build.py tests/size-report.py
 
   linux-gcc:
     runs-on: ubuntu-latest
@@ -127,22 +127,26 @@ jobs:
         shell: bash
         run: |
           arm-none-eabi-gcc -mcpu=cortex-m0 -mthumb -Os -x c -c -o cm0-min.o -DNANOPRINTF_IMPLEMENTATION -DNANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=0 - <<< '#include "nanoprintf.h"'
-          arm-none-eabi-nm --print-size --size-sort cm0-min.o
+          . /work/venv/bin/activate
+          arm-none-eabi-nm --print-size --size-sort cm0-min.o | python tests/size-report.py
 
       - name: Cortex-M0 Everything
         shell: bash
         run: |
           arm-none-eabi-gcc -mcpu=cortex-m0 -mthumb -Os -x c -c -o cm0-max.o -DNANOPRINTF_IMPLEMENTATION -DNANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=1 - <<< '#include "nanoprintf.h"'
-          arm-none-eabi-nm --print-size --size-sort cm0-max.o
+          . /work/venv/bin/activate
+          arm-none-eabi-nm --print-size --size-sort cm0-max.o | python tests/size-report.py
 
       - name: Cortex-M4 Minimal
         shell: bash
         run: |
           arm-none-eabi-gcc -mcpu=cortex-m4 -mthumb -Os -x c -c -o cm4-min.o -DNANOPRINTF_IMPLEMENTATION -DNANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=0 - <<< '#include "nanoprintf.h"'
-          arm-none-eabi-nm --print-size --size-sort cm4-min.o
+          . /work/venv/bin/activate
+          arm-none-eabi-nm --print-size --size-sort cm4-min.o | python tests/size-report.py
 
       - name: Cortex-M4 Everything
         shell: bash
         run: |
           arm-none-eabi-gcc -mcpu=cortex-m4 -mthumb -Os -x c -c -o cm4-max.o -DNANOPRINTF_IMPLEMENTATION -DNANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=1 - <<< '#include "nanoprintf.h"'
-          arm-none-eabi-nm --print-size --size-sort cm4-max.o
+          . /work/venv/bin/activate
+          arm-none-eabi-nm --print-size --size-sort cm4-max.o | python tests/size-report.py
