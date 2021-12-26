@@ -61,7 +61,7 @@ add_library(libdoctest_main OBJECT tests/doctest_main.cc)
 
 function(npf_test name files)
   add_executable(${name} ${files})
-  target_link_libraries(${name} libdoctest_main)
+  target_link_libraries(${name} libdoctest_main) # Doctest is slow, only build once.
 
   if (NOT MSVC)
     # The tests use format strings that anger clang + gcc
@@ -73,10 +73,8 @@ function(npf_test name files)
   endif()
 
   # Set up a target that automatically runs + timestamps successful tests.
-
   set(timestamp "${CMAKE_CURRENT_BINARY_DIR}/${name}.timestamp")
   add_custom_target(run_${name} ALL DEPENDS ${timestamp})
-
   add_custom_command(OUTPUT ${timestamp}
                      COMMAND ${name} && ${CMAKE_COMMAND} -E touch ${timestamp}
                      DEPENDS ${name}
@@ -149,10 +147,9 @@ endforeach()
 # Test that nanoprintf compiles when no flags are set.
 npf_compilation_c_test(npf_c_default_flags)
 
-################ Compilation tests
+################ Static compilation test
 
 add_executable(npf_static tests/static_nanoprintf.c tests/static_main.c)
-add_executable(npf_include_multiple tests/include_multiple.c)
 
 ################# Examples
 
@@ -165,6 +162,10 @@ add_executable(wrap_npf
                examples/wrap_npf/your_project_printf.cc
                examples/wrap_npf/main.cc)
 
+add_executable(npf_include_multiple tests/include_multiple.c)
+
+############### Unit tests
+
 set(unit_test_files
     nanoprintf.h
     tests/unit_parse_format_spec.cc
@@ -175,8 +176,6 @@ set(unit_test_files
     tests/unit_fsplit_abs.cc
     tests/unit_snprintf.cc
     tests/unit_vpprintf.cc)
-
-############### Unit tests
 
 npf_test(unit_tests_normal_sized_formatters "${unit_test_files}")
 target_compile_definitions(unit_tests_normal_sized_formatters
