@@ -48,6 +48,8 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
        -Wno-c++98-compat-pedantic
        -Wno-missing-prototypes
        -Wno-reserved-identifier)
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+  list(APPEND nanoprintf_common_flags -Wno-uninitialized) # Spurious
 endif()
 
 set(nanoprintf_c_flags ${nanoprintf_common_flags})
