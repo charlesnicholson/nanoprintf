@@ -149,9 +149,10 @@ endforeach()
 # Test that nanoprintf compiles when no flags are set.
 npf_compilation_c_test(npf_c_default_flags)
 
-################ Static compilation test
+################ Compilation tests
 
 add_executable(npf_static tests/static_nanoprintf.c tests/static_main.c)
+add_executable(npf_include_multiple tests/include_multiple.c)
 
 ################# Examples
 
