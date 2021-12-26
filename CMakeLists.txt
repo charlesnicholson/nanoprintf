@@ -138,6 +138,19 @@ foreach(fw 0 1)
             NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=${large}
             NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=${float}
             NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=${wb})
+
+          if (NPF_PALAND)
+            set(paland_test_name "npf_paland${test_name}")
+            npf_test(${paland_test_name} tests/mpaland-conformance/paland.cc)
+            target_compile_definitions(
+              ${paland_test_name}
+              PRIVATE
+              NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=${fw}
+              NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=${precision}
+              NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=${large}
+              NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=${float}
+              NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=${wb})
+          endif()
         endforeach()
       endforeach()
     endforeach()
@@ -186,9 +199,3 @@ npf_test(unit_tests_large_sized_formatters "${unit_test_files}")
 target_compile_definitions(unit_tests_large_sized_formatters
                            PRIVATE
                            NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=1)
-
-############## Paland conformance tests
-
-if (NPF_PALAND)
-  npf_test(paland_conformance tests/mpaland-conformance/paland.cc)
-endif()
