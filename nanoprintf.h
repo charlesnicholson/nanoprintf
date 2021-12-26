@@ -31,12 +31,12 @@
   For more information, please refer to <http://unlicense.org>
 */
 
-#ifndef NANOPRINTF_H_INCLUDED
-#define NANOPRINTF_H_INCLUDED
-
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#ifndef NANOPRINTF_H_INCLUDED
+#define NANOPRINTF_H_INCLUDED
 
 #include <stdarg.h>
 #include <stddef.h>
@@ -73,11 +73,16 @@ NPF_VISIBILITY int npf_pprintf(npf_putc pc, void *pc_ctx, char const *format,
 NPF_VISIBILITY int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format,
                                 va_list vlist) NPF_PRINTF_ATTR(3, 0);
 
+#endif // NANOPRINTF_H_INCLUDED
+
 /* The implementation of nanoprintf begins here, to be compiled only if
    NANOPRINTF_IMPLEMENTATION is defined. In a multi-file library what follows would
    be nanoprintf.c. */
 
 #ifdef NANOPRINTF_IMPLEMENTATION
+
+#ifndef NANOPRINTF_IMPLEMENTATION_INCLUDED
+#define NANOPRINTF_IMPLEMENTATION_INCLUDED
 
 #include <inttypes.h>
 #include <stdint.h>
@@ -1060,10 +1065,9 @@ int npf_vsnprintf(char *buffer, size_t bufsz, char const *format, va_list vlist)
     npf_vpprintf(buffer ? npf_bufputc : npf_bufputc_nop, &bufputc_ctx, format, vlist);
 }
 
+#endif // NANOPRINTF_IMPLEMENTATION_INCLUDED
 #endif // NANOPRINTF_IMPLEMENTATION
 
 #ifdef __cplusplus
 }
 #endif
-
-#endif // NANOPRINTF_H_INCLUDED
