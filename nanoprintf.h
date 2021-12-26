@@ -231,7 +231,7 @@ typedef struct {
   typedef uintmax_t npf_uint_t;
 #endif
 
-NPF_VISIBILITY int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec);
+static int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec);
 
 typedef struct {
   char *dst;
@@ -239,18 +239,25 @@ typedef struct {
   size_t cur;
 } npf_bufputc_ctx_t;
 
-NPF_VISIBILITY void npf_bufputc(int c, void *ctx);
-NPF_VISIBILITY void npf_bufputc_nop(int c, void *ctx);
-NPF_VISIBILITY int npf_itoa_rev(char *buf, npf_int_t i);
-NPF_VISIBILITY int npf_utoa_rev(char *buf, npf_uint_t i, unsigned base,
-                                npf_format_spec_conversion_case_t cc);
+static void npf_bufputc(int c, void *ctx);
+static void npf_bufputc_nop(int c, void *ctx);
+static int npf_itoa_rev(char *buf, npf_int_t i);
+static int npf_utoa_rev(char *buf,
+                        npf_uint_t i,
+                        unsigned base,
+                        npf_format_spec_conversion_case_t cc);
+
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
-NPF_VISIBILITY int npf_fsplit_abs(float f, uint64_t *out_int_part,
-                                  uint64_t *out_frac_part,
-                                  int *out_frac_base10_neg_e);
-NPF_VISIBILITY int npf_ftoa_rev(char *buf, float f, unsigned base,
-                                npf_format_spec_conversion_case_t cc,
-                                int *out_frac_chars);
+static int npf_fsplit_abs(float f,
+                          uint64_t *out_int_part,
+                          uint64_t *out_frac_part,
+                          int *out_frac_base10_neg_e);
+
+static int npf_ftoa_rev(char *buf,
+                        float f,
+                        unsigned base,
+                        npf_format_spec_conversion_case_t cc,
+                        int *out_frac_chars);
 #endif
 
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
@@ -266,8 +273,8 @@ NPF_VISIBILITY int npf_ftoa_rev(char *buf, float f, unsigned base,
   #endif
 #endif
 
-#define NPF_MIN(x, y) ((x) < (y) ? (x) : (y))
-#define NPF_MAX(x, y) ((x) > (y) ? (x) : (y))
+static int npf_min(int x, int y) { return (x < y) ? x : y; }
+static int npf_max(int x, int y) { return (x > y) ? x : y; }
 
 int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
   char const *cur = format;
@@ -511,7 +518,6 @@ int npf_utoa_rev(char *buf, npf_uint_t i, unsigned base,
     *dst++ = (d < 10) ? (char)('0' + d) : (char)(base_c + (d - 10));
     i /= base;
   }
-
   return (int)(dst - buf);
 }
 
@@ -716,7 +722,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
         fs.precision_type = NPF_FMT_SPEC_PRECISION_LITERAL;
         fs.precision = precision;
       } else { // Negative precision is ignored.
-      fs.precision_type = NPF_FMT_SPEC_PRECISION_NONE;
+        fs.precision_type = NPF_FMT_SPEC_PRECISION_NONE;
       }
     }
 #endif
@@ -736,12 +742,12 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
       case NPF_FMT_SPEC_CONV_STRING: { // 's'
         char *s = va_arg(vlist, char *);
         cbuf = s;
-        while (*s) ++s;
+        while (*s) { ++s; }
         cbuf_len = (int)(s - cbuf);
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
         if (fs.precision_type == NPF_FMT_SPEC_PRECISION_LITERAL) {
           // precision modifier truncates strings
-          cbuf_len = NPF_MIN(fs.precision, cbuf_len);
+          cbuf_len = npf_min(fs.precision, cbuf_len);
         }
 #endif
       } break;
@@ -819,9 +825,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
 
         // alt form adds '0' octal, ok to add immediately
         if (val && fs.alternative_form) {
-          if (fs.conv_spec == NPF_FMT_SPEC_CONV_OCTAL) {
-            cbuf[cbuf_len++] = '0';
-          }
+          if (fs.conv_spec == NPF_FMT_SPEC_CONV_OCTAL) { cbuf[cbuf_len++] = '0'; }
         }
 
         // alt form adds '0x' hex but can't write it yet.
@@ -911,9 +915,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
 #endif
           { pad_c = '0'; }
         }
-      } else {
-        pad_c = ' ';
-      }
+      } else { pad_c = ' '; }
     }
 #endif
 
@@ -923,10 +925,10 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
       if (!inf_or_nan) { // float precision is after the decimal point
         int const precision_start =
           (fs.conv_spec == NPF_FMT_SPEC_CONV_FLOAT_DECIMAL) ? frac_chars : cbuf_len;
-        prec_pad = NPF_MAX(0, fs.precision - precision_start);
+        prec_pad = npf_max(0, fs.precision - precision_start);
       }
 #elif NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
-      prec_pad = NPF_MAX(0, fs.precision - cbuf_len);
+      prec_pad = npf_max(0, fs.precision - cbuf_len);
 #endif
     }
 
@@ -943,7 +945,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
     field_pad -= prec_pad;
 #endif // NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS
-    field_pad = NPF_MAX(0, field_pad);
+    field_pad = npf_max(0, field_pad);
 #endif // NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS
 
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
@@ -1018,18 +1020,16 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
 
 int npf_pprintf(npf_putc pc, void *pc_ctx, char const *format, ...) {
   va_list val;
-  int rv;
   va_start(val, format);
-  rv = npf_vpprintf(pc, pc_ctx, format, val);
+  int const rv = npf_vpprintf(pc, pc_ctx, format, val);
   va_end(val);
   return rv;
 }
 
 int npf_snprintf(char *buffer, size_t bufsz, const char *format, ...) {
   va_list val;
-  int rv;
   va_start(val, format);
-  rv = npf_vsnprintf(buffer, bufsz, format, val);
+  int const rv = npf_vsnprintf(buffer, bufsz, format, val);
   va_end(val);
   return rv;
 }
