@@ -485,9 +485,7 @@ int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
 
 void npf_bufputc(int c, void *ctx) {
   npf_bufputc_ctx_t *bpc = (npf_bufputc_ctx_t *)ctx;
-  if (bpc->cur < bpc->len - 1) {
-    bpc->dst[bpc->cur++] = (char)c;
-  }
+  if (bpc->cur < bpc->len - 1) { bpc->dst[bpc->cur++] = (char)c; }
 }
 
 void npf_bufputc_nop(int c, void *ctx) {
@@ -497,31 +495,23 @@ void npf_bufputc_nop(int c, void *ctx) {
 
 int npf_itoa_rev(char *buf, npf_int_t i) {
   char *dst = buf;
-  if (i == 0) {
-    *dst++ = '0';
-  } else {
-    int const neg = (i < 0) ? -1 : 1;
-    while (i) {
-      *dst++ = (char)('0' + (neg * (i % 10)));
-      i /= 10;
-    }
-  }
+  if (i == 0) { *dst++ = '0'; }
+  int const neg = (i < 0) ? -1 : 1;
+  while (i) { *dst++ = (char)('0' + (neg * (i % 10))); i /= 10; }
   return (int)(dst - buf);
 }
 
 int npf_utoa_rev(char *buf, npf_uint_t i, unsigned base,
                  npf_format_spec_conversion_case_t cc) {
   char *dst = buf;
-  if (i == 0) {
-    *dst++ = '0';
-  } else {
-    unsigned const base_c = (cc == NPF_FMT_SPEC_CONV_CASE_LOWER) ? 'a' : 'A';
-    while (i) {
-      unsigned const d = (unsigned)(i % base);
-      i /= base;
-      *dst++ = (d < 10) ? (char)('0' + d) : (char)(base_c + (d - 10));
-    }
+  if (i == 0) { *dst++ = '0'; }
+  unsigned const base_c = (cc == NPF_FMT_SPEC_CONV_CASE_LOWER) ? 'a' : 'A';
+  while (i) {
+    unsigned const d = (unsigned)(i % base);
+    *dst++ = (d < 10) ? (char)('0' + d) : (char)(base_c + (d - 10));
+    i /= base;
   }
+
   return (int)(dst - buf);
 }
 
