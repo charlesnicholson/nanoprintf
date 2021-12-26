@@ -2,6 +2,7 @@
 import sys
 
 def main():
+    """Read nm output from stdin, accumulate the size fields, print total."""
     total = 0
     for line in sys.stdin:
         print(line, end='')
