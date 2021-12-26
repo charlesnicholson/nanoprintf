@@ -119,51 +119,51 @@ Despite `nano` in the name, there's no way to do away with double entirely, sinc
 
 ## Measurement
 
-Compiling with all optional features disabled yields < 1000 bytes of ARM Cortex-M0 object code:
+The CI build is set up to use gcc and nm to measure the compiled size of every pull request. See the [Presubmit Checks](https://github.com/charlesnicholson/nanoprintf/actions/workflows/presubmit.yml) "size reports" job output for recent runs.
+
+Minimal configuration (all features disabled):
 ```
-Minimal configuration:
-00000016 00000002 T npf_bufputc_nop
-00000000 00000016 T npf_bufputc
-00000384 00000016 T npf_pprintf
-000003cc 00000016 T npf_snprintf
-0000039a 00000032 T npf_vsnprintf
-000000e8 0000004e T npf_itoa_rev
-00000136 00000054 T npf_utoa_rev
-00000018 000000d0 T npf_parse_format_spec
-0000018a 000001fa T npf_vpprintf
-total:   0x3e2 (994 bytes)
+arm-none-eabi-gcc -mcpu=cortex-m0 -mthumb -Os -x c -c -o cm0-min.o -DNANOPRINTF_IMPLEMENTATION -DNANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=0 - <<< '#include "nanoprintf.h"'
+arm-none-eabi-nm --print-size --size-sort cm0-min.o | python tests/size_report.py
+
+00000016 00000002 t npf_bufputc_nop
+00000000 00000016 t npf_bufputc
+0000036e 00000016 T npf_pprintf
+000003b8 00000016 T npf_snprintf
+00000384 00000034 T npf_vsnprintf
+00000018 00000356 T npf_vpprintf
+
+Total size: 0x3ce (974 bytes)
 ```
 
-Compiling with field width and precision specifiers enabled yields ~1.6KB:
+Medium configuration (field width and precision specifiers):
 ```
-"Small" configuration: (field witdh + precision)
-00000016 00000002 T npf_bufputc_nop
-00000000 00000016 T npf_bufputc
-000005ee 00000016 T npf_pprintf
-00000638 00000016 T npf_snprintf
-00000604 00000034 T npf_vsnprintf
-000001ae 0000004e T npf_itoa_rev
-000001fc 00000054 T npf_utoa_rev
-00000018 00000196 T npf_parse_format_spec
-00000250 0000039e T npf_vpprintf
-total:   0x6a8 (1614 bytes)
+arm-none-eabi-gcc -mcpu=cortex-m0 -mthumb -Os -x c -c -o cm0-med.o -DNANOPRINTF_IMPLEMENTATION -DNANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=0 - <<< '#include "nanoprintf.h"'
+arm-none-eabi-nm --print-size --size-sort cm0-med.o | python tests/size_report.py
+
+00000016 00000002 t npf_bufputc_nop
+00000000 00000016 t npf_bufputc
+0000065e 00000016 T npf_pprintf
+000006a8 00000016 T npf_snprintf
+00000674 00000034 T npf_vsnprintf
+00000018 00000646 T npf_vpprintf
+
+Total size: 0x6be (1726) bytes
 ```
 
-Compiling with all optional features enabled is closer to ~2.5KB:
+Maximal configuration (field width, precision, large int, writeback, floating point):
 ```
-Everything:
-00000016 00000002 T npf_bufputc_nop
-00000000 00000016 T npf_bufputc
-000009ca 00000016 T npf_pprintf
-00000a14 00000016 T npf_snprintf
-000009e0 00000034 T npf_vsnprintf
-00000204 0000005c T npf_itoa_rev
-00000260 00000078 T npf_utoa_rev
-000002d8 000000e0 T npf_fsplit_abs
-000003b8 00000108 T npf_ftoa_rev
-00000018 000001ec T npf_parse_format_spec
-000004c0 0000050a T npf_vpprintf
-total:   0xa2a (2602 bytes)
+arm-none-eabi-gcc -mcpu=cortex-m0 -mthumb -Os -x c -c -o cm0-max.o -DNANOPRINTF_IMPLEMENTATION -DNANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=1 - <<< '#include "nanoprintf.h"'
+arm-none-eabi-nm --print-size --size-sort cm0-max.o | python tests/size_report.py
+
+00000016 00000002 t npf_bufputc_nop
+00000000 00000016 t npf_bufputc
+00000a2c 00000016 T npf_pprintf
+00000a74 00000016 T npf_snprintf
+00000a42 00000032 T npf_vsnprintf
+00000018 00000a14 T npf_vpprintf
+
+Total size: 0xa8a (2698) bytes
 ```
 
 ## Development
@@ -181,7 +181,7 @@ nanoprintf uses GitHub Actions for all continuous integration builds. The GitHub
 
 The matrix builds [Debug, Release] x [32-bit, 64-bit] x [Mac, Windows, Linux] x [gcc, clang, msvc], minus the 32-bit clang Mac configurations.
 
-I took the very thorough test suite from the [printf](https://github.com/eyalroz/printf/blob/master/test/test_suite.cpp) library and ported it to nanoprintf. It exists as a submodule for licensing purposes- nanoprintf is public domain, and "printf" is MIT, so the modified test suite is optional and excluded by default unless you retrieve it by updating submodules. CI uses it; build with it locally by running `./b --paland`.
+One test suite is a fork from the [printf test suite](), which is MIT licensed. It exists as a submodule for licensing purposes- nanoprintf is public domain, so this particular test suite is optional and excluded by default. To build it, retrieve it by updating submodules and add the `--paland` flag to your `./b` invocation. It is not required to use nanoprintf at all.
 
 ## Limitations
 
@@ -191,4 +191,6 @@ Currently the only supported float conversions are the decimal forms: `%f` and `
 
 ## Acknowledgments
 
-Float-to-int conversion is done using [Wojciech Muła](mailto:zdjęcia@garnek.pl)'s float -> 64:64 fixed [algorithm](http://0x80.pl/notesen/2015-12-29-float-to-string.html).
+I implemented Float-to-int conversion using the ideas from [Wojciech Muła](mailto:zdjęcia@garnek.pl)'s [float -> 64:64 fixed algorithm](http://0x80.pl/notesen/2015-12-29-float-to-string.html).
+
+I ported the [printf test suite](https://github.com/eyalroz/printf/blob/master/test/test_suite.cpp) to nanoprintf. It was originally from the [mpaland printf project](https://github.com/mpaland/printf) codebase but adopted and improved by [Eyal Rozenberg](https://github.com/eyalroz) and others. (Nanoprintf has many of its own tests, but these are also very thorough and very good!)

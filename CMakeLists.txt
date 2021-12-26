@@ -35,14 +35,13 @@ else()
       -Wconversion
       -Wsign-conversion
       -Wswitch-default
-      -Wswitch-enum
       -Wno-padded
       -Wno-covered-switch-default
       -Wno-unused-function)
 endif()
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-  list(APPEND nanoprintf_common_flags -Weverything -Wno-float-equal)
+  list(APPEND nanoprintf_common_flags -Weverything -Wno-float-equal -Wno-switch-enum)
   list(APPEND nanoprintf_cxx_flags
        -Wno-old-style-cast
        -Wno-c++98-compat-pedantic
