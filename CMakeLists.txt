@@ -37,7 +37,8 @@ else()
       -Wswitch-default
       -Wswitch-enum
       -Wno-padded
-      -Wno-covered-switch-default)
+      -Wno-covered-switch-default
+      -Wno-unused-function)
 endif()
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
@@ -47,6 +48,8 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
        -Wno-c++98-compat-pedantic
        -Wno-missing-prototypes
        -Wno-reserved-identifier)
+elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+  list(APPEND nanoprintf_common_flags -Wno-uninitialized) # Spurious
 endif()
 
 set(nanoprintf_c_flags ${nanoprintf_common_flags})
@@ -163,7 +166,6 @@ add_executable(wrap_npf
 
 set(unit_test_files
     nanoprintf.h
-    tests/unit_nanoprintf.c
     tests/unit_parse_format_spec.cc
     tests/unit_bufputc.cc
     tests/unit_ftoa_rev.cc

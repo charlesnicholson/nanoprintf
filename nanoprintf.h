@@ -31,14 +31,12 @@
   For more information, please refer to <http://unlicense.org>
 */
 
-#ifndef NANOPRINTF_IMPLEMENTATION
-
-/* The interface of nanoprintf begins here, to be compiled only if
-   NANOPRINTF_IMPLEMENTATION is not defined. In a multi-file library what
-   follows would be the public-facing nanoprintf.h. */
-
 #ifndef NANOPRINTF_H_INCLUDED
 #define NANOPRINTF_H_INCLUDED
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #include <stdarg.h>
 #include <stddef.h>
@@ -50,7 +48,6 @@
   #define NPF_VISIBILITY extern
 #endif
 
-// Compilers can warn when printf formatting strings are incorrect.
 #if defined(__clang__)
   #define NPF_PRINTF_ATTR(FORMAT_INDEX, VARGS_INDEX) \
     __attribute__((__format__(__printf__, FORMAT_INDEX, VARGS_INDEX)))
@@ -59,10 +56,6 @@
     __attribute__((format(printf, FORMAT_INDEX, VARGS_INDEX)))
 #else
   #define NPF_PRINTF_ATTR(FORMAT_INDEX, VARGS_INDEX)
-#endif
-
-#ifdef __cplusplus
-extern "C" {
 #endif
 
 // Public API
@@ -80,9 +73,14 @@ NPF_VISIBILITY int npf_pprintf(npf_putc pc, void *pc_ctx, char const *format,
 NPF_VISIBILITY int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format,
                                 va_list vlist) NPF_PRINTF_ATTR(3, 0);
 
-#ifdef NANOPRINTF_EXPOSE_INTERNALS
+/* The implementation of nanoprintf begins here, to be compiled only if
+   NANOPRINTF_IMPLEMENTATION is defined. In a multi-file library what follows would
+   be nanoprintf.c. */
 
-// Configuration
+#ifdef NANOPRINTF_IMPLEMENTATION
+
+#include <inttypes.h>
+#include <stdint.h>
 
 // Pick reasonable defaults if nothing's been configured.
 #if !defined(NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS) && \
@@ -136,11 +134,6 @@ NPF_VISIBILITY int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format,
     #endif
   #endif
 #endif
-
-// Implementation Details (prototype / config helper functions)
-
-#include <inttypes.h>
-#include <stdint.h>
 
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
 typedef enum {
@@ -254,26 +247,6 @@ NPF_VISIBILITY int npf_ftoa_rev(char *buf, float f, unsigned base,
                                 npf_format_spec_conversion_case_t cc,
                                 int *out_frac_chars);
 #endif
-
-#endif // NANOPRINTF_EXPOSE_INTERNALS
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif // NANOPRINTF_H_INCLUDED
-
-#else // NANOPRINTF_IMPLEMENTATION
-
-/* The implementation of nanoprintf begins here, to be compiled only if
-   NANOPRINTF_IMPLEMENTATION is defined. In a multi-file library what follows would
-   be nanoprintf.c. */
-
-#undef NANOPRINTF_IMPLEMENTATION
-#define NANOPRINTF_EXPOSE_INTERNALS
-#include "nanoprintf.h"
-#undef NANOPRINTF_EXPOSE_INTERNALS
-#define NANOPRINTF_IMPLEMENTATION
 
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
   #include <math.h>
@@ -1088,3 +1061,9 @@ int npf_vsnprintf(char *buffer, size_t bufsz, char const *format, va_list vlist)
 }
 
 #endif // NANOPRINTF_IMPLEMENTATION
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif // NANOPRINTF_H_INCLUDED
