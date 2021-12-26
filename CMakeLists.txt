@@ -37,7 +37,8 @@ else()
       -Wswitch-default
       -Wswitch-enum
       -Wno-padded
-      -Wno-covered-switch-default)
+      -Wno-covered-switch-default
+      -Wno-unused-function)
 endif()
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
@@ -163,7 +164,6 @@ add_executable(wrap_npf
 
 set(unit_test_files
     nanoprintf.h
-    tests/unit_nanoprintf.c
     tests/unit_parse_format_spec.cc
     tests/unit_bufputc.cc
     tests/unit_ftoa_rev.cc
