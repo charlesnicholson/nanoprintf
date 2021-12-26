@@ -123,9 +123,8 @@ The CI build is set up to use gcc and nm to measure the compiled size of every p
 
 Minimal configuration (all features disabled):
 ```
-echo Minimal:
-  arm-none-eabi-gcc -mcpu=cortex-m0 -mthumb -Os -x c -c -o cm0-min.o -DNANOPRINTF_IMPLEMENTATION -DNANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=0 - <<< '#include "nanoprintf.h"'
-  arm-none-eabi-nm --print-size --size-sort cm0-min.o | python tests/size_report.py
+arm-none-eabi-gcc -mcpu=cortex-m0 -mthumb -Os -x c -c -o cm0-min.o -DNANOPRINTF_IMPLEMENTATION -DNANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=0 - <<< '#include "nanoprintf.h"'
+arm-none-eabi-nm --print-size --size-sort cm0-min.o | python tests/size_report.py
 
 00000016 00000002 t npf_bufputc_nop
 00000000 00000016 t npf_bufputc
@@ -133,13 +132,14 @@ echo Minimal:
 000003b8 00000016 T npf_snprintf
 00000384 00000034 T npf_vsnprintf
 00000018 00000356 T npf_vpprintf
+
 Total size: 0x3ce (974 bytes)
 ```
 
 Medium configuration (field width and precision specifiers):
 ```
-  arm-none-eabi-gcc -mcpu=cortex-m0 -mthumb -Os -x c -c -o cm0-med.o -DNANOPRINTF_IMPLEMENTATION -DNANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=0 - <<< '#include "nanoprintf.h"'
-  arm-none-eabi-nm --print-size --size-sort cm0-med.o | python tests/size_report.py
+arm-none-eabi-gcc -mcpu=cortex-m0 -mthumb -Os -x c -c -o cm0-med.o -DNANOPRINTF_IMPLEMENTATION -DNANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=0 - <<< '#include "nanoprintf.h"'
+arm-none-eabi-nm --print-size --size-sort cm0-med.o | python tests/size_report.py
 
 00000016 00000002 t npf_bufputc_nop
 00000000 00000016 t npf_bufputc
@@ -147,13 +147,14 @@ Medium configuration (field width and precision specifiers):
 000006a8 00000016 T npf_snprintf
 00000674 00000034 T npf_vsnprintf
 00000018 00000646 T npf_vpprintf
+
 Total size: 0x6be (1726) bytes
 ```
 
 Maximal configuration (field width, precision, large int, writeback, floating point):
 ```
-  arm-none-eabi-gcc -mcpu=cortex-m0 -mthumb -Os -x c -c -o cm0-max.o -DNANOPRINTF_IMPLEMENTATION -DNANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=1 - <<< '#include "nanoprintf.h"'
-  arm-none-eabi-nm --print-size --size-sort cm0-max.o | python tests/size_report.py
+arm-none-eabi-gcc -mcpu=cortex-m0 -mthumb -Os -x c -c -o cm0-max.o -DNANOPRINTF_IMPLEMENTATION -DNANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=1 - <<< '#include "nanoprintf.h"'
+arm-none-eabi-nm --print-size --size-sort cm0-max.o | python tests/size_report.py
 
 00000016 00000002 t npf_bufputc_nop
 00000000 00000016 t npf_bufputc
@@ -161,6 +162,7 @@ Maximal configuration (field width, precision, large int, writeback, floating po
 00000a74 00000016 T npf_snprintf
 00000a42 00000032 T npf_vsnprintf
 00000018 00000a14 T npf_vpprintf
+
 Total size: 0xa8a (2698) bytes
 ```
 
