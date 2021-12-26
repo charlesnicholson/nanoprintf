@@ -340,9 +340,7 @@ int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
       /* ignore negative precision */
       out_spec->precision_type = NPF_FMT_SPEC_PRECISION_NONE;
       ++cur;
-      while ((*cur >= '0') && (*cur <= '9')) {
-        ++cur;
-      }
+      while ((*cur >= '0') && (*cur <= '9')) { ++cur; }
     } else {
       out_spec->precision = 0;
       out_spec->precision_type = NPF_FMT_SPEC_PRECISION_LITERAL;
@@ -463,16 +461,8 @@ int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
   if ((out_spec->precision_type == NPF_FMT_SPEC_PRECISION_NONE) ||
       (out_spec->precision_type == NPF_FMT_SPEC_PRECISION_STAR)) {
+    out_spec->precision = 0;
     switch (out_spec->conv_spec) {
-      case NPF_FMT_SPEC_CONV_PERCENT:
-      case NPF_FMT_SPEC_CONV_CHAR:
-      case NPF_FMT_SPEC_CONV_STRING:
-      case NPF_FMT_SPEC_CONV_POINTER:
-#if NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS == 1
-      case NPF_FMT_SPEC_CONV_WRITEBACK:
-#endif
-        out_spec->precision = 0;
-        break;
       case NPF_FMT_SPEC_CONV_SIGNED_INT:
       case NPF_FMT_SPEC_CONV_OCTAL:
       case NPF_FMT_SPEC_CONV_HEX_INT:

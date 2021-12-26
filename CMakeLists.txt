@@ -35,7 +35,6 @@ else()
       -Wconversion
       -Wsign-conversion
       -Wswitch-default
-      -Wswitch-enum
       -Wno-padded
       -Wno-covered-switch-default
       -Wno-unused-function)
