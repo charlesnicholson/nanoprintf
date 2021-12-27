@@ -2,6 +2,11 @@
 #include "doctest.h"
 
 TEST_CASE("npf_bin_len") {
+  MESSAGE("Sizeof uintmax_t: " << sizeof(uintmax_t));
+  MESSAGE("Sizeof npf_uint_t: " << sizeof(npf_uint_t));
+#if !defined(NANOPRINTF_32_BIT_TESTS) && defined(_MSC_VER)
+  MESSAGE("_BSR64(0x100000000): " << _BitScanReverse64(0x100000000));
+#endif
   CHECK(npf_bin_len(0) == 1);
   CHECK(npf_bin_len(1) == 1);
   CHECK(npf_bin_len(0b10) == 2);
@@ -22,9 +27,9 @@ TEST_CASE("npf_bin_len") {
   CHECK(npf_bin_len(0x80000000UL) == 32);
 
 #ifndef NANOPRINTF_32_BIT_TESTS
-  REQUIRE(npf_bin_len(0x8000000000ULL) == 40);
-  REQUIRE(npf_bin_len(0x800000000000ULL) == 48);
-  REQUIRE(npf_bin_len(0x80000000000000ULL) == 56);
-  REQUIRE(npf_bin_len(0x8000000000000000ULL) == 64);
+  CHECK(npf_bin_len(0x8000000000ULL) == 40);
+  CHECK(npf_bin_len(0x800000000000ULL) == 48);
+  CHECK(npf_bin_len(0x80000000000000ULL) == 56);
+  CHECK(npf_bin_len(0x8000000000000000ULL) == 64);
 #endif
 }
