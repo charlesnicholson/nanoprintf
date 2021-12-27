@@ -843,7 +843,6 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
 
 #if NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS == 1
       case NPF_FMT_SPEC_CONV_BINARY:         // 'b'
-        cbuf_len = 1;
 #endif
       case NPF_FMT_SPEC_CONV_OCTAL:          // 'o'
       case NPF_FMT_SPEC_CONV_HEX_INT:        // 'x', 'X'
@@ -871,9 +870,11 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
 
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
-        zero = !val;
+        zero = (val == 0);
 #endif
-        if (!val && !fs.precision) {
+        if ((val == 0) && (fs.precision == 0) &&
+            (fs.precision_type == NPF_FMT_SPEC_PRECISION_LITERAL)) {
+          // Zero value and explicitly-requested zero precision means "print nothing".
           if ((fs.conv_spec == NPF_FMT_SPEC_CONV_OCTAL) && fs.alternative_form) {
             fs.precision = 1; // octal special case, print a single '0'
           }

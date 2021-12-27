@@ -50,19 +50,24 @@ void require_equal(char const *expected, char const *fmt, ...) {
 }
 
 TEST_CASE("binary") {
-  require_equal(   "0", "%b", 0);
-  require_equal(   "1", "%b", 1);
-  require_equal(  "10", "%b", 0b10);
-  require_equal(  "11", "%b", 0b11);
-  require_equal( "100", "%b", 0b100);
-  require_equal( "101", "%b", 0b101);
-  require_equal( "110", "%b", 0b110);
-  require_equal( "110", "%b", 0b110);
-  require_equal( "111", "%b", 0b111);
-  require_equal("1000", "%b", 0b1000);
-
-  require_equal("10000", "%b", 0b10000);
-  require_equal("100000", "%b", 0b100000);
-  require_equal("1000000", "%b", 0b1000000);
-  require_equal("10000000", "%b", 0b10000000);
+  SUBCASE("plain") {
+    require_equal(   "0", "%b", 0);
+    require_equal(   "1", "%b", 1);
+    require_equal(  "10", "%b", 0b10);
+    require_equal(  "11", "%b", 0b11);
+    require_equal( "100", "%b", 0b100);
+    require_equal( "101", "%b", 0b101);
+    require_equal( "110", "%b", 0b110);
+    require_equal( "110", "%b", 0b110);
+    require_equal( "111", "%b", 0b111);
+    require_equal("1000", "%b", 0b1000);
+    require_equal("10000", "%b", 0b10000);
+    require_equal("100000", "%b", 0b100000);
+    require_equal("1000000", "%b", 0b1000000);
+    require_equal("10000000", "%b", 0b10000000);
+    require_equal("11111111111111111111111111111111", "%b", 0xFFFFFFFF);
+    require_equal("10101010101010101010101010101010", "%b", 0xAAAAAAAA);
+    require_equal( "1010101010101010101010101010101", "%b", 0x55555555);
+    require_equal(   "10010001101000101011001111000", "%b", 0x12345678);
+  }
 }
