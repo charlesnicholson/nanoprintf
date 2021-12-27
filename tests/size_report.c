@@ -1,6 +1,6 @@
 #ifndef NANOPRINTF_SIZE_REPORT
   #error NANOPRINTF_SIZE_REPORT must be defined
-#error
+#endif
 
 #if NANOPRINTF_SIZE_REPORT == 0 // Minimal
   #define NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS 0
