@@ -2,24 +2,24 @@
 #include "doctest.h"
 
 TEST_CASE("npf_bin_len") {
-  REQUIRE(npf_bin_len(0) == 1);
-  REQUIRE(npf_bin_len(1) == 1);
-  REQUIRE(npf_bin_len(0b10) == 2);
-  REQUIRE(npf_bin_len(0b100) == 3);
-  REQUIRE(npf_bin_len(0b1000) == 4);
-  REQUIRE(npf_bin_len(0b10000) == 5);
-  REQUIRE(npf_bin_len(0b100000) == 6);
-  REQUIRE(npf_bin_len(0b1000000) == 7);
-  REQUIRE(npf_bin_len(0b10000000) == 8);
-  REQUIRE(npf_bin_len(0b100000001) == 9);
-  REQUIRE(npf_bin_len(0b1000000001) == 10);
-  REQUIRE(npf_bin_len(0b10000000001) == 11);
-  REQUIRE(npf_bin_len(0b100000000001) == 12);
-  REQUIRE(npf_bin_len(0b1000000000000) == 13);
-  REQUIRE(npf_bin_len(0b10000000000000) == 14);
-  REQUIRE(npf_bin_len(0b100000000000000) == 15);
-  REQUIRE(npf_bin_len(0b1000000000000000) == 16);
-  REQUIRE(npf_bin_len(0x80000000UL) == 32);
+  CHECK(npf_bin_len(0) == 1);
+  CHECK(npf_bin_len(1) == 1);
+  CHECK(npf_bin_len(0b10) == 2);
+  CHECK(npf_bin_len(0b100) == 3);
+  CHECK(npf_bin_len(0b1000) == 4);
+  CHECK(npf_bin_len(0b10000) == 5);
+  CHECK(npf_bin_len(0b100000) == 6);
+  CHECK(npf_bin_len(0b1000000) == 7);
+  CHECK(npf_bin_len(0b10000000) == 8);
+  CHECK(npf_bin_len(0b100000001) == 9);
+  CHECK(npf_bin_len(0b1000000001) == 10);
+  CHECK(npf_bin_len(0b10000000001) == 11);
+  CHECK(npf_bin_len(0b100000000001) == 12);
+  CHECK(npf_bin_len(0b1000000000000) == 13);
+  CHECK(npf_bin_len(0b10000000000000) == 14);
+  CHECK(npf_bin_len(0b100000000000000) == 15);
+  CHECK(npf_bin_len(0b1000000000000000) == 16);
+  CHECK(npf_bin_len(0x80000000UL) == 32);
 
 #ifndef NANOPRINTF_32_BIT_TESTS
   REQUIRE(npf_bin_len(0x8000000000ULL) == 40);
