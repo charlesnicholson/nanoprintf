@@ -685,7 +685,7 @@ int npf_bin_len(npf_uint_t u) {
   #define NPF_HAVE_BUILTIN_CLZ
   unsigned long idx;
   _BitScanReverse64(&idx, u);
-  return u ? (idx + 1) : 1;
+  return u ? ((sizeof(__int64) * 8) - idx) : 1;
 #else
   #if defined(__clang__)
     #define NPF_HAVE_BUILTIN_CLZ
