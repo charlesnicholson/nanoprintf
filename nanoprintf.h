@@ -683,9 +683,9 @@ int npf_bin_len(npf_uint_t u) {
   // Return the length of the string representation of 'u', preferring intrinsics.
 #ifdef _MSC_VER
   unsigned idx;
-  #if defined(_M_IX86) && (_M_IX86 == 600)
+  #if defined(_M_IX86)
     _BitScanReverse(&idx, u);
-  #elif defined(_M_IX64) && (_M_IX64 == 100)
+  #elif defined(_M_IX64)
     _BitScanReverse64(&idx, u);
   #else
     #error Unknown windows platform
