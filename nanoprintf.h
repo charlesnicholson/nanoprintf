@@ -1057,7 +1057,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
 
 #if NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS == 1
       if (fs.conv_spec == NPF_FMT_SPEC_CONV_BINARY) {
-        while (cbuf_len) { NPF_PUTC('0' + ((u.binval >> (cbuf_len-- - 1)) & 1)); };
+        while (cbuf_len) { NPF_PUTC('0' + ((u.binval >> (cbuf_len-- - 1)) & 1)); }
       } else
 #endif
       { while (cbuf_len-- > 0) { NPF_PUTC(cbuf[cbuf_len]); } } // payload is reversed
