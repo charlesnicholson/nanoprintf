@@ -696,7 +696,7 @@ int npf_bin_len(npf_uint_t u) {
 #endif
 
 #ifdef NPF_HAVE_BUILTIN_CLZ // modern gcc or any clang
-  return u ? (int)((sizeof(u) * 8) - (size_t)__builtin_clzl(u)) : 1;
+  return u ? (int)((sizeof(u) * 8) - (size_t)__builtin_clzll(u)) : 1;
   #undef NPF_HAVE_BUILTIN_CLZ
 #else // early gcc or unknown compiler, software fallback.
   int n;
