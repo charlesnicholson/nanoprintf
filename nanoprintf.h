@@ -682,7 +682,7 @@ int npf_ftoa_rev(char *buf, float f, unsigned base,
 int npf_bin_len(npf_uint_t u) {
   // Return the length of the string representation of 'u', preferring intrinsics.
 #ifdef _MSC_VER
-  unsigned idx;
+  unsigned long idx;
   #if defined(_M_IX86)
     _BitScanReverse(&idx, u);
   #elif defined(_M_X64)
