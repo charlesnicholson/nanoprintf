@@ -65,9 +65,67 @@ TEST_CASE("binary") {
     require_equal("100000", "%b", 0b100000);
     require_equal("1000000", "%b", 0b1000000);
     require_equal("10000000", "%b", 0b10000000);
-    require_equal("11111111111111111111111111111111", "%b", 0xFFFFFFFF);
-    require_equal("10101010101010101010101010101010", "%b", 0xAAAAAAAA);
-    require_equal( "1010101010101010101010101010101", "%b", 0x55555555);
     require_equal(   "10010001101000101011001111000", "%b", 0x12345678);
+    require_equal( "1010101010101010101010101010101", "%b", 0x55555555);
+    require_equal("10101010101010101010101010101010", "%b", 0xAAAAAAAA);
+    require_equal("11111111111111111111111111111111", "%b", 0xFFFFFFFF);
+  }
+
+  SUBCASE("length") {
+    require_equal("11111111", "%hhb", 0xFFFFFFFF); // char
+    require_equal("1111111111111111", "%hb", 0xFFFFFFFF); // short
+  }
+
+#if NANOPRINTF_USE_PRECISION_SPECIFIERS == 1
+  SUBCASE("precision") {
+    require_equal(                "", "%.0b", 0);
+    require_equal(               "0", "%.1b", 0);
+    require_equal(              "00", "%.2b", 0);
+    require_equal(             "000", "%.3b", 0);
+    require_equal(            "0000", "%.4b", 0);
+    require_equal(           "00000", "%.5b", 0);
+    require_equal(          "000000", "%.6b", 0);
+    require_equal(         "0000000", "%.7b", 0);
+    require_equal(        "00000000", "%.8b", 0);
+    require_equal(       "000000000", "%.9b", 0);
+    require_equal(      "0000000000", "%.10b", 0);
+    require_equal(     "00000000000", "%.11b", 0);
+    require_equal(    "000000000000", "%.12b", 0);
+    require_equal(   "0000000000000", "%.13b", 0);
+    require_equal(  "00000000000000", "%.14b", 0);
+    require_equal( "000000000000000", "%.15b", 0);
+    require_equal("0000000000000000", "%.16b", 0);
+    require_equal("00001111", "%.8b", 0b1111);
+
+    require_equal("0000000000000000000000000000000", "%32b", 0);
+  }
+#endif
+
+#if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
+  SUBCASE("field width") {
+    require_equal(   "0", "%1b", 0);
+    require_equal("   0", "%4b", 0);
+    require_equal("  11", "%4b", 0b11);
+  }
+#endif
+
+#if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
+  SUBCASE("large") {
+    require_equal("100000000000000000000000000000000", "%lb", 0x100000000ULL);
+    require_equal("100000000000000000000000000000001", "%lb", 0x100000001ULL);
+    require_equal("111111111111111111111111111111111111", "%lb", 0xFFFFFFFFFULL);
+
+    require_equal("1000000000000000000000000000000000000000000000000000000000000000",
+                  "%llb",
+                  std::numeric_limits<long long int>::min());
+
+    require_equal( "111111111111111111111111111111111111111111111111111111111111111",
+                  "%llb",
+                  std::numeric_limits<long long int>::max());
+  }
+#endif
+
+  SUBCASE("alternate form") {
+    //require_equal("0b0", "%#b", 0); FIXME
   }
 }
