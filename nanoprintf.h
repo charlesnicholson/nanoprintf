@@ -685,7 +685,7 @@ int npf_bin_len(npf_uint_t u) {
   unsigned idx;
   #if defined(_M_IX86)
     _BitScanReverse(&idx, u);
-  #elif defined(_M_IX64)
+  #elif defined(_M_X64)
     _BitScanReverse64(&idx, u);
   #else
     #error Unknown windows platform
