@@ -87,7 +87,7 @@ jobs:
         with:
           python-version: '3.x'
       - name: Build
-        run: ./b --cfg ${{ matrix.configuration }} --paland -v --build-32-bit
+        run: ./b --cfg ${{ matrix.configuration }} --paland -v
 
   win:
     runs-on: windows-latest
@@ -109,7 +109,7 @@ jobs:
         shell: cmd
         run: |
           call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars${{ matrix.architecture }}.bat"
-          python.exe build.py --cfg ${{ matrix.configuration }} --paland -v
+          python.exe build.py --cfg ${{ matrix.configuration }} --paland -v --build-${{ matrix.architecture }}-bit
 
   size-reports:
     runs-on: ubuntu-latest

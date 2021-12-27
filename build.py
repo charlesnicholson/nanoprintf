@@ -33,6 +33,8 @@ def parse_args():
     parser.add_argument(
         '--build-32-bit', help='Compile in 32-bit mode', action='store_true')
     parser.add_argument(
+        '--build-64-bit', help='Compile in 64-bit mode', action='store_true')
+    parser.add_argument(
         '--paland',
         help='Compile with Paland\'s printf conformance suite',
         action='store_true')
