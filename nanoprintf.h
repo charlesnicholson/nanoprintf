@@ -693,15 +693,14 @@ int npf_bin_len(npf_uint_t u) {
       #define NPF_HAVE_BUILTIN_CLZ
     #endif
   #endif
-#endif
-
-#ifdef NPF_HAVE_BUILTIN_CLZ // modern gcc or any clang
-  return u ? (int)((sizeof(u) * 8) - (size_t)__builtin_clzll(u)) : 1;
-  #undef NPF_HAVE_BUILTIN_CLZ
-#else // early gcc or unknown compiler, software fallback.
-  int n;
-  for (n = u ? 0 : 1; u; ++n, u >>= 1);
-  return n;
+  #ifdef NPF_HAVE_BUILTIN_CLZ // modern gcc or any clang
+    return u ? (int)((sizeof(u) * 8) - (size_t)__builtin_clzll(u)) : 1;
+    #undef NPF_HAVE_BUILTIN_CLZ
+  #else // early gcc or unknown compiler, software fallback.
+    int n;
+    for (n = u ? 0 : 1; u; ++n, u >>= 1);
+    return n;
+  #endif
 #endif
 }
 #endif
