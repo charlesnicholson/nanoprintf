@@ -700,7 +700,7 @@ int npf_bin_len(npf_uint_t u) {
   #endif
 #endif
 
-#ifndef NPF_HAVE_BUILTIN_CLZ
+#ifndef NPF_HAVE_BUILTIN_CLZ // slow but small software fallback
   int n;
   for (n = u ? 0 : 1; u; ++n, u >>= 1);
   return n;
@@ -739,7 +739,8 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
     }
 
     // Format specifier, convert and write argument
-    char cbuf_mem[32], *cbuf = cbuf_mem, sign_c;
+    union { char cbuf_mem[32]; npf_uint_t binval; } u;
+    char *cbuf = u.cbuf_mem, sign_c;
     int cbuf_len = 0, need_0x = 0;
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
     int field_pad = 0;
@@ -840,6 +841,10 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
         { cbuf_len = npf_itoa_rev(cbuf, val); }
       } break;
 
+#if NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS == 1
+      case NPF_FMT_SPEC_CONV_BINARY:         // 'b'
+        cbuf_len = 1;
+#endif
       case NPF_FMT_SPEC_CONV_OCTAL:          // 'o'
       case NPF_FMT_SPEC_CONV_HEX_INT:        // 'x', 'X'
       case NPF_FMT_SPEC_CONV_UNSIGNED_INT: { // 'u'
@@ -871,9 +876,12 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
         if (!val && !fs.precision) {
           if ((fs.conv_spec == NPF_FMT_SPEC_CONV_OCTAL) && fs.alternative_form) {
             fs.precision = 1; // octal special case, print a single '0'
-          } else if (fs.precision_type == NPF_FMT_SPEC_PRECISION_LITERAL) {
-            cbuf_len = 0; // 0 value + 0 precision, print nothing
           }
+        } else
+#endif
+#if NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS == 1
+        if (fs.conv_spec == NPF_FMT_SPEC_CONV_BINARY) {
+          cbuf_len = npf_bin_len(val); u.binval = val; (void)base;
         } else
 #endif
         { cbuf_len = npf_utoa_rev(cbuf, val, base, fs.conv_spec_case); }
@@ -1045,8 +1053,13 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
         }
       }
 #endif
-      // *toa_rev leaves payloads reversed
-      while (cbuf_len-- > 0) { NPF_PUTC(cbuf[cbuf_len]); }
+
+#if NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS == 1
+      if (fs.conv_spec == NPF_FMT_SPEC_CONV_BINARY) {
+        while (cbuf_len) { NPF_PUTC('0' + ((u.binval >> (cbuf_len-- - 1)) & 1)); };
+      } else
+#endif
+      { while (cbuf_len-- > 0) { NPF_PUTC(cbuf[cbuf_len]); } } // payload is reversed
 
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
       // real precision comes after the number.

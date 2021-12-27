@@ -189,7 +189,7 @@ add_executable(npf_include_multiple tests/include_multiple.c)
 set(unit_test_files
     nanoprintf.h
     tests/unit_parse_format_spec.cc
-    tests/unit_bin_len.cc
+    tests/unit_binary.cc
     tests/unit_bufputc.cc
     tests/unit_ftoa_rev.cc
     tests/unit_itoa_rev.cc
