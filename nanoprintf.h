@@ -690,7 +690,7 @@ int npf_bin_len(npf_uint_t u) {
   #else
     #error Unknown windows platform
   #endif
-  return u ? ((sizeof(u) * 8) - idx) : 1;
+  return u ? idx : 1;
 #else
   #if defined(__clang__)
     #define NPF_HAVE_BUILTIN_CLZ
