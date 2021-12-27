@@ -681,15 +681,10 @@ int npf_ftoa_rev(char *buf, float f, unsigned base,
 #if NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS == 1
 int npf_bin_len(npf_uint_t u) {
   // Return the length of the string representation of 'u', preferring intrinsics.
-#ifdef _MSC_VER
+#if defined(_MSC_VER) && defined(_M_X64)
+  #define NPF_HAVE_BUILTIN_CLZ
   unsigned long idx;
-  #if defined(_M_IX86)
-    _BitScanReverse(&idx, u);
-  #elif defined(_M_X64)
-    _BitScanReverse64(&idx, u);
-  #else
-    #error Unknown windows platform
-  #endif
+  _BitScanReverse64(&idx, u);
   return u ? (idx + 1) : 1;
 #else
   #if defined(__clang__)
@@ -699,14 +694,20 @@ int npf_bin_len(npf_uint_t u) {
       #define NPF_HAVE_BUILTIN_CLZ
     #endif
   #endif
+
   #ifdef NPF_HAVE_BUILTIN_CLZ // modern gcc or any clang
     return u ? (int)((sizeof(u) * 8) - (size_t)__builtin_clzll(u)) : 1;
-    #undef NPF_HAVE_BUILTIN_CLZ
-  #else // early gcc or unknown compiler, software fallback.
-    int n;
-    for (n = u ? 0 : 1; u; ++n, u >>= 1);
-    return n;
   #endif
+#endif
+
+#ifndef NPF_HAVE_BUILTIN_CLZ
+  int n;
+  for (n = u ? 0 : 1; u; ++n, u >>= 1);
+  return n;
+#endif
+
+#ifdef NPF_HAVE_BUILTIN_CLZ
+  #undef NPF_HAVE_BUILTIN_CLZ
 #endif
 }
 #endif
