@@ -201,9 +201,21 @@ set(unit_test_files
 npf_test(unit_tests_normal_sized_formatters "${unit_test_files}")
 target_compile_definitions(unit_tests_normal_sized_formatters
                            PRIVATE
+                           DOCTEST_CONFIG_SUPER_FAST_ASSERTS
                            NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0)
+if (NPF_32BIT)
+target_compile_definitions(unit_tests_normal_sized_formatters
+                           PRIVATE
+                           NANOPRINTF_32_BIT_TESTS)
+endif()
 
 npf_test(unit_tests_large_sized_formatters "${unit_test_files}")
 target_compile_definitions(unit_tests_large_sized_formatters
                            PRIVATE
+                           DOCTEST_CONFIG_SUPER_FAST_ASSERTS
                            NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=1)
+if (NPF_32BIT)
+target_compile_definitions(unit_tests_normal_sized_formatters
+                           PRIVATE
+                           NANOPRINTF_32_BIT_TESTS)
+endif()
