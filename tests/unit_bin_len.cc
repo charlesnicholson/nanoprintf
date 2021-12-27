@@ -5,7 +5,9 @@ TEST_CASE("npf_bin_len") {
   MESSAGE("Sizeof uintmax_t: " << sizeof(uintmax_t));
   MESSAGE("Sizeof npf_uint_t: " << sizeof(npf_uint_t));
 #if !defined(NANOPRINTF_32_BIT_TESTS) && defined(_MSC_VER)
-  MESSAGE("_BSR64(0x100000000): " << _BitScanReverse64(0x100000000));
+  unsigned long x;
+  REQUIRE(_BitScanReverse64(&x, 0x100000000));
+  MESSAGE("_BSR64(0x100000000): " << x);
 #endif
   CHECK(npf_bin_len(0) == 1);
   CHECK(npf_bin_len(1) == 1);
