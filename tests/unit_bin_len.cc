@@ -19,12 +19,12 @@ TEST_CASE("npf_bin_len") {
   REQUIRE(npf_bin_len(0b10000000000000) == 14);
   REQUIRE(npf_bin_len(0b100000000000000) == 15);
   REQUIRE(npf_bin_len(0b1000000000000000) == 16);
-  REQUIRE(npf_bin_len(0x80000000) == 32);
+  REQUIRE(npf_bin_len(0x80000000UL) == 32);
 
   if (sizeof(npf_uint_t) == 8) {
-    REQUIRE(npf_bin_len(0x8000000000) == 40);
-    REQUIRE(npf_bin_len(0x800000000000) == 48);
-    REQUIRE(npf_bin_len(0x80000000000000) == 56);
-    REQUIRE(npf_bin_len(0x8000000000000000) == 64);
+    REQUIRE(npf_bin_len(0x8000000000ULL) == 40);
+    REQUIRE(npf_bin_len(0x800000000000ULL) == 48);
+    REQUIRE(npf_bin_len(0x80000000000000ULL) == 56);
+    REQUIRE(npf_bin_len(0x8000000000000000ULL) == 64);
   }
 }
