@@ -76,7 +76,7 @@ TEST_CASE("binary") {
     require_equal("1111111111111111", "%hb", 0xFFFFFFFF); // short
   }
 
-#if NANOPRINTF_USE_PRECISION_SPECIFIERS == 1
+#if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
   SUBCASE("precision") {
     require_equal(                "", "%.0b", 0);
     require_equal(               "0", "%.1b", 0);
@@ -97,7 +97,7 @@ TEST_CASE("binary") {
     require_equal("0000000000000000", "%.16b", 0);
     require_equal("00001111", "%.8b", 0b1111);
 
-    require_equal("0000000000000000000000000000000", "%32b", 0);
+    require_equal("00000000000000000000000000000000", "%.32b", 0);
   }
 #endif
 
