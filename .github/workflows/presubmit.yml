@@ -87,7 +87,7 @@ jobs:
         with:
           python-version: '3.x'
       - name: Build
-        run: ./b --cfg ${{ matrix.configuration }} --paland -v
+        run: ./b --cfg ${{ matrix.configuration }} --paland -v --build-32-bit
 
   win:
     runs-on: windows-latest
