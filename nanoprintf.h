@@ -688,18 +688,23 @@ int npf_ftoa_rev(char *buf, float f, unsigned base,
 #if NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS == 1
 int npf_bin_len(npf_uint_t u) {
   // Return the length of the string representation of 'u', preferring intrinsics.
-#if defined(_MSC_VER) && defined(_M_X64)
-  #define NPF_HAVE_BUILTIN_CLZ
-  unsigned long idx;
-  _BitScanReverse64(&idx, u);
-  return u ? (idx + 1) : 1;
-#else
-  #if defined(__clang__)
+
+#ifdef _MSC_VER // Win64, use _BSR64 for everything. If x86, use _BSR when non-large.
+  #ifdef _M_X64
     #define NPF_HAVE_BUILTIN_CLZ
-  #elif defined(__GNUC__)
-    #if (__GNUC__ > 4) || ((__GNUC__ == 4) && (__GNUC_MINOR__ > 6))
-      #define NPF_HAVE_BUILTIN_CLZ
-    #endif
+    unsigned long idx;
+    _BitScanReverse64(&idx, u);
+    return u ? (idx + 1) : 1;
+  #elif NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 0
+    #define NPF_HAVE_BUILTIN_CLZ
+    unsigned long idx;
+    _BitScanReverse(&idx, u);
+    return u ? (idx + 1) : 1;
+  #endif
+#else
+  #if defined(__clang__) || \
+    (defined(__GNUC__) && ((__GNUC__ > 4) || ((__GNUC__ == 4) && (__GNUC_MINOR__ > 6))))
+    #define NPF_HAVE_BUILTIN_CLZ
   #endif
 
   #ifdef NPF_HAVE_BUILTIN_CLZ // modern gcc or any clang
