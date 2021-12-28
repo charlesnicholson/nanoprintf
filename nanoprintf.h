@@ -134,14 +134,16 @@ NPF_VISIBILITY int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format,
 #endif
 
 // intmax_t / uintmax_t require stdint from c99 / c++11
-#ifndef _MSC_VER
-  #ifdef __cplusplus
-    #if __cplusplus < 201103L
-      #error nanoprintf requires C++11 or later.
-    #endif
-  #else
-    #if __STDC_VERSION__ < 199409L
-      #error nanoprintf requires C99 or later.
+#if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
+  #ifndef _MSC_VER
+    #ifdef __cplusplus
+      #if __cplusplus < 201103L
+        #error large format specifier support requires C++11 or later.
+      #endif
+    #else
+      #if __STDC_VERSION__ < 199409L
+        #error nanoprintf requires C99 or later.
+      #endif
     #endif
   #endif
 #endif
