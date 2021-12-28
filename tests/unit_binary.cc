@@ -125,16 +125,16 @@ TEST_CASE("binary") {
   }
 #endif
 
-  SUBCASE("alternate form") {
-    require_equal("0b0", "%#b", 0);
-    require_equal("0b1", "%#b", 1);
-    require_equal("0b110101", "%#b", 0b110101);
-#if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
-    require_equal("     0b0", "%#8b", 0);
-    require_equal("    0b11", "%#8b", 0b11);
-#if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
-    require_equal("    0b0001", "%#10.4b", 1);
-#endif
-#endif
-  }
+//  SUBCASE("alternate form") {
+//    require_equal("0b0", "%#b", 0);
+//    require_equal("0b1", "%#b", 1);
+//    require_equal("0b110101", "%#b", 0b110101);
+//#if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
+//    require_equal("     0b0", "%#8b", 0);
+//    require_equal("    0b11", "%#8b", 0b11);
+//#if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
+//    require_equal("    0b0001", "%#10.4b", 1);
+//#endif
+//#endif
+//  }
 }

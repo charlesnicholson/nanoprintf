@@ -696,7 +696,13 @@ int npf_bin_len(npf_uint_t u) {
   #endif
 
   #ifdef NPF_HAVE_BUILTIN_CLZ // modern gcc or any clang
-    return u ? (int)((sizeof(long long) * 8) - (size_t)__builtin_clzll(u)) : 1;
+    #if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
+      #define NANOPRINTF_CLZ __builtin_clzll
+    #else
+      #define NANOPRINTF_CLZ __builtin_clzl
+    #endif
+    return u ? (int)((sizeof(long long) * 8) - (size_t)NANOPRINTF_CLZ(u)) : 1;
+    #undef NANOPRINTF_CLZ
   #endif
 #endif
 
