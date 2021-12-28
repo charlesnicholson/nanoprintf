@@ -480,6 +480,10 @@ int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
     case 'b':
       out_spec->conv_spec = NPF_FMT_SPEC_CONV_BINARY;
       break;
+    case 'B':
+      out_spec->conv_spec = NPF_FMT_SPEC_CONV_BINARY;
+      out_spec->conv_spec_case = NPF_FMT_SPEC_CONV_CASE_UPPER;
+      break;
 #endif
 
     default:
@@ -495,6 +499,9 @@ int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
       case NPF_FMT_SPEC_CONV_OCTAL:
       case NPF_FMT_SPEC_CONV_HEX_INT:
       case NPF_FMT_SPEC_CONV_UNSIGNED_INT:
+#if NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS == 1
+      case NPF_FMT_SPEC_CONV_BINARY:
+#endif
         out_spec->precision = 1;
         break;
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
@@ -697,11 +704,11 @@ int npf_bin_len(npf_uint_t u) {
 
   #ifdef NPF_HAVE_BUILTIN_CLZ // modern gcc or any clang
     #if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
-      #define NANOPRINTF_CLZ __builtin_clzll
+      #define NANOPRINTF_CLZ(X) ((sizeof(long long) * 8) - (size_t)__builtin_clzll(X))
     #else
-      #define NANOPRINTF_CLZ __builtin_clzl
+      #define NANOPRINTF_CLZ(X) ((sizeof(long) * 8) - (size_t)__builtin_clzl(X))
     #endif
-    return u ? (int)((sizeof(long long) * 8) - (size_t)NANOPRINTF_CLZ(u)) : 1;
+    return u ? (int)NANOPRINTF_CLZ(u) : 1;
     #undef NANOPRINTF_CLZ
   #endif
 #endif
@@ -898,9 +905,16 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
           if (fs.conv_spec == NPF_FMT_SPEC_CONV_OCTAL) { cbuf[cbuf_len++] = '0'; }
         }
 
-        // alt form adds '0x' hex but can't write it yet.
-        if (val && fs.alternative_form && (fs.conv_spec == NPF_FMT_SPEC_CONV_HEX_INT)) {
-          need_0x = (fs.conv_spec_case == NPF_FMT_SPEC_CONV_CASE_LOWER) ? 'x' : 'X';
+        // alt form adds '0x' or '0b' but can't write it yet.
+        if (val && fs.alternative_form) {
+          if (fs.conv_spec == NPF_FMT_SPEC_CONV_HEX_INT) {
+            need_0x = (fs.conv_spec_case == NPF_FMT_SPEC_CONV_CASE_LOWER) ? 'x' : 'X';
+          }
+#if NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS == 1
+          else if (fs.conv_spec == NPF_FMT_SPEC_CONV_BINARY) {
+            need_0x = (fs.conv_spec_case == NPF_FMT_SPEC_CONV_CASE_LOWER) ? 'b' : 'B';
+          }
+#endif
         }
       } break;
 
