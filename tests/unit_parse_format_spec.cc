@@ -1,11 +1,4 @@
-#define NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS 1
-#define NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS 1
-#define NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS 1
-#define NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS 1
-#define NANOPRINTF_VISIBILITY_STATIC
-#define NANOPRINTF_IMPLEMENTATION
-#include "../nanoprintf.h"
-
+#include "unit_nanoprintf.h"
 #include "doctest.h"
 
 #include <cstring>
@@ -15,9 +8,6 @@
 TEST_CASE("npf_parse_format_spec") {
   npf_format_spec_t spec;
   memset(&spec, 0xCD, sizeof(spec));
-
-  REQUIRE(!npf_parse_format_spec("abcd", &spec)); // first char not %
-  REQUIRE(!npf_parse_format_spec("%", &spec)); // % ends string
 
   SUBCASE("Optional flags") {
     // Printf behavior is specified in ISO/IEC 9899:201x 7.21.6.1
@@ -481,6 +471,13 @@ TEST_CASE("npf_parse_format_spec") {
       REQUIRE(spec.conv_spec == NPF_FMT_SPEC_CONV_FLOAT_DECIMAL);
       REQUIRE(spec.conv_spec_case == NPF_FMT_SPEC_CONV_CASE_UPPER);
     }
+
+#if NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS == 1
+    SUBCASE("b") {
+      REQUIRE(npf_parse_format_spec("%b", &spec) == 2);
+      REQUIRE(spec.conv_spec == NPF_FMT_SPEC_CONV_BINARY);
+    }
+#endif
   }
 }
 

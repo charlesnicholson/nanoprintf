@@ -2,13 +2,13 @@
 
 [![Presubmit Checks](https://github.com/charlesnicholson/nanoprintf/workflows/Presubmit%20Checks/badge.svg)](https://github.com/charlesnicholson/nanoprintf/tree/master/.github/workflows) [![](https://img.shields.io/badge/pylint-10.0-brightgreen.svg)](https://www.pylint.org/) [![](https://img.shields.io/badge/license-public_domain-brightgreen.svg)](https://github.com/charlesnicholson/nanoprintf/blob/master/LICENSE)
 
-nanoprintf is an implementation of snprintf and vsnprintf for embedded systems that, when fully enabled, aims for C11 standard compliance.
+nanoprintf is an implementation of snprintf and vsnprintf for embedded systems that, when fully enabled, aim for C11 standard compliance. The primary exceptions are scientific notation (though `%f` is fully supported), and the conversions that require `wcrtomb` to exist. Additionally, C23 binary integer output is optionally supported as per [N2630](http://www.open-std.org/jtc1/sc22/wg14/www/docs/n2630.pdf).
 
 nanoprintf makes no memory allocations and uses less than 100 bytes of stack. nanoprintf compiles to somewhere between 1-3KB of code on a Cortex-M architecture.
 
 nanoprintf is a [single header file](https://github.com/charlesnicholson/nanoprintf/blob/master/nanoprintf.h) in the style of the [stb libraries](https://github.com/nothings/stb). The rest of the repository is tests and scaffolding and not required for use.
 
-nanoprintf is written in a minimal dialect of C99 for maximal compiler compatibility, and compiles cleanly at the highest warning levels on clang, gcc, and msvc in both 32- and 64-bit modes. It's _really_ hard to write portable C89 code, btw, when you don't have any guarantee about what integral type to use to hold a converted pointer representation.
+nanoprintf is written in a minimal dialect of C99 for maximal compiler compatibility, and compiles cleanly at the highest warning levels on clang, gcc, and msvc in both 32- and 64-bit modes.
 
 nanoprintf does include C standard headers but only uses them for C99 types and argument lists; no calls are made into stdlib / libc, with the exception of any internal double-to-float conversion ABI calls your compiler might emit. As usual, some Windows-specific headers are required if you're compiling natively for msvc.
 
@@ -59,10 +59,11 @@ nanoprintf has the following static configuration flags.
 * `NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS`: Set to `0` or `1`. Enables precision specifiers.
 * `NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS`: Set to `0` or `1`. Enables floating-point specifiers.
 * `NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS`: Set to `0` or `1`. Enables oversized modifiers.
+* `NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS`: Set to `0` or `1`. Enables binary specifiers.
 * `NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS`: Set to `0` or `1`. Enables `%n` for write-back.
 * `NANOPRINTF_VISIBILITY_STATIC`: Optional define. Marks prototypes as `static` to sandbox nanoprintf.
 
-If no configuration flags are specified, nanoprintf will default to "reasonable" embedded values in an attempt to be helpful: floats enabled, writeback and large formatters disabled. If any configuration flags are explicitly specified, nanoprintf requires that all flags are explicitly specified.
+If no configuration flags are specified, nanoprintf will default to "reasonable" embedded values in an attempt to be helpful: floats are enabled, but writeback, binary, and large formatters are disabled. If any configuration flags are explicitly specified, nanoprintf requires that all flags are explicitly specified.
 
 If a disabled format specifier feature is used, no conversion will occur and the format specifier string simply will be printed instead.
 
@@ -110,6 +111,7 @@ Like `printf`, `nanoprintf` expects a conversion specification string of the fol
 	* `%p`: Pointers
 	* `%n`: Write the number of bytes written to the pointer vararg
 	* `%f`/`%F`: Floating-point values
+	* `%b`/`%B`: Binary integers
 
 ## Floating Point
 
@@ -117,53 +119,84 @@ Floating point conversion is performed by extracting the value into 64:64 fixed-
 
 Despite `nano` in the name, there's no way to do away with double entirely, since the C language standard says that floats are promoted to double any time they're passed into variadic argument lists. nanoprintf casts all doubles back down to floats before doing any conversions.
 
+## Limitations
+
+No wide-character support exists: the `%lc` and `%ls` fields require that the arg be converted to a char array as if by a call to [wcrtomb](http://man7.org/linux/man-pages/man3/wcrtomb.3.html). When locale and character set conversions get involved, it's hard to keep the name "nano". Accordingly, `%lc` and `%ls` behave like `%c` and `%s`, respectively.
+
+Currently the only supported float conversions are the decimal forms: `%f` and `%F`. Pull requests welcome!
+
 ## Measurement
 
 The CI build is set up to use gcc and nm to measure the compiled size of every pull request. See the [Presubmit Checks](https://github.com/charlesnicholson/nanoprintf/actions/workflows/presubmit.yml) "size reports" job output for recent runs.
 
-Minimal configuration (all features disabled):
+The following size measurements are taken against the Cortex-M0 build.
+  
 ```
-arm-none-eabi-gcc -mcpu=cortex-m0 -mthumb -Os -x c -c -o cm0-min.o -DNANOPRINTF_IMPLEMENTATION -DNANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=0 - <<< '#include "nanoprintf.h"'
-arm-none-eabi-nm --print-size --size-sort cm0-min.o | python tests/size_report.py
-
+Minimal:
+arm-none-eabi-gcc -DNANOPRINTF_SIZE_REPORT=0 -mcpu=cortex-m0 -Os -c -o cm0-0.o tests/size_report.c
+arm-none-eabi-nm --print-size --size-sort cm0-0.o | python tests/size_report.py
 00000016 00000002 t npf_bufputc_nop
 00000000 00000016 t npf_bufputc
 0000036e 00000016 T npf_pprintf
 000003b8 00000016 T npf_snprintf
 00000384 00000034 T npf_vsnprintf
 00000018 00000356 T npf_vpprintf
+Total size: 0x3ce (974) bytes
 
-Total size: 0x3ce (974 bytes)
-```
-
-Medium configuration (field width and precision specifiers):
-```
-arm-none-eabi-gcc -mcpu=cortex-m0 -mthumb -Os -x c -c -o cm0-med.o -DNANOPRINTF_IMPLEMENTATION -DNANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=0 - <<< '#include "nanoprintf.h"'
-arm-none-eabi-nm --print-size --size-sort cm0-med.o | python tests/size_report.py
-
+Binary:
+arm-none-eabi-gcc -DNANOPRINTF_SIZE_REPORT=1 -mcpu=cortex-m0 -Os -c -o cm0-1.o tests/size_report.c
+arm-none-eabi-nm --print-size --size-sort cm0-1.o | python tests/size_report.py
 00000016 00000002 t npf_bufputc_nop
 00000000 00000016 t npf_bufputc
-0000065e 00000016 T npf_pprintf
-000006a8 00000016 T npf_snprintf
-00000674 00000034 T npf_vsnprintf
-00000018 00000646 T npf_vpprintf
+000003c2 00000016 T npf_pprintf
+0000040c 00000016 T npf_snprintf
+000003d8 00000034 T npf_vsnprintf
+00000018 000003aa T npf_vpprintf
+Total size: 0x422 (1058) bytes
 
-Total size: 0x6be (1726) bytes
-```
-
-Maximal configuration (field width, precision, large int, writeback, floating point):
-```
-arm-none-eabi-gcc -mcpu=cortex-m0 -mthumb -Os -x c -c -o cm0-max.o -DNANOPRINTF_IMPLEMENTATION -DNANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=1 - <<< '#include "nanoprintf.h"'
-arm-none-eabi-nm --print-size --size-sort cm0-max.o | python tests/size_report.py
-
+Field Width + Precision:
+arm-none-eabi-gcc -DNANOPRINTF_SIZE_REPORT=2 -mcpu=cortex-m0 -Os -c -o cm0-2.o tests/size_report.c
+arm-none-eabi-nm --print-size --size-sort cm0-2.o | python tests/size_report.py
 00000016 00000002 t npf_bufputc_nop
 00000000 00000016 t npf_bufputc
-00000a2c 00000016 T npf_pprintf
-00000a74 00000016 T npf_snprintf
-00000a42 00000032 T npf_vsnprintf
-00000018 00000a14 T npf_vpprintf
+00000656 00000016 T npf_pprintf
+000006a0 00000016 T npf_snprintf
+0000066c 00000034 T npf_vsnprintf
+00000018 0000063e T npf_vpprintf
+Total size: 0x6b6 (1718) bytes
 
-Total size: 0xa8a (2698) bytes
+Field Width + Precision + Binary:
+arm-none-eabi-gcc -DNANOPRINTF_SIZE_REPORT=3 -mcpu=cortex-m0 -Os -c -o cm0-3.o tests/size_report.c
+arm-none-eabi-nm --print-size --size-sort cm0-3.o | python tests/size_report.py
+00000016 00000002 t npf_bufputc_nop
+00000000 00000016 t npf_bufputc
+000006c6 00000016 T npf_pprintf
+00000710 00000016 T npf_snprintf
+000006dc 00000034 T npf_vsnprintf
+00000018 000006ae T npf_vpprintf
+Total size: 0x726 (1830) bytes
+
+Float:
+arm-none-eabi-gcc -DNANOPRINTF_SIZE_REPORT=4 -mcpu=cortex-m0 -Os -c -o cm0-4.o tests/size_report.c
+arm-none-eabi-nm --print-size --size-sort cm0-4.o | python tests/size_report.py
+00000016 00000002 t npf_bufputc_nop
+00000000 00000016 t npf_bufputc
+000006fc 00000016 T npf_pprintf
+00000744 00000016 T npf_snprintf
+00000712 00000032 T npf_vsnprintf
+00000018 000006e4 T npf_vpprintf
+Total size: 0x75a (1882) bytes
+
+Everything:
+arm-none-eabi-gcc -DNANOPRINTF_SIZE_REPORT=5 -mcpu=cortex-m0 -Os -c -o cm0-5.o tests/size_report.c
+arm-none-eabi-nm --print-size --size-sort cm0-5.o | python tests/size_report.py
+00000016 00000002 t npf_bufputc_nop
+00000000 00000016 t npf_bufputc
+00000ab0 00000016 T npf_pprintf
+00000af8 00000016 T npf_snprintf
+00000ac6 00000032 T npf_vsnprintf
+00000018 00000a98 T npf_vpprintf
+Total size: 0xb0e (2830) bytes
 ```
 
 ## Development
@@ -183,14 +216,10 @@ The matrix builds [Debug, Release] x [32-bit, 64-bit] x [Mac, Windows, Linux] x 
 
 One test suite is a fork from the [printf test suite](), which is MIT licensed. It exists as a submodule for licensing purposes- nanoprintf is public domain, so this particular test suite is optional and excluded by default. To build it, retrieve it by updating submodules and add the `--paland` flag to your `./b` invocation. It is not required to use nanoprintf at all.
 
-## Limitations
-
-No wide-character support exists: the `%lc` and `%ls` fields require that the arg be converted to a char array as if by a call to [wcrtomb](http://man7.org/linux/man-pages/man3/wcrtomb.3.html). When locale and character set conversions get involved, it's hard to keep the name "nano". Accordingly, `%lc` and `%ls` behave like `%c` and `%s`, respectively.
-
-Currently the only supported float conversions are the decimal forms: `%f` and `%F`. Pull requests welcome!
-
 ## Acknowledgments
 
 I implemented Float-to-int conversion using the ideas from [Wojciech Muła](mailto:zdjęcia@garnek.pl)'s [float -> 64:64 fixed algorithm](http://0x80.pl/notesen/2015-12-29-float-to-string.html).
 
 I ported the [printf test suite](https://github.com/eyalroz/printf/blob/master/test/test_suite.cpp) to nanoprintf. It was originally from the [mpaland printf project](https://github.com/mpaland/printf) codebase but adopted and improved by [Eyal Rozenberg](https://github.com/eyalroz) and others. (Nanoprintf has many of its own tests, but these are also very thorough and very good!)
+
+The binary implementation is based on the requirements specified by [Jörg Wunsch](https://github.com/dl8dtl)'s [N2630 proposal](http://www.open-std.org/jtc1/sc22/wg14/www/docs/n2630.pdf), hopefully to be accepted into C23!
