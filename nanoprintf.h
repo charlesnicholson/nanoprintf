@@ -511,6 +511,13 @@ int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
         out_spec->precision = 6;
         break;
 #endif
+      case NPF_FMT_SPEC_CONV_PERCENT:
+      case NPF_FMT_SPEC_CONV_CHAR:
+      case NPF_FMT_SPEC_CONV_STRING:
+      case NPF_FMT_SPEC_CONV_POINTER:
+#if NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS == 1
+      case NPF_FMT_SPEC_CONV_WRITEBACK:
+#endif
       default:
         break;
     }
