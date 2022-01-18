@@ -27,7 +27,8 @@ else()
   set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g")
   set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-Os -g")
   set(CMAKE_CXX_FLAGS_RELEASE "-Os")
-  set(nanoprintf_common_flags
+
+  set(nanoprintf_common_flags  # Construct the enable-warning flags first
       -pedantic
       -Wall
       -Wextra
@@ -35,14 +36,15 @@ else()
       -Wconversion
       -Wsign-conversion
       -Wswitch-enum
-      -Wswitch-default
-      -Wno-padded
-      -Wno-covered-switch-default
-      -Wno-unused-function)
+      -Wswitch-default)
+
+  if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    list(APPEND nanoprintf_common_flags -Weverything)
+  endif()
 endif()
 
-if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-  list(APPEND nanoprintf_common_flags -Weverything -Wno-float-equal -Wno-switch-enum)
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang") # Subtract out unhelpful warnings
+  list(APPEND nanoprintf_common_flags -Wno-float-equal)
   list(APPEND nanoprintf_cxx_flags
        -Wno-old-style-cast
        -Wno-c++98-compat-pedantic
@@ -50,6 +52,13 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
        -Wno-reserved-identifier)
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   list(APPEND nanoprintf_common_flags -Wno-uninitialized) # Spurious
+endif()
+
+if (NOT MSVC)
+  list(APPEND nanoprintf_common_flags
+       -Wno-padded
+       -Wno-covered-switch-default
+       -Wno-unused-function)
 endif()
 
 set(nanoprintf_c_flags ${nanoprintf_common_flags})
