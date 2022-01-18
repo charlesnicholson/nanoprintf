@@ -37,6 +37,7 @@ else()
       -Wswitch-enum
       -Wswitch-default
       -Wno-padded
+      -Wno-covered-switch-default
       -Wno-unused-function)
 endif()
 
