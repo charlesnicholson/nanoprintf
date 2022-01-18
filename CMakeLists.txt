@@ -48,7 +48,8 @@ if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
   list(APPEND nanoprintf_cxx_flags
        -Wno-old-style-cast
        -Wno-c++98-compat-pedantic
-       -Wno-missing-prototypes)
+       -Wno-missing-prototypes
+       -Wno-reserved-identifier)
 elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   list(APPEND nanoprintf_common_flags -Wno-uninitialized) # Spurious
 endif()
