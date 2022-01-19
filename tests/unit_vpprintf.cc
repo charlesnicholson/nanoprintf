@@ -13,7 +13,7 @@ struct Recorder {
   }
 
   std::string String() const {
-    return calls.empty() ? std::string() : std::string(calls.begin(), calls.end() - 1);
+    return calls.empty() ? std::string() : std::string(calls.begin(), calls.end());
   }
 
   std::vector<int> calls;
@@ -22,20 +22,18 @@ struct Recorder {
 TEST_CASE("npf_vpprintf") {
   Recorder r;
 
-  SUBCASE("empty string only holds null terminator") {
+  SUBCASE("empty string never calls callback") {
     REQUIRE(npf_pprintf(r.PutC, &r, "") == 0);
-    REQUIRE(r.calls.size() == 1);
-    REQUIRE(r.calls[0] == '\0');
+    REQUIRE(r.calls.empty());
   }
 
-  SUBCASE("single character then null terminator") {
+  SUBCASE("single character string") {
     REQUIRE(npf_pprintf(r.PutC, &r, "A") == 1);
-    REQUIRE(r.calls.size() == 2);
+    REQUIRE(r.calls.size() == 1);
     REQUIRE(r.calls[0] == 'A');
-    REQUIRE(r.calls[1] == '\0');
   }
 
-  SUBCASE("string without format specifiers then null terminator") {
+  SUBCASE("string without format specifiers") {
     std::string const s{"Hello from nanoprintf!"};
     REQUIRE(npf_pprintf(r.PutC, &r, s.c_str()) == (int)s.size());
     REQUIRE(s == r.String());

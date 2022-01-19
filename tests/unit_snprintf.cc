@@ -7,6 +7,19 @@
 TEST_CASE("npf_snprintf") {
   char buf[128];
 
+  SUBCASE("empty string has null terminator") {
+    memset(buf, 0xFF, sizeof(buf));
+    npf_snprintf(buf, sizeof(buf), "");
+    REQUIRE(buf[0] == '\0');
+  }
+
+  SUBCASE("string has null terminator") {
+    memset(buf, 0xFF, sizeof(buf));
+    npf_snprintf(buf, sizeof(buf), "Hello");
+    REQUIRE(buf[5] == '\0');
+    REQUIRE(std::string{buf} == "Hello");
+  }
+
   SUBCASE("returns number of printed characters without null terminator") {
     REQUIRE(!npf_snprintf(buf, sizeof(buf), ""));
     REQUIRE(npf_snprintf(buf, sizeof(buf), "a") == 1);
