@@ -1117,8 +1117,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
     cur += fs_len;
   }
 
-  NPF_PUTC('\0');
-  return n - 1;
+  return n;
 }
 
 #undef NPF_PUTC
@@ -1146,10 +1145,11 @@ int npf_vsnprintf(char *buffer, size_t bufsz, char const *format, va_list vlist)
   bufputc_ctx.dst = buffer;
   bufputc_ctx.len = bufsz;
   bufputc_ctx.cur = 0;
-  if (buffer && bufsz) { buffer[bufsz - 1] = 0; }
 
-  return
-    npf_vpprintf(buffer ? npf_bufputc : npf_bufputc_nop, &bufputc_ctx, format, vlist);
+  npf_putc const pc = buffer ? npf_bufputc : npf_bufputc_nop;
+  int const n = npf_vpprintf(pc, &bufputc_ctx, format, vlist);
+  pc('\0', &bufputc_ctx);
+  return n;
 }
 
 #endif // NANOPRINTF_IMPLEMENTATION_INCLUDED
