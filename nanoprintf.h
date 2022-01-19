@@ -31,10 +31,6 @@
   For more information, please refer to <http://unlicense.org>
 */
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #ifndef NANOPRINTF_H_INCLUDED
 #define NANOPRINTF_H_INCLUDED
 
@@ -60,6 +56,10 @@ extern "C" {
 
 // Public API
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 NPF_VISIBILITY int npf_snprintf(char *buffer, size_t bufsz, const char *format,
                                 ...) NPF_PRINTF_ATTR(3, 4);
 
@@ -72,6 +72,10 @@ NPF_VISIBILITY int npf_pprintf(npf_putc pc, void *pc_ctx, char const *format,
 
 NPF_VISIBILITY int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format,
                                 va_list vlist) NPF_PRINTF_ATTR(3, 0);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // NANOPRINTF_H_INCLUDED
 
@@ -1151,6 +1155,3 @@ int npf_vsnprintf(char *buffer, size_t bufsz, char const *format, va_list vlist)
 #endif // NANOPRINTF_IMPLEMENTATION_INCLUDED
 #endif // NANOPRINTF_IMPLEMENTATION
 
-#ifdef __cplusplus
-}
-#endif
