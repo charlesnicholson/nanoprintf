@@ -101,17 +101,17 @@ Like `printf`, `nanoprintf` expects a conversion specification string of the fol
 * **Conversion specifier**
 
 	Exactly one of the following:
-	* `%%`: Percent-sign literal
-	* `%c`: Characters
-	* `%s`: Null-terminated strings
-	* `%i`/`%d`: Signed integers
-	* `%u`: Unsigned integers
-	* `%o`: Unsigned octal integers
-	* `%x` / `%X`: Unsigned hexadecimal integers
-	* `%p`: Pointers
-	* `%n`: Write the number of bytes written to the pointer vararg
-	* `%f`/`%F`: Floating-point values
-	* `%b`/`%B`: Binary integers
+	* `%`: Percent-sign literal
+	* `c`: Character
+	* `s`: Null-terminated strings
+	* `i`/`d`: Signed integers
+	* `u`: Unsigned integers
+	* `o`: Unsigned octal integers
+	* `x` / `X`: Unsigned hexadecimal integers
+	* `p`: Pointers
+	* `n`: Write the number of bytes written to the pointer vararg
+	* `f`/`F`: Floating-point values
+	* `b`/`B`: Binary integers
 
 ## Floating Point
 
