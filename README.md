@@ -14,16 +14,6 @@ nanoprintf does include C standard headers but only uses them for C99 types and 
 
 nanoprintf is statically configurable so users can find a balance between size, compiler requirements, and feature set. Floating point conversion, "large" length modifiers, and size write-back are all configurable and are only compiled if explicitly requested, see [Configuration](https://github.com/charlesnicholson/nanoprintf#configuration) for details.
 
-## Motivation
-
-I wanted a single-file public-domain drop-in printf that came in at under 1000 bytes in the minimal configuration (bootloaders etc), and under 3000 bytes with the floating-point bells and whistles enabled.
-
-## Philosophy
-
-This code is optimized for size, not readability or structure. Unfortunately modularity and "cleanliness" even in C adds overhead at this small scale, so most of the functionality and logic is pushed together into `npf_vpprintf`. This is not what normal embedded systems code should look like; it's `#ifdef` soup and hard to make sense of, and I apologize if you have to spelunk around in the implementation. Hopefully the various tests will serve as guide rails if you hack around in it.
-
-Alternately, perhaps you're a significantly better programmer than I! In that case, please help me make this code smaller and cleaner without making the footprint larger, or nudge me in the right direction. :)
-
 ## Usage
 
 Add the following code to one of your source files to compile the nanoprintf implementation:
@@ -33,9 +23,33 @@ Add the following code to one of your source files to compile the nanoprintf imp
 #include "path/to/nanoprintf.h"
 ```
 
-Then, in any file where you want to use nanoprintf, simply include the header and call the npf_ functions.
+Then, in any file where you want to use nanoprintf, simply include the header and call the npf_ functions:
+```
+#include "nanoprintf.h"
+
+void print_to_uart(void) {
+  npf_pprintf(&my_uart_putc, NULL, "Hello %s%c %d %u %f\n", "worl", 'd', 1, 2, 3.f);
+}
+
+void print_to_buf(void *buf, unsigned len) {
+  npf_snprintf(buf, len, "Hello %s", "world");
+}
+```
 
 See the "[Use nanoprintf directly](https://github.com/charlesnicholson/nanoprintf/blob/master/examples/use_npf_directly/main.cpp)" and "[Wrap nanoprintf](https://github.com/charlesnicholson/nanoprintf/blob/master/examples/wrap_npf/main.cpp)" examples for more details.
+
+
+## Motivation
+
+I wanted a single-file public-domain drop-in printf that came in at under 1000 bytes in the minimal configuration (bootloaders etc), and under 3000 bytes with the floating-point bells and whistles enabled.
+
+In firmware work, I generally want stdio's string formatting without the syscall or file descriptor layer requirements; they're almost never needed in tiny systems where you want to log into small buffers or emit directly to a bus. Also, many embedded stdio implementations are larger or slower than they need to be- this is important for bootloader work. If you don't need any of the syscalls or stdio bells + whistles, you can simply use nanoprintf and `nosys.specs` and slim down your build.
+
+## Philosophy
+
+This code is optimized for size, not readability or structure. Unfortunately modularity and "cleanliness" even in C adds overhead at this small scale, so most of the functionality and logic is pushed together into `npf_vpprintf`. This is not what normal embedded systems code should look like; it's `#ifdef` soup and hard to make sense of, and I apologize if you have to spelunk around in the implementation. Hopefully the various tests will serve as guide rails if you hack around in it.
+
+Alternately, perhaps you're a significantly better programmer than I! In that case, please help me make this code smaller and cleaner without making the footprint larger, or nudge me in the right direction. :)
 
 ## API
 
