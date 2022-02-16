@@ -7,14 +7,10 @@
 #if NANOPRINTF_HAVE_WARNING_PRAGMAS
   #pragma GCC diagnostic push
   #if NANOPRINTF_CLANG
-    #pragma GCC diagnostic ignored "-Wc++98-compat-pedantic"
     #pragma GCC diagnostic ignored "-Wformat-pedantic"
     #pragma GCC diagnostic ignored "-Wmissing-prototypes"
-    #pragma GCC diagnostic ignored "-Wreserved-identifier"
   #endif
 #endif
-
-#include "doctest.h"
 
 void require_fsplit_abs(float f,
                         uint64_t expected_int_part,

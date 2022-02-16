@@ -10,3 +10,16 @@
 #define NANOPRINTF_IMPLEMENTATION
 
 #include "../nanoprintf.h"
+
+#if NANOPRINTF_HAVE_WARNING_PRAGMAS
+  #pragma GCC diagnostic push
+  #if NANOPRINTF_CLANG
+    #pragma GCC diagnostic ignored "-Wc++98-compat-pedantic"
+    #ifndef __APPLE__
+      #pragma GCC diagnostic ignored "-Wreserved-identifier"
+    #endif
+  #endif
+#endif
+
+#include "doctest.h"
+
