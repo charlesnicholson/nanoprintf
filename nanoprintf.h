@@ -187,7 +187,6 @@ NPF_VISIBILITY int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format,
   #endif
 #endif
 
-
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
 typedef enum {
   NPF_FMT_SPEC_FIELD_WIDTH_NONE,
