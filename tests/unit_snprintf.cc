@@ -1,5 +1,4 @@
 #include "unit_nanoprintf.h"
-#include "doctest.h"
 
 #include <cstring>
 #include <string>
@@ -10,9 +9,12 @@
   #if NANOPRINTF_CLANG
     #pragma GCC diagnostic ignored "-Wc++98-compat-pedantic"
     #pragma GCC diagnostic ignored "-Wformat-pedantic"
+    #pragma GCC diagnostic ignored "-Wreserved-identifier"
   #endif
   #pragma GCC diagnostic ignored "-Wformat-zero-length"
 #endif
+
+#include "doctest.h"
 
 TEST_CASE("npf_snprintf") {
   char buf[128];

@@ -1,5 +1,4 @@
 #include "unit_nanoprintf.h"
-#include "doctest.h"
 
 #include <climits>
 #include <cstring>
@@ -13,11 +12,14 @@
     #pragma GCC diagnostic ignored "-Wc++98-compat-pedantic"
     #pragma GCC diagnostic ignored "-Wformat-pedantic"
     #pragma GCC diagnostic ignored "-Wold-style-cast"
+    #pragma GCC diagnostic ignored "-Wreserved-identifier"
   #endif
   #pragma GCC diagnostic ignored "-Wformat"
   #pragma GCC diagnostic ignored "-Wformat-zero-length"
   #pragma GCC diagnostic ignored "-Wformat-security"
 #endif
+
+#include "doctest.h"
 
 struct Recorder {
   static void PutC(int c, void *ctx) {

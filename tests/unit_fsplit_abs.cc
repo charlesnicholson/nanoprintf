@@ -1,5 +1,4 @@
 #include "unit_nanoprintf.h"
-#include "doctest.h"
 
 #include <cmath>
 #include <string>
@@ -11,8 +10,11 @@
     #pragma GCC diagnostic ignored "-Wc++98-compat-pedantic"
     #pragma GCC diagnostic ignored "-Wformat-pedantic"
     #pragma GCC diagnostic ignored "-Wmissing-prototypes"
+    #pragma GCC diagnostic ignored "-Wreserved-identifier"
   #endif
 #endif
+
+#include "doctest.h"
 
 void require_fsplit_abs(float f,
                         uint64_t expected_int_part,

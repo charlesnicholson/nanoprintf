@@ -4,8 +4,6 @@
 #define NANOPRINTF_IMPLEMENTATION
 #include "../nanoprintf.h"
 
-#include "doctest.h"
-
 #include <string>
 #include <iostream>
 #include <limits.h>
@@ -18,9 +16,12 @@
     #pragma GCC diagnostic ignored "-Wformat-pedantic"
     #pragma GCC diagnostic ignored "-Wformat-nonliteral"
     #pragma GCC diagnostic ignored "-Wold-style-cast"
+    #pragma GCC diagnostic ignored "-Wreserved-identifier"
   #endif
   #pragma GCC diagnostic ignored "-Wformat"
 #endif
+
+#include "doctest.h"
 
 namespace {
 void require_conform(const std::string& expected, char const *fmt, ...) {

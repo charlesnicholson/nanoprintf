@@ -1,8 +1,16 @@
 #include "unit_nanoprintf.h"
-#include "doctest.h"
 
 #include <string>
 #include <iostream>
+
+#if NANOPRINTF_HAVE_WARNING_PRAGMAS
+  #pragma GCC diagnostic push
+  #if NANOPRINTF_CLANG
+    #pragma GCC diagnostic ignored "-Wreserved-identifier"
+  #endif
+#endif
+
+#include "doctest.h"
 
 TEST_CASE("npf_bufputc") {
   npf_bufputc_ctx_t bpc;

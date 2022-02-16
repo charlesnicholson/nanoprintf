@@ -1,5 +1,4 @@
 #include "unit_nanoprintf.h"
-#include "doctest.h"
 
 #include <climits>
 #include <cstring>
@@ -13,8 +12,11 @@
     #pragma GCC diagnostic ignored "-Wformat-pedantic"
     #pragma GCC diagnostic ignored "-Wmissing-prototypes"
     #pragma GCC diagnostic ignored "-Wold-style-cast"
+    #pragma GCC diagnostic ignored "-Wreserved-identifier"
   #endif
 #endif
+
+#include "doctest.h"
 
 void require_npf_itoa(char const *expected, npf_int_t val) {
   char buf[64];

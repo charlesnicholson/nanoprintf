@@ -1,5 +1,4 @@
 #include "unit_nanoprintf.h"
-#include "doctest.h"
 
 #include <climits>
 #include <string>
@@ -12,8 +11,11 @@
     #pragma GCC diagnostic ignored "-Wformat-pedantic"
     #pragma GCC diagnostic ignored "-Wold-style-cast"
     #pragma GCC diagnostic ignored "-Wmissing-prototypes"
+    #pragma GCC diagnostic ignored "-Wreserved-identifier"
   #endif
 #endif
+
+#include "doctest.h"
 
 void require_npf_utoa(
     std::string const &expected,

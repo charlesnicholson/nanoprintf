@@ -1,5 +1,4 @@
 #include "unit_nanoprintf.h"
-#include "doctest.h"
 
 #include <string>
 #include <iostream>
@@ -7,11 +6,14 @@
 #if NANOPRINTF_HAVE_WARNING_PRAGMAS
   #pragma GCC diagnostic push
   #if NANOPRINTF_CLANG
+    #pragma GCC diagnostic ignored "-Wreserved-identifier"
     #pragma GCC diagnostic ignored "-Wc++98-compat-pedantic"
     #pragma GCC diagnostic ignored "-Wformat-pedantic"
     #pragma GCC diagnostic ignored "-Wformat-nonliteral"
   #endif
 #endif
+
+#include "doctest.h"
 
 TEST_CASE("npf_bin_len") {
   CHECK(npf_bin_len(0) == 1);
