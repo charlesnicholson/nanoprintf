@@ -91,6 +91,41 @@ NPF_VISIBILITY int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format,
 #include <inttypes.h>
 #include <stdint.h>
 
+// Figure out if we can disable warnings with pragmas.
+#ifdef __clang__
+  #define NANOPRINTF_CLANG 1
+  #define NANOPRINTF_GCC_PAST_4_6 0
+#else
+  #define NANOPRINTF_CLANG 0
+  #if defined(__GNUC__) && ((__GNUC__ > 4) || ((__GNUC__ == 4) && (__GNUC_MINOR__ > 6)))
+    #define NANOPRINTF_GCC_PAST_4_6 1
+  #else
+    #define NANOPRINTF_GCC_PAST_4_6 0
+  #endif
+#endif
+
+#if NANOPRINTF_CLANG || NANOPRINTF_GCC_PAST_4_6
+  #define NANOPRINTF_HAVE_WARNING_PRAGMAS 1
+#else
+  #define NANOPRINTF_HAVE_WARNING_PRAGMAS 0
+#endif
+
+#if NANOPRINTF_HAVE_WARNING_PRAGMAS
+  #pragma GCC diagnostic push
+  #pragma GCC diagnostic ignored "-Wunused-function"
+  #ifdef __cplusplus
+    #pragma GCC diagnostic ignored "-Wold-style-cast"
+  #endif
+  #pragma GCC diagnostic ignored "-Wpadded"
+  #pragma GCC diagnostic ignored "-Wfloat-equal"
+  #if NANOPRINTF_CLANG
+    #pragma GCC diagnostic ignored "-Wc++98-compat-pedantic"
+    #pragma GCC diagnostic ignored "-Wcovered-switch-default"
+  #elif NANOPRINTF_GCC_PAST_4_6
+    #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+  #endif
+#endif
+
 // Pick reasonable defaults if nothing's been configured.
 #if !defined(NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS) && \
     !defined(NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS) && \
@@ -98,12 +133,12 @@ NPF_VISIBILITY int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format,
     !defined(NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS) && \
     !defined(NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS) && \
     !defined(NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS)
-#define NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS 1
-#define NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS 1
-#define NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS 1
-#define NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS 0
-#define NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS 0
-#define NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS 0
+  #define NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS 1
+  #define NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS 1
+  #define NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS 1
+  #define NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS 0
+  #define NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS 0
+  #define NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS 0
 #endif
 
 // If anything's been configured, everything must be configured.
@@ -290,8 +325,15 @@ static int npf_bin_len(npf_uint_t i);
   #endif
 #endif
 
+#if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
 static int npf_min(int x, int y) { return (x < y) ? x : y; }
+#endif
+
+#if (NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1) || \
+    (NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1) || \
+    (NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1)
 static int npf_max(int x, int y) { return (x > y) ? x : y; }
+#endif
 
 int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
   char const *cur = format;
@@ -652,6 +694,7 @@ int npf_ftoa_rev(char *buf, float f, unsigned base,
     *buf++ = (char)('N' + case_c);
     return -3;
   }
+
   if ((f == INFINITY) || (f == -INFINITY)) {
     *buf++ = (char)('F' + case_c);
     *buf++ = (char)('N' + case_c);
@@ -696,7 +739,8 @@ int npf_ftoa_rev(char *buf, float f, unsigned base,
   }
   return (int)(dst - buf);
 }
-#endif
+
+#endif // NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS
 
 #if NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS == 1
 int npf_bin_len(npf_uint_t u) {
@@ -715,8 +759,7 @@ int npf_bin_len(npf_uint_t u) {
     return u ? (idx + 1) : 1;
   #endif
 #else
-  #if defined(__clang__) || \
-    (defined(__GNUC__) && ((__GNUC__ > 4) || ((__GNUC__ == 4) && (__GNUC_MINOR__ > 6))))
+  #if NANOPRINTF_CLANG || NANOPRINTF_GCC_PAST_4_6
     #define NPF_HAVE_BUILTIN_CLZ
   #endif
 
@@ -1151,6 +1194,10 @@ int npf_vsnprintf(char *buffer, size_t bufsz, char const *format, va_list vlist)
   pc('\0', &bufputc_ctx);
   return n;
 }
+
+#if NANOPRINTF_HAVE_WARNING_PRAGMAS
+  #pragma GCC diagnostic pop
+#endif
 
 #endif // NANOPRINTF_IMPLEMENTATION_INCLUDED
 #endif // NANOPRINTF_IMPLEMENTATION

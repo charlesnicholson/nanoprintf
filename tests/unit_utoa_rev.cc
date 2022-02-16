@@ -1,9 +1,17 @@
 #include "unit_nanoprintf.h"
-#include "doctest.h"
 
 #include <climits>
 #include <string>
 #include <iostream>
+
+#if NANOPRINTF_HAVE_WARNING_PRAGMAS
+  #pragma GCC diagnostic push
+  #if NANOPRINTF_CLANG
+    #pragma GCC diagnostic ignored "-Wformat-pedantic"
+    #pragma GCC diagnostic ignored "-Wold-style-cast"
+    #pragma GCC diagnostic ignored "-Wmissing-prototypes"
+  #endif
+#endif
 
 void require_npf_utoa(
     std::string const &expected,

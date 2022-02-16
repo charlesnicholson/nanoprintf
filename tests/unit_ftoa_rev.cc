@@ -1,9 +1,15 @@
 #include "unit_nanoprintf.h"
-#include "doctest.h"
 
 #include <cstring>
 #include <string>
 #include <iostream>
+
+#if NANOPRINTF_HAVE_WARNING_PRAGMAS
+  #pragma GCC diagnostic push
+  #if NANOPRINTF_CLANG
+    #pragma GCC diagnostic ignored "-Wformat-pedantic"
+  #endif
+#endif
 
 TEST_CASE("ftoa_rev") {
   char buf[64];

@@ -4,12 +4,26 @@
 #define NANOPRINTF_IMPLEMENTATION
 #include "../nanoprintf.h"
 
-#include "doctest.h"
-
 #include <string>
 #include <iostream>
 #include <limits.h>
 #include <cmath>
+
+#if NANOPRINTF_HAVE_WARNING_PRAGMAS
+  #pragma GCC diagnostic push
+  #if NANOPRINTF_CLANG
+    #pragma GCC diagnostic ignored "-Wc++98-compat-pedantic"
+    #pragma GCC diagnostic ignored "-Wformat-pedantic"
+    #pragma GCC diagnostic ignored "-Wformat-nonliteral"
+    #pragma GCC diagnostic ignored "-Wold-style-cast"
+    #ifndef __APPLE__
+      #pragma GCC diagnostic ignored "-Wreserved-identifier"
+    #endif
+  #endif
+  #pragma GCC diagnostic ignored "-Wformat"
+#endif
+
+#include "doctest.h"
 
 namespace {
 void require_conform(const std::string& expected, char const *fmt, ...) {

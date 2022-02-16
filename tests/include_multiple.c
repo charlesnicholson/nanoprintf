@@ -25,6 +25,8 @@
 #include <stdio.h>
 
 int main(int c, char const *v[]) {
+  (void)c;
+  (void)v;
   char buf[64];
   npf_snprintf(buf, sizeof(buf), "%s", "hello");
   printf("%s\n", buf);

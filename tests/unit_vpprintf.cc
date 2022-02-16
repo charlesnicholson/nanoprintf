@@ -1,5 +1,4 @@
 #include "unit_nanoprintf.h"
-#include "doctest.h"
 
 #include <climits>
 #include <cstring>
@@ -7,9 +6,20 @@
 #include <string>
 #include <vector>
 
+#if NANOPRINTF_HAVE_WARNING_PRAGMAS
+  #pragma GCC diagnostic push
+  #if NANOPRINTF_CLANG
+    #pragma GCC diagnostic ignored "-Wformat-pedantic"
+    #pragma GCC diagnostic ignored "-Wold-style-cast"
+  #endif
+  #pragma GCC diagnostic ignored "-Wformat"
+  #pragma GCC diagnostic ignored "-Wformat-zero-length"
+  #pragma GCC diagnostic ignored "-Wformat-security"
+#endif
+
 struct Recorder {
   static void PutC(int c, void *ctx) {
-    static_cast< Recorder * >(ctx)->calls.push_back(c);
+    static_cast<Recorder*>(ctx)->calls.push_back(c);
   }
 
   std::string String() const {
