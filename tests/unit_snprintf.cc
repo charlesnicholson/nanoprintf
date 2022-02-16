@@ -5,10 +5,13 @@
 #include <string>
 #include <iostream>
 
-#if NANOPRINTF_CLANG_OR_GCC_PAST_4_6
+#if NANOPRINTF_HAVE_WARNING_PRAGMAS
   #pragma GCC diagnostic push
-  #pragma GCC diagnostic ignored "-Wc++98-compat-pedantic"
-  #pragma GCC diagnostic ignored "-Wold-style-cast"
+  #if NANOPRINTF_CLANG
+    #pragma GCC diagnostic ignored "-Wc++98-compat-pedantic"
+    #pragma GCC diagnostic ignored "-Wformat-pedantic"
+  #endif
+  #pragma GCC diagnostic ignored "-Wformat-zero-length"
 #endif
 
 TEST_CASE("npf_snprintf") {

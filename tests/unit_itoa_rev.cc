@@ -6,11 +6,12 @@
 #include <string>
 #include <iostream>
 
-#if NANOPRINTF_CLANG_OR_GCC_PAST_4_6
+#if NANOPRINTF_HAVE_WARNING_PRAGMAS
   #pragma GCC diagnostic push
-  #pragma GCC diagnostic ignored "-Wc++98-compat-pedantic"
-  #pragma GCC diagnostic ignored "-Wold-style-cast"
-  #pragma GCC diagnostic ignored "-Wmissing-prototypes"
+  #if NANOPRINTF_CLANG
+    #pragma GCC diagnostic ignored "-Wc++98-compat-pedantic"
+    #pragma GCC diagnostic ignored "-Wformat-pedantic"
+  #endif
 #endif
 
 void require_npf_itoa(char const *expected, npf_int_t val) {

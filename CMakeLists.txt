@@ -28,7 +28,7 @@ else()
   set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-Os -g")
   set(CMAKE_CXX_FLAGS_RELEASE "-Os")
 
-  set(nanoprintf_common_flags -pedantic -Wall -Wextra -Werror)
+  set(nanoprintf_common_flags -pedantic -Wall -Wextra -Wundef -Werror)
 
   if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     list(APPEND nanoprintf_common_flags -Weverything)

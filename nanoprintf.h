@@ -91,20 +91,39 @@ NPF_VISIBILITY int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format,
 #include <inttypes.h>
 #include <stdint.h>
 
-#if defined(__clang__) || \
-      (defined(__GNUC__) && ((__GNUC__ > 4) || ((__GNUC__ == 4) && (__GNUC_MINOR__ > 6))))
-  #define NANOPRINTF_CLANG_OR_GCC_PAST_4_6 1
+// Figure out if we can disable warnings with pragmas.
+#ifdef __clang__
+  #define NANOPRINTF_CLANG 1
+  #define NANOPRINTF_GCC_PAST_4_6 0
 #else
-  #define NANOPRINTF_CLANG_OR_GCC_PAST_4_6 0
+  #define NANOPRINTF_CLANG 0
+  #if defined(__GNUC__) && ((__GNUC__ > 4) || ((__GNUC__ == 4) && (__GNUC_MINOR__ > 6)))
+    #define NANOPRINTF_GCC_PAST_4_6 1
+  #else
+    #define NANOPRINTF_GCC_PAST_4_6 0
+  #endif
 #endif
 
-#if NANOPRINTF_CLANG_OR_GCC_PAST_4_6
+#if NANOPRINTF_CLANG || NANOPRINTF_GCC_PAST_4_6
+  #define NANOPRINTF_HAVE_WARNING_PRAGMAS 1
+#else
+  #define NANOPRINTF_HAVE_WARNING_PRAGMAS 0
+#endif
+
+#if NANOPRINTF_HAVE_WARNING_PRAGMAS
   #pragma GCC diagnostic push
   #pragma GCC diagnostic ignored "-Wunused-function"
-  #pragma GCC diagnostic ignored "-Wc++98-compat-pedantic"
-  #pragma GCC diagnostic ignored "-Wold-style-cast"
+  #ifdef __cplusplus
+    #pragma GCC diagnostic ignored "-Wold-style-cast"
+  #endif
   #pragma GCC diagnostic ignored "-Wpadded"
-  #pragma GCC diagnostic ignored "-Wcovered-switch-default"
+  #pragma GCC diagnostic ignored "-Wfloat-equal"
+  #if NANOPRINTF_CLANG
+    #pragma GCC diagnostic ignored "-Wc++98-compat-pedantic"
+    #pragma GCC diagnostic ignored "-Wcovered-switch-default"
+  #elif NANOPRINTF_GCC_PAST_4_6
+    #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+  #endif
 #endif
 
 // Pick reasonable defaults if nothing's been configured.
@@ -114,12 +133,12 @@ NPF_VISIBILITY int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format,
     !defined(NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS) && \
     !defined(NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS) && \
     !defined(NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS)
-#define NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS 1
-#define NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS 1
-#define NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS 1
-#define NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS 0
-#define NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS 0
-#define NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS 0
+  #define NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS 1
+  #define NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS 1
+  #define NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS 1
+  #define NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS 0
+  #define NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS 0
+  #define NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS 0
 #endif
 
 // If anything's been configured, everything must be configured.
@@ -672,14 +691,7 @@ int npf_ftoa_rev(char *buf, float f, unsigned base,
     return -3;
   }
 
-#if NANOPRINTF_CLANG_OR_GCC_PAST_4_6
-  #pragma GCC diagnostic push
-  #pragma GCC diagnostic ignored "-Wfloat-equal"
-#endif
   if ((f == INFINITY) || (f == -INFINITY)) {
-#if NANOPRINTF_CLANG_OR_GCC_PAST_4_6
-  #pragma GCC diagnostic pop
-#endif
     *buf++ = (char)('F' + case_c);
     *buf++ = (char)('N' + case_c);
     *buf++ = (char)('I' + case_c);
@@ -723,7 +735,8 @@ int npf_ftoa_rev(char *buf, float f, unsigned base,
   }
   return (int)(dst - buf);
 }
-#endif
+
+#endif // NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS
 
 #if NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS == 1
 int npf_bin_len(npf_uint_t u) {
@@ -742,7 +755,7 @@ int npf_bin_len(npf_uint_t u) {
     return u ? (idx + 1) : 1;
   #endif
 #else
-  #if NANOPRINTF_CLANG_OR_GCC_PAST_4_6
+  #if NANOPRINTF_CLANG || NANOPRINTF_GCC_PAST_4_6
     #define NPF_HAVE_BUILTIN_CLZ
   #endif
 
@@ -1178,7 +1191,7 @@ int npf_vsnprintf(char *buffer, size_t bufsz, char const *format, va_list vlist)
   return n;
 }
 
-#if NANOPRINTF_CLANG_OR_GCC_PAST_4_6
+#if NANOPRINTF_HAVE_WARNING_PRAGMAS
   #pragma GCC diagnostic pop
 #endif
 
