@@ -101,7 +101,7 @@ def get_ninja(download, verbose):
     plat = {'darwin': 'mac', 'linux': 'linux', 'win32': 'win'}[sys.platform]
     ninja_file = f'ninja-{plat}.zip'
     ninja_local_zip = ninja_local_dir / ninja_file
-    ninja_local_exe = ninja_local_dir / 'ninja'
+    ninja_local_exe = ninja_local_dir / f'ninja{".exe" if plat == "win" else ""}'
 
     if not ninja_local_exe.exists():
         if not ninja_local_zip.exists():
