@@ -91,41 +91,6 @@ NPF_VISIBILITY int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format,
 #include <inttypes.h>
 #include <stdint.h>
 
-// Figure out if we can disable warnings with pragmas.
-#ifdef __clang__
-  #define NANOPRINTF_CLANG 1
-  #define NANOPRINTF_GCC_PAST_4_6 0
-#else
-  #define NANOPRINTF_CLANG 0
-  #if defined(__GNUC__) && ((__GNUC__ > 4) || ((__GNUC__ == 4) && (__GNUC_MINOR__ > 6)))
-    #define NANOPRINTF_GCC_PAST_4_6 1
-  #else
-    #define NANOPRINTF_GCC_PAST_4_6 0
-  #endif
-#endif
-
-#if NANOPRINTF_CLANG || NANOPRINTF_GCC_PAST_4_6
-  #define NANOPRINTF_HAVE_WARNING_PRAGMAS 1
-#else
-  #define NANOPRINTF_HAVE_WARNING_PRAGMAS 0
-#endif
-
-#if NANOPRINTF_HAVE_WARNING_PRAGMAS
-  #pragma GCC diagnostic push
-  #pragma GCC diagnostic ignored "-Wunused-function"
-  #ifdef __cplusplus
-    #pragma GCC diagnostic ignored "-Wold-style-cast"
-  #endif
-  #pragma GCC diagnostic ignored "-Wpadded"
-  #pragma GCC diagnostic ignored "-Wfloat-equal"
-  #if NANOPRINTF_CLANG
-    #pragma GCC diagnostic ignored "-Wc++98-compat-pedantic"
-    #pragma GCC diagnostic ignored "-Wcovered-switch-default"
-  #elif NANOPRINTF_GCC_PAST_4_6
-    #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
-  #endif
-#endif
-
 // Pick reasonable defaults if nothing's been configured.
 #if !defined(NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS) && \
     !defined(NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS) && \
@@ -186,6 +151,42 @@ NPF_VISIBILITY int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format,
     #endif
   #endif
 #endif
+
+// Figure out if we can disable warnings with pragmas.
+#ifdef __clang__
+  #define NANOPRINTF_CLANG 1
+  #define NANOPRINTF_GCC_PAST_4_6 0
+#else
+  #define NANOPRINTF_CLANG 0
+  #if defined(__GNUC__) && ((__GNUC__ > 4) || ((__GNUC__ == 4) && (__GNUC_MINOR__ > 6)))
+    #define NANOPRINTF_GCC_PAST_4_6 1
+  #else
+    #define NANOPRINTF_GCC_PAST_4_6 0
+  #endif
+#endif
+
+#if NANOPRINTF_CLANG || NANOPRINTF_GCC_PAST_4_6
+  #define NANOPRINTF_HAVE_WARNING_PRAGMAS 1
+#else
+  #define NANOPRINTF_HAVE_WARNING_PRAGMAS 0
+#endif
+
+#if NANOPRINTF_HAVE_WARNING_PRAGMAS
+  #pragma GCC diagnostic push
+  #pragma GCC diagnostic ignored "-Wunused-function"
+  #ifdef __cplusplus
+    #pragma GCC diagnostic ignored "-Wold-style-cast"
+  #endif
+  #pragma GCC diagnostic ignored "-Wpadded"
+  #pragma GCC diagnostic ignored "-Wfloat-equal"
+  #if NANOPRINTF_CLANG
+    #pragma GCC diagnostic ignored "-Wc++98-compat-pedantic"
+    #pragma GCC diagnostic ignored "-Wcovered-switch-default"
+  #elif NANOPRINTF_GCC_PAST_4_6
+    #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+  #endif
+#endif
+
 
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
 typedef enum {
