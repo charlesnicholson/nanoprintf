@@ -6,6 +6,13 @@
 #include <string>
 #include <iostream>
 
+#if NANOPRINTF_CLANG_OR_GCC_PAST_4_6
+  #pragma GCC diagnostic push
+  #pragma GCC diagnostic ignored "-Wc++98-compat-pedantic"
+  #pragma GCC diagnostic ignored "-Wold-style-cast"
+  #pragma GCC diagnostic ignored "-Wmissing-prototypes"
+#endif
+
 void require_npf_itoa(char const *expected, npf_int_t val) {
   char buf[64];
   int const n = npf_itoa_rev(buf, val);

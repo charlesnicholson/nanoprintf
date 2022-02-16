@@ -28,41 +28,20 @@ else()
   set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-Os -g")
   set(CMAKE_CXX_FLAGS_RELEASE "-Os")
 
-  set(nanoprintf_common_flags  # Construct the enable-warning flags first
-      -pedantic
-      -Wall
-      -Wextra
-      -Werror
-      -Wconversion
-      -Wsign-conversion
-      -Wswitch-enum
-      -Wswitch-default)
+  set(nanoprintf_common_flags -pedantic -Wall -Wextra -Werror)
 
-  if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+  if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     list(APPEND nanoprintf_common_flags -Weverything)
+  else()
+    list(APPEND nanoprintf_common_flags
+         -Wconversion
+         -Wshadow
+         -Wfloat-equal
+         -Wsign-conversion
+         -Wswitch-enum
+         -Wswitch-default)
   endif()
 endif()
-
-if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang") # Subtract out unhelpful warnings
-  list(APPEND nanoprintf_common_flags -Wno-float-equal)
-  list(APPEND nanoprintf_cxx_flags
-       -Wno-old-style-cast
-       -Wno-c++98-compat-pedantic
-       -Wno-missing-prototypes
-       -Wno-reserved-identifier)
-elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-  list(APPEND nanoprintf_common_flags -Wno-uninitialized) # Spurious
-endif()
-
-if (NOT MSVC)
-  list(APPEND nanoprintf_common_flags
-       -Wno-padded
-       -Wno-covered-switch-default
-       -Wno-unused-function)
-endif()
-
-set(nanoprintf_c_flags ${nanoprintf_common_flags})
-set(nanoprintf_cxx_flags ${nanoprintf_common_flags} ${nanoprintf_cxx_flags})
 
 ################ Doctest
 
@@ -70,16 +49,8 @@ add_library(libdoctest_main OBJECT tests/doctest_main.cc)
 
 function(npf_test name files)
   add_executable(${name} ${files})
+  target_compile_options(${name} PRIVATE ${nanoprintf_common_flags})
   target_link_libraries(${name} libdoctest_main) # Doctest is slow, only build once.
-
-  if (NOT MSVC)
-    # The tests use format strings that anger clang + gcc
-    target_compile_options(${name} PRIVATE
-                           ${nanoprintf_cxx_flags}
-                           -Wno-format
-                           -Wno-format-pedantic
-                           -Wno-format-nonliteral)
-  endif()
 
   # Set up a target that automatically runs + timestamps successful tests.
   set(timestamp "${CMAKE_CURRENT_BINARY_DIR}/${name}.timestamp")
@@ -94,7 +65,7 @@ endfunction()
 
 function(npf_compilation_c_test target)
   add_library(${target} tests/compilation_c.c)
-  target_compile_options(${target} PRIVATE ${nanoprintf_c_flags})
+  target_compile_options(${target} PRIVATE ${nanoprintf_common_flags})
 endfunction()
 
 # Test every combination of compatible flags.
@@ -193,6 +164,7 @@ add_executable(wrap_npf
                examples/wrap_npf/main.cc)
 
 add_executable(npf_include_multiple tests/include_multiple.c)
+target_compile_options(npf_include_multiple PRIVATE ${nanoprintf_common_flags})
 
 ############### Unit tests
 

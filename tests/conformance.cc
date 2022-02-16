@@ -11,6 +11,14 @@
 #include <limits.h>
 #include <cmath>
 
+#if NANOPRINTF_CLANG_OR_GCC_PAST_4_6
+  #pragma GCC diagnostic push
+  #pragma GCC diagnostic ignored "-Wc++98-compat-pedantic"
+  #pragma GCC diagnostic ignored "-Wc++98-c++11-compat-binary-literal"
+  #pragma GCC diagnostic ignored "-Wold-style-cast"
+  #pragma GCC diagnostic ignored "-Wformat-nonliteral"
+#endif
+
 namespace {
 void require_conform(const std::string& expected, char const *fmt, ...) {
   char buf[256];

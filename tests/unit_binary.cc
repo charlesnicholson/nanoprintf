@@ -4,6 +4,13 @@
 #include <string>
 #include <iostream>
 
+#if NANOPRINTF_CLANG_OR_GCC_PAST_4_6
+  #pragma GCC diagnostic push
+  #pragma GCC diagnostic ignored "-Wc++98-compat-pedantic"
+  #pragma GCC diagnostic ignored "-Wold-style-cast"
+  #pragma GCC diagnostic ignored "-Wformat-nonliteral"
+#endif
+
 TEST_CASE("npf_bin_len") {
   CHECK(npf_bin_len(0) == 1);
   CHECK(npf_bin_len(1) == 1);

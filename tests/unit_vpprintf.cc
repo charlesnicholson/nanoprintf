@@ -7,9 +7,18 @@
 #include <string>
 #include <vector>
 
+#if NANOPRINTF_CLANG_OR_GCC_PAST_4_6
+  #pragma GCC diagnostic push
+  #pragma GCC diagnostic ignored "-Wc++98-compat-pedantic"
+  #pragma GCC diagnostic ignored "-Wold-style-cast"
+  #pragma GCC diagnostic ignored "-Wformat"
+  #pragma GCC diagnostic ignored "-Wformat-security"
+  #pragma GCC diagnostic ignored "-Wformat-pedantic"
+#endif
+
 struct Recorder {
   static void PutC(int c, void *ctx) {
-    static_cast< Recorder * >(ctx)->calls.push_back(c);
+    static_cast<Recorder*>(ctx)->calls.push_back(c);
   }
 
   std::string String() const {
