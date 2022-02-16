@@ -329,7 +329,11 @@ static int npf_bin_len(npf_uint_t i);
 static int npf_min(int x, int y) { return (x < y) ? x : y; }
 #endif
 
+#if (NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1) || \
+    (NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1) || \
+    (NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1)
 static int npf_max(int x, int y) { return (x > y) ? x : y; }
+#endif
 
 int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
   char const *cur = format;
