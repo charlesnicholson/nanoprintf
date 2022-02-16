@@ -17,6 +17,7 @@
     #pragma GCC diagnostic ignored "-Wc++98-compat-pedantic"
     #pragma GCC diagnostic ignored "-Wformat-pedantic"
   #endif
+  #pragma GCC diagnostic ignored "-Wformat"
 #endif
 
 namespace {
