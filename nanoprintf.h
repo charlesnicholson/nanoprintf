@@ -602,7 +602,7 @@ int npf_utoa_rev(char *buf, npf_uint_t i, unsigned base,
                  npf_format_spec_conversion_case_t cc) {
   char *dst = buf;
   if (i == 0) { *dst++ = '0'; }
-  unsigned const base_c = (cc == NPF_FMT_SPEC_CONV_CASE_LOWER) ? 'a' : 'A';
+  unsigned const base_c = (unsigned)((cc == NPF_FMT_SPEC_CONV_CASE_LOWER) ? 'a' : 'A');
   while (i) {
     unsigned const d = (unsigned)(i % base);
     *dst++ = (d < 10) ? (char)('0' + d) : (char)(base_c + (d - 10));
@@ -926,7 +926,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
       case NPF_FMT_SPEC_CONV_UNSIGNED_INT: { // 'u'
         sign = 0;
         unsigned const base = (fs.conv_spec == NPF_FMT_SPEC_CONV_OCTAL) ?
-          8 : ((fs.conv_spec == NPF_FMT_SPEC_CONV_HEX_INT) ? 16 : 10);
+          8 : (unsigned)(((fs.conv_spec == NPF_FMT_SPEC_CONV_HEX_INT) ? 16 : 10));
         npf_uint_t val = 0;
 
         switch (fs.length_modifier) {
