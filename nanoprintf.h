@@ -806,6 +806,8 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
       continue;
     }
 
+    cur += fs_len;
+
     // Format specifier, convert and write argument
     union { char cbuf_mem[32]; npf_uint_t binval; } u;
     char *cbuf = u.cbuf_mem, sign_c;
@@ -1151,7 +1153,6 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
       while (field_pad-- > 0) { NPF_PUTC(pad_c); }
     }
 #endif
-    cur += fs_len;
   }
 
   return n;
