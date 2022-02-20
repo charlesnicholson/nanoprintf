@@ -5,6 +5,8 @@
   #pragma warning(disable:4464) // relative include uses ..
   #pragma warning(disable:4514) // unreferenced inline function removed
   #pragma warning(disable:5039) // extern "c" throw
+  #pragma warning(disable:4710) // function not inlined
+  #pragma warning(disable:4711) // selected for inline
 #endif
 
 #define NANOPRINTF_IMPLEMENTATION
