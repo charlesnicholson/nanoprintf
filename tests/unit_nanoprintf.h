@@ -26,7 +26,8 @@
 #endif
 
 #ifdef _MSC_VER
-  #pragma warning(disable:4514) // unreferenced inline function removed
+  #pragma warning(disable:4710) // function wasn't inlined
+  #pragma warning(disable:4711) // function was inlined
 #endif
 
 #include "doctest.h"
