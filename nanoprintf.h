@@ -689,7 +689,7 @@ int npf_ftoa_rev(char *buf, float f, unsigned base,
   char const case_c = (cc == NPF_FMT_SPEC_CONV_CASE_LOWER) ? 'a' - 'A' : 0;
 
   if (f != f) {
-    for (int i = 0; i < 3; ++i) { *buf++ = (char)("NAN"[2-i] + case_c); }
+    for (int i = 0; i < 3; ++i) { *buf++ = (char)("NAN"[i] + case_c); }
     return -3;
   }
 
