@@ -31,9 +31,13 @@ def parse_args():
         nargs='?',
         help='CMake configuration')
     parser.add_argument(
-        '--build-32-bit', help='Compile in 32-bit mode', action='store_true')
-    parser.add_argument(
-        '--build-64-bit', help='Compile in 64-bit mode', action='store_true')
+        '--arch',
+        type=int,
+        choices=(32, 64),
+        default=64,
+        const=64,
+        nargs='?',
+        help='Target architecture')
     parser.add_argument(
         '--paland',
         help='Compile with Paland\'s printf conformance suite',
@@ -134,7 +138,7 @@ def configure_cmake(cmake_exe, ninja, args):
                   f'-DCMAKE_MAKE_PROGRAM={ninja}',
                   f'-DCMAKE_BUILD_TYPE={args.cfg}',
                   f'-DNPF_PALAND={"ON" if args.paland else "OFF"}',
-                  f'-DNPF_32BIT={"ON" if args.build_32_bit else "OFF"}']
+                  f'-DNPF_32BIT={"ON" if args.arch == 32 else "OFF"}']
     try:
         return subprocess.run(
             cmake_args,
