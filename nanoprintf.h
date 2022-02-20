@@ -993,8 +993,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
       case NPF_FMT_SPEC_CONV_POINTER: { // 'p'
         cbuf_len = npf_utoa_rev(cbuf, (npf_uint_t)(uintptr_t)va_arg(vlist, void *),
           16, NPF_FMT_SPEC_CONV_CASE_LOWER);
-        cbuf[cbuf_len++] = 'x';
-        cbuf[cbuf_len++] = '0';
+        need_0x = 'x';
       } break;
 
 #if NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS == 1
