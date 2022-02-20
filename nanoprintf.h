@@ -192,6 +192,7 @@ NPF_VISIBILITY int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format,
   #pragma warning(disable:4820) // padding after data member
   #pragma warning(disable:5039) // extern "C" throw
   #pragma warning(disable:5045) // spectre mitigation
+  #pragma warning(disable:4711) // selected for inline
 #endif
 
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
