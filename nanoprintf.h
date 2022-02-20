@@ -689,25 +689,19 @@ int npf_ftoa_rev(char *buf, float f, unsigned base,
   char const case_c = (cc == NPF_FMT_SPEC_CONV_CASE_LOWER) ? 'a' - 'A' : 0;
 
   if (f != f) {
-    *buf++ = (char)('N' + case_c);
-    *buf++ = (char)('A' + case_c);
-    *buf++ = (char)('N' + case_c);
+    for (int i = 0; i < 3; ++i) { *buf++ = (char)("NAN"[i] + case_c); }
     return -3;
   }
 
   if ((f == INFINITY) || (f == -INFINITY)) {
-    *buf++ = (char)('F' + case_c);
-    *buf++ = (char)('N' + case_c);
-    *buf++ = (char)('I' + case_c);
+    for (int i = 0; i < 3; ++i) { *buf++ = (char)("INF"[2-i] + case_c); }
     return -3;
   }
 
   uint64_t int_part, frac_part;
   int frac_base10_neg_exp;
   if (npf_fsplit_abs(f, &int_part, &frac_part, &frac_base10_neg_exp) == 0) {
-    *buf++ = (char)('R' + case_c);
-    *buf++ = (char)('O' + case_c);
-    *buf++ = (char)('O' + case_c);
+    for (int i = 0; i < 3; ++i) { *buf++ = (char)("OOR"[2-i] + case_c); }
     return -3;
   }
 
@@ -812,13 +806,15 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
       continue;
     }
 
+    cur += fs_len;
+
     // Format specifier, convert and write argument
     union { char cbuf_mem[32]; npf_uint_t binval; } u;
-    char *cbuf = u.cbuf_mem, sign_c;
+    char *cbuf = u.cbuf_mem, sign_c = 0;
     int cbuf_len = 0, need_0x = 0;
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
     int field_pad = 0;
-    char pad_c;
+    char pad_c = 0;
 #endif
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
     int prec_pad = 0;
@@ -1036,7 +1032,6 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
     }
 
     // Compute the leading symbol (+, -, ' ')
-    sign_c = 0;
     if (sign == -1) {
       sign_c = '-';
     } else if (sign == 1) {
@@ -1046,7 +1041,6 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
 
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
     // Compute the field width pad character
-    pad_c = 0;
     if (fs.field_width_type == NPF_FMT_SPEC_FIELD_WIDTH_LITERAL) {
       if (fs.leading_zero_pad) { // '0' flag is only legal with numeric types
         if ((fs.conv_spec != NPF_FMT_SPEC_CONV_STRING) &&
@@ -1157,7 +1151,6 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
       while (field_pad-- > 0) { NPF_PUTC(pad_c); }
     }
 #endif
-    cur += fs_len;
   }
 
   return n;
