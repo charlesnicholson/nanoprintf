@@ -2,6 +2,8 @@
 
 #ifdef _MSC_VER
   #pragma warning(disable:4464) // relative include uses ..
+  #pragma warning(disable:4710) // inline
+  #pragma warning(disable:4711) // inline
 #endif
 
 // Include the interface multiple times to make sure it guards against itself.
