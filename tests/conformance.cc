@@ -1,6 +1,11 @@
 // CMake drives the conformance test with a large flag matrix.
 // All of the nanoprintf configuration preprocessor symbols are injected.
 
+#ifdef _MSC_VER
+  #pragma warning(disable:4464) // relative include uses ..
+  #pragma warning(disable:4514) // unreferenced inline function removed
+#endif
+
 #define NANOPRINTF_IMPLEMENTATION
 #include "../nanoprintf.h"
 
