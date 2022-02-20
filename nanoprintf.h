@@ -810,11 +810,11 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
 
     // Format specifier, convert and write argument
     union { char cbuf_mem[32]; npf_uint_t binval; } u;
-    char *cbuf = u.cbuf_mem, sign_c;
+    char *cbuf = u.cbuf_mem, sign_c = 0;
     int cbuf_len = 0, need_0x = 0;
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
     int field_pad = 0;
-    char pad_c;
+    char pad_c = 0;
 #endif
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
     int prec_pad = 0;
@@ -1032,7 +1032,6 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
     }
 
     // Compute the leading symbol (+, -, ' ')
-    sign_c = 0;
     if (sign == -1) {
       sign_c = '-';
     } else if (sign == 1) {
@@ -1042,7 +1041,6 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
 
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
     // Compute the field width pad character
-    pad_c = 0;
     if (fs.field_width_type == NPF_FMT_SPEC_FIELD_WIDTH_LITERAL) {
       if (fs.leading_zero_pad) { // '0' flag is only legal with numeric types
         if ((fs.conv_spec != NPF_FMT_SPEC_CONV_STRING) &&
