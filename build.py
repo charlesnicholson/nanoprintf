@@ -13,8 +13,8 @@ import zipfile
 
 SCRIPT_PATH = pathlib.Path(__file__).resolve().parent
 
-NINJA_URL = 'https://github.com/ninja-build/ninja/releases/download/v1.9.0/{}'
-CMAKE_URL = 'https://cmake.org/files/v3.15/{}'
+NINJA_URL = 'https://github.com/ninja-build/ninja/releases/download/v1.10.2/{}'
+CMAKE_URL = 'https://cmake.org/files/v3.22/{}'
 
 
 def parse_args():
@@ -68,11 +68,11 @@ def get_cmake(download, verbose):
             return cmake
 
     plat = {
-        'darwin': 'Darwin',
-        'linux': 'Linux',
-        'win32': 'win64'}[
+        'darwin': 'macos-universal',
+        'linux': 'linux-x86_64',
+        'win32': 'win64-x86_64'}[
         sys.platform]
-    cmake_prefix = f'cmake-3.15.7-{plat}-x86_64'
+    cmake_prefix = f'cmake-3.22.2-{plat}'
     cmake_local_dir = SCRIPT_PATH / 'external' / 'cmake'
     cmake_file = f'{cmake_prefix}.tar.gz'
     cmake_local_tgz = cmake_local_dir / cmake_file
