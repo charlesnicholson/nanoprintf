@@ -95,8 +95,8 @@ jobs:
 
     strategy:
       matrix:
-        architecture: [32, 64]
         configuration: [Debug, Release]
+        architecture: [32, 64]
 
     steps:
       - uses: actions/checkout@v2
@@ -110,7 +110,7 @@ jobs:
         shell: cmd
         run: |
           call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars${{ matrix.architecture }}.bat"
-          python.exe build.py --cfg ${{ matrix.configuration }} --paland -v --build-${{ matrix.architecture }}-bit
+          python.exe build.py --cfg ${{ matrix.configuration }} --paland -v --arch ${{ matrix.architecture }}
 
   size-reports:
     runs-on: ubuntu-latest
