@@ -46,7 +46,7 @@ jobs:
         env:
           CC: /usr/bin/gcc
           CXX: /usr/bin/g++
-        run: ./b --cfg ${{ matrix.configuration }} ${{ matrix.architecture }} --paland -v
+        run: ./b --cfg ${{ matrix.configuration }} --arch ${{ matrix.architecture }} --paland -v
 
   linux-clang:
     runs-on: ubuntu-latest
@@ -70,7 +70,7 @@ jobs:
         env:
           CC: /usr/bin/clang
           CXX: /usr/bin/clang++
-        run: ./b --cfg ${{ matrix.configuration }} --paland -v
+        run: ./b --cfg ${{ matrix.configuration }} --arch ${{ matrix.architecture }} --paland -v
 
   macos:
     runs-on: macos-latest
