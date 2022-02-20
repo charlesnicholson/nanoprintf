@@ -4,6 +4,7 @@
 #ifdef _MSC_VER
   #pragma warning(disable:4464) // relative include uses ..
   #pragma warning(disable:4514) // unreferenced inline function removed
+  #pragma warning(disable:5039) // extern "c" throw
 #endif
 
 #define NANOPRINTF_IMPLEMENTATION

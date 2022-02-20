@@ -332,6 +332,10 @@ static int npf_bin_len(npf_uint_t i);
   #endif
 #endif
 
+#ifdef _MSC_VER
+  #include <intrin.h>
+#endif
+
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
 static int npf_min(int x, int y) { return (x < y) ? x : y; }
 #endif
@@ -752,12 +756,12 @@ int npf_bin_len(npf_uint_t u) {
     #define NPF_HAVE_BUILTIN_CLZ
     unsigned long idx;
     _BitScanReverse64(&idx, u);
-    return u ? (idx + 1) : 1;
+    return u ? (int)(idx + 1) : 1;
   #elif NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 0
     #define NPF_HAVE_BUILTIN_CLZ
     unsigned long idx;
     _BitScanReverse(&idx, u);
-    return u ? (idx + 1) : 1;
+    return u ? (int)(idx + 1) : 1;
   #endif
 #else
   #if NANOPRINTF_CLANG || NANOPRINTF_GCC_PAST_4_6
