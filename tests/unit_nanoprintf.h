@@ -10,15 +10,10 @@
 #define NANOPRINTF_IMPLEMENTATION
 
 #ifdef _MSC_VER
-  #pragma warning(push)
   #pragma warning(disable:4464) // relative include uses ..
 #endif
 
 #include "../nanoprintf.h"
-
-#ifdef _MSC_VER
-  #pragma warning(pop)
-#endif
 
 #if NANOPRINTF_HAVE_GCC_WARNING_PRAGMAS
   #pragma GCC diagnostic push

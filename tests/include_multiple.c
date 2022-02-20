@@ -1,5 +1,9 @@
 // Confirm that nanoprintf can be included and then implemented.
 
+#ifdef _MSC_VER
+  #pragma warning(disable:4464) // relative include uses ..
+#endif
+
 // Include the interface multiple times to make sure it guards against itself.
 #include "../nanoprintf.h"
 #include "../nanoprintf.h"
