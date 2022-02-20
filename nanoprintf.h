@@ -716,7 +716,7 @@ int npf_ftoa_rev(char *buf, float f, unsigned base,
     return -3;
   }
 
-  unsigned const base_c = (cc == NPF_FMT_SPEC_CONV_CASE_LOWER) ? 'a' : 'A';
+  unsigned const base_c = (unsigned)((cc == NPF_FMT_SPEC_CONV_CASE_LOWER) ? 'a' : 'A');
   char *dst = buf;
 
   // write the fractional digits
@@ -791,7 +791,7 @@ int npf_bin_len(npf_uint_t u) {
 }
 #endif
 
-#define NPF_PUTC(VAL) do { pc((VAL), pc_ctx); ++n; } while (0)
+#define NPF_PUTC(VAL) do { pc((int)(VAL), pc_ctx); ++n; } while (0)
 
 #define NPF_EXTRACT(MOD, CAST_TO, EXTRACT_AS) \
   case NPF_FMT_SPEC_LEN_MOD_##MOD: val = (CAST_TO)va_arg(vlist, EXTRACT_AS); break
