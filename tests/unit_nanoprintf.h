@@ -29,6 +29,7 @@
   #pragma warning(disable:4710) // function wasn't inlined
   #pragma warning(disable:4711) // function was inlined
   #pragma warning(disable:4514) // unreferenced inline function has been removed
+  #pragma warning(disable:5039) // could throw inside extern c function
 #endif
 
 #include "doctest.h"
