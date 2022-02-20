@@ -19,7 +19,7 @@ endif()
 set(CMAKE_CXX_STANDARD 17)
 
 if (MSVC)
-  set(nanoprintf_common_flags /Wall /Wx)
+  set(nanoprintf_common_flags /Wall /WX)
 else()
   set(CMAKE_C_FLAGS_DEBUG "-O0 -g")
   set(CMAKE_C_FLAGS_RELWITHDEBINFO "-Os -g")
