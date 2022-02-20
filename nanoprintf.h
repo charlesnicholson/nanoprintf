@@ -166,12 +166,12 @@ NPF_VISIBILITY int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format,
 #endif
 
 #if NANOPRINTF_CLANG || NANOPRINTF_GCC_PAST_4_6
-  #define NANOPRINTF_HAVE_WARNING_PRAGMAS 1
+  #define NANOPRINTF_HAVE_GCC_WARNING_PRAGMAS 1
 #else
-  #define NANOPRINTF_HAVE_WARNING_PRAGMAS 0
+  #define NANOPRINTF_HAVE_GCC_WARNING_PRAGMAS 0
 #endif
 
-#if NANOPRINTF_HAVE_WARNING_PRAGMAS
+#if NANOPRINTF_HAVE_GCC_WARNING_PRAGMAS
   #pragma GCC diagnostic push
   #pragma GCC diagnostic ignored "-Wunused-function"
   #ifdef __cplusplus
@@ -185,6 +185,10 @@ NPF_VISIBILITY int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format,
   #elif NANOPRINTF_GCC_PAST_4_6
     #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
   #endif
+#endif
+
+#ifdef _MSC_VER
+  #pragma warning(push)
 #endif
 
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
@@ -1188,8 +1192,12 @@ int npf_vsnprintf(char *buffer, size_t bufsz, char const *format, va_list vlist)
   return n;
 }
 
-#if NANOPRINTF_HAVE_WARNING_PRAGMAS
+#if NANOPRINTF_HAVE_GCC_WARNING_PRAGMAS
   #pragma GCC diagnostic pop
+#endif
+
+#ifdef _MSC_VER
+  #pragma warning(pop)
 #endif
 
 #endif // NANOPRINTF_IMPLEMENTATION_INCLUDED

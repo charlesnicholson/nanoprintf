@@ -11,7 +11,7 @@
 
 #include "../nanoprintf.h"
 
-#if NANOPRINTF_HAVE_WARNING_PRAGMAS
+#if NANOPRINTF_HAVE_GCC_WARNING_PRAGMAS
   #pragma GCC diagnostic push
   #if NANOPRINTF_CLANG
     #pragma GCC diagnostic ignored "-Wc++98-compat-pedantic"
