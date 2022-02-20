@@ -689,25 +689,19 @@ int npf_ftoa_rev(char *buf, float f, unsigned base,
   char const case_c = (cc == NPF_FMT_SPEC_CONV_CASE_LOWER) ? 'a' - 'A' : 0;
 
   if (f != f) {
-    *buf++ = (char)('N' + case_c);
-    *buf++ = (char)('A' + case_c);
-    *buf++ = (char)('N' + case_c);
+    for (int i = 0; i < 3; ++i) { *buf++ = (char)("NAN"[2-i] + case_c); }
     return -3;
   }
 
   if ((f == INFINITY) || (f == -INFINITY)) {
-    *buf++ = (char)('F' + case_c);
-    *buf++ = (char)('N' + case_c);
-    *buf++ = (char)('I' + case_c);
+    for (int i = 0; i < 3; ++i) { *buf++ = (char)("INF"[2-i] + case_c); }
     return -3;
   }
 
   uint64_t int_part, frac_part;
   int frac_base10_neg_exp;
   if (npf_fsplit_abs(f, &int_part, &frac_part, &frac_base10_neg_exp) == 0) {
-    *buf++ = (char)('R' + case_c);
-    *buf++ = (char)('O' + case_c);
-    *buf++ = (char)('O' + case_c);
+    for (int i = 0; i < 3; ++i) { *buf++ = (char)("OOR"[2-i] + case_c); }
     return -3;
   }
 
