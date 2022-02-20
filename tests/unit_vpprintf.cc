@@ -6,7 +6,7 @@
 #include <string>
 #include <vector>
 
-#if NANOPRINTF_HAVE_WARNING_PRAGMAS
+#if NANOPRINTF_HAVE_GCC_WARNING_PRAGMAS
   #pragma GCC diagnostic push
   #if NANOPRINTF_CLANG
     #pragma GCC diagnostic ignored "-Wformat-pedantic"
@@ -19,14 +19,14 @@
 
 struct Recorder {
   static void PutC(int c, void *ctx) {
-    static_cast<Recorder*>(ctx)->calls.push_back(c);
+    static_cast<Recorder*>(ctx)->calls.push_back((char)c);
   }
 
   std::string String() const {
     return calls.empty() ? std::string() : std::string(calls.begin(), calls.end());
   }
 
-  std::vector<int> calls;
+  std::vector<char> calls;
 };
 
 TEST_CASE("npf_vpprintf") {

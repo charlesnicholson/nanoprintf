@@ -1,6 +1,14 @@
 // CMake drives the conformance test with a large flag matrix.
 // All of the nanoprintf configuration preprocessor symbols are injected.
 
+#ifdef _MSC_VER
+  #pragma warning(disable:4464) // relative include uses ..
+  #pragma warning(disable:4514) // unreferenced inline function removed
+  #pragma warning(disable:5039) // extern "c" throw
+  #pragma warning(disable:4710) // function not inlined
+  #pragma warning(disable:4711) // selected for inline
+#endif
+
 #define NANOPRINTF_IMPLEMENTATION
 #include "../nanoprintf.h"
 
@@ -9,7 +17,7 @@
 #include <limits.h>
 #include <cmath>
 
-#if NANOPRINTF_HAVE_WARNING_PRAGMAS
+#if NANOPRINTF_HAVE_GCC_WARNING_PRAGMAS
   #pragma GCC diagnostic push
   #if NANOPRINTF_CLANG
     #pragma GCC diagnostic ignored "-Wc++98-compat-pedantic"

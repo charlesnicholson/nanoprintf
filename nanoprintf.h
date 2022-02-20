@@ -166,12 +166,12 @@ NPF_VISIBILITY int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format,
 #endif
 
 #if NANOPRINTF_CLANG || NANOPRINTF_GCC_PAST_4_6
-  #define NANOPRINTF_HAVE_WARNING_PRAGMAS 1
+  #define NANOPRINTF_HAVE_GCC_WARNING_PRAGMAS 1
 #else
-  #define NANOPRINTF_HAVE_WARNING_PRAGMAS 0
+  #define NANOPRINTF_HAVE_GCC_WARNING_PRAGMAS 0
 #endif
 
-#if NANOPRINTF_HAVE_WARNING_PRAGMAS
+#if NANOPRINTF_HAVE_GCC_WARNING_PRAGMAS
   #pragma GCC diagnostic push
   #pragma GCC diagnostic ignored "-Wunused-function"
   #ifdef __cplusplus
@@ -185,6 +185,17 @@ NPF_VISIBILITY int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format,
   #elif NANOPRINTF_GCC_PAST_4_6
     #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
   #endif
+#endif
+
+#ifdef _MSC_VER
+  #pragma warning(push)
+  #pragma warning(disable:4514) // unreferenced inline function removed
+  #pragma warning(disable:4505) // unreferenced function removed
+  #pragma warning(disable:4820) // padding after data member
+  #pragma warning(disable:5039) // extern "C" throw
+  #pragma warning(disable:5045) // spectre mitigation
+  #pragma warning(disable:4710) // not inlined
+  #pragma warning(disable:4711) // selected for inline
 #endif
 
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
@@ -323,6 +334,10 @@ static int npf_bin_len(npf_uint_t i);
   #else
     #include <sys/types.h>
   #endif
+#endif
+
+#ifdef _MSC_VER
+  #include <intrin.h>
 #endif
 
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
@@ -595,7 +610,7 @@ int npf_utoa_rev(char *buf, npf_uint_t i, unsigned base,
                  npf_format_spec_conversion_case_t cc) {
   char *dst = buf;
   if (i == 0) { *dst++ = '0'; }
-  unsigned const base_c = (cc == NPF_FMT_SPEC_CONV_CASE_LOWER) ? 'a' : 'A';
+  unsigned const base_c = (unsigned)((cc == NPF_FMT_SPEC_CONV_CASE_LOWER) ? 'a' : 'A');
   while (i) {
     unsigned const d = (unsigned)(i % base);
     *dst++ = (d < 10) ? (char)('0' + d) : (char)(base_c + (d - 10));
@@ -705,7 +720,7 @@ int npf_ftoa_rev(char *buf, float f, unsigned base,
     return -3;
   }
 
-  unsigned const base_c = (cc == NPF_FMT_SPEC_CONV_CASE_LOWER) ? 'a' : 'A';
+  unsigned const base_c = (unsigned)((cc == NPF_FMT_SPEC_CONV_CASE_LOWER) ? 'a' : 'A');
   char *dst = buf;
 
   // write the fractional digits
@@ -745,12 +760,12 @@ int npf_bin_len(npf_uint_t u) {
     #define NPF_HAVE_BUILTIN_CLZ
     unsigned long idx;
     _BitScanReverse64(&idx, u);
-    return u ? (idx + 1) : 1;
+    return u ? (int)(idx + 1) : 1;
   #elif NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 0
     #define NPF_HAVE_BUILTIN_CLZ
     unsigned long idx;
     _BitScanReverse(&idx, u);
-    return u ? (idx + 1) : 1;
+    return u ? (int)(idx + 1) : 1;
   #endif
 #else
   #if NANOPRINTF_CLANG || NANOPRINTF_GCC_PAST_4_6
@@ -780,7 +795,7 @@ int npf_bin_len(npf_uint_t u) {
 }
 #endif
 
-#define NPF_PUTC(VAL) do { pc((VAL), pc_ctx); ++n; } while (0)
+#define NPF_PUTC(VAL) do { pc((int)(VAL), pc_ctx); ++n; } while (0)
 
 #define NPF_EXTRACT(MOD, CAST_TO, EXTRACT_AS) \
   case NPF_FMT_SPEC_LEN_MOD_##MOD: val = (CAST_TO)va_arg(vlist, EXTRACT_AS); break
@@ -919,7 +934,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
       case NPF_FMT_SPEC_CONV_UNSIGNED_INT: { // 'u'
         sign = 0;
         unsigned const base = (fs.conv_spec == NPF_FMT_SPEC_CONV_OCTAL) ?
-          8 : ((fs.conv_spec == NPF_FMT_SPEC_CONV_HEX_INT) ? 16 : 10);
+          8 : (unsigned)(((fs.conv_spec == NPF_FMT_SPEC_CONV_HEX_INT) ? 16 : 10));
         npf_uint_t val = 0;
 
         switch (fs.length_modifier) {
@@ -1188,8 +1203,12 @@ int npf_vsnprintf(char *buffer, size_t bufsz, char const *format, va_list vlist)
   return n;
 }
 
-#if NANOPRINTF_HAVE_WARNING_PRAGMAS
+#if NANOPRINTF_HAVE_GCC_WARNING_PRAGMAS
   #pragma GCC diagnostic pop
+#endif
+
+#ifdef _MSC_VER
+  #pragma warning(pop)
 #endif
 
 #endif // NANOPRINTF_IMPLEMENTATION_INCLUDED
