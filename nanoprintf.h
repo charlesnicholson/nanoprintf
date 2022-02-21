@@ -256,16 +256,16 @@ typedef enum {
 
 typedef struct {
   // optional flags
-  char prepend_sign;     /* '+' */
-  char prepend_space;    /* ' ' */
-  char alternative_form; /* '#' */
+  int prepend_sign;     /* '+' */
+  int prepend_space;    /* ' ' */
+  int alternative_form; /* '#' */
 
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
   // field width
   npf_format_spec_field_width_t field_width_type;
   int field_width;
-  char left_justified;   /* '-' */
-  char leading_zero_pad; /* '0' */
+  int left_justified;   /* '-' */
+  int leading_zero_pad; /* '0' */
 #endif
 
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
