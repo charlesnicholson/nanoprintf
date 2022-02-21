@@ -46,6 +46,8 @@ def parse_args():
         '--download',
         help='Download CMake and Ninja, don\'t use local copies',
         action='store_true')
+    parser.add_argument('--ubsan', action='store_true', help='Clang UB sanitizer')
+    parser.add_argument('--asan', action='store_true', help='Clang addr sanitizer')
     parser.add_argument('-v', help='verbose', action='store_true')
     return parser.parse_args()
 
@@ -138,7 +140,9 @@ def configure_cmake(cmake_exe, ninja, args):
                   f'-DCMAKE_MAKE_PROGRAM={ninja}',
                   f'-DCMAKE_BUILD_TYPE={args.cfg}',
                   f'-DNPF_PALAND={"ON" if args.paland else "OFF"}',
-                  f'-DNPF_32BIT={"ON" if args.arch == 32 else "OFF"}']
+                  f'-DNPF_32BIT={"ON" if args.arch == 32 else "OFF"}',
+                  f'-DNPF_CLANG_ASAN={"ON" if args.asan else "OFF"}',
+                  f'-DNPF_CLANG_UBSAN={"ON" if args.ubsan else "OFF"}']
     try:
         return subprocess.run(
             cmake_args,
