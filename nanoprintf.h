@@ -924,6 +924,8 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
       case NPF_FMT_SPEC_CONV_HEX_INT:        // 'x', 'X'
       case NPF_FMT_SPEC_CONV_UNSIGNED_INT: { // 'u'
         sign = 0;
+        unsigned const base = (fs.conv_spec == NPF_FMT_SPEC_CONV_OCTAL) ?
+          8 : (unsigned)(((fs.conv_spec == NPF_FMT_SPEC_CONV_HEX_INT) ? 16 : 10));
         npf_uint_t val = 0;
 
         switch (fs.length_modifier) {
@@ -956,15 +958,10 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
 #endif
 #if NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS == 1
         if (fs.conv_spec == NPF_FMT_SPEC_CONV_BINARY) {
-          cbuf_len = npf_bin_len(val); u.binval = val;
+          cbuf_len = npf_bin_len(val); u.binval = val; (void)base;
         } else
 #endif
-        {
-          unsigned const base = (fs.conv_spec == NPF_FMT_SPEC_CONV_OCTAL) ?
-            8 : (unsigned)(((fs.conv_spec == NPF_FMT_SPEC_CONV_HEX_INT) ? 16 : 10));
-
-          cbuf_len = npf_utoa_rev(cbuf, val, base, fs.conv_spec_case);
-        }
+        { cbuf_len = npf_utoa_rev(cbuf, val, base, fs.conv_spec_case); }
 
         // alt form adds '0' octal, ok to add immediately
         if (val && fs.alternative_form) {
