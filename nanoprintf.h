@@ -340,15 +340,8 @@ static int npf_bin_len(npf_uint_t i);
   #include <intrin.h>
 #endif
 
-#if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
 static int npf_min(int x, int y) { return (x < y) ? x : y; }
-#endif
-
-#if (NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1) || \
-    (NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1) || \
-    (NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1)
 static int npf_max(int x, int y) { return (x > y) ? x : y; }
-#endif
 
 int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
   char const *cur = format;
@@ -881,10 +874,8 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
         break;
 
       case NPF_FMT_SPEC_CONV_STRING: { // 's'
-        char *s = va_arg(vlist, char *);
-        cbuf = s;
-        while (*s) { ++s; }
-        cbuf_len = (int)(s - cbuf);
+        cbuf = va_arg(vlist, char *);
+        for (char const *s = cbuf; *s; ++s, ++cbuf_len); // strlen
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
         if (fs.precision_type == NPF_FMT_SPEC_PRECISION_LITERAL) {
           // precision modifier truncates strings
