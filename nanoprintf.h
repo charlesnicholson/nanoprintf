@@ -818,11 +818,11 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
 
     // Format specifier, convert and write argument
     union { char cbuf_mem[32]; npf_uint_t binval; } u;
-    char *cbuf = u.cbuf_mem, sign_c = 0;
-    int cbuf_len = 0, need_0x = 0;
+    char *cbuf = u.cbuf_mem;
+    int cbuf_len = 0, need_0x = 0, sign_c = 0;
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
     int field_pad = 0;
-    char pad_c = 0;
+    int pad_c = 0;
 #endif
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
     int prec_pad = 0;
