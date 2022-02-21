@@ -262,7 +262,7 @@ typedef struct {
   // field width
   npf_format_spec_field_width_t field_width_type;
   int field_width;
-  char field_width_star;
+  int field_width_star;
   char left_justified;   /* '-' */
   char leading_zero_pad; /* '0' */
 #endif
@@ -271,7 +271,7 @@ typedef struct {
   // precision
   npf_format_spec_precision_t precision_type;
   int precision;
-  char precision_star;
+  int precision_star;
 #endif
 
   // length modifier for specifying argument size
