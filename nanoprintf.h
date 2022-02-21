@@ -881,10 +881,8 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
         break;
 
       case NPF_FMT_SPEC_CONV_STRING: { // 's'
-        char *s = va_arg(vlist, char *);
-        cbuf = s;
-        while (*s) { ++s; }
-        cbuf_len = (int)(s - cbuf);
+        cbuf = va_arg(vlist, char *);
+        for (char const *s = cbuf; *s; ++s, ++cbuf_len);
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
         if (fs.precision_type == NPF_FMT_SPEC_PRECISION_LITERAL) {
           // precision modifier truncates strings
