@@ -882,7 +882,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
 
       case NPF_FMT_SPEC_CONV_STRING: { // 's'
         cbuf = va_arg(vlist, char *);
-        for (char const *s = cbuf; *s; ++s, ++cbuf_len);
+        for (char const *s = cbuf; *s; ++s, ++cbuf_len); // strlen
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
         if (fs.precision_type == NPF_FMT_SPEC_PRECISION_LITERAL) {
           // precision modifier truncates strings
