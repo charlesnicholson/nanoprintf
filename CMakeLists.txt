@@ -39,13 +39,16 @@ else()
   set(CMAKE_CXX_FLAGS_RELEASE "-Os")
 
   set(nanoprintf_common_flags -pedantic -Wall -Wextra -Wundef -Werror)
+  set(nanoprintf_link_flags "")
 
   if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     list(APPEND nanoprintf_common_flags -Weverything)
     if (NPF_CLANG_ASAN)
       list(APPEND nanoprintf_common_flags -fsanitize=address)
+      list(APPEND nanoprintf_link_flags -fsanitize=address)
     elseif (NPF_CLANG_UBSAN)
       list(APPEND nanoprintf_common_flags -fsanitize=undefined)
+      list(APPEND nanoprintf_link_flags -fsanitize=undefined)
     endif()
   else()
     list(APPEND nanoprintf_common_flags
@@ -65,6 +68,7 @@ add_library(libdoctest_main OBJECT tests/doctest_main.cc)
 function(npf_test name files)
   add_executable(${name} ${files})
   target_compile_options(${name} PRIVATE ${nanoprintf_common_flags})
+  target_link_options(${name} PRIVATE ${nanoprintf_link_flags})
   target_link_libraries(${name} libdoctest_main) # Doctest is slow, only build once.
 
   # Set up a target that automatically runs + timestamps successful tests.
@@ -166,20 +170,24 @@ npf_compilation_c_test(npf_c_default_flags)
 ################ Static compilation test
 
 add_executable(npf_static tests/static_nanoprintf.c tests/static_main.c)
+target_link_options(npf_static PRIVATE ${nanoprintf_link_flags})
 
 ################# Examples
 
 add_executable(use_npf_directly
                examples/use_npf_directly/your_project_nanoprintf.cc
                examples/use_npf_directly/main.cc)
+target_link_options(use_npf_directly PRIVATE ${nanoprintf_link_flags})
 
 add_executable(wrap_npf
                examples/wrap_npf/your_project_printf.h
                examples/wrap_npf/your_project_printf.cc
                examples/wrap_npf/main.cc)
+target_link_options(wrap_npf PRIVATE ${nanoprintf_link_flags})
 
 add_executable(npf_include_multiple tests/include_multiple.c)
 target_compile_options(npf_include_multiple PRIVATE ${nanoprintf_common_flags})
+target_link_options(npf_include_multiple PRIVATE ${nanoprintf_link_flags})
 
 ############### Unit tests
 
@@ -200,6 +208,9 @@ target_compile_definitions(unit_tests_normal_sized_formatters
                            PRIVATE
                            DOCTEST_CONFIG_SUPER_FAST_ASSERTS
                            NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0)
+target_link_options(unit_tests_normal_sized_formatters
+                    PRIVATE
+                    ${nanoprintf_link_flags})
 if (NPF_32BIT)
 target_compile_definitions(unit_tests_normal_sized_formatters
                            PRIVATE
@@ -211,6 +222,9 @@ target_compile_definitions(unit_tests_large_sized_formatters
                            PRIVATE
                            DOCTEST_CONFIG_SUPER_FAST_ASSERTS
                            NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=1)
+target_link_options(unit_tests_large_sized_formatters
+                    PRIVATE
+                    ${nanoprintf_link_flags})
 if (NPF_32BIT)
 target_compile_definitions(unit_tests_normal_sized_formatters
                            PRIVATE
