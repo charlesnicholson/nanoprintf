@@ -3,9 +3,19 @@ project(nanoprintf)
 
 option(NPF_32BIT "Compile nanoprintf tests in 32-bit mode")
 option(NPF_PALAND "Compile and run the mpaland printf test suite")
+option(NPF_CLANG_ASAN "Compile and run tests with address sanitizer")
+option(NPF_CLANG_UBSAN "Compile and run tests with undefined behavior sanitizer")
 
 if (NPF_32BIT AND CMAKE_HOST_APPLE)
   message(FATAL_ERROR "Apple doesn't support 32-bit mode anymore.")
+endif()
+
+if ((NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang") AND (NPF_CLANG_ASAN OR NPF_CLANG_UBSAN))
+  message(FATAL_ERROR "Can only use asan/ubsan on Clang configurations.")
+endif()
+
+if (NPF_CLANG_ASAN AND NPF_CLANG_UBSAN)
+  message(FATAL_ERROR "Can only use one of asan/ubsan per configuration.")
 endif()
 
 if (NPF_32BIT AND NOT MSVC)
@@ -32,6 +42,11 @@ else()
 
   if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     list(APPEND nanoprintf_common_flags -Weverything)
+    if (NPF_CLANG_ASAN)
+      list(APPEND nanoprintf_common_flags -fsanitize=address)
+    elseif (NPF_CLANG_UBSAN)
+      list(APPEND nanoprintf_common_flags -fsanitize=undefined)
+    endif()
   else()
     list(APPEND nanoprintf_common_flags
          -Wconversion

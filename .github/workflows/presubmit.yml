@@ -24,6 +24,30 @@ jobs:
       - name: Pylint build.py
         run: . /work/venv/bin/activate && python -m pylint build.py tests/size_report.py
 
+  sanitizers:
+    runs-on: ubuntu-latest
+
+    container:
+      image: ghcr.io/charlesnicholson/docker-image:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    strategy:
+      matrix:
+        sanitizer: [ubsan, asan]
+        architecture: [32, 64]
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
+      - name: Build
+        env:
+          CC: /usr/bin/clang
+          CXX: /usr/bin/clang++
+        run: ./b --arch ${{ matrix.architecture }} --${{ matrix.sanitizer }} --paland -v
+
   linux-gcc:
     runs-on: ubuntu-latest
 
