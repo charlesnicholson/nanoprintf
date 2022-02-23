@@ -48,7 +48,7 @@ def parse_args():
         action='store_true')
     parser.add_argument('--ubsan', action='store_true', help='Clang UB sanitizer')
     parser.add_argument('--asan', action='store_true', help='Clang addr sanitizer')
-    parser.add_argument('-v', help='verbose', action='store_true')
+    parser.add_argument('-v', '--verbose', action='store_true', help='verbose')
     return parser.parse_args()
 
 
@@ -65,9 +65,7 @@ def get_cmake(download, verbose):
     if not download:
         cmake = shutil.which('cmake')
         if cmake:
-            if verbose:
-                print(f'Found CMake at {cmake}')
-            return cmake
+          return cmake
 
     plat = {
         'darwin': 'macos-universal',
@@ -99,9 +97,7 @@ def get_ninja(download, verbose):
     if not download:
         ninja = shutil.which('ninja')
         if ninja:
-            if verbose:
-                print(f'Found ninja at {ninja}')
-            return ninja
+          return ninja
 
     ninja_local_dir = SCRIPT_PATH / 'external' / 'ninja'
     plat = {'darwin': 'mac', 'linux': 'linux', 'win32': 'win'}[sys.platform]
@@ -130,6 +126,7 @@ def configure_cmake(cmake_exe, ninja, args):
     if (build_path / 'CMakeFiles').exists():
         return True
 
+    sys.stdout.flush()
     build_path.mkdir(parents=True)
 
     cmake_args = [cmake_exe,
@@ -154,9 +151,10 @@ def configure_cmake(cmake_exe, ninja, args):
 
 def build_cmake(cmake_exe, args):
     """Run CMake in build mode to compile and run the nanoprintf test suite."""
+    sys.stdout.flush()
     build_path = SCRIPT_PATH / 'build' / 'ninja' / args.cfg
     cmake_args = [cmake_exe, '--build', build_path] + \
-        (['--', '-v'] if args.v else [])
+        (['--', '-v'] if args.verbose else [])
     try:
         return subprocess.run(cmake_args, check=True).returncode == 0
     except subprocess.CalledProcessError as cpe:
@@ -166,8 +164,15 @@ def build_cmake(cmake_exe, args):
 def main():
     """Parse args, find or get tools, configure CMake, build and run tests."""
     args = parse_args()
-    cmake = get_cmake(args.download, args.v)
-    ninja = get_ninja(args.download, args.v)
+
+    cmake = get_cmake(args.download, args.verbose)
+    if args.verbose:
+        print(f'Found CMake at {cmake}')
+
+    ninja = get_ninja(args.download, args.verbose)
+    if args.verbose:
+        print(f'Found ninja at {ninja}')
+
     built_ok = configure_cmake(cmake, ninja, args) and build_cmake(cmake, args)
     return int(not built_ok)  # 0 is success
 
