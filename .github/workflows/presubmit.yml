@@ -24,6 +24,22 @@ jobs:
       - name: Pylint build.py
         run: . /work/venv/bin/activate && python -m pylint build.py tests/size_report.py
 
+  download:
+    runs-on: ubuntu-latest
+
+    container:
+      image: ghcr.io/charlesnicholson/docker-image:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
+      - name: Build
+        run: ./b --download --paland -v
+
   sanitizers:
     runs-on: ubuntu-latest
 
