@@ -65,7 +65,7 @@ def get_cmake(download, verbose):
     if not download:
         cmake = shutil.which('cmake')
         if cmake:
-          return cmake
+            return cmake
 
     plat = {
         'darwin': 'macos-universal',
@@ -97,7 +97,7 @@ def get_ninja(download, verbose):
     if not download:
         ninja = shutil.which('ninja')
         if ninja:
-          return ninja
+            return ninja
 
     ninja_local_dir = SCRIPT_PATH / 'external' / 'ninja'
     plat = {'darwin': 'mac', 'linux': 'linux', 'win32': 'win'}[sys.platform]
