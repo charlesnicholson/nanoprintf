@@ -50,6 +50,9 @@ else()
       list(APPEND nanoprintf_common_flags -fsanitize=undefined)
       list(APPEND nanoprintf_link_flags -fsanitize=undefined)
     endif()
+    if (CMAKE_HOST_APPLE)
+      list(APPEND nanoprintf_common_flags -Wno-poison-system-directories)
+    endif()
   else()
     list(APPEND nanoprintf_common_flags
          -Wconversion
