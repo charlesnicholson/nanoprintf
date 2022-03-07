@@ -494,6 +494,7 @@ int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
       break;
     case 'X':
       out_spec->conv_spec_case = NPF_FMT_SPEC_CONV_CASE_UPPER;
+      // fall-through
     case 'x':
       out_spec->conv_spec = NPF_FMT_SPEC_CONV_HEX_INT;
       break;
@@ -504,6 +505,7 @@ int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
     case 'F':
       out_spec->conv_spec_case = NPF_FMT_SPEC_CONV_CASE_UPPER;
+      // fall-through
     case 'f':
       out_spec->conv_spec = NPF_FMT_SPEC_CONV_FLOAT_DECIMAL;
       break;
@@ -529,6 +531,7 @@ int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
 #if NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS == 1
     case 'B':
       out_spec->conv_spec_case = NPF_FMT_SPEC_CONV_CASE_UPPER;
+      // fall-through
     case 'b':
       out_spec->conv_spec = NPF_FMT_SPEC_CONV_BINARY;
       break;
