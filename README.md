@@ -4,7 +4,7 @@
 
 nanoprintf is an implementation of snprintf and vsnprintf for embedded systems that, when fully enabled, aim for C11 standard compliance. The primary exceptions are scientific notation (though `%f` is fully supported), and the conversions that require `wcrtomb` to exist. Additionally, C23 binary integer output is optionally supported as per [N2630](http://www.open-std.org/jtc1/sc22/wg14/www/docs/n2630.pdf).
 
-nanoprintf makes no memory allocations and uses less than 100 bytes of stack. nanoprintf compiles to somewhere between 1-3KB of code on a Cortex-M architecture.
+nanoprintf makes no memory allocations and uses less than 100 bytes of stack. nanoprintf compiles to somewhere between 0.9-3KB of code on a Cortex-M architecture.
 
 nanoprintf is a [single header file](https://github.com/charlesnicholson/nanoprintf/blob/master/nanoprintf.h) in the style of the [stb libraries](https://github.com/nothings/stb). The rest of the repository is tests and scaffolding and not required for use.
 
@@ -151,66 +151,61 @@ arm-none-eabi-gcc -DNANOPRINTF_SIZE_REPORT=0 -mcpu=cortex-m0 -Os -c -o cm0-0.o t
 arm-none-eabi-nm --print-size --size-sort cm0-0.o | python tests/size_report.py
 00000016 00000002 t npf_bufputc_nop
 00000000 00000016 t npf_bufputc
-00000348 00000016 T npf_pprintf
-00000390 00000016 T npf_snprintf
-0000035e 00000032 T npf_vsnprintf
-00000018 00000330 T npf_vpprintf
-Total size: 0x3a6 (934) bytes
-
+0000030e 00000016 T npf_pprintf
+00000358 00000016 T npf_snprintf
+00000324 00000034 T npf_vsnprintf
+00000018 000002f6 T npf_vpprintf
+Total size: 0x36e (878) bytes
 Binary:
 arm-none-eabi-gcc -DNANOPRINTF_SIZE_REPORT=1 -mcpu=cortex-m0 -Os -c -o cm0-1.o tests/size_report.c
 arm-none-eabi-nm --print-size --size-sort cm0-1.o | python tests/size_report.py
 00000016 00000002 t npf_bufputc_nop
 00000000 00000016 t npf_bufputc
-000003aa 00000016 T npf_pprintf
-000003f4 00000016 T npf_snprintf
-000003c0 00000034 T npf_vsnprintf
-00000018 00000392 T npf_vpprintf
-Total size: 0x40a (1034) bytes
-
+00000350 00000016 T npf_pprintf
+00000398 00000016 T npf_snprintf
+00000366 00000032 T npf_vsnprintf
+00000018 00000338 T npf_vpprintf
+Total size: 0x3ae (942) bytes
 Field Width + Precision:
 arm-none-eabi-gcc -DNANOPRINTF_SIZE_REPORT=2 -mcpu=cortex-m0 -Os -c -o cm0-2.o tests/size_report.c
 arm-none-eabi-nm --print-size --size-sort cm0-2.o | python tests/size_report.py
 00000016 00000002 t npf_bufputc_nop
 00000000 00000016 t npf_bufputc
-00000620 00000016 T npf_pprintf
-00000668 00000016 T npf_snprintf
-00000636 00000032 T npf_vsnprintf
-00000018 00000608 T npf_vpprintf
-Total size: 0x67e (1662) bytes
-
+000005f2 00000016 T npf_pprintf
+0000063c 00000016 T npf_snprintf
+00000608 00000034 T npf_vsnprintf
+00000018 000005da T npf_vpprintf
+Total size: 0x652 (1618) bytes
 Field Width + Precision + Binary:
 arm-none-eabi-gcc -DNANOPRINTF_SIZE_REPORT=3 -mcpu=cortex-m0 -Os -c -o cm0-3.o tests/size_report.c
 arm-none-eabi-nm --print-size --size-sort cm0-3.o | python tests/size_report.py
 00000016 00000002 t npf_bufputc_nop
 00000000 00000016 t npf_bufputc
-000006be 00000016 T npf_pprintf
-00000708 00000016 T npf_snprintf
-000006d4 00000034 T npf_vsnprintf
-00000018 000006a6 T npf_vpprintf
-Total size: 0x71e (1822) bytes
-
+0000066e 00000016 T npf_pprintf
+000006b8 00000016 T npf_snprintf
+00000684 00000034 T npf_vsnprintf
+00000018 00000656 T npf_vpprintf
+Total size: 0x6ce (1742) bytes
 Float:
 arm-none-eabi-gcc -DNANOPRINTF_SIZE_REPORT=4 -mcpu=cortex-m0 -Os -c -o cm0-4.o tests/size_report.c
 arm-none-eabi-nm --print-size --size-sort cm0-4.o | python tests/size_report.py
 00000016 00000002 t npf_bufputc_nop
 00000000 00000016 t npf_bufputc
-000006f4 00000016 T npf_pprintf
-0000073c 00000016 T npf_snprintf
-0000070a 00000032 T npf_vsnprintf
-00000018 000006dc T npf_vpprintf
-Total size: 0x752 (1874) bytes
-
+00000678 00000016 T npf_pprintf
+000006c0 00000016 T npf_snprintf
+0000068e 00000032 T npf_vsnprintf
+00000018 00000660 T npf_vpprintf
+Total size: 0x6d6 (1750) bytes
 Everything:
 arm-none-eabi-gcc -DNANOPRINTF_SIZE_REPORT=5 -mcpu=cortex-m0 -Os -c -o cm0-5.o tests/size_report.c
 arm-none-eabi-nm --print-size --size-sort cm0-5.o | python tests/size_report.py
 00000016 00000002 t npf_bufputc_nop
 00000000 00000016 t npf_bufputc
-00000aa8 00000016 T npf_pprintf
-00000af0 00000016 T npf_snprintf
-00000abe 00000032 T npf_vsnprintf
-00000018 00000a90 T npf_vpprintf
-Total size: 0xb06 (2822) bytes
+00000aa0 00000016 T npf_pprintf
+00000ae8 00000016 T npf_snprintf
+00000ab6 00000032 T npf_vsnprintf
+00000018 00000a88 T npf_vpprintf
+Total size: 0xafe (2814) bytes
 ```
 
 ## Development
