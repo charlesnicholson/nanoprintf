@@ -411,14 +411,13 @@ int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
     if (*cur == '*') {
       out_spec->precision_type = NPF_FMT_SPEC_PRECISION_STAR;
       ++cur;
-    } else if (*cur == '-') {
-      /* ignore negative precision */
-      out_spec->precision_type = NPF_FMT_SPEC_PRECISION_NONE;
-      ++cur;
-      while ((*cur >= '0') && (*cur <= '9')) { ++cur; }
     } else {
       out_spec->precision = 0;
       out_spec->precision_type = NPF_FMT_SPEC_PRECISION_LITERAL;
+      if (*cur == '-') { /* ignore negative precision */
+        ++cur;
+        out_spec->precision_type = NPF_FMT_SPEC_PRECISION_NONE;
+      }
       while ((*cur >= '0') && (*cur <= '9')) {
         out_spec->precision = (out_spec->precision * 10) + (*cur++ - '0');
       }
