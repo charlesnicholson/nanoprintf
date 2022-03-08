@@ -231,22 +231,22 @@ typedef enum {
 } npf_format_spec_length_modifier_t;
 
 typedef enum {
-  NPF_FMT_SPEC_CONV_PERCENT,      /* '%' */
-  NPF_FMT_SPEC_CONV_CHAR,         /* 'c' */
-  NPF_FMT_SPEC_CONV_STRING,       /* 's' */
-  NPF_FMT_SPEC_CONV_SIGNED_INT,   /* 'i', 'd' */
-  NPF_FMT_SPEC_CONV_OCTAL,        /* 'o' */
-  NPF_FMT_SPEC_CONV_HEX_INT,      /* 'x', 'X' */
-  NPF_FMT_SPEC_CONV_UNSIGNED_INT, /* 'u' */
-  NPF_FMT_SPEC_CONV_POINTER       /* 'p' */
+  NPF_FMT_SPEC_CONV_PERCENT = '%',      /* '%' */
+  NPF_FMT_SPEC_CONV_CHAR = 'c',         /* 'c' */
+  NPF_FMT_SPEC_CONV_STRING = 's',       /* 's' */
+  NPF_FMT_SPEC_CONV_SIGNED_INT = 'i',   /* 'i', 'd' */
+  NPF_FMT_SPEC_CONV_OCTAL = 'o',        /* 'o' */
+  NPF_FMT_SPEC_CONV_HEX_INT = 'x',      /* 'x', 'X' */
+  NPF_FMT_SPEC_CONV_UNSIGNED_INT = 'u', /* 'u' */
+  NPF_FMT_SPEC_CONV_POINTER = 'p'       /* 'p' */
 #if NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS == 1
-  , NPF_FMT_SPEC_CONV_WRITEBACK /* 'n' */
+  , NPF_FMT_SPEC_CONV_WRITEBACK = 'n' /* 'n' */
 #endif
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
-  , NPF_FMT_SPEC_CONV_FLOAT_DECIMAL /* 'f', 'F' */
+  , NPF_FMT_SPEC_CONV_FLOAT_DECIMAL = 'f' /* 'f', 'F' */
 #endif
 #if NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS == 1
-  , NPF_FMT_SPEC_CONV_BINARY /* 'b' */
+  , NPF_FMT_SPEC_CONV_BINARY = 'b' /* 'b' */
 #endif
 } npf_format_spec_conversion_t;
 
