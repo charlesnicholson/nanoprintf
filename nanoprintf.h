@@ -344,6 +344,7 @@ static int npf_min(int x, int y) { return (x < y) ? x : y; }
 static int npf_max(int x, int y) { return (x > y) ? x : y; }
 
 int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
+  if (*format != '%') { return 0; }
   char const *cur = format;
 
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
@@ -794,12 +795,6 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
   int n = 0, i;
 
   while (*cur) {
-    if (*cur != '%') { // Non-format character, write directly
-      NPF_PUTC(*cur++);
-      continue;
-    }
-
-    // Might be a format run, try to parse
     int const fs_len = npf_parse_format_spec(cur, &fs);
     if (fs_len == 0) { // Invalid format specifier, write and continue
       NPF_PUTC(*cur++);
