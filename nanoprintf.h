@@ -195,6 +195,7 @@ NPF_VISIBILITY int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format,
   #pragma warning(disable:4820) // padding after data member
   #pragma warning(disable:5039) // extern "C" throw
   #pragma warning(disable:5045) // spectre mitigation
+  #pragma warning(disable:4701) // possibly uninitialized
   #pragma warning(disable:4710) // not inlined
   #pragma warning(disable:4711) // selected for inline
 #endif
@@ -791,11 +792,10 @@ int npf_bin_len(npf_uint_t u) {
 int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
   npf_format_spec_t fs;
   char const *cur = format;
-  int n = 0, i;
+  int n = 0, fs_len;
 
   while (*cur) {
-    int const fs_len = (*cur != '%') ? 0 : npf_parse_format_spec(cur, &fs);
-    if (!fs_len) {
+    if (!(fs_len = (*cur != '%') ? 0 : npf_parse_format_spec(cur, &fs))) {
       NPF_PUTC(*cur++);
       continue;
     }
@@ -1089,7 +1089,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
 
     // Write the converted payload
     if (fs.conv_spec == NPF_FMT_SPEC_CONV_STRING) {
-      for (i = 0; i < cbuf_len; ++i) { NPF_PUTC(cbuf[i]); }
+      for (int i = 0; i < cbuf_len; ++i) { NPF_PUTC(cbuf[i]); }
     } else {
       if (sign_c) { NPF_PUTC(sign_c); }
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
