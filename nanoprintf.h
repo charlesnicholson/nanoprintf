@@ -794,14 +794,8 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
   int n = 0, i;
 
   while (*cur) {
-    if (*cur != '%') { // Non-format character, write directly
-      NPF_PUTC(*cur++);
-      continue;
-    }
-
-    // Might be a format run, try to parse
-    int const fs_len = npf_parse_format_spec(cur, &fs);
-    if (fs_len == 0) { // Invalid format specifier, write and continue
+    int const fs_len = (*cur != '%') ? 0 : npf_parse_format_spec(cur, &fs);
+    if (!fs_len) {
       NPF_PUTC(*cur++);
       continue;
     }
