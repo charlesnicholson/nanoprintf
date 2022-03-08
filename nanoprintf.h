@@ -252,11 +252,6 @@ typedef enum {
 #endif
 } npf_format_spec_conversion_t;
 
-typedef enum {
-  NPF_FMT_SPEC_CONV_CASE_LOWER,
-  NPF_FMT_SPEC_CONV_CASE_UPPER
-} npf_format_spec_conversion_case_t;
-
 typedef struct {
   char prepend;          // ' ' or '+'
   char alternative_form; // '#'
@@ -275,7 +270,7 @@ typedef struct {
 
   npf_format_spec_length_modifier_t length_modifier;
   npf_format_spec_conversion_t conv_spec;
-  npf_format_spec_conversion_case_t conv_spec_case;
+  char case_adjust;
 } npf_format_spec_t;
 
 #if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 0
@@ -300,7 +295,7 @@ static int npf_itoa_rev(char *buf, npf_int_t i);
 static int npf_utoa_rev(char *buf,
                         npf_uint_t i,
                         unsigned base,
-                        npf_format_spec_conversion_case_t cc);
+                        unsigned case_adjust);
 
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
 static int npf_fsplit_abs(float f,
@@ -311,7 +306,7 @@ static int npf_fsplit_abs(float f,
 static int npf_ftoa_rev(char *buf,
                         float f,
                         unsigned base,
-                        npf_format_spec_conversion_case_t cc,
+                        char case_adjust,
                         int *out_frac_chars);
 #endif
 
@@ -346,7 +341,7 @@ int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
   out_spec->left_justified = 0;
   out_spec->leading_zero_pad = 0;
 #endif
-  out_spec->conv_spec_case = NPF_FMT_SPEC_CONV_CASE_LOWER;
+  out_spec->case_adjust = 'a' - 'A'; // lowercase
   out_spec->prepend = 0;
   out_spec->alternative_form = 0;
   out_spec->length_modifier = NPF_FMT_SPEC_LEN_MOD_NONE;
@@ -488,14 +483,14 @@ int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
       break;
 
     case 'X':
-      out_spec->conv_spec_case = NPF_FMT_SPEC_CONV_CASE_UPPER;
+      out_spec->case_adjust = 0;
     case 'x':
       out_spec->conv_spec = NPF_FMT_SPEC_CONV_HEX_INT;
       break;
 
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
     case 'F':
-      out_spec->conv_spec_case = NPF_FMT_SPEC_CONV_CASE_UPPER;
+      out_spec->case_adjust = 0;
     case 'f':
       out_spec->conv_spec = NPF_FMT_SPEC_CONV_FLOAT_DECIMAL;
       break;
@@ -520,7 +515,7 @@ int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
 
 #if NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS == 1
     case 'B':
-      out_spec->conv_spec_case = NPF_FMT_SPEC_CONV_CASE_UPPER;
+      out_spec->case_adjust = 0;
     case 'b':
       out_spec->conv_spec = NPF_FMT_SPEC_CONV_BINARY;
       break;
@@ -583,11 +578,10 @@ int npf_itoa_rev(char *buf, npf_int_t i) {
   return (int)(dst - buf);
 }
 
-int npf_utoa_rev(char *buf, npf_uint_t i, unsigned base,
-                 npf_format_spec_conversion_case_t cc) {
+int npf_utoa_rev(char *buf, npf_uint_t i, unsigned base, unsigned case_adjust) {
   char *dst = buf;
   if (i == 0) { *dst++ = '0'; }
-  unsigned const base_c = (unsigned)((cc == NPF_FMT_SPEC_CONV_CASE_LOWER) ? 'a' : 'A');
+  unsigned const base_c = case_adjust + 'A';
   while (i) {
     unsigned const d = (unsigned)(i % base);
     *dst++ = (d < 10) ? (char)('0' + d) : (char)(base_c + (d - 10));
@@ -676,27 +670,25 @@ int npf_fsplit_abs(float f, uint64_t *out_int_part, uint64_t *out_frac_part,
 }
 
 int npf_ftoa_rev(char *buf, float f, unsigned base,
-                 npf_format_spec_conversion_case_t cc, int *out_frac_chars) {
-  char const case_c = (cc == NPF_FMT_SPEC_CONV_CASE_LOWER) ? 'a' - 'A' : 0;
-
+                 char case_adjust, int *out_frac_chars) {
   if (f != f) {
-    for (int i = 0; i < 3; ++i) { *buf++ = (char)("NAN"[i] + case_c); }
+    for (int i = 0; i < 3; ++i) { *buf++ = (char)("NAN"[i] + case_adjust); }
     return -3;
   }
 
   if ((f == INFINITY) || (f == -INFINITY)) {
-    for (int i = 0; i < 3; ++i) { *buf++ = (char)("INF"[2-i] + case_c); }
+    for (int i = 0; i < 3; ++i) { *buf++ = (char)("INF"[2-i] + case_adjust); }
     return -3;
   }
 
   uint64_t int_part, frac_part;
   int frac_base10_neg_exp;
   if (npf_fsplit_abs(f, &int_part, &frac_part, &frac_base10_neg_exp) == 0) {
-    for (int i = 0; i < 3; ++i) { *buf++ = (char)("OOR"[2-i] + case_c); }
+    for (int i = 0; i < 3; ++i) { *buf++ = (char)("OOR"[2-i] + case_adjust); }
     return -3;
   }
 
-  unsigned const base_c = (unsigned)((cc == NPF_FMT_SPEC_CONV_CASE_LOWER) ? 'a' : 'A');
+  unsigned const base_c = 'A' + (unsigned)case_adjust;
   char *dst = buf;
 
   while (frac_part) { // write the fractional digits
@@ -934,27 +926,24 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
           cbuf_len = npf_bin_len(val); u.binval = val; (void)base;
         } else
 #endif
-        { cbuf_len = npf_utoa_rev(cbuf, val, base, fs.conv_spec_case); }
+        { cbuf_len = npf_utoa_rev(cbuf, val, base, (unsigned)fs.case_adjust); }
 
         if (val && fs.alternative_form) { // ok to add '0' to octal immediately.
           if (fs.conv_spec == NPF_FMT_SPEC_CONV_OCTAL) { cbuf[cbuf_len++] = '0'; }
         }
 
         if (val && fs.alternative_form) { // 0x or 0b but can't write it yet.
-          if (fs.conv_spec == NPF_FMT_SPEC_CONV_HEX_INT) {
-            need_0x = (fs.conv_spec_case == NPF_FMT_SPEC_CONV_CASE_LOWER) ? 'x' : 'X';
-          }
+          if (fs.conv_spec == NPF_FMT_SPEC_CONV_HEX_INT) { need_0x = 'X'; }
 #if NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS == 1
-          else if (fs.conv_spec == NPF_FMT_SPEC_CONV_BINARY) {
-            need_0x = (fs.conv_spec_case == NPF_FMT_SPEC_CONV_CASE_LOWER) ? 'b' : 'B';
-          }
+          else if (fs.conv_spec == NPF_FMT_SPEC_CONV_BINARY) { need_0x = 'B'; }
 #endif
+          if (need_0x) { need_0x += fs.case_adjust; }
         }
       } break;
 
       case NPF_FMT_SPEC_CONV_POINTER: { // 'p'
         cbuf_len = npf_utoa_rev(cbuf, (npf_uint_t)(uintptr_t)va_arg(vlist, void *),
-          16, NPF_FMT_SPEC_CONV_CASE_LOWER);
+          16, (unsigned)fs.case_adjust);
         cbuf[cbuf_len++] = 'x';
         cbuf[cbuf_len++] = '0';
       } break;
@@ -991,7 +980,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
         zero = (val == 0.f);
 #endif
-        cbuf_len = npf_ftoa_rev(cbuf, val, 10, fs.conv_spec_case, &frac_chars);
+        cbuf_len = npf_ftoa_rev(cbuf, val, 10, fs.case_adjust, &frac_chars);
 
         if (cbuf_len < 0) {
           cbuf_len = -cbuf_len;

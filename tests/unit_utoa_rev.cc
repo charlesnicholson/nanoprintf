@@ -17,9 +17,9 @@ void require_npf_utoa(
     std::string const &expected,
     npf_uint_t val,
     unsigned base,
-    npf_format_spec_conversion_case_t conv_case = NPF_FMT_SPEC_CONV_CASE_LOWER) {
+    unsigned case_adjust = 'a' - 'A') {
   char buf[64];
-  int const n = npf_utoa_rev(buf, val, base, conv_case);
+  int const n = npf_utoa_rev(buf, val, base, case_adjust);
   buf[n] = '\0';
   REQUIRE(n == (int)expected.size());
   REQUIRE(std::string{buf} == expected);
@@ -117,8 +117,8 @@ TEST_CASE("npf_utoa_rev") {
   }
 
   SUBCASE("base 16 uppercase") {
-    require_npf_utoa("12345", 0x54321, 16, NPF_FMT_SPEC_CONV_CASE_UPPER);
-    require_npf_utoa("FEDCBA98", 0x89abcdef, 16, NPF_FMT_SPEC_CONV_CASE_UPPER);
+    require_npf_utoa("12345", 0x54321, 16, 0);
+    require_npf_utoa("FEDCBA98", 0x89abcdef, 16, 0);
   }
 
   SUBCASE("base 16 maxima") {
