@@ -257,9 +257,7 @@ typedef enum {
 
 typedef struct {
   // optional flags
-  char prepend;
-  //char prepend_sign;     /* '+' */
-  //char prepend_space;    /* ' ' */
+  char prepend; /* ' ' or '+' */
   char alternative_form; /* '#' */
 
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
@@ -354,8 +352,6 @@ int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
 #endif
   out_spec->conv_spec_case = NPF_FMT_SPEC_CONV_CASE_LOWER;
   out_spec->prepend = 0;
-  //out_spec->prepend_sign = 0;
-  //out_spec->prepend_space = 0;
   out_spec->alternative_form = 0;
   out_spec->length_modifier = NPF_FMT_SPEC_LEN_MOD_NONE;
 
@@ -795,7 +791,7 @@ int npf_bin_len(npf_uint_t u) {
 int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
   npf_format_spec_t fs;
   char const *cur = format;
-  int n = 0, sign = 0, i;
+  int n = 0, i;
 
   while (*cur) {
     if (*cur != '%') { // Non-format character, write directly
@@ -874,8 +870,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
         for (char const *s = cbuf; *s; ++s, ++cbuf_len); // strlen
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
         if (fs.precision_type == NPF_FMT_SPEC_PRECISION_LITERAL) {
-          // precision modifier truncates strings
-          cbuf_len = npf_min(fs.precision, cbuf_len);
+          cbuf_len = npf_min(fs.precision, cbuf_len); // prec truncates strings
         }
 #endif
       } break;
@@ -898,7 +893,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
             break;
         }
 
-        sign = (val < 0) ? -1 : 1;
+        sign_c = (val < 0) ? '-' : fs.prepend;
 
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
@@ -919,7 +914,6 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
       case NPF_FMT_SPEC_CONV_OCTAL:          // 'o'
       case NPF_FMT_SPEC_CONV_HEX_INT:        // 'x', 'X'
       case NPF_FMT_SPEC_CONV_UNSIGNED_INT: { // 'u'
-        sign = 0;
         unsigned const base = (fs.conv_spec == NPF_FMT_SPEC_CONV_OCTAL) ?
           8 : (unsigned)(((fs.conv_spec == NPF_FMT_SPEC_CONV_HEX_INT) ? 16 : 10));
         npf_uint_t val = 0;
@@ -1012,7 +1006,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
           val = (float)va_arg(vlist, double);
         }
 
-        sign = (val < 0) ? -1 : 1;
+        sign_c = (val < 0) ? '-' : fs.prepend;
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
         zero = (val == 0.f);
 #endif
@@ -1031,13 +1025,6 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
 #endif
       default:
         break;
-    }
-
-    // Compute the leading symbol (+, -, ' ')
-    if (sign == -1) {
-      sign_c = '-';
-    } else if (sign == 1) {
-      sign_c = fs.prepend;
     }
 
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
