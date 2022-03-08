@@ -174,6 +174,7 @@ NPF_VISIBILITY int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format,
 #if NANOPRINTF_HAVE_GCC_WARNING_PRAGMAS
   #pragma GCC diagnostic push
   #pragma GCC diagnostic ignored "-Wunused-function"
+  #pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
   #ifdef __cplusplus
     #pragma GCC diagnostic ignored "-Wold-style-cast"
   #endif
@@ -410,14 +411,13 @@ int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
     if (*cur == '*') {
       out_spec->precision_type = NPF_FMT_SPEC_PRECISION_STAR;
       ++cur;
-    } else if (*cur == '-') {
-      /* ignore negative precision */
-      out_spec->precision_type = NPF_FMT_SPEC_PRECISION_NONE;
-      ++cur;
-      while ((*cur >= '0') && (*cur <= '9')) { ++cur; }
     } else {
       out_spec->precision = 0;
       out_spec->precision_type = NPF_FMT_SPEC_PRECISION_LITERAL;
+      if (*cur == '-') { /* ignore negative precision */
+        ++cur;
+        out_spec->precision_type = NPF_FMT_SPEC_PRECISION_NONE;
+      }
       while ((*cur >= '0') && (*cur <= '9')) {
         out_spec->precision = (out_spec->precision * 10) + (*cur++ - '0');
       }
@@ -485,33 +485,30 @@ int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
       out_spec->leading_zero_pad = 0;
 #endif
       break;
+
     case 'i':
-      out_spec->conv_spec = NPF_FMT_SPEC_CONV_SIGNED_INT;
-      break;
     case 'd':
       out_spec->conv_spec = NPF_FMT_SPEC_CONV_SIGNED_INT;
       break;
+
     case 'o':
       out_spec->conv_spec = NPF_FMT_SPEC_CONV_OCTAL;
-      break;
-    case 'x':
-      out_spec->conv_spec = NPF_FMT_SPEC_CONV_HEX_INT;
-      break;
-    case 'X':
-      out_spec->conv_spec = NPF_FMT_SPEC_CONV_HEX_INT;
-      out_spec->conv_spec_case = NPF_FMT_SPEC_CONV_CASE_UPPER;
       break;
     case 'u':
       out_spec->conv_spec = NPF_FMT_SPEC_CONV_UNSIGNED_INT;
       break;
 
+    case 'X':
+      out_spec->conv_spec_case = NPF_FMT_SPEC_CONV_CASE_UPPER;
+    case 'x':
+      out_spec->conv_spec = NPF_FMT_SPEC_CONV_HEX_INT;
+      break;
+
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
+    case 'F':
+      out_spec->conv_spec_case = NPF_FMT_SPEC_CONV_CASE_UPPER;
     case 'f':
       out_spec->conv_spec = NPF_FMT_SPEC_CONV_FLOAT_DECIMAL;
-      break;
-    case 'F':
-      out_spec->conv_spec = NPF_FMT_SPEC_CONV_FLOAT_DECIMAL;
-      out_spec->conv_spec_case = NPF_FMT_SPEC_CONV_CASE_UPPER;
       break;
 #endif // NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS
 
@@ -533,12 +530,10 @@ int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
       break;
 
 #if NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS == 1
+    case 'B':
+      out_spec->conv_spec_case = NPF_FMT_SPEC_CONV_CASE_UPPER;
     case 'b':
       out_spec->conv_spec = NPF_FMT_SPEC_CONV_BINARY;
-      break;
-    case 'B':
-      out_spec->conv_spec = NPF_FMT_SPEC_CONV_BINARY;
-      out_spec->conv_spec_case = NPF_FMT_SPEC_CONV_CASE_UPPER;
       break;
 #endif
 
@@ -865,12 +860,12 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
     switch (fs.conv_spec) {
       case NPF_FMT_SPEC_CONV_PERCENT:
         *cbuf = '%';
-        cbuf_len = 1;
+        ++cbuf_len;
         break;
 
       case NPF_FMT_SPEC_CONV_CHAR: // 'c'
         *cbuf = (char)va_arg(vlist, int);
-        cbuf_len = 1;
+        ++cbuf_len;
         break;
 
       case NPF_FMT_SPEC_CONV_STRING: { // 's'
