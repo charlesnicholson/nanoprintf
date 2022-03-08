@@ -422,13 +422,13 @@ TEST_CASE("npf_parse_format_spec") {
     SUBCASE("x") {
       REQUIRE(npf_parse_format_spec("%x", &spec) == 2);
       REQUIRE(spec.conv_spec == NPF_FMT_SPEC_CONV_HEX_INT);
-      REQUIRE(spec.conv_spec_case == NPF_FMT_SPEC_CONV_CASE_LOWER);
+      REQUIRE(spec.case_adjust == 'a' - 'A');
     }
 
     SUBCASE("X") {
       REQUIRE(npf_parse_format_spec("%X", &spec) == 2);
       REQUIRE(spec.conv_spec == NPF_FMT_SPEC_CONV_HEX_INT);
-      REQUIRE(spec.conv_spec_case == NPF_FMT_SPEC_CONV_CASE_UPPER);
+      REQUIRE(spec.case_adjust == 0);
     }
 
     SUBCASE("u") {
@@ -459,13 +459,13 @@ TEST_CASE("npf_parse_format_spec") {
     SUBCASE("f") {
       REQUIRE(npf_parse_format_spec("%f", &spec) == 2);
       REQUIRE(spec.conv_spec == NPF_FMT_SPEC_CONV_FLOAT_DECIMAL);
-      REQUIRE(spec.conv_spec_case == NPF_FMT_SPEC_CONV_CASE_LOWER);
+      REQUIRE(spec.case_adjust == 'a' - 'A');
     }
 
     SUBCASE("F") {
       REQUIRE(npf_parse_format_spec("%F", &spec) == 2);
       REQUIRE(spec.conv_spec == NPF_FMT_SPEC_CONV_FLOAT_DECIMAL);
-      REQUIRE(spec.conv_spec_case == NPF_FMT_SPEC_CONV_CASE_UPPER);
+      REQUIRE(spec.case_adjust == 0);
     }
 
 #if NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS == 1
