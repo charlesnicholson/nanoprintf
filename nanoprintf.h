@@ -393,10 +393,8 @@ int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
     ++cur;
   } else {
     out_spec->field_width = 0;
-    if ((*cur >= '0') && (*cur <= '9')) {
-      out_spec->field_width_type = NPF_FMT_SPEC_FIELD_WIDTH_LITERAL;
-    }
     while ((*cur >= '0') && (*cur <= '9')) {
+      out_spec->field_width_type = NPF_FMT_SPEC_FIELD_WIDTH_LITERAL;
       out_spec->field_width = (out_spec->field_width * 10) + (*cur++ - '0');
     }
   }
