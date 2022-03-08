@@ -45,17 +45,17 @@ TEST_CASE("npf_parse_format_spec") {
 
     SUBCASE("prepend sign off by default") {
       REQUIRE(npf_parse_format_spec("%u", &spec) == 2);
-      REQUIRE(!spec.prepend_sign);
+      REQUIRE(!spec.prepend);
     }
 
     SUBCASE("prepend sign specified") {
       REQUIRE(npf_parse_format_spec("%+u", &spec) == 3);
-      REQUIRE(spec.prepend_sign == 1);
+      REQUIRE(spec.prepend == '+');
     }
 
     SUBCASE("prepend sign specified multiple times") {
       REQUIRE(npf_parse_format_spec("%+++++u", &spec) == 7);
-      REQUIRE(spec.prepend_sign == 1);
+      REQUIRE(spec.prepend == '+');
     }
 
     /*
@@ -68,31 +68,28 @@ TEST_CASE("npf_parse_format_spec") {
 
     SUBCASE("prepend space off by default") {
       REQUIRE(npf_parse_format_spec("%u", &spec) == 2);
-      REQUIRE(!spec.prepend_space);
+      REQUIRE(!spec.prepend);
     }
 
     SUBCASE("prepend space specified") {
       REQUIRE(npf_parse_format_spec("% u", &spec) == 3);
-      REQUIRE(spec.prepend_space == 1);
+      REQUIRE(spec.prepend == ' ');
     }
 
     SUBCASE("prepend space specified multiple times") {
       REQUIRE(npf_parse_format_spec("%     u", &spec) == 7);
-      REQUIRE(spec.prepend_space == 1);
+      REQUIRE(spec.prepend == ' ');
     }
 
     SUBCASE("prepend space ignored if prepend sign flag is present") {
       REQUIRE(npf_parse_format_spec("%+ u", &spec) == 4);
-      REQUIRE(spec.prepend_sign == 1);
-      REQUIRE(!spec.prepend_space);
+      REQUIRE(spec.prepend == '+');
 
       REQUIRE(npf_parse_format_spec("% +u", &spec) == 4);
-      REQUIRE(spec.prepend_sign == 1);
-      REQUIRE(!spec.prepend_space);
+      REQUIRE(spec.prepend == '+');
 
       REQUIRE(npf_parse_format_spec("% + + u", &spec) == 7);
-      REQUIRE(spec.prepend_sign == 1);
-      REQUIRE(!spec.prepend_space);
+      REQUIRE(spec.prepend == '+');
     }
 
     /*

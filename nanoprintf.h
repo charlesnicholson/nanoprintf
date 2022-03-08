@@ -257,8 +257,9 @@ typedef enum {
 
 typedef struct {
   // optional flags
-  char prepend_sign;     /* '+' */
-  char prepend_space;    /* ' ' */
+  char prepend;
+  //char prepend_sign;     /* '+' */
+  //char prepend_space;    /* ' ' */
   char alternative_form; /* '#' */
 
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
@@ -352,8 +353,9 @@ int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
   out_spec->leading_zero_pad = 0;
 #endif
   out_spec->conv_spec_case = NPF_FMT_SPEC_CONV_CASE_LOWER;
-  out_spec->prepend_sign = 0;
-  out_spec->prepend_space = 0;
+  out_spec->prepend = 0;
+  //out_spec->prepend_sign = 0;
+  //out_spec->prepend_space = 0;
   out_spec->alternative_form = 0;
   out_spec->length_modifier = NPF_FMT_SPEC_LEN_MOD_NONE;
 
@@ -370,11 +372,10 @@ int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
         continue;
 #endif
       case '+':
-        out_spec->prepend_sign = 1;
-        out_spec->prepend_space = 0;
+        out_spec->prepend = '+';
         continue;
       case ' ':
-        out_spec->prepend_space = !out_spec->prepend_sign;
+        if (out_spec->prepend == 0) { out_spec->prepend = ' '; }
         continue;
       case '#':
         out_spec->alternative_form = 1;
@@ -1036,8 +1037,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
     if (sign == -1) {
       sign_c = '-';
     } else if (sign == 1) {
-      if (fs.prepend_sign) { sign_c = '+'; }
-      else if (fs.prepend_space) { sign_c = ' '; }
+      sign_c = fs.prepend;
     }
 
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
