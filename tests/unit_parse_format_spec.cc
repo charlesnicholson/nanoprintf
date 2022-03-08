@@ -8,6 +8,12 @@ TEST_CASE("npf_parse_format_spec") {
   npf_format_spec_t spec;
   memset(&spec, 0xCD, sizeof(spec));
 
+  SUBCASE("Non-format strings return 0") {
+    REQUIRE(!npf_parse_format_spec("abcd", &spec));
+    REQUIRE(!npf_parse_format_spec("a%", &spec));
+    REQUIRE(!npf_parse_format_spec(" %", &spec));
+  }
+
   SUBCASE("Optional flags") {
     // Printf behavior is specified in ISO/IEC 9899:201x 7.21.6.1
     // Optional flags are defined in 7.21.6.1.6
