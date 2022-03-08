@@ -156,6 +156,7 @@ arm-none-eabi-nm --print-size --size-sort cm0-0.o | python tests/size_report.py
 00000324 00000034 T npf_vsnprintf
 00000018 000002f6 T npf_vpprintf
 Total size: 0x36e (878) bytes
+
 Binary:
 arm-none-eabi-gcc -DNANOPRINTF_SIZE_REPORT=1 -mcpu=cortex-m0 -Os -c -o cm0-1.o tests/size_report.c
 arm-none-eabi-nm --print-size --size-sort cm0-1.o | python tests/size_report.py
@@ -166,6 +167,7 @@ arm-none-eabi-nm --print-size --size-sort cm0-1.o | python tests/size_report.py
 00000366 00000032 T npf_vsnprintf
 00000018 00000338 T npf_vpprintf
 Total size: 0x3ae (942) bytes
+
 Field Width + Precision:
 arm-none-eabi-gcc -DNANOPRINTF_SIZE_REPORT=2 -mcpu=cortex-m0 -Os -c -o cm0-2.o tests/size_report.c
 arm-none-eabi-nm --print-size --size-sort cm0-2.o | python tests/size_report.py
@@ -176,6 +178,7 @@ arm-none-eabi-nm --print-size --size-sort cm0-2.o | python tests/size_report.py
 00000608 00000034 T npf_vsnprintf
 00000018 000005da T npf_vpprintf
 Total size: 0x652 (1618) bytes
+
 Field Width + Precision + Binary:
 arm-none-eabi-gcc -DNANOPRINTF_SIZE_REPORT=3 -mcpu=cortex-m0 -Os -c -o cm0-3.o tests/size_report.c
 arm-none-eabi-nm --print-size --size-sort cm0-3.o | python tests/size_report.py
@@ -186,6 +189,7 @@ arm-none-eabi-nm --print-size --size-sort cm0-3.o | python tests/size_report.py
 00000684 00000034 T npf_vsnprintf
 00000018 00000656 T npf_vpprintf
 Total size: 0x6ce (1742) bytes
+
 Float:
 arm-none-eabi-gcc -DNANOPRINTF_SIZE_REPORT=4 -mcpu=cortex-m0 -Os -c -o cm0-4.o tests/size_report.c
 arm-none-eabi-nm --print-size --size-sort cm0-4.o | python tests/size_report.py
@@ -196,6 +200,7 @@ arm-none-eabi-nm --print-size --size-sort cm0-4.o | python tests/size_report.py
 0000068e 00000032 T npf_vsnprintf
 00000018 00000660 T npf_vpprintf
 Total size: 0x6d6 (1750) bytes
+
 Everything:
 arm-none-eabi-gcc -DNANOPRINTF_SIZE_REPORT=5 -mcpu=cortex-m0 -Os -c -o cm0-5.o tests/size_report.c
 arm-none-eabi-nm --print-size --size-sort cm0-5.o | python tests/size_report.py
