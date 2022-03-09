@@ -305,7 +305,6 @@ static int npf_fsplit_abs(float f,
 
 static int npf_ftoa_rev(char *buf,
                         float f,
-                        unsigned base,
                         char case_adjust,
                         int *out_frac_chars);
 #endif
@@ -669,8 +668,7 @@ int npf_fsplit_abs(float f, uint64_t *out_int_part, uint64_t *out_frac_part,
   return 1;
 }
 
-int npf_ftoa_rev(char *buf, float f, unsigned base,
-                 char case_adjust, int *out_frac_chars) {
+int npf_ftoa_rev(char *buf, float f, char case_adjust, int *out_frac_chars) {
   if (f != f) {
     for (int i = 0; i < 3; ++i) { *buf++ = (char)("NAN"[i] + case_adjust); }
     return -3;
@@ -692,8 +690,8 @@ int npf_ftoa_rev(char *buf, float f, unsigned base,
   char *dst = buf;
 
   while (frac_part) { // write the fractional digits
-    unsigned const d = (unsigned)(frac_part % base);
-    frac_part /= base;
+    unsigned const d = (unsigned)(frac_part % 10);
+    frac_part /= 10;
     *dst++ = (d < 10) ? (char)('0' + d) : (char)(base_c + (d - 10));
   }
 
@@ -708,8 +706,8 @@ int npf_ftoa_rev(char *buf, float f, unsigned base,
     *dst++ = '0';
   } else {
     while (int_part) {
-      unsigned const d = (unsigned)(int_part % base);
-      int_part /= base;
+      unsigned const d = (unsigned)(int_part % 10);
+      int_part /= 10;
       *dst++ = (d < 10) ? (char)('0' + d) : (char)(base_c + (d - 10));
     }
   }
@@ -941,7 +939,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
         }
       } break;
 
-      case NPF_FMT_SPEC_CONV_POINTER: { // 'p'
+      case NPF_FMT_SPEC_CONV_POINTER: {
         cbuf_len = npf_utoa_rev(cbuf, (npf_uint_t)(uintptr_t)va_arg(vlist, void *),
           16, (unsigned)fs.case_adjust);
         cbuf[cbuf_len++] = 'x';
@@ -968,7 +966,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
 #endif
 
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
-      case NPF_FMT_SPEC_CONV_FLOAT_DECIMAL: { // 'f', 'F'
+      case NPF_FMT_SPEC_CONV_FLOAT_DECIMAL: {
         float val;
         if (fs.length_modifier == NPF_FMT_SPEC_LEN_MOD_LONG_DOUBLE) {
           val = (float)va_arg(vlist, long double);
@@ -980,7 +978,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
         zero = (val == 0.f);
 #endif
-        cbuf_len = npf_ftoa_rev(cbuf, val, 10, fs.case_adjust, &frac_chars);
+        cbuf_len = npf_ftoa_rev(cbuf, val, fs.case_adjust, &frac_chars);
 
         if (cbuf_len < 0) {
           cbuf_len = -cbuf_len;

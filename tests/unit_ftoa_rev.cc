@@ -17,7 +17,7 @@ TEST_CASE("ftoa_rev") {
   memset(buf, 0, sizeof(buf));
 
   SUBCASE("zero") {
-    REQUIRE(npf_ftoa_rev(buf, 0.f, 10, 0, &frac_bytes) == 2);
+    REQUIRE(npf_ftoa_rev(buf, 0.f, 0, &frac_bytes) == 2);
     REQUIRE(std::string{".0"} == buf);
   }
 }
