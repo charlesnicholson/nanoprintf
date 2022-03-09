@@ -359,58 +359,58 @@ TEST_CASE("conformance to system printf") {
 #if NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS == 1
   SUBCASE("writeback int") {
     int writeback = -1;
-    npf_pprintf(+[](int, void*) {}, nullptr, "%n", &writeback);
+    npf_pprintf(+[](char, void *) {}, nullptr, "%n", &writeback);
     REQUIRE(writeback == 0);
-    npf_pprintf(+[](int, void*) {}, nullptr, " %n", &writeback);
+    npf_pprintf(+[](char, void *) {}, nullptr, " %n", &writeback);
     REQUIRE(writeback == 1);
-    npf_pprintf(+[](int, void*) {}, nullptr, "  %n", &writeback);
+    npf_pprintf(+[](char, void *) {}, nullptr, "  %n", &writeback);
     REQUIRE(writeback == 2);
-    npf_pprintf(+[](int, void*) {}, nullptr, "%s%n", "abcd", &writeback);
+    npf_pprintf(+[](char, void *) {}, nullptr, "%s%n", "abcd", &writeback);
     REQUIRE(writeback == 4);
-    npf_pprintf(+[](int, void*) {}, nullptr, "%u%s%n", 0, "abcd", &writeback);
+    npf_pprintf(+[](char, void *) {}, nullptr, "%u%s%n", 0, "abcd", &writeback);
     REQUIRE(writeback == 5);
   }
 
   SUBCASE("writeback short") {
     short writeback = -1;
-    npf_pprintf(+[](int, void*) {}, nullptr, "1234%hn", &writeback);
+    npf_pprintf(+[](char, void *) {}, nullptr, "1234%hn", &writeback);
     REQUIRE(writeback == 4);
   }
 
   SUBCASE("writeback long") {
     long writeback = -1;
-    npf_pprintf(+[](int, void*) {}, nullptr, "1234567%ln", &writeback);
+    npf_pprintf(+[](char, void *) {}, nullptr, "1234567%ln", &writeback);
     REQUIRE(writeback == 7);
   }
 
   SUBCASE("writeback char") {
     signed char writeback = -1;
-    npf_pprintf(+[](int, void*) {}, nullptr, "1234567%hhn", &writeback);
+    npf_pprintf(+[](char, void *) {}, nullptr, "1234567%hhn", &writeback);
     REQUIRE(writeback == 7);
   }
 
 #if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
   SUBCASE("writeback long long") {
     long long writeback = -1;
-    npf_pprintf(+[](int, void*) {}, nullptr, "12345678%lln", &writeback);
+    npf_pprintf(+[](char, void *) {}, nullptr, "12345678%lln", &writeback);
     REQUIRE(writeback == 8);
   }
 
   SUBCASE("writeback intmax_t") {
     intmax_t writeback = -1;
-    npf_pprintf(+[](int, void*) {}, nullptr, "12345678%jn", &writeback);
+    npf_pprintf(+[](char, void *) {}, nullptr, "12345678%jn", &writeback);
     REQUIRE(writeback == 8);
   }
 
   SUBCASE("writeback size_t") {
     intmax_t writeback = 100000;
-    npf_pprintf(+[](int, void*) {}, nullptr, "12345678%zn", &writeback);
+    npf_pprintf(+[](char, void *) {}, nullptr, "12345678%zn", &writeback);
     REQUIRE(writeback == 8);
   }
 
   SUBCASE("writeback ptrdiff_t") {
     ptrdiff_t writeback = -1;
-    npf_pprintf(+[](int, void*) {}, nullptr, "12345678%tn", &writeback);
+    npf_pprintf(+[](char, void*) {}, nullptr, "12345678%tn", &writeback);
     REQUIRE(writeback == 8);
   }
 #endif // NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS

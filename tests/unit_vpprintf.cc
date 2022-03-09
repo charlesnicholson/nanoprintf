@@ -18,7 +18,7 @@
 #endif
 
 struct Recorder {
-  static void PutC(int c, void *ctx) {
+  static void PutC(char c, void *ctx) {
     static_cast<Recorder*>(ctx)->calls.push_back((char)c);
   }
 

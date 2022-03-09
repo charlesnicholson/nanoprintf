@@ -66,7 +66,7 @@ NPF_VISIBILITY int npf_snprintf(char *buffer, size_t bufsz, const char *format,
 NPF_VISIBILITY int npf_vsnprintf(char *buffer, size_t bufsz, char const *format,
                                  va_list vlist) NPF_PRINTF_ATTR(3, 0);
 
-typedef void (*npf_putc)(int c, void *ctx);
+typedef void (*npf_putc)(char c, void *ctx);
 NPF_VISIBILITY int npf_pprintf(npf_putc pc, void *pc_ctx, char const *format,
                                ...) NPF_PRINTF_ATTR(3, 4);
 
@@ -289,8 +289,8 @@ typedef struct {
   size_t cur;
 } npf_bufputc_ctx_t;
 
-static void npf_bufputc(int c, void *ctx);
-static void npf_bufputc_nop(int c, void *ctx);
+static void npf_bufputc(char c, void *ctx);
+static void npf_bufputc_nop(char c, void *ctx);
 static int npf_itoa_rev(char *buf, npf_int_t i);
 static int npf_utoa_rev(char *buf,
                         npf_uint_t i,
@@ -560,12 +560,12 @@ int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
   return (int)(cur - format);
 }
 
-void npf_bufputc(int c, void *ctx) {
+void npf_bufputc(char c, void *ctx) {
   npf_bufputc_ctx_t *bpc = (npf_bufputc_ctx_t *)ctx;
-  if (bpc->cur < bpc->len - 1) { bpc->dst[bpc->cur++] = (char)c; }
+  if (bpc->cur < bpc->len - 1) { bpc->dst[bpc->cur++] = c; }
 }
 
-void npf_bufputc_nop(int c, void *ctx) {
+void npf_bufputc_nop(char c, void *ctx) {
   (void)c;
   (void)ctx;
 }
@@ -762,7 +762,7 @@ int npf_bin_len(npf_uint_t u) {
 }
 #endif
 
-#define NPF_PUTC(VAL) do { pc((int)(VAL), pc_ctx); ++n; } while (0)
+#define NPF_PUTC(VAL) do { pc((VAL), pc_ctx); ++n; } while (0)
 
 #define NPF_EXTRACT(MOD, CAST_TO, EXTRACT_AS) \
   case NPF_FMT_SPEC_LEN_MOD_##MOD: val = (CAST_TO)va_arg(vlist, EXTRACT_AS); break
@@ -785,8 +785,8 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
 
     // Format specifier, convert and write argument
     union { char cbuf_mem[32]; npf_uint_t binval; } u;
-    char *cbuf = u.cbuf_mem, sign_c = 0;
-    int cbuf_len = 0, need_0x = 0;
+    char *cbuf = u.cbuf_mem, sign_c = 0, need_0x = 0;
+    int cbuf_len = 0;
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
     int field_pad = 0;
     char pad_c = 0;
