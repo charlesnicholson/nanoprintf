@@ -203,32 +203,6 @@ TEST_CASE("npf_parse_format_spec") {
        the behavior is undefined.
     */
 
-    SUBCASE("precision default is 1 for integral types") {
-      SUBCASE("u") {
-        REQUIRE(npf_parse_format_spec("%u", &spec) == 2);
-        REQUIRE(spec.precision_type == NPF_FMT_SPEC_PRECISION_NONE);
-        REQUIRE(spec.precision == 1);
-      }
-
-      SUBCASE("i") {
-        REQUIRE(npf_parse_format_spec("%i", &spec) == 2);
-        REQUIRE(spec.precision_type == NPF_FMT_SPEC_PRECISION_NONE);
-        REQUIRE(spec.precision == 1);
-      }
-
-      SUBCASE("o") {
-        REQUIRE(npf_parse_format_spec("%o", &spec) == 2);
-        REQUIRE(spec.precision_type == NPF_FMT_SPEC_PRECISION_NONE);
-        REQUIRE(spec.precision == 1);
-      }
-
-      SUBCASE("x") {
-        REQUIRE(npf_parse_format_spec("%x", &spec) == 2);
-        REQUIRE(spec.precision_type == NPF_FMT_SPEC_PRECISION_NONE);
-        REQUIRE(spec.precision == 1);
-      }
-    }
-
     SUBCASE("precision default is 6 for float types") {
       REQUIRE(npf_parse_format_spec("%f", &spec) == 2);
       REQUIRE(spec.precision_type == NPF_FMT_SPEC_PRECISION_NONE);
@@ -265,7 +239,6 @@ TEST_CASE("npf_parse_format_spec") {
     SUBCASE("precision is none when a negative literal is provided") {
       REQUIRE(npf_parse_format_spec("%.-34u", &spec) == 6);
       REQUIRE(spec.precision_type == NPF_FMT_SPEC_PRECISION_NONE);
-      REQUIRE(spec.precision == 1);
     }
   }
 
