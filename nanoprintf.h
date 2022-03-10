@@ -941,7 +941,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
         }
       } break;
 
-      case NPF_FMT_SPEC_CONV_POINTER: { // 'p'
+      case NPF_FMT_SPEC_CONV_POINTER: {
         cbuf_len = npf_utoa_rev(cbuf, (npf_uint_t)(uintptr_t)va_arg(vlist, void *),
           16, 'a' - 'A');
         cbuf[cbuf_len++] = 'x';
@@ -968,7 +968,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
 #endif
 
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
-      case NPF_FMT_SPEC_CONV_FLOAT_DECIMAL: { // 'f', 'F'
+      case NPF_FMT_SPEC_CONV_FLOAT_DECIMAL: {
         float val;
         if (fs.length_modifier == NPF_FMT_SPEC_LEN_MOD_LONG_DOUBLE) {
           val = (float)va_arg(vlist, long double);
