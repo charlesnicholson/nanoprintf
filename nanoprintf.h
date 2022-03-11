@@ -211,10 +211,10 @@ typedef enum {
 
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
 typedef enum {
-  NPF_FMT_SPEC_PRECISION_NONE,
-  NPF_FMT_SPEC_PRECISION_STAR,
-  NPF_FMT_SPEC_PRECISION_LITERAL
-} npf_format_spec_precision_t;
+  NPF_FMT_SPEC_PREC_NONE,
+  NPF_FMT_SPEC_PREC_STAR,
+  NPF_FMT_SPEC_PREC_LITERAL
+} npf_format_spec_prec_t;
 #endif
 
 typedef enum {
@@ -264,8 +264,8 @@ typedef struct {
 #endif
 
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
-  npf_format_spec_precision_t precision_type;
-  int precision;
+  npf_format_spec_prec_t prec_type;
+  int prec;
 #endif
 
   npf_format_spec_length_modifier_t length_modifier;
@@ -387,22 +387,22 @@ int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
 #endif
 
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
-  out_spec->precision = 0;
-  out_spec->precision_type = NPF_FMT_SPEC_PRECISION_NONE;
+  out_spec->prec = 0;
+  out_spec->prec_type = NPF_FMT_SPEC_PREC_NONE;
   if (*cur == '.') {
     ++cur;
     if (*cur == '*') {
-      out_spec->precision_type = NPF_FMT_SPEC_PRECISION_STAR;
+      out_spec->prec_type = NPF_FMT_SPEC_PREC_STAR;
       ++cur;
     } else {
       if (*cur == '-') {
         ++cur;
-        out_spec->precision_type = NPF_FMT_SPEC_PRECISION_NONE;
+        out_spec->prec_type = NPF_FMT_SPEC_PREC_NONE;
       } else {
-        out_spec->precision_type = NPF_FMT_SPEC_PRECISION_LITERAL;
+        out_spec->prec_type = NPF_FMT_SPEC_PREC_LITERAL;
       }
       while ((*cur >= '0') && (*cur <= '9')) {
-        out_spec->precision = (out_spec->precision * 10) + (*cur++ - '0');
+        out_spec->prec = (out_spec->prec * 10) + (*cur++ - '0');
       }
     }
   }
@@ -450,13 +450,13 @@ int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
     case '%':
       out_spec->conv_spec = NPF_FMT_SPEC_CONV_PERCENT;
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
-      out_spec->precision_type = NPF_FMT_SPEC_PRECISION_NONE;
+      out_spec->prec_type = NPF_FMT_SPEC_PREC_NONE;
 #endif
       break;
     case 'c':
       out_spec->conv_spec = NPF_FMT_SPEC_CONV_CHAR;
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
-      out_spec->precision_type = NPF_FMT_SPEC_PRECISION_NONE;
+      out_spec->prec_type = NPF_FMT_SPEC_PREC_NONE;
 #endif
       break;
     case 's':
@@ -489,9 +489,7 @@ int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
       out_spec->case_adjust = 0;
     case 'f':
       out_spec->conv_spec = NPF_FMT_SPEC_CONV_FLOAT_DECIMAL;
-      if (out_spec->precision_type == NPF_FMT_SPEC_PRECISION_NONE) {
-        out_spec->precision = 6;
-      }
+      if (out_spec->prec_type == NPF_FMT_SPEC_PREC_NONE) { out_spec->prec = 6; }
       break;
 #endif // NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS
 
@@ -500,7 +498,7 @@ int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
       // todo: reject string if flags or width or precision exist
       out_spec->conv_spec = NPF_FMT_SPEC_CONV_WRITEBACK;
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
-      out_spec->precision_type = NPF_FMT_SPEC_PRECISION_NONE;
+      out_spec->prec_type = NPF_FMT_SPEC_PREC_NONE;
 #endif // NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS
       break;
 #endif // NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS
@@ -508,7 +506,7 @@ int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
     case 'p':
       out_spec->conv_spec = NPF_FMT_SPEC_CONV_POINTER;
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
-      out_spec->precision_type = NPF_FMT_SPEC_PRECISION_NONE;
+      out_spec->prec_type = NPF_FMT_SPEC_PREC_NONE;
 #endif
       break;
 
@@ -783,14 +781,14 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
 #endif
 
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
-    if (fs.precision_type == NPF_FMT_SPEC_PRECISION_STAR) {
+    if (fs.prec_type == NPF_FMT_SPEC_PREC_STAR) {
       // If '*' was used as precision, read from args.
-      int const precision = va_arg(vlist, int);
-      if (precision >= 0) {
-        fs.precision_type = NPF_FMT_SPEC_PRECISION_LITERAL;
-        fs.precision = precision;
+      int const prec = va_arg(vlist, int);
+      if (prec >= 0) {
+        fs.prec_type = NPF_FMT_SPEC_PREC_LITERAL;
+        fs.prec = prec;
       } else { // Negative precision is ignored.
-        fs.precision_type = NPF_FMT_SPEC_PRECISION_NONE;
+        fs.prec_type = NPF_FMT_SPEC_PREC_NONE;
       }
     }
 #endif
@@ -811,8 +809,8 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
         cbuf = va_arg(vlist, char *);
         for (char const *s = cbuf; *s; ++s, ++cbuf_len); // strlen
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
-        if (fs.precision_type == NPF_FMT_SPEC_PRECISION_LITERAL) {
-          cbuf_len = npf_min(fs.precision, cbuf_len); // prec truncates strings
+        if (fs.prec_type == NPF_FMT_SPEC_PREC_LITERAL) {
+          cbuf_len = npf_min(fs.prec, cbuf_len); // prec truncates strings
         }
 #endif
       } break;
@@ -842,8 +840,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
         zero = !val;
 #endif
         // special case, if prec and value are 0, skip
-        if (!val && !fs.precision &&
-            (fs.precision_type == NPF_FMT_SPEC_PRECISION_LITERAL)) {
+        if (!val && (fs.prec_type == NPF_FMT_SPEC_PREC_LITERAL) && !fs.prec) {
           cbuf_len = 0;
         } else
 #endif
@@ -880,11 +877,10 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
         zero = !val;
 #endif
-        if ((val == 0) && (fs.precision == 0) &&
-            (fs.precision_type == NPF_FMT_SPEC_PRECISION_LITERAL)) {
+        if (!val && (fs.prec_type == NPF_FMT_SPEC_PREC_LITERAL) && !fs.prec) {
           // Zero value and explicitly-requested zero precision means "print nothing".
           if ((fs.conv_spec == NPF_FMT_SPEC_CONV_OCTAL) && fs.alternative_form) {
-            fs.precision = 1; // octal special case, print a single '0'
+            fs.prec = 1; // octal special case, print a single '0'
           }
         } else
 #endif
@@ -953,9 +949,9 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
           cbuf_len = -cbuf_len;
           inf_or_nan = 1;
         } else {
-          if (frac_chars > fs.precision) { // truncate low frac digits for precision
-            cbuf += (frac_chars - fs.precision);
-            cbuf_len -= (frac_chars - fs.precision);
+          if (frac_chars > fs.prec) { // truncate low frac digits for precision
+            cbuf += (frac_chars - fs.prec);
+            cbuf_len -= (frac_chars - fs.prec);
           }
         }
       } break;
@@ -972,8 +968,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
             (fs.conv_spec != NPF_FMT_SPEC_CONV_CHAR) &&
             (fs.conv_spec != NPF_FMT_SPEC_CONV_PERCENT)) {
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
-          if ((fs.precision_type == NPF_FMT_SPEC_PRECISION_LITERAL) &&
-              (fs.precision == 0) && zero) {
+          if ((fs.prec_type == NPF_FMT_SPEC_PREC_LITERAL) && !fs.prec && zero) {
             pad_c = ' ';
           } else
 #endif
@@ -989,10 +984,10 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
       if (!inf_or_nan) { // float precision is after the decimal point
         int const precision_start =
           (fs.conv_spec == NPF_FMT_SPEC_CONV_FLOAT_DECIMAL) ? frac_chars : cbuf_len;
-        prec_pad = npf_max(0, fs.precision - precision_start);
+        prec_pad = npf_max(0, fs.prec - precision_start);
       }
 #elif NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
-      prec_pad = npf_max(0, fs.precision - cbuf_len);
+      prec_pad = npf_max(0, fs.prec - cbuf_len);
 #endif
     }
 
@@ -1003,7 +998,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
 
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
     if (fs.conv_spec == NPF_FMT_SPEC_CONV_FLOAT_DECIMAL) {
-      field_pad += (!fs.precision && !fs.alternative_form); // 0-pad, no decimal point.
+      field_pad += (!fs.prec && !fs.alternative_form); // 0-pad, no decimal point.
     }
 #endif // NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
@@ -1048,7 +1043,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
       } else {
         // if 0 precision, skip the fractional part and '.'
         // if 0 prec + alternative form, keep the '.'
-        if (fs.precision == 0) {
+        if (!fs.prec) {
           cbuf += !fs.alternative_form;
           cbuf_len -= !fs.alternative_form;
         }

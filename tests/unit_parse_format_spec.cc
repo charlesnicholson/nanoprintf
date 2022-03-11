@@ -205,40 +205,40 @@ TEST_CASE("npf_parse_format_spec") {
 
     SUBCASE("precision default is 6 for float types") {
       REQUIRE(npf_parse_format_spec("%f", &spec) == 2);
-      REQUIRE(spec.precision_type == NPF_FMT_SPEC_PRECISION_NONE);
-      REQUIRE(spec.precision == 6);
+      REQUIRE(spec.prec_type == NPF_FMT_SPEC_PREC_NONE);
+      REQUIRE(spec.prec == 6);
         /*
             Not supported yet
 
             CHECK_EQUAL(2, npf_parse_format_spec("%g", &spec));
-            CHECK_EQUAL(NPF_FMT_SPEC_PRECISION_NONE, spec.precision_type);
-            CHECK_EQUAL(6, spec.precision);
+            CHECK_EQUAL(NPF_FMT_SPEC_PREC_NONE, spec.prec_type);
+            CHECK_EQUAL(6, spec.prec);
             CHECK_EQUAL(2, npf_parse_format_spec("%e", &spec));
-            CHECK_EQUAL(NPF_FMT_SPEC_PRECISION_NONE, spec.precision_type);
-            CHECK_EQUAL(6, spec.precision);
+            CHECK_EQUAL(NPF_FMT_SPEC_PREC_NONE, spec.prec_type);
+            CHECK_EQUAL(6, spec.prec);
         */
     }
 
     SUBCASE("precision captures star") {
       REQUIRE(npf_parse_format_spec("%.*u", &spec) == 4);
-      REQUIRE(spec.precision_type == NPF_FMT_SPEC_PRECISION_STAR);
+      REQUIRE(spec.prec_type == NPF_FMT_SPEC_PREC_STAR);
     }
 
     SUBCASE("precision is literal zero if only a period is specified") {
       REQUIRE(npf_parse_format_spec("%.u", &spec) == 3);
-      REQUIRE(spec.precision_type == NPF_FMT_SPEC_PRECISION_LITERAL);
-      REQUIRE(!spec.precision);
+      REQUIRE(spec.prec_type == NPF_FMT_SPEC_PREC_LITERAL);
+      REQUIRE(!spec.prec);
     }
 
     SUBCASE("precision is literal value if period followed by number") {
       REQUIRE(npf_parse_format_spec("%.12345u", &spec) == 8);
-      REQUIRE(spec.precision_type == NPF_FMT_SPEC_PRECISION_LITERAL);
-      REQUIRE(spec.precision == 12345);
+      REQUIRE(spec.prec_type == NPF_FMT_SPEC_PREC_LITERAL);
+      REQUIRE(spec.prec == 12345);
     }
 
     SUBCASE("precision is none when a negative literal is provided") {
       REQUIRE(npf_parse_format_spec("%.-34u", &spec) == 6);
-      REQUIRE(spec.precision_type == NPF_FMT_SPEC_PRECISION_NONE);
+      REQUIRE(spec.prec_type == NPF_FMT_SPEC_PREC_NONE);
     }
   }
 
@@ -347,7 +347,7 @@ TEST_CASE("npf_parse_format_spec") {
 
     SUBCASE("% clears precision") {
       REQUIRE(npf_parse_format_spec("%.9%", &spec) == 4);
-      REQUIRE(spec.precision_type == NPF_FMT_SPEC_PRECISION_NONE);
+      REQUIRE(spec.prec_type == NPF_FMT_SPEC_PREC_NONE);
     }
 
     SUBCASE("c") {
@@ -357,7 +357,7 @@ TEST_CASE("npf_parse_format_spec") {
 
     SUBCASE("c clears precision") {
       REQUIRE(npf_parse_format_spec("%.9c", &spec) == 4);
-      REQUIRE(spec.precision_type == NPF_FMT_SPEC_PRECISION_NONE);
+      REQUIRE(spec.prec_type == NPF_FMT_SPEC_PREC_NONE);
     }
 
     SUBCASE("s") {
@@ -416,7 +416,7 @@ TEST_CASE("npf_parse_format_spec") {
 
     SUBCASE("n clears precision") {
       REQUIRE(npf_parse_format_spec("%.4n", &spec) == 4);
-      REQUIRE(spec.precision_type == NPF_FMT_SPEC_PRECISION_NONE);
+      REQUIRE(spec.prec_type == NPF_FMT_SPEC_PREC_NONE);
     }
 
     SUBCASE("p") {
@@ -426,7 +426,7 @@ TEST_CASE("npf_parse_format_spec") {
 
     SUBCASE("p clears precision") {
       REQUIRE(npf_parse_format_spec("%.4p", &spec) == 4);
-      REQUIRE(spec.precision_type == NPF_FMT_SPEC_PRECISION_NONE);
+      REQUIRE(spec.prec_type == NPF_FMT_SPEC_PREC_NONE);
     }
 
     SUBCASE("f") {
