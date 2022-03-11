@@ -414,11 +414,6 @@ TEST_CASE("npf_parse_format_spec") {
       REQUIRE(spec.conv_spec == NPF_FMT_SPEC_CONV_WRITEBACK);
     }
 
-    SUBCASE("n clears precision") {
-      REQUIRE(npf_parse_format_spec("%.4n", &spec) == 4);
-      REQUIRE(spec.precision_type == NPF_FMT_SPEC_PRECISION_NONE);
-    }
-
     SUBCASE("p") {
       REQUIRE(npf_parse_format_spec("%p", &spec) == 2);
       REQUIRE(spec.conv_spec == NPF_FMT_SPEC_CONV_POINTER);

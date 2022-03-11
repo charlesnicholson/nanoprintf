@@ -493,17 +493,14 @@ int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
         out_spec->precision = 6;
       }
       break;
-#endif // NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS
+#endif
 
 #if NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS == 1
     case 'n':
       // todo: reject string if flags or width or precision exist
       out_spec->conv_spec = NPF_FMT_SPEC_CONV_WRITEBACK;
-#if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
-      out_spec->precision_type = NPF_FMT_SPEC_PRECISION_NONE;
-#endif // NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS
       break;
-#endif // NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS
+#endif
 
     case 'p':
       out_spec->conv_spec = NPF_FMT_SPEC_CONV_POINTER;
@@ -831,8 +828,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
           NPF_EXTRACT(LARGE_SIZET, ssize_t, ssize_t);
           NPF_EXTRACT(LARGE_PTRDIFFT, ptrdiff_t, ptrdiff_t);
 #endif
-          default:
-            break;
+          default: break;
         }
 
         sign_c = (val < 0) ? '-' : fs.prepend;
@@ -872,8 +868,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
           NPF_EXTRACT(LARGE_SIZET, size_t, size_t);
           NPF_EXTRACT(LARGE_PTRDIFFT, size_t, size_t);
 #endif
-          default:
-            break;
+          default: break;
         }
 
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
@@ -929,9 +924,8 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
           NPF_WRITEBACK(LARGE_SIZET, size_t);
           NPF_WRITEBACK(LARGE_PTRDIFFT, ptrdiff_t);
 #endif
-          default:
-            break;
-        } break;
+          default: break;
+        } continue;
 #endif
 
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
@@ -960,8 +954,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
         }
       } break;
 #endif
-      default:
-        break;
+      default: break;
     }
 
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
