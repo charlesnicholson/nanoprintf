@@ -645,7 +645,7 @@ int npf_ftoa_rev(char *buf, float f, unsigned base,
     else if ((f == INFINITY) || (f == -INFINITY)) { err = 4; }
     else if (!npf_fsplit_abs(f, &int_part, &frac_part, &frac_b10_nexp)) { err = 7; }
     if (err) {
-      for (int i = 0; i < 3; ++i) { *buf++ = (char)(" NANFNIROO"[err+i] + case_adjust);}
+      for (int i = 0; i < 4; ++i) { *buf++ = (char)(" NANFNIROO"[err+i] + case_adjust); }
       return -3;
     }
   }
