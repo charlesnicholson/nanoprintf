@@ -637,19 +637,19 @@ int npf_fsplit_abs(float f, uint64_t *out_int_part, uint64_t *out_frac_part,
 int npf_ftoa_rev(char *buf, float f, unsigned base,
                  char case_adjust, int *out_frac_chars) {
   if (f != f) {
-    for (int i = 0; i < 3; ++i) { *buf++ = (char)("NAN"[i] + case_adjust); }
+    for (int i = 0; i < 4; ++i) { *buf++ = (char)("NAN"[i] + case_adjust); }
     return -3;
   }
 
   if ((f == INFINITY) || (f == -INFINITY)) {
-    for (int i = 0; i < 3; ++i) { *buf++ = (char)("INF"[2-i] + case_adjust); }
+    for (int i = 0; i < 4; ++i) { *buf++ = (char)("FNI"[i] + case_adjust); }
     return -3;
   }
 
   uint64_t int_part, frac_part;
   int frac_base10_neg_exp;
   if (npf_fsplit_abs(f, &int_part, &frac_part, &frac_base10_neg_exp) == 0) {
-    for (int i = 0; i < 3; ++i) { *buf++ = (char)("OOR"[2-i] + case_adjust); }
+    for (int i = 0; i < 4; ++i) { *buf++ = (char)("ROO"[i] + case_adjust); }
     return -3;
   }
 
