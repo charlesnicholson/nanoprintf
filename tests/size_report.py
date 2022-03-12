@@ -7,6 +7,7 @@ import tempfile
 
 
 def parse_args():
+    """Parse and validate command-line arguments."""
     parser = argparse.ArgumentParser()
     parser.add_argument('-p',
                         '--platform',
@@ -22,7 +23,7 @@ def parse_args():
 
 
 def git_root():
-    """Return the root of the current file git repository"""
+    """Return the root of the current file git repository."""
     cur = pathlib.Path(__file__).resolve()
     while cur != cur.parent:
         if (cur / '.git').is_dir():
@@ -33,7 +34,7 @@ def git_root():
 
 
 def build(platform, flags):
-    """Build a nanoprintf implementation object for platform + flags"""
+    """Build a nanoprintf implementation object for platform + flags."""
     cc_exe = 'cc' if platform == 'host' else 'arm-none-eabi-gcc'
     cc_cmd = [cc_exe, '-c', '-x', 'c', '-Os', f'-I{git_root()}', '-o', 'npf.o']
     cc_cmd += {'cm0': ['-mcpu=cortex-m0'],
@@ -47,16 +48,16 @@ def build(platform, flags):
     print(' '.join(nm_cmd))
     sys.stdout.flush()
 
-    with tempfile.TemporaryDirectory() as td:
+    with tempfile.TemporaryDirectory() as temp_dir:
         subprocess.run(
             cc_cmd,
             check=True,
-            cwd=td,
+            cwd=temp_dir,
             input=rb'#include "nanoprintf.h"')
         return subprocess.run(
             nm_cmd,
             check=True,
-            cwd=td,
+            cwd=temp_dir,
             stdout=subprocess.PIPE).stdout.decode()
 
 
