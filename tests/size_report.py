@@ -127,11 +127,6 @@ _CONFIGS = [
 def main():
     """Entry point"""
     args = parse_args()
-    if args.verbose:
-        print(f'{__file__}:')
-        for arg in vars(args):
-            print(f'  {arg}: {getattr(args, arg)}')
-
     for cfg in _CONFIGS:
         print(f'Configuration "{cfg["name"]}":')
         measure(build(args.platform, cfg['flags']))
