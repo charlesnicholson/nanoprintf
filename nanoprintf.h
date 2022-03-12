@@ -1011,10 +1011,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
     // Apply right-justified field width if requested
     if (!fs.left_justified && pad_c) { // If leading zeros pad, sign goes first.
       if (pad_c == '0') {
-        if (sign_c == '-' || sign_c == '+') {
-          NPF_PUTC(sign_c);
-          sign_c = 0;
-        }
+        if (sign_c) { NPF_PUTC(sign_c); sign_c = 0; }
         // Pad byte is '0', write '0x' before '0' pad chars.
         if (need_0x) { NPF_PUTC('0'); NPF_PUTC(need_0x); need_0x = 0; }
       }
