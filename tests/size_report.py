@@ -1,4 +1,4 @@
-"""Accumulate size output from nm and print the total."""
+"""Compile and analyze nanoprintf for different architectures."""
 import argparse
 import pathlib
 import subprocess
@@ -14,11 +14,6 @@ def parse_args():
                         required=True,
                         choices=('cm0', 'cm4', 'host'),
                         help='target platform')
-    parser.add_argument('-v',
-                        '--verbose',
-                        action='store_true',
-                        help='verbose')
-
     return parser.parse_args()
 
 
