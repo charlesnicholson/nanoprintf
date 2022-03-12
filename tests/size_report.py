@@ -6,7 +6,7 @@ import sys
 import tempfile
 
 
-def _parse_args():
+def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('-p',
                         '--platform',
@@ -21,7 +21,7 @@ def _parse_args():
     return parser.parse_args()
 
 
-def _repo_root():
+def git_root():
     """Return the root of the current file git repository"""
     cur = pathlib.Path(__file__).resolve()
     while cur != cur.parent:
@@ -32,33 +32,29 @@ def _repo_root():
     raise ValueError(f'{__file__} not in git repo')
 
 
-_REPO_ROOT = _repo_root()
-_C_FILE = rb'''
-#define NANOPRINTF_IMPLEMENTATION
-#include "nanoprintf.h"
-'''
-
-
 def build(platform, flags):
-    cc = 'cc' if platform == 'host' else 'arm-none-eabi-gcc'
-    nm = 'nm' if platform == 'host' else 'arm-none-eabi-nm'
+    """Build a nanoprintf implementation object for platform + flags"""
+    cc_exe = 'cc' if platform == 'host' else 'arm-none-eabi-gcc'
+    cc_cmd = [cc_exe, '-c', '-x', 'c', '-Os', f'-I{git_root()}', '-o', 'npf.o']
+    cc_cmd += {'cm0': ['-mcpu=cortex-m0'],
+               'cm4': ['-mcpu=cortex-m4', '-mfloat-abi=hard'],
+               'host': []}[platform]
+    cc_cmd += ['-DNANOPRINTF_IMPLEMENTATION'] + flags + ['-']
+    nm_exe = 'nm' if platform == 'host' else 'arm-none-eabi-nm'
+    nm_cmd = [nm_exe, '--print-size', '--size-sort', 'npf.o']
 
-    compile = [cc, '-c', '-x', 'c', '-Os']
-    compile += {'cm0': ['-mcpu=cortex-m0'],
-                'cm4': ['-mcpu=cortex-m4', '-mfloat-abi=hard'],
-                'host': []}[platform]
-    compile += flags
-    compile += [f'-I{_REPO_ROOT}', '-o', 'npf.o', '-']
-    dump = [nm, '--print-size', '--size-sort', 'npf.o']
-
-    print(' '.join(compile))
-    print(' '.join(dump))
+    print(' '.join(cc_cmd))
+    print(' '.join(nm_cmd))
     sys.stdout.flush()
 
     with tempfile.TemporaryDirectory() as td:
-        subprocess.run(compile, check=True, cwd=td, input=_C_FILE)
+        subprocess.run(
+            cc_cmd,
+            check=True,
+            cwd=td,
+            input=rb'#include "nanoprintf.h"')
         return subprocess.run(
-            dump,
+            nm_cmd,
             check=True,
             cwd=td,
             stdout=subprocess.PIPE).stdout.decode()
@@ -69,9 +65,10 @@ def measure(build_output):
     total = 0
     for line in build_output.split('\n'):
         parts = [l for l in line.split() if l.strip()]
-        if parts:
-            print(line)
-        if not parts or parts[0] in ('u', 'U'):
+        if not parts:
+            continue
+        print(line)
+        if parts[0] in ('u', 'U'):
             continue
         if len(parts) >= 3 and parts[2] not in ('t', 'T'):
             continue
@@ -132,14 +129,15 @@ _CONFIGS = [
 
 
 def main():
-    args = _parse_args()
+    """Entry point"""
+    args = parse_args()
     if args.verbose:
         print(f'{__file__}:')
         for arg in vars(args):
             print(f'  {arg}: {getattr(args, arg)}')
 
     for cfg in _CONFIGS:
-        print(cfg['name'])
+        print(f'Configuration "{cfg["name"]}":')
         measure(build(args.platform, cfg['flags']))
         print()
     return 0
