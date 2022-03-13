@@ -768,13 +768,10 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
 
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
     if (fs.field_width_type == NPF_FMT_SPEC_FIELD_WIDTH_STAR) {
-      // If '*' was used as field width, read it from args.
-      int const field_width = va_arg(vlist, int);
       fs.field_width_type = NPF_FMT_SPEC_FIELD_WIDTH_LITERAL;
-      if (field_width >= 0) {
-        fs.field_width = field_width;
-      } else { // Negative field width is left-justified.
-        fs.field_width = -field_width;
+      fs.field_width = va_arg(vlist, int);
+      if (fs.field_width < 0) {
+        fs.field_width = -fs.field_width;
         fs.left_justified = 1;
       }
     }
@@ -782,14 +779,9 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
 
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
     if (fs.prec_type == NPF_FMT_SPEC_PREC_STAR) {
-      // If '*' was used as precision, read from args.
-      int const prec = va_arg(vlist, int);
-      if (prec >= 0) {
-        fs.prec_type = NPF_FMT_SPEC_PREC_LITERAL;
-        fs.prec = prec;
-      } else { // Negative precision is ignored.
-        fs.prec_type = NPF_FMT_SPEC_PREC_NONE;
-      }
+      fs.prec_type = NPF_FMT_SPEC_PREC_NONE;
+      fs.prec = va_arg(vlist, int);
+      if (fs.prec >= 0) { fs.prec_type = NPF_FMT_SPEC_PREC_LITERAL; }
     }
 #endif
 
