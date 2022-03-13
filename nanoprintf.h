@@ -644,7 +644,7 @@ int npf_ftoa_rev(char *buf, float f, unsigned base,
   if (f == INFINITY || f == -INFINITY) {
     if (f == -INFINITY) { *buf++ = '-'; }
     for (int i = 0; i < 3; ++i) { *buf++ = (char)("INF"[i] + case_adjust); }
-    return (f == INFINITY) ? -3 : -4;
+    return (f == -INFINITY) ? -4 : -3;
   }
 
   uint64_t int_part, frac_part;
@@ -940,7 +940,6 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
         if (cbuf_len < 0) {
           cbuf_len = -cbuf_len;
           fs.conv_spec = NPF_FMT_SPEC_CONV_STRING;
-          //fs.prec_type = NPF_FMT_SPEC_PREC_NONE;
         } else {
           sign_c = (val < 0) ? '-' : fs.prepend;
           if (frac_chars > fs.prec) { // truncate low frac digits for precision
