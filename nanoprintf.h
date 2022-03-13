@@ -641,15 +641,16 @@ int npf_ftoa_rev(char *buf, float f, unsigned base,
     return -3;
   }
 
-  if ((f == INFINITY) || (f == -INFINITY)) {
-    for (int i = 0; i < 3; ++i) { *buf++ = (char)("INF"[2-i] + case_adjust); }
-    return -3;
+  if (f == INFINITY || f == -INFINITY) {
+    if (f == -INFINITY) { *buf++ = '-'; }
+    for (int i = 0; i < 3; ++i) { *buf++ = (char)("INF"[i] + case_adjust); }
+    return (f == INFINITY) ? -3 : -4;
   }
 
   uint64_t int_part, frac_part;
   int frac_base10_neg_exp;
   if (npf_fsplit_abs(f, &int_part, &frac_part, &frac_base10_neg_exp) == 0) {
-    for (int i = 0; i < 3; ++i) { *buf++ = (char)("OOR"[2-i] + case_adjust); }
+    for (int i = 0; i < 3; ++i) { *buf++ = (char)("OOR"[i] + case_adjust); }
     return -3;
   }
 
@@ -763,7 +764,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
 #endif
 #endif
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
-    int frac_chars = 0, inf_or_nan = 0;
+    int frac_chars = 0;
 #endif
 
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
@@ -931,7 +932,6 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
           val = (float)va_arg(vlist, double);
         }
 
-        sign_c = (val < 0) ? '-' : fs.prepend;
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
         zero = (val == 0.f);
 #endif
@@ -939,8 +939,10 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
 
         if (cbuf_len < 0) {
           cbuf_len = -cbuf_len;
-          inf_or_nan = 1;
+          fs.conv_spec = NPF_FMT_SPEC_CONV_STRING;
+          //fs.prec_type = NPF_FMT_SPEC_PREC_NONE;
         } else {
+          sign_c = (val < 0) ? '-' : fs.prepend;
           if (frac_chars > fs.prec) { // truncate low frac digits for precision
             cbuf += (frac_chars - fs.prec);
             cbuf_len -= (frac_chars - fs.prec);
@@ -973,11 +975,9 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
     // Compute the number of bytes to truncate or '0'-pad.
     if (fs.conv_spec != NPF_FMT_SPEC_CONV_STRING) {
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
-      if (!inf_or_nan) { // float precision is after the decimal point
-        int const precision_start =
-          (fs.conv_spec == NPF_FMT_SPEC_CONV_FLOAT_DECIMAL) ? frac_chars : cbuf_len;
-        prec_pad = npf_max(0, fs.prec - precision_start);
-      }
+      int const prec_start =
+        (fs.conv_spec == NPF_FMT_SPEC_CONV_FLOAT_DECIMAL) ? frac_chars : cbuf_len;
+      prec_pad = npf_max(0, fs.prec - prec_start);
 #elif NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
       prec_pad = npf_max(0, fs.prec - cbuf_len);
 #endif
@@ -1048,7 +1048,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
 
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
       // real precision comes after the number.
-      if ((fs.conv_spec == NPF_FMT_SPEC_CONV_FLOAT_DECIMAL) && !inf_or_nan) {
+      if (fs.conv_spec == NPF_FMT_SPEC_CONV_FLOAT_DECIMAL) {
         while (prec_pad-- > 0) { NPF_PUTC('0'); }
       }
 #endif
