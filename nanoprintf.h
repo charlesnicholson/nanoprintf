@@ -537,20 +537,11 @@ void npf_bufputc_nop(int c, void *ctx) {
 
 int npf_itoa_rev(char *buf, npf_int_t i) {
   char *dst = buf;
-  int len = 0;
   int const neg = (i >= 0) ? 1 : -1;
-  do { *dst++ = (char)('0' + (neg * (i % 10))); ++len; i /= 10; } while (i);
-  return len;
-}
-/*
-int npf_itoa_rev(char *buf, npf_int_t i) {
-  char *dst = buf;
-  if (i == 0) { *dst++ = '0'; }
-  int const neg = (i < 0) ? -1 : 1;
-  while (i) { *dst++ = (char)('0' + (neg * (i % 10))); i /= 10; }
+  do { *dst++ = (char)('0' + (neg * (i % 10))); i /= 10; } while (i);
   return (int)(dst - buf);
 }
-*/
+
 int npf_utoa_rev(char *buf, npf_uint_t i, unsigned base, unsigned case_adjust) {
   char *dst = buf;
   if (i == 0) { *dst++ = '0'; }
