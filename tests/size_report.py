@@ -40,8 +40,7 @@ def build(platform, flags):
     nm_cmd = [nm_exe, '--print-size', '--size-sort', 'npf.o']
 
     print(' '.join(cc_cmd))
-    print(' '.join(nm_cmd))
-    sys.stdout.flush()
+    print(' '.join(nm_cmd), flush=True)
 
     with tempfile.TemporaryDirectory() as temp_dir:
         subprocess.run(
