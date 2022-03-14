@@ -1032,10 +1032,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
       } else {
         // if 0 precision, skip the fractional part and '.'
         // if 0 prec + alternative form, keep the '.'
-        if (!fs.prec) {
-          cbuf += !fs.alt_form;
-          cbuf_len -= !fs.alt_form;
-        }
+        if (!fs.prec && !fs.alt_form) { ++cbuf; --cbuf_len; }
       }
 #endif
 
