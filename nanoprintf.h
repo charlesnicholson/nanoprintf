@@ -941,10 +941,8 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
           cbuf_len = -cbuf_len;
           inf_or_nan = 1;
         } else {
-          if (frac_chars > fs.prec) { // truncate low frac digits for precision
-            cbuf += (frac_chars - fs.prec);
-            cbuf_len -= (frac_chars - fs.prec);
-          }
+          cbuf += npf_max(0, frac_chars - fs.prec);
+          cbuf_len -= npf_max(0, frac_chars - fs.prec);
         }
       } break;
 #endif
