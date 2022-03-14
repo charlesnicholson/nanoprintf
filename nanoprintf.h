@@ -718,25 +718,37 @@ int npf_bin_len(npf_uint_t u) {
 }
 #endif
 
-#define NPF_PUTC(VAL) do { pc((int)(VAL), pc_ctx); ++n; } while (0)
+typedef struct npf_cnt_putc_ctx {
+  npf_putc pc;
+  void *ctx;
+  int n;
+} npf_cnt_putc_ctx_t;
+
+static void npf_putc_cnt(int c, void *ctx) {
+  npf_cnt_putc_ctx_t *pc_cnt = (npf_cnt_putc_ctx_t *)ctx;
+  ++pc_cnt->n;
+  pc_cnt->pc(c, pc_cnt->ctx);
+}
+
+#define NPF_PUTC(VAL) do { npf_putc_cnt((int)(VAL), &pc_cnt); } while (0)
 
 #define NPF_EXTRACT(MOD, CAST_TO, EXTRACT_AS) \
   case NPF_FMT_SPEC_LEN_MOD_##MOD: val = (CAST_TO)va_arg(vlist, EXTRACT_AS); break
 
 #define NPF_WRITEBACK(MOD, TYPE) \
-  case NPF_FMT_SPEC_LEN_MOD_##MOD: *(va_arg(vlist, TYPE *)) = (TYPE)n; break
+  case NPF_FMT_SPEC_LEN_MOD_##MOD: *(va_arg(vlist, TYPE *)) = (TYPE)pc_cnt.n; break
 
 int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
   npf_format_spec_t fs;
   char const *cur = format;
-  int n = 0, fs_len;
+  npf_cnt_putc_ctx_t pc_cnt;
+  pc_cnt.pc = pc;
+  pc_cnt.ctx = pc_ctx;
+  pc_cnt.n = 0;
 
   while (*cur) {
-    if (!(fs_len = (*cur != '%') ? 0 : npf_parse_format_spec(cur, &fs))) {
-      NPF_PUTC(*cur++);
-      continue;
-    }
-
+    int const fs_len = (*cur != '%') ? 0 : npf_parse_format_spec(cur, &fs);
+    if (!fs_len) { NPF_PUTC(*cur++); continue; }
     cur += fs_len;
 
     // Format specifier, convert and write argument
@@ -1044,7 +1056,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
 #endif
   }
 
-  return n;
+  return pc_cnt.n;
 }
 
 #undef NPF_PUTC
