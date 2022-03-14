@@ -726,8 +726,8 @@ typedef struct npf_cnt_putc_ctx {
 
 static void npf_putc_cnt(int c, void *ctx) {
   npf_cnt_putc_ctx_t *pc_cnt = (npf_cnt_putc_ctx_t *)ctx;
+  ++pc_cnt->n;
   pc_cnt->pc(c, pc_cnt->ctx);
-  pc_cnt->n += 1;
 }
 
 #define NPF_PUTC(VAL) do { npf_putc_cnt((int)(VAL), &pc_cnt); } while (0)
@@ -740,21 +740,15 @@ static void npf_putc_cnt(int c, void *ctx) {
 
 int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
   npf_format_spec_t fs;
-  npf_cnt_putc_ctx_t pc_cnt;
-
   char const *cur = format;
-  int fs_len;
-
+  npf_cnt_putc_ctx_t pc_cnt;
   pc_cnt.pc = pc;
   pc_cnt.ctx = pc_ctx;
   pc_cnt.n = 0;
 
   while (*cur) {
-    if (!(fs_len = (*cur != '%') ? 0 : npf_parse_format_spec(cur, &fs))) {
-      NPF_PUTC(*cur++);
-      continue;
-    }
-
+    int const fs_len = (*cur != '%') ? 0 : npf_parse_format_spec(cur, &fs);
+    if (!fs_len) { NPF_PUTC(*cur++); continue; }
     cur += fs_len;
 
     // Format specifier, convert and write argument
