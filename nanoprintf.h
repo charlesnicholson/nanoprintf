@@ -254,7 +254,7 @@ typedef enum {
 
 typedef struct {
   char prepend;          // ' ' or '+'
-  char alternative_form; // '#'
+  char alt_form;         // '#'
 
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
   npf_format_spec_field_width_t field_width_type;
@@ -343,7 +343,7 @@ int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
 #endif
   out_spec->case_adjust = 'a' - 'A'; // lowercase
   out_spec->prepend = 0;
-  out_spec->alternative_form = 0;
+  out_spec->alt_form = 0;
   out_spec->length_modifier = NPF_FMT_SPEC_LEN_MOD_NONE;
 
   while (*++cur) { // cur points at the leading '%' character
@@ -364,7 +364,7 @@ int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
         if (out_spec->prepend == 0) { out_spec->prepend = ' '; }
         continue;
       case '#':
-        out_spec->alternative_form = 1;
+        out_spec->alt_form = 1;
         continue;
       default:
         break;
@@ -491,7 +491,7 @@ int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
       out_spec->conv_spec = NPF_FMT_SPEC_CONV_FLOAT_DECIMAL;
       if (out_spec->prec_type == NPF_FMT_SPEC_PREC_NONE) { out_spec->prec = 6; }
       break;
-#endif // NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS
+#endif
 
 #if NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS == 1
     case 'n':
@@ -499,9 +499,9 @@ int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
       out_spec->conv_spec = NPF_FMT_SPEC_CONV_WRITEBACK;
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
       out_spec->prec_type = NPF_FMT_SPEC_PREC_NONE;
-#endif // NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS
+#endif
       break;
-#endif // NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS
+#endif
 
     case 'p':
       out_spec->conv_spec = NPF_FMT_SPEC_CONV_POINTER;
@@ -871,7 +871,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
 #endif
         if (!val && (fs.prec_type == NPF_FMT_SPEC_PREC_LITERAL) && !fs.prec) {
           // Zero value and explicitly-requested zero precision means "print nothing".
-          if ((fs.conv_spec == NPF_FMT_SPEC_CONV_OCTAL) && fs.alternative_form) {
+          if ((fs.conv_spec == NPF_FMT_SPEC_CONV_OCTAL) && fs.alt_form) {
             fs.prec = 1; // octal special case, print a single '0'
           }
         } else
@@ -883,11 +883,11 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
 #endif
         { cbuf_len = npf_utoa_rev(cbuf, val, base, (unsigned)fs.case_adjust); }
 
-        if (val && fs.alternative_form) { // ok to add '0' to octal immediately.
+        if (val && fs.alt_form) { // ok to add '0' to octal immediately.
           if (fs.conv_spec == NPF_FMT_SPEC_CONV_OCTAL) { cbuf[cbuf_len++] = '0'; }
         }
 
-        if (val && fs.alternative_form) { // 0x or 0b but can't write it yet.
+        if (val && fs.alt_form) { // 0x or 0b but can't write it yet.
           if (fs.conv_spec == NPF_FMT_SPEC_CONV_HEX_INT) { need_0x = 'X'; }
 #if NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS == 1
           else if (fs.conv_spec == NPF_FMT_SPEC_CONV_BINARY) { need_0x = 'B'; }
@@ -990,12 +990,12 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
 
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
     if (fs.conv_spec == NPF_FMT_SPEC_CONV_FLOAT_DECIMAL) {
-      field_pad += (!fs.prec && !fs.alternative_form); // 0-pad, no decimal point.
+      field_pad += (!fs.prec && !fs.alt_form); // 0-pad, no decimal point.
     }
-#endif // NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS
+#endif
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
     field_pad -= prec_pad;
-#endif // NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS
+#endif
     field_pad = npf_max(0, field_pad);
 #endif // NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS
 
@@ -1024,18 +1024,14 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
 #endif
 
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
-        // integral precision comes before the number.
-        while (prec_pad-- > 0) { NPF_PUTC('0'); }
+        while (prec_pad-- > 0) { NPF_PUTC('0'); } // int precision leads.
 #endif
 
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
       } else {
         // if 0 precision, skip the fractional part and '.'
         // if 0 prec + alternative form, keep the '.'
-        if (!fs.prec) {
-          cbuf += !fs.alternative_form;
-          cbuf_len -= !fs.alternative_form;
-        }
+        if (!fs.prec && !fs.alt_form) { ++cbuf; --cbuf_len; }
       }
 #endif
 
