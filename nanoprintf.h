@@ -254,7 +254,7 @@ typedef enum {
 
 typedef struct {
   char prepend;          // ' ' or '+'
-  char alt_form; // '#'
+  char alt_form;         // '#'
 
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
   npf_format_spec_field_width_t field_width_type;
