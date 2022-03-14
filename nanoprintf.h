@@ -491,7 +491,7 @@ int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
       out_spec->conv_spec = NPF_FMT_SPEC_CONV_FLOAT_DECIMAL;
       if (out_spec->prec_type == NPF_FMT_SPEC_PREC_NONE) { out_spec->prec = 6; }
       break;
-#endif // NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS
+#endif
 
 #if NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS == 1
     case 'n':
@@ -499,9 +499,9 @@ int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
       out_spec->conv_spec = NPF_FMT_SPEC_CONV_WRITEBACK;
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
       out_spec->prec_type = NPF_FMT_SPEC_PREC_NONE;
-#endif // NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS
+#endif
       break;
-#endif // NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS
+#endif
 
     case 'p':
       out_spec->conv_spec = NPF_FMT_SPEC_CONV_POINTER;
