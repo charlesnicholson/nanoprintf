@@ -544,13 +544,12 @@ int npf_itoa_rev(char *buf, npf_int_t i) {
 
 int npf_utoa_rev(char *buf, npf_uint_t i, unsigned base, unsigned case_adjust) {
   char *dst = buf;
-  if (i == 0) { *dst++ = '0'; }
   unsigned const base_c = case_adjust + 'A';
-  while (i) {
+  do {
     unsigned const d = (unsigned)(i % base);
     *dst++ = (d < 10) ? (char)('0' + d) : (char)(base_c + (d - 10));
     i /= base;
-  }
+  } while (i);
   return (int)(dst - buf);
 }
 
