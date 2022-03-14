@@ -961,9 +961,9 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
     if (fs.conv_spec != NPF_FMT_SPEC_CONV_STRING) {
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
       if (!inf_or_nan) { // float precision is after the decimal point
-        int const precision_start =
+        int const prec_start =
           (fs.conv_spec == NPF_FMT_SPEC_CONV_FLOAT_DECIMAL) ? frac_chars : cbuf_len;
-        prec_pad = npf_max(0, fs.prec - precision_start);
+        prec_pad = npf_max(0, fs.prec - prec_start);
       }
 #elif NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
       prec_pad = npf_max(0, fs.prec - cbuf_len);
