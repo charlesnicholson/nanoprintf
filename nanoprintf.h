@@ -640,14 +640,15 @@ int npf_ftoa_rev(char *buf, float f, unsigned base,
   uint64_t int_part, frac_part;
   int frac_b10nexp;
   {
+    char *dst = buf;
     int err = 0;
-    if (f == -INFINITY) { *buf++ = '-'; err = 4; }
     if (f != f) { err = 1; }
+    if (f == -INFINITY) { *dst++ = '-'; err = 4; }
     if (f == INFINITY) { err = 4; }
     if (!err && !npf_fsplit_abs(f, &int_part, &frac_part, &frac_b10nexp)) { err = 7; }
     if (err) {
-      for (int i = 0; i < 3; ++i) { *buf++ = (char)(" NANINFOOR"[err + i] + case_adj); }
-      return (f == -INFINITY) ? -4 : -3;
+      for (int i = 0; i < 3; ++i) { *dst++ = (char)(" NANINFOOR"[err + i] + case_adj); }
+      return -(int)(dst - buf);
     }
   }
 
