@@ -365,8 +365,7 @@ int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
       case '#':
         out_spec->alt_form = 1;
         continue;
-      default:
-        break;
+      default: break;
     }
     break;
   }
@@ -441,9 +440,7 @@ int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
       out_spec->length_modifier = NPF_FMT_SPEC_LEN_MOD_LARGE_PTRDIFFT;
       break;
 #endif
-    default:
-      --cur;
-      break;
+    default: --cur; break;
   }
 
   switch (*cur++) { // Conversion specifier
@@ -518,8 +515,7 @@ int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
       break;
 #endif
 
-    default:
-      return 0;
+    default: return 0;
   }
 
   return (int)(cur - format);
@@ -530,10 +526,7 @@ void npf_bufputc(int c, void *ctx) {
   if (bpc->cur < bpc->len - 1) { bpc->dst[bpc->cur++] = (char)c; }
 }
 
-void npf_bufputc_nop(int c, void *ctx) {
-  (void)c;
-  (void)ctx;
-}
+void npf_bufputc_nop(int c, void *ctx) { (void)c; (void)ctx; }
 
 int npf_itoa_rev(char *buf, npf_int_t i) {
   char *dst = buf;
@@ -819,8 +812,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
           NPF_EXTRACT(LARGE_SIZET, ssize_t, ssize_t);
           NPF_EXTRACT(LARGE_PTRDIFFT, ptrdiff_t, ptrdiff_t);
 #endif
-          default:
-            break;
+          default: break;
         }
 
         sign_c = (val < 0) ? '-' : fs.prepend;
@@ -859,8 +851,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
           NPF_EXTRACT(LARGE_SIZET, size_t, size_t);
           NPF_EXTRACT(LARGE_PTRDIFFT, size_t, size_t);
 #endif
-          default:
-            break;
+          default: break;
         }
 
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
@@ -915,8 +906,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
           NPF_WRITEBACK(LARGE_SIZET, size_t);
           NPF_WRITEBACK(LARGE_PTRDIFFT, ptrdiff_t);
 #endif
-          default:
-            break;
+          default: break;
         } break;
 #endif
 
@@ -946,8 +936,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
         }
       } break;
 #endif
-      default:
-        break;
+      default: break;
     }
 
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
