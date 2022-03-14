@@ -253,6 +253,7 @@ typedef enum {
 } npf_format_spec_conversion_t;
 
 typedef struct {
+  unsigned base;
   char prepend;          // ' ' or '+'
   char alt_form;         // '#'
 
@@ -443,6 +444,7 @@ int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
     default: --cur; break;
   }
 
+  out_spec->base = 10;
   switch (*cur++) { // Conversion specifier
     case '%':
       out_spec->conv_spec = NPF_FMT_SPEC_CONV_PERCENT;
@@ -470,6 +472,7 @@ int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
 
     case 'o':
       out_spec->conv_spec = NPF_FMT_SPEC_CONV_OCTAL;
+      out_spec->base = 8;
       break;
     case 'u':
       out_spec->conv_spec = NPF_FMT_SPEC_CONV_UNSIGNED_INT;
@@ -478,6 +481,7 @@ int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
     case 'X':
       out_spec->case_adjust = 0;
     case 'x':
+      out_spec->base = 16;
       out_spec->conv_spec = NPF_FMT_SPEC_CONV_HEX_INT;
       break;
 
@@ -835,8 +839,6 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
       case NPF_FMT_SPEC_CONV_OCTAL:
       case NPF_FMT_SPEC_CONV_HEX_INT:
       case NPF_FMT_SPEC_CONV_UNSIGNED_INT: {
-        unsigned const base = (fs.conv_spec == NPF_FMT_SPEC_CONV_OCTAL) ?
-          8 : (unsigned)(((fs.conv_spec == NPF_FMT_SPEC_CONV_HEX_INT) ? 16 : 10));
         npf_uint_t val = 0;
 
         switch (fs.length_modifier) {
@@ -867,10 +869,10 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
 #endif
 #if NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS == 1
         if (fs.conv_spec == NPF_FMT_SPEC_CONV_BINARY) {
-          cbuf_len = npf_bin_len(val); u.binval = val; (void)base;
+          cbuf_len = npf_bin_len(val); u.binval = val;
         } else
 #endif
-        { cbuf_len = npf_utoa_rev(cbuf, val, base, (unsigned)fs.case_adjust); }
+        { cbuf_len = npf_utoa_rev(cbuf, val, fs.base, (unsigned)fs.case_adjust); }
 
         if (val && fs.alt_form) { // ok to add '0' to octal immediately.
           if (fs.conv_spec == NPF_FMT_SPEC_CONV_OCTAL) { cbuf[cbuf_len++] = '0'; }
