@@ -640,6 +640,12 @@ int npf_ftoa_rev(char *buf, float f, unsigned base,
   uint64_t int_part, frac_part;
   int frac_b10nexp;
 
+  if (f == -INFINITY) {
+    *buf++ = '-';
+    for (int i = 0; i < 3; ++i) { *buf++ = (char)("INF"[i] + case_adj); }
+    return -4;
+  }
+
   if (f != f) {
     for (int i = 0; i < 3; ++i) { *buf++ = (char)("NAN"[i] + case_adj); }
     return -3;
@@ -648,12 +654,6 @@ int npf_ftoa_rev(char *buf, float f, unsigned base,
   if (f == INFINITY) {
     for (int i = 0; i < 3; ++i) { *buf++ = (char)("INF"[i] + case_adj); }
     return -3;
-  }
-
-  if (f == -INFINITY) {
-    *buf++ = '-';
-    for (int i = 0; i < 3; ++i) { *buf++ = (char)("INF"[i] + case_adj); }
-    return -4;
   }
 
   if (!npf_fsplit_abs(f, &int_part, &frac_part, &frac_b10nexp)) {
