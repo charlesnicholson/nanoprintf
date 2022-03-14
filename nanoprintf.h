@@ -344,7 +344,6 @@ int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
   out_spec->case_adjust = 'a' - 'A'; // lowercase
   out_spec->prepend = 0;
   out_spec->alt_form = 0;
-  out_spec->length_modifier = NPF_FMT_SPEC_LEN_MOD_NONE;
 
   while (*++cur) { // cur points at the leading '%' character
     switch (*cur) { // Optional flags
@@ -408,6 +407,7 @@ int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
   }
 #endif
 
+  out_spec->length_modifier = NPF_FMT_SPEC_LEN_MOD_NONE;
   switch (*cur++) { // Length modifier
     case 'h':
       out_spec->length_modifier = NPF_FMT_SPEC_LEN_MOD_SHORT;
