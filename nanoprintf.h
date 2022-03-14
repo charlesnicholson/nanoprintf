@@ -639,17 +639,26 @@ int npf_ftoa_rev(char *buf, float f, unsigned base,
                  char case_adj, int *out_frac_chars) {
   uint64_t int_part, frac_part;
   int frac_b10nexp;
-  {
-    char *dst = buf;
-    int err = 0;
-    if (f != f) { err = 1; }
-    if (f == -INFINITY) { *dst++ = '-'; err = 4; }
-    if (f == INFINITY) { err = 4; }
-    if (!err && !npf_fsplit_abs(f, &int_part, &frac_part, &frac_b10nexp)) { err = 7; }
-    if (err) {
-      for (int i = 0; i < 3; ++i) { *dst++ = (char)(" NANINFOOR"[err + i] + case_adj); }
-      return -(int)(dst - buf);
-    }
+
+  if (f != f) {
+    for (int i = 0; i < 3; ++i) { *buf++ = (char)("NAN"[i] + case_adj); }
+    return -3;
+  }
+
+  if (f == INFINITY) {
+    for (int i = 0; i < 3; ++i) { *buf++ = (char)("INF"[i] + case_adj); }
+    return -3;
+  }
+
+  if (f == -INFINITY) {
+    *buf++ = '-';
+    for (int i = 0; i < 3; ++i) { *buf++ = (char)("INF"[i] + case_adj); }
+    return -4;
+  }
+
+  if (!npf_fsplit_abs(f, &int_part, &frac_part, &frac_b10nexp)) {
+    for (int i = 0; i < 3; ++i) { *buf++ = (char)("OOR"[i] + case_adj); }
+    return -3;
   }
 
   unsigned const base_c = 'A' + (unsigned)case_adj;
