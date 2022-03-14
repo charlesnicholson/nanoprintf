@@ -547,7 +547,7 @@ int npf_utoa_rev(char *buf, npf_uint_t i, unsigned base, unsigned case_adjust) {
   unsigned const base_c = case_adjust + 'A';
   do {
     unsigned const d = (unsigned)(i % base);
-    *dst++ = (d < 10) ? (char)('0' + d) : (char)(base_c + (d - 10));
+    *dst++ = (char)((d < 10) ? ('0' + d) : (base_c + (d - 10)));
     i /= base;
   } while (i);
   return (int)(dst - buf);
