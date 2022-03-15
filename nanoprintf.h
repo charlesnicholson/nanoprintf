@@ -726,8 +726,10 @@ static void npf_putc_cnt(int c, void *ctx) {
 }
 
 static void npf_put0x(int c, void *ctx) {
-  npf_putc_cnt('0', ctx);
-  npf_putc_cnt(c, ctx);
+  if (c) {
+    npf_putc_cnt('0', ctx);
+    npf_putc_cnt(c, ctx);
+  }
 }
 
 #define NPF_PUTC(VAL) do { npf_putc_cnt((int)(VAL), &pc_cnt); } while (0)
@@ -1003,14 +1005,14 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
       if (pad_c == '0') {
         if (sign_c) { NPF_PUTC(sign_c); sign_c = 0; }
         // Pad byte is '0', write '0x' before '0' pad chars.
-        if (need_0x) { NPF_PUT_0X(need_0x); }
+        NPF_PUT_0X(need_0x);
       }
       while (field_pad-- > 0) { NPF_PUTC(pad_c); }
       // Pad byte is ' ', write '0x' after ' ' pad chars but before number.
-      if ((pad_c != '0') && need_0x) { NPF_PUT_0X(need_0x); }
+      if (pad_c != '0') { NPF_PUT_0X(need_0x); }
     } else
 #endif
-    { if (need_0x) { NPF_PUT_0X(need_0x); } } // no pad, '0x' requested.
+    { NPF_PUT_0X(need_0x); } // no pad, '0x' requested.
 
     // Write the converted payload
     if (fs.conv_spec == NPF_FMT_SPEC_CONV_STRING) {
