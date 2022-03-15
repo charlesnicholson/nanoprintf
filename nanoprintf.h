@@ -676,7 +676,7 @@ int npf_ftoa_rev(char *buf, float f, unsigned base,
 
 #if NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS == 1
 int npf_bin_len(npf_uint_t u) {
-  // Return the length of the string representation of 'u', preferring intrinsics.
+  // Return the length of the binary string format of 'u', preferring intrinsics.
   if (!u) { return 1; }
 
 #ifdef _MSC_VER // Win64, use _BSR64 for everything. If x86, use _BSR when non-large.
@@ -691,7 +691,6 @@ int npf_bin_len(npf_uint_t u) {
     unsigned long idx;
     NPF_CLZ(&idx, u);
     return (int)(idx + 1);
-    #undef NPF_CLZ
   #endif
 #elif defined(NANOPRINTF_CLANG) || defined(NANOPRINTF_GCC_PAST_4_6)
   #define NPF_HAVE_BUILTIN_CLZ
@@ -701,14 +700,15 @@ int npf_bin_len(npf_uint_t u) {
     #define NPF_CLZ(X) ((sizeof(long) * 8) - (size_t)__builtin_clzl(X))
   #endif
   return (int)NPF_CLZ(u);
-  #undef NPF_CLZ
 #endif
 
-#ifndef NPF_HAVE_BUILTIN_CLZ // slow but small software fallback
+#ifndef NPF_HAVE_BUILTIN_CLZ
   int n;
-  for (n = 0; u; ++n, u >>= 1);
+  for (n = 0; u; ++n, u >>= 1); // slow but small software fallback
   return n;
+#else
   #undef NPF_HAVE_BUILTIN_CLZ
+  #undef NPF_CLZ
 #endif
 }
 #endif
