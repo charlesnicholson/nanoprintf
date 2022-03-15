@@ -349,7 +349,7 @@ int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
     switch (*cur) { // Optional flags
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
       case '-':
-        out_spec->left_justified = 1;
+        out_spec->left_justified = '-';
         out_spec->leading_zero_pad = 0;
         continue;
       case '0':
@@ -363,7 +363,7 @@ int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
         if (out_spec->prepend == 0) { out_spec->prepend = ' '; }
         continue;
       case '#':
-        out_spec->alt_form = 1;
+        out_spec->alt_form = '#';
         continue;
       default: break;
     }

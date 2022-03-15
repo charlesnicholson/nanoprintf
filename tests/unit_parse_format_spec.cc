@@ -26,12 +26,12 @@ TEST_CASE("npf_parse_format_spec") {
 
     SUBCASE("left-justify specified") {
       REQUIRE(npf_parse_format_spec("%-u", &spec) == 3);
-      REQUIRE(spec.left_justified == 1);
+      REQUIRE(spec.left_justified);
     }
 
     SUBCASE("left-justify specified multiple times") {
       REQUIRE(npf_parse_format_spec("%-----u", &spec) == 7);
-      REQUIRE(spec.left_justified == 1);
+      REQUIRE(spec.left_justified);
     }
 
     /*
@@ -114,12 +114,12 @@ TEST_CASE("npf_parse_format_spec") {
 
     SUBCASE("alternative form specified") {
       REQUIRE(npf_parse_format_spec("%#u", &spec) == 3);
-      REQUIRE(spec.alt_form == 1);
+      REQUIRE(spec.alt_form);
     }
 
     SUBCASE("alternative form specified multiple times") {
       REQUIRE(npf_parse_format_spec("%#####u", &spec) == 7);
-      REQUIRE(spec.alt_form == 1);
+      REQUIRE(spec.alt_form);
     }
 
     /*
@@ -150,15 +150,15 @@ TEST_CASE("npf_parse_format_spec") {
 
     SUBCASE("leading zero ignored when also left-justified") {
       REQUIRE(npf_parse_format_spec("%0-u", &spec) == 4);
-      REQUIRE(spec.left_justified == 1);
+      REQUIRE(spec.left_justified);
       REQUIRE(!spec.leading_zero_pad);
 
       REQUIRE(npf_parse_format_spec("%-0u", &spec) == 4);
-      REQUIRE(spec.left_justified == 1);
+      REQUIRE(spec.left_justified);
       REQUIRE(!spec.leading_zero_pad);
 
       REQUIRE(npf_parse_format_spec("%0-0-0-u", &spec) == 8);
-      REQUIRE(spec.left_justified == 1);
+      REQUIRE(spec.left_justified);
       REQUIRE(!spec.leading_zero_pad);
     }
   }
@@ -373,7 +373,7 @@ TEST_CASE("npf_parse_format_spec") {
     SUBCASE("string negative left-justify field width") {
       REQUIRE(npf_parse_format_spec("%-15s", &spec) == 5);
       REQUIRE(spec.conv_spec == NPF_FMT_SPEC_CONV_STRING);
-      REQUIRE(spec.left_justified == 1);
+      REQUIRE(spec.left_justified);
       REQUIRE(spec.field_width == 15);
     }
 
