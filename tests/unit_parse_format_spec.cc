@@ -114,12 +114,12 @@ TEST_CASE("npf_parse_format_spec") {
 
     SUBCASE("alternative form specified") {
       REQUIRE(npf_parse_format_spec("%#u", &spec) == 3);
-      REQUIRE(spec.alt_form == 1);
+      REQUIRE(spec.alt_form);
     }
 
     SUBCASE("alternative form specified multiple times") {
       REQUIRE(npf_parse_format_spec("%#####u", &spec) == 7);
-      REQUIRE(spec.alt_form == 1);
+      REQUIRE(spec.alt_form);
     }
 
     /*
