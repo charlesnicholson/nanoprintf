@@ -676,44 +676,39 @@ int npf_ftoa_rev(char *buf, float f, unsigned base,
 
 #if NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS == 1
 int npf_bin_len(npf_uint_t u) {
-  // Return the length of the string representation of 'u', preferring intrinsics.
+  // Return the length of the binary string format of 'u', preferring intrinsics.
+  if (!u) { return 1; }
 
 #ifdef _MSC_VER // Win64, use _BSR64 for everything. If x86, use _BSR when non-large.
   #ifdef _M_X64
     #define NPF_HAVE_BUILTIN_CLZ
-    unsigned long idx;
-    _BitScanReverse64(&idx, u);
-    return u ? (int)(idx + 1) : 1;
+    #define NPF_CLZ _BitScanReverse64
   #elif NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 0
     #define NPF_HAVE_BUILTIN_CLZ
+    #define NPF_CLZ _BitScanReverse
+  #endif
+  #ifdef NPF_HAVE_BUILTIN_CLZ
     unsigned long idx;
-    _BitScanReverse(&idx, u);
-    return u ? (int)(idx + 1) : 1;
+    NPF_CLZ(&idx, u);
+    return (int)(idx + 1);
   #endif
-#else
-  #if NANOPRINTF_CLANG || NANOPRINTF_GCC_PAST_4_6
-    #define NPF_HAVE_BUILTIN_CLZ
+#elif defined(NANOPRINTF_CLANG) || defined(NANOPRINTF_GCC_PAST_4_6)
+  #define NPF_HAVE_BUILTIN_CLZ
+  #if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
+    #define NPF_CLZ(X) ((sizeof(long long) * 8) - (size_t)__builtin_clzll(X))
+  #else
+    #define NPF_CLZ(X) ((sizeof(long) * 8) - (size_t)__builtin_clzl(X))
   #endif
-
-  #ifdef NPF_HAVE_BUILTIN_CLZ // modern gcc or any clang
-    #if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
-      #define NANOPRINTF_CLZ(X) ((sizeof(long long) * 8) - (size_t)__builtin_clzll(X))
-    #else
-      #define NANOPRINTF_CLZ(X) ((sizeof(long) * 8) - (size_t)__builtin_clzl(X))
-    #endif
-    return u ? (int)NANOPRINTF_CLZ(u) : 1;
-    #undef NANOPRINTF_CLZ
-  #endif
+  return (int)NPF_CLZ(u);
 #endif
 
-#ifndef NPF_HAVE_BUILTIN_CLZ // slow but small software fallback
+#ifndef NPF_HAVE_BUILTIN_CLZ
   int n;
-  for (n = u ? 0 : 1; u; ++n, u >>= 1);
+  for (n = 0; u; ++n, u >>= 1); // slow but small software fallback
   return n;
-#endif
-
-#ifdef NPF_HAVE_BUILTIN_CLZ
+#else
   #undef NPF_HAVE_BUILTIN_CLZ
+  #undef NPF_CLZ
 #endif
 }
 #endif
