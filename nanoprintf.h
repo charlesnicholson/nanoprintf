@@ -341,7 +341,7 @@ int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
   out_spec->left_justified = 0;
   out_spec->leading_zero_pad = 0;
 #endif
-  out_spec->case_adjust = 'a' - 'A'; // lowercase
+  out_spec->case_adjust = 'a'-'A'; // lowercase
   out_spec->prepend = 0;
   out_spec->alt_form = 0;
 
@@ -733,12 +733,12 @@ static void npf_putc_cnt(int c, void *ctx) {
 #define NPF_PUTC(VAL) do { npf_putc_cnt((int)(VAL), &pc_cnt); } while (0)
 
 #define NPF_EXTRACT(MOD, CAST_TO, EXTRACT_AS) \
-  case NPF_FMT_SPEC_LEN_MOD_##MOD: val = (CAST_TO)va_arg(vlist, EXTRACT_AS); break
+  case NPF_FMT_SPEC_LEN_MOD_##MOD: val = (CAST_TO)va_arg(args, EXTRACT_AS); break
 
 #define NPF_WRITEBACK(MOD, TYPE) \
-  case NPF_FMT_SPEC_LEN_MOD_##MOD: *(va_arg(vlist, TYPE *)) = (TYPE)pc_cnt.n; break
+  case NPF_FMT_SPEC_LEN_MOD_##MOD: *(va_arg(args, TYPE *)) = (TYPE)pc_cnt.n; break
 
-int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
+int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
   npf_format_spec_t fs;
   char const *cur = format;
   npf_cnt_putc_ctx_t pc_cnt;
@@ -772,7 +772,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
     if (fs.field_width_type == NPF_FMT_SPEC_FIELD_WIDTH_STAR) {
       fs.field_width_type = NPF_FMT_SPEC_FIELD_WIDTH_LITERAL;
-      fs.field_width = va_arg(vlist, int);
+      fs.field_width = va_arg(args, int);
       if (fs.field_width < 0) {
         fs.field_width = -fs.field_width;
         fs.left_justified = 1;
@@ -783,7 +783,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
     if (fs.prec_type == NPF_FMT_SPEC_PREC_STAR) {
       fs.prec_type = NPF_FMT_SPEC_PREC_NONE;
-      fs.prec = va_arg(vlist, int);
+      fs.prec = va_arg(args, int);
       if (fs.prec >= 0) { fs.prec_type = NPF_FMT_SPEC_PREC_LITERAL; }
     }
 #endif
@@ -796,12 +796,12 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
         break;
 
       case NPF_FMT_SPEC_CONV_CHAR:
-        *cbuf = (char)va_arg(vlist, int);
+        *cbuf = (char)va_arg(args, int);
         ++cbuf_len;
         break;
 
       case NPF_FMT_SPEC_CONV_STRING: {
-        cbuf = va_arg(vlist, char *);
+        cbuf = va_arg(args, char *);
         for (char const *s = cbuf; *s; ++s, ++cbuf_len); // strlen
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
         if (fs.prec_type == NPF_FMT_SPEC_PREC_LITERAL) {
@@ -898,10 +898,9 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
       } break;
 
       case NPF_FMT_SPEC_CONV_POINTER: {
-        cbuf_len = npf_utoa_rev(cbuf, (npf_uint_t)(uintptr_t)va_arg(vlist, void *),
-          16, 'a' - 'A');
-        cbuf[cbuf_len++] = 'x';
-        cbuf[cbuf_len++] = '0';
+        cbuf_len =
+          npf_utoa_rev(cbuf, (npf_uint_t)(uintptr_t)va_arg(args, void *), 16, 'a'-'A');
+        need_0x = 'x';
       } break;
 
 #if NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS == 1
@@ -926,9 +925,9 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list vlist) {
       case NPF_FMT_SPEC_CONV_FLOAT_DECIMAL: {
         float val;
         if (fs.length_modifier == NPF_FMT_SPEC_LEN_MOD_LONG_DOUBLE) {
-          val = (float)va_arg(vlist, long double);
+          val = (float)va_arg(args, long double);
         } else {
-          val = (float)va_arg(vlist, double);
+          val = (float)va_arg(args, double);
         }
 
         sign_c = (val < 0) ? '-' : fs.prepend;
