@@ -1002,11 +1002,11 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
       if (pad_c == '0') {
         if (sign_c) { NPF_PUTC(sign_c); sign_c = 0; }
         // Pad byte is '0', write '0x' before '0' pad chars.
-        if (need_0x) { NPF_PUTC('0'); NPF_PUTC(need_0x); need_0x = 0; }
+        if (need_0x) { NPF_PUTC('0'); NPF_PUTC(need_0x); }
       }
       while (field_pad-- > 0) { NPF_PUTC(pad_c); }
       // Pad byte is ' ', write '0x' after ' ' pad chars but before number.
-      if (need_0x) { NPF_PUTC('0'); NPF_PUTC(need_0x); }
+      if ((pad_c != '0') && need_0x) { NPF_PUTC('0'); NPF_PUTC(need_0x); }
     } else
 #endif
     { if (need_0x) { NPF_PUTC('0'); NPF_PUTC(need_0x); } } // no pad, '0x' requested.
