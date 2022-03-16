@@ -230,6 +230,9 @@ typedef enum {
   NPF_FMT_SPEC_CONV_CHAR,         // 'c'
   NPF_FMT_SPEC_CONV_STRING,       // 's'
   NPF_FMT_SPEC_CONV_SIGNED_INT,   // 'i', 'd'
+#if NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS == 1
+  NPF_FMT_SPEC_CONV_BINARY,       // 'b'
+#endif
   NPF_FMT_SPEC_CONV_OCTAL,        // 'o'
   NPF_FMT_SPEC_CONV_HEX_INT,      // 'x', 'X'
   NPF_FMT_SPEC_CONV_UNSIGNED_INT, // 'u'
@@ -239,9 +242,6 @@ typedef enum {
 #endif
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
   , NPF_FMT_SPEC_CONV_FLOAT_DECIMAL // 'f', 'F'
-#endif
-#if NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS == 1
-  , NPF_FMT_SPEC_CONV_BINARY      // 'b'
 #endif
 } npf_format_spec_conversion_t;
 
