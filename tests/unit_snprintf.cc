@@ -14,6 +14,12 @@
 
 TEST_CASE("npf_snprintf") {
   char buf[128];
+  buf[0] = '$';
+
+  SUBCASE("zero-sized buffer") {
+    REQUIRE(npf_snprintf(buf, 0, "abcd") == 4);
+    REQUIRE(buf[0] == '$');
+  }
 
   SUBCASE("empty string has null terminator") {
     memset(buf, 0xFF, sizeof(buf));
