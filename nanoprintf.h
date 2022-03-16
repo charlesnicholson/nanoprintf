@@ -201,20 +201,13 @@ NPF_VISIBILITY int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format,
   #pragma warning(disable:4711) // selected for inline
 #endif
 
-#if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
+#if (NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1) || \
+    (NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1)
 typedef enum {
-  NPF_FMT_SPEC_FIELD_WIDTH_NONE,
-  NPF_FMT_SPEC_FIELD_WIDTH_STAR,
-  NPF_FMT_SPEC_FIELD_WIDTH_LITERAL
-} npf_format_spec_field_width_t;
-#endif
-
-#if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
-typedef enum {
-  NPF_FMT_SPEC_PREC_NONE,
-  NPF_FMT_SPEC_PREC_STAR,
-  NPF_FMT_SPEC_PREC_LITERAL
-} npf_format_spec_prec_t;
+  NPF_FMT_SPEC_OPT_NONE,
+  NPF_FMT_SPEC_OPT_LITERAL,
+  NPF_FMT_SPEC_OPT_STAR,
+} npf_fmt_spec_opt_t;
 #endif
 
 typedef enum {
@@ -257,14 +250,14 @@ typedef struct {
   char alt_form;         // '#'
 
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
-  npf_format_spec_field_width_t field_width_type;
+  npf_fmt_spec_opt_t field_width_opt;
   int field_width;
   char left_justified;   // '-'
   char leading_zero_pad; // '0'
 #endif
 
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
-  npf_format_spec_prec_t prec_type;
+  npf_fmt_spec_opt_t prec_type;
   int prec;
 #endif
 
@@ -371,14 +364,14 @@ int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
   }
 
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
-  out_spec->field_width_type = NPF_FMT_SPEC_FIELD_WIDTH_NONE;
+  out_spec->field_width_opt = NPF_FMT_SPEC_OPT_NONE;
   if (*cur == '*') {
-    out_spec->field_width_type = NPF_FMT_SPEC_FIELD_WIDTH_STAR;
+    out_spec->field_width_opt = NPF_FMT_SPEC_OPT_STAR;
     ++cur;
   } else {
     out_spec->field_width = 0;
     while ((*cur >= '0') && (*cur <= '9')) {
-      out_spec->field_width_type = NPF_FMT_SPEC_FIELD_WIDTH_LITERAL;
+      out_spec->field_width_opt = NPF_FMT_SPEC_OPT_LITERAL;
       out_spec->field_width = (out_spec->field_width * 10) + (*cur++ - '0');
     }
   }
@@ -386,18 +379,18 @@ int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
 
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
   out_spec->prec = 0;
-  out_spec->prec_type = NPF_FMT_SPEC_PREC_NONE;
+  out_spec->prec_type = NPF_FMT_SPEC_OPT_NONE;
   if (*cur == '.') {
     ++cur;
     if (*cur == '*') {
-      out_spec->prec_type = NPF_FMT_SPEC_PREC_STAR;
+      out_spec->prec_type = NPF_FMT_SPEC_OPT_STAR;
       ++cur;
     } else {
       if (*cur == '-') {
         ++cur;
-        out_spec->prec_type = NPF_FMT_SPEC_PREC_NONE;
+        out_spec->prec_type = NPF_FMT_SPEC_OPT_NONE;
       } else {
-        out_spec->prec_type = NPF_FMT_SPEC_PREC_LITERAL;
+        out_spec->prec_type = NPF_FMT_SPEC_OPT_LITERAL;
       }
       while ((*cur >= '0') && (*cur <= '9')) {
         out_spec->prec = (out_spec->prec * 10) + (*cur++ - '0');
@@ -447,13 +440,13 @@ int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
     case '%':
       out_spec->conv_spec = NPF_FMT_SPEC_CONV_PERCENT;
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
-      out_spec->prec_type = NPF_FMT_SPEC_PREC_NONE;
+      out_spec->prec_type = NPF_FMT_SPEC_OPT_NONE;
 #endif
       break;
     case 'c':
       out_spec->conv_spec = NPF_FMT_SPEC_CONV_CHAR;
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
-      out_spec->prec_type = NPF_FMT_SPEC_PREC_NONE;
+      out_spec->prec_type = NPF_FMT_SPEC_OPT_NONE;
 #endif
       break;
     case 's':
@@ -486,7 +479,7 @@ int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
       out_spec->case_adjust = 0;
     case 'f':
       out_spec->conv_spec = NPF_FMT_SPEC_CONV_FLOAT_DECIMAL;
-      if (out_spec->prec_type == NPF_FMT_SPEC_PREC_NONE) { out_spec->prec = 6; }
+      if (out_spec->prec_type == NPF_FMT_SPEC_OPT_NONE) { out_spec->prec = 6; }
       break;
 #endif
 
@@ -495,7 +488,7 @@ int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
       // todo: reject string if flags or width or precision exist
       out_spec->conv_spec = NPF_FMT_SPEC_CONV_WRITEBACK;
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
-      out_spec->prec_type = NPF_FMT_SPEC_PREC_NONE;
+      out_spec->prec_type = NPF_FMT_SPEC_OPT_NONE;
 #endif
       break;
 #endif
@@ -503,7 +496,7 @@ int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
     case 'p':
       out_spec->conv_spec = NPF_FMT_SPEC_CONV_POINTER;
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
-      out_spec->prec_type = NPF_FMT_SPEC_PREC_NONE;
+      out_spec->prec_type = NPF_FMT_SPEC_OPT_NONE;
 #endif
       break;
 
@@ -765,8 +758,8 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
 #endif
 
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
-    if (fs.field_width_type == NPF_FMT_SPEC_FIELD_WIDTH_STAR) {
-      fs.field_width_type = NPF_FMT_SPEC_FIELD_WIDTH_LITERAL;
+    if (fs.field_width_opt == NPF_FMT_SPEC_OPT_STAR) {
+      fs.field_width_opt = NPF_FMT_SPEC_OPT_LITERAL;
       fs.field_width = va_arg(args, int);
       if (fs.field_width < 0) {
         fs.field_width = -fs.field_width;
@@ -776,10 +769,10 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
 #endif
 
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
-    if (fs.prec_type == NPF_FMT_SPEC_PREC_STAR) {
-      fs.prec_type = NPF_FMT_SPEC_PREC_NONE;
+    if (fs.prec_type == NPF_FMT_SPEC_OPT_STAR) {
+      fs.prec_type = NPF_FMT_SPEC_OPT_NONE;
       fs.prec = va_arg(args, int);
-      if (fs.prec >= 0) { fs.prec_type = NPF_FMT_SPEC_PREC_LITERAL; }
+      if (fs.prec >= 0) { fs.prec_type = NPF_FMT_SPEC_OPT_LITERAL; }
     }
 #endif
 
@@ -799,7 +792,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
         cbuf = va_arg(args, char *);
         for (char const *s = cbuf; *s; ++s, ++cbuf_len); // strlen
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
-        if (fs.prec_type == NPF_FMT_SPEC_PREC_LITERAL) {
+        if (fs.prec_type == NPF_FMT_SPEC_OPT_LITERAL) {
           cbuf_len = npf_min(fs.prec, cbuf_len); // prec truncates strings
         }
 #endif
@@ -829,7 +822,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
         zero = !val;
 #endif
         // special case, if prec and value are 0, skip
-        if (!val && (fs.prec_type == NPF_FMT_SPEC_PREC_LITERAL) && !fs.prec) {
+        if (!val && (fs.prec_type == NPF_FMT_SPEC_OPT_LITERAL) && !fs.prec) {
           cbuf_len = 0;
         } else
 #endif
@@ -865,7 +858,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
         zero = !val;
 #endif
-        if (!val && (fs.prec_type == NPF_FMT_SPEC_PREC_LITERAL) && !fs.prec) {
+        if (!val && (fs.prec_type == NPF_FMT_SPEC_OPT_LITERAL) && !fs.prec) {
           // Zero value and explicitly-requested zero precision means "print nothing".
           if ((fs.conv_spec == NPF_FMT_SPEC_CONV_OCTAL) && fs.alt_form) {
             fs.prec = 1; // octal special case, print a single '0'
@@ -946,13 +939,13 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
 
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
     // Compute the field width pad character
-    if (fs.field_width_type == NPF_FMT_SPEC_FIELD_WIDTH_LITERAL) {
+    if (fs.field_width_opt == NPF_FMT_SPEC_OPT_LITERAL) {
       if (fs.leading_zero_pad) { // '0' flag is only legal with numeric types
         if ((fs.conv_spec != NPF_FMT_SPEC_CONV_STRING) &&
             (fs.conv_spec != NPF_FMT_SPEC_CONV_CHAR) &&
             (fs.conv_spec != NPF_FMT_SPEC_CONV_PERCENT)) {
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
-          if ((fs.prec_type == NPF_FMT_SPEC_PREC_LITERAL) && !fs.prec && zero) {
+          if ((fs.prec_type == NPF_FMT_SPEC_OPT_LITERAL) && !fs.prec && zero) {
             pad_c = ' ';
           } else
 #endif
