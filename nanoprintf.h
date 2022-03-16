@@ -274,21 +274,17 @@ typedef struct {
   typedef uintmax_t npf_uint_t;
 #endif
 
-static int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec);
-
 typedef struct {
   char *dst;
   size_t len;
   size_t cur;
 } npf_bufputc_ctx_t;
 
+static int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec);
 static void npf_bufputc(int c, void *ctx);
 static void npf_bufputc_nop(int c, void *ctx);
 static int npf_itoa_rev(char *buf, npf_int_t i);
-static int npf_utoa_rev(char *buf,
-                        npf_uint_t i,
-                        unsigned base,
-                        unsigned case_adjust);
+static int npf_utoa_rev(char *buf, npf_uint_t i, unsigned base, unsigned case_adjust);
 
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
 static int npf_fsplit_abs(float f,
@@ -516,8 +512,8 @@ int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
 
 int npf_itoa_rev(char *buf, npf_int_t i) {
   char *dst = buf;
-  int const neg = (i >= 0) ? 1 : -1;
-  do { *dst++ = (char)('0' + (neg * (i % 10))); i /= 10; } while (i);
+  int const sign = (i >= 0) ? 1 : -1;
+  do { *dst++ = (char)('0' + (sign * (i % 10))); i /= 10; } while (i);
   return (int)(dst - buf);
 }
 
@@ -619,14 +615,14 @@ int npf_ftoa_rev(char *buf, float f, unsigned base,
   }
 
   if ((f == INFINITY) || (f == -INFINITY)) {
-    for (int i = 0; i < 3; ++i) { *buf++ = (char)("INF"[2-i] + case_adjust); }
+    for (int i = 0; i < 3; ++i) { *buf++ = (char)("FNI"[i] + case_adjust); }
     return -3;
   }
 
   uint64_t int_part, frac_part;
   int frac_base10_neg_exp;
   if (npf_fsplit_abs(f, &int_part, &frac_part, &frac_base10_neg_exp) == 0) {
-    for (int i = 0; i < 3; ++i) { *buf++ = (char)("OOR"[2-i] + case_adjust); }
+    for (int i = 0; i < 3; ++i) { *buf++ = (char)("ROO"[i] + case_adjust); }
     return -3;
   }
 
@@ -715,7 +711,7 @@ typedef struct npf_cnt_putc_ctx {
 static void npf_putc_cnt(int c, void *ctx) {
   npf_cnt_putc_ctx_t *pc_cnt = (npf_cnt_putc_ctx_t *)ctx;
   ++pc_cnt->n;
-  pc_cnt->pc(c, pc_cnt->ctx);
+  pc_cnt->pc(c, pc_cnt->ctx); // sibling-call optimization
 }
 
 #define NPF_PUTC(VAL) do { npf_putc_cnt((int)(VAL), &pc_cnt); } while (0)
