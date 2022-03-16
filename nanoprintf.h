@@ -514,13 +514,6 @@ int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
   return (int)(cur - format);
 }
 
-void npf_bufputc(int c, void *ctx) {
-  npf_bufputc_ctx_t *bpc = (npf_bufputc_ctx_t *)ctx;
-  if (bpc->cur < bpc->len - 1) { bpc->dst[bpc->cur++] = (char)c; }
-}
-
-void npf_bufputc_nop(int c, void *ctx) { (void)c; (void)ctx; }
-
 int npf_itoa_rev(char *buf, npf_int_t i) {
   char *dst = buf;
   int const neg = (i >= 0) ? 1 : -1;
@@ -705,6 +698,13 @@ int npf_bin_len(npf_uint_t u) {
 #endif
 }
 #endif
+
+void npf_bufputc(int c, void *ctx) {
+  npf_bufputc_ctx_t *bpc = (npf_bufputc_ctx_t *)ctx;
+  if (bpc->cur < bpc->len) { bpc->dst[bpc->cur++] = (char)c; }
+}
+
+void npf_bufputc_nop(int c, void *ctx) { (void)c; (void)ctx; }
 
 typedef struct npf_cnt_putc_ctx {
   npf_putc pc;
