@@ -6,8 +6,14 @@
 
 TEST_CASE("snprintf safety: trim string") {
   char buf[9];
+  buf[0] = '@';
   buf[7] = '*';
   buf[8] = '!';
+
+  SUBCASE("zero-sized buffer") {
+    REQUIRE(npf_snprintf(buf, 0, "abc") == 3);
+    REQUIRE(buf[0] == '@');
+  }
 
   SUBCASE("small string") {
     REQUIRE(npf_snprintf(buf, 8, "abc") == 3);
