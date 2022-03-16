@@ -723,6 +723,7 @@ static void npf_putc_cnt(int c, void *ctx) {
   case NPF_FMT_SPEC_LEN_MOD_##MOD: *(va_arg(args, TYPE *)) = (TYPE)pc_cnt.n; break
 
 int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
+  union { char cbuf_mem[32]; npf_uint_t binval; } u;
   npf_format_spec_t fs;
   char const *cur = format;
   npf_cnt_putc_ctx_t pc_cnt;
@@ -736,7 +737,6 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
     cur += fs_len;
 
     // Format specifier, convert and write argument
-    union { char cbuf_mem[32]; npf_uint_t binval; } u;
     char *cbuf = u.cbuf_mem, sign_c = 0;
     int cbuf_len = 0, need_0x = 0;
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
