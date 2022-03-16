@@ -110,23 +110,18 @@ NPF_VISIBILITY int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format,
 #ifndef NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS
   #error NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS must be #defined to 0 or 1
 #endif
-
 #ifndef NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS
   #error NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS must be #defined to 0 or 1
 #endif
-
 #ifndef NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS
   #error NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS must be #defined to 0 or 1
 #endif
-
 #ifndef NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS
   #error NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS must be #defined to 0 or 1
 #endif
-
 #ifndef NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS
   #error NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS must be #defined to 0 or 1
 #endif
-
 #ifndef NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS
   #error NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS must be #defined to 0 or 1
 #endif
@@ -135,6 +130,11 @@ NPF_VISIBILITY int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format,
 #if (NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1) && \
     (NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 0)
   #error Precision format specifiers must be enabled if float support is enabled.
+#endif
+
+#if defined(NANOPRINTF_SNPRINTF_SAFE_EMPTY_STRING_ON_OVERFLOW) && \
+    defined(NANOPRINTF_SNPRINTF_SAFE_TRIM_STRING_ON_OVERFLOW)
+  #error snprintf safety flags are mutually exclusive.
 #endif
 
 // intmax_t / uintmax_t require stdint from c99 / c++11
@@ -1071,13 +1071,11 @@ int npf_vsnprintf(char *buffer, size_t bufsz, char const *format, va_list vlist)
   int const n = npf_vpprintf(pc, &bufputc_ctx, format, vlist);
   pc('\0', &bufputc_ctx);
 
-  if (bufsz && (n >= (int)bufsz)) {
 #ifdef NANOPRINTF_SNPRINTF_SAFE_EMPTY_STRING_ON_OVERFLOW
-    buffer[0] = '\0';
-#elif defined(NANOPRINTF_SNPRINTF_SAFE_TERM_STRING_ON_OVERFLOW)
-    buffer[bufsz - 1] = '\0';
+  if (bufsz && (n >= (int)bufsz)) { buffer[0] = '\0'; }
+#elif defined(NANOPRINTF_SNPRINTF_SAFE_TRIM_STRING_ON_OVERFLOW)
+  if (bufsz && (n >= (int)bufsz)) { buffer[bufsz - 1] = '\0'; }
 #endif
-  }
 
   return n;
 }
