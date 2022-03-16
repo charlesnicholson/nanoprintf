@@ -342,7 +342,8 @@ TEST_CASE("npf_parse_format_spec") {
 
     SUBCASE("% literal") {
       REQUIRE(npf_parse_format_spec("%%", &spec) == 2);
-      REQUIRE(spec.conv_spec == NPF_FMT_SPEC_CONV_PERCENT);
+      REQUIRE(spec.conv_spec == NPF_FMT_SPEC_CONV_CHAR);
+      REQUIRE(spec.percent == '%');
     }
 
     SUBCASE("% clears precision") {
@@ -352,6 +353,7 @@ TEST_CASE("npf_parse_format_spec") {
 
     SUBCASE("c") {
       REQUIRE(npf_parse_format_spec("%c", &spec) == 2);
+      REQUIRE(!spec.percent);
       REQUIRE(spec.conv_spec == NPF_FMT_SPEC_CONV_CHAR);
     }
 

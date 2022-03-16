@@ -226,7 +226,6 @@ typedef enum {
 } npf_format_spec_length_modifier_t;
 
 typedef enum {
-  NPF_FMT_SPEC_CONV_PERCENT,      // '%'
   NPF_FMT_SPEC_CONV_CHAR,         // 'c'
   NPF_FMT_SPEC_CONV_STRING,       // 's'
   NPF_FMT_SPEC_CONV_SIGNED_INT,   // 'i', 'd'
@@ -246,6 +245,7 @@ typedef enum {
 } npf_format_spec_conversion_t;
 
 typedef struct {
+  char percent;
   char prepend;          // ' ' or '+'
   char alt_form;         // '#'
 
@@ -334,6 +334,7 @@ int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
   out_spec->left_justified = 0;
   out_spec->leading_zero_pad = 0;
 #endif
+  out_spec->percent = 0;
   out_spec->case_adjust = 'a'-'A'; // lowercase
   out_spec->prepend = 0;
   out_spec->alt_form = 0;
@@ -438,11 +439,7 @@ int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
 
   switch (*cur++) { // Conversion specifier
     case '%':
-      out_spec->conv_spec = NPF_FMT_SPEC_CONV_PERCENT;
-#if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
-      out_spec->prec_type = NPF_FMT_SPEC_OPT_NONE;
-#endif
-      break;
+      out_spec->percent = '%';
     case 'c':
       out_spec->conv_spec = NPF_FMT_SPEC_CONV_CHAR;
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
@@ -778,13 +775,8 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
 
     // Convert the argument to string and point cbuf at it
     switch (fs.conv_spec) {
-      case NPF_FMT_SPEC_CONV_PERCENT:
-        *cbuf = '%';
-        ++cbuf_len;
-        break;
-
       case NPF_FMT_SPEC_CONV_CHAR:
-        *cbuf = (char)va_arg(args, int);
+        *cbuf = fs.percent ? fs.percent : (char)va_arg(args, int);
         ++cbuf_len;
         break;
 
@@ -942,8 +934,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
     if (fs.field_width_opt == NPF_FMT_SPEC_OPT_LITERAL) {
       if (fs.leading_zero_pad) { // '0' flag is only legal with numeric types
         if ((fs.conv_spec != NPF_FMT_SPEC_CONV_STRING) &&
-            (fs.conv_spec != NPF_FMT_SPEC_CONV_CHAR) &&
-            (fs.conv_spec != NPF_FMT_SPEC_CONV_PERCENT)) {
+            (fs.conv_spec != NPF_FMT_SPEC_CONV_CHAR)) {
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
           if ((fs.prec_type == NPF_FMT_SPEC_OPT_LITERAL) && !fs.prec && zero) {
             pad_c = ' ';
