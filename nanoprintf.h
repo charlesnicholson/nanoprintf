@@ -1070,6 +1070,15 @@ int npf_vsnprintf(char *buffer, size_t bufsz, char const *format, va_list vlist)
   npf_putc const pc = buffer ? npf_bufputc : npf_bufputc_nop;
   int const n = npf_vpprintf(pc, &bufputc_ctx, format, vlist);
   pc('\0', &bufputc_ctx);
+
+  if (bufsz && (n >= (int)bufsz)) {
+#ifdef NANOPRINTF_SNPRINTF_SAFE_EMPTY_STRING_ON_OVERFLOW
+    buffer[0] = '\0';
+#elif defined(NANOPRINTF_SNPRINTF_SAFE_TERM_STRING_ON_OVERFLOW)
+    buffer[bufsz - 1] = '\0';
+#endif
+  }
+
   return n;
 }
 
