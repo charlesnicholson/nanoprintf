@@ -20,11 +20,19 @@ TEST_CASE("npf_bufputc") {
     REQUIRE(bpc.cur == 1);
   }
 
-  SUBCASE("Doesn't write to final byte of buffer") {
+  SUBCASE("Writes to final byte of buffer") {
     buf[sizeof(buf) - 1] = '*';
     bpc.cur = bpc.len - 1;
     npf_bufputc('A', &bpc);
-    REQUIRE(buf[sizeof(buf) - 1] == '*');
+    REQUIRE(buf[sizeof(buf) - 1] == 'A');
+  }
+
+  SUBCASE("Doesn't write past final byte of buffer") {
+    buf[3] = '*';
+    bpc.len = 3;
+    bpc.cur = 3;
+    npf_bufputc('A', &bpc);
+    REQUIRE(buf[3] == '*');
   }
 
   SUBCASE("Multiple calls write sequential bytes") {

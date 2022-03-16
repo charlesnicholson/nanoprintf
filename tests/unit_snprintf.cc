@@ -47,4 +47,21 @@ TEST_CASE("npf_snprintf") {
     npf_snprintf(buf, sizeof(buf), "%i %u", -100, 100u);
     REQUIRE(std::string{"-100 100"} == std::string{buf});
   }
+
+  SUBCASE("fills buffer fully") {
+    REQUIRE(npf_snprintf(buf, 4, "abcd") == 4);
+    REQUIRE(buf[0] == 'a');
+    REQUIRE(buf[1] == 'b');
+    REQUIRE(buf[2] == 'c');
+    REQUIRE(buf[3] == 'd');
+  }
+
+  SUBCASE("doesn't write past end of buffer") {
+    buf[3] = '*';
+    REQUIRE(npf_snprintf(buf, 3, "abcd") == 4);
+    REQUIRE(buf[0] == 'a');
+    REQUIRE(buf[1] == 'b');
+    REQUIRE(buf[2] == 'c');
+    REQUIRE(buf[3] == '*');
+  }
 }
