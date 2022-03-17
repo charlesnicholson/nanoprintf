@@ -67,12 +67,14 @@ endif()
 ################ Doctest
 
 add_library(libdoctest_main OBJECT tests/doctest_main.cc)
+target_compile_options(libdoctest_main PRIVATE ${nanoprintf_common_flags})
 
 function(npf_test name files)
   add_executable(${name} ${files})
-  target_compile_options(${name} PRIVATE ${nanoprintf_common_flags})
-  target_link_options(${name} PRIVATE ${nanoprintf_link_flags})
-  target_link_libraries(${name} libdoctest_main) # Doctest is slow, only build once.
+    target_compile_definitions(${name} PRIVATE DOCTEST_CONFIG_SUPER_FAST_ASSERTS)
+    target_compile_options(${name} PRIVATE ${nanoprintf_common_flags})
+    target_link_options(${name} PRIVATE ${nanoprintf_link_flags})
+    target_link_libraries(${name} libdoctest_main) # Doctest is slow, only build once.
 
   # Set up a target that automatically runs + timestamps successful tests.
   set(timestamp "${CMAKE_CURRENT_BINARY_DIR}/${name}.timestamp")
@@ -124,34 +126,8 @@ foreach(fw 0 1)
             # Run a simple compilation test
             set(compilation_test_name "npf_compile${test_name}_c")
             npf_compilation_c_test(${compilation_test_name})
-            target_compile_definitions(
-              ${compilation_test_name}
-              PRIVATE
-              NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=${fw}
-              NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=${precision}
-              NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=${large}
-              NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=${float}
-              NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS=${binary}
-              NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=${wb})
-
-            # Run conformance tests (c++)
-            set(conformance_test_name "npf_conform${test_name}")
-            npf_test(${conformance_test_name} tests/conformance.cc)
-            target_compile_definitions(
-              ${conformance_test_name}
-              PRIVATE
-              NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=${fw}
-              NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=${precision}
-              NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=${large}
-              NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=${float}
-              NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS=${binary}
-              NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=${wb})
-
-            if (NPF_PALAND)
-              set(paland_test_name "npf_paland${test_name}")
-              npf_test(${paland_test_name} tests/mpaland-conformance/paland.cc)
               target_compile_definitions(
-                ${paland_test_name}
+                ${compilation_test_name}
                 PRIVATE
                 NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=${fw}
                 NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=${precision}
@@ -159,6 +135,32 @@ foreach(fw 0 1)
                 NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=${float}
                 NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS=${binary}
                 NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=${wb})
+
+            # Run conformance tests (c++)
+            set(conformance_test_name "npf_conform${test_name}")
+            npf_test(${conformance_test_name} tests/conformance.cc)
+              target_compile_definitions(
+                ${conformance_test_name}
+                PRIVATE
+                NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=${fw}
+                NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=${precision}
+                NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=${large}
+                NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=${float}
+                NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS=${binary}
+                NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=${wb})
+
+            if (NPF_PALAND)
+              set(paland_test_name "npf_paland${test_name}")
+              npf_test(${paland_test_name} tests/mpaland-conformance/paland.cc)
+                target_compile_definitions(
+                  ${paland_test_name}
+                  PRIVATE
+                  NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=${fw}
+                  NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=${precision}
+                  NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=${large}
+                  NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=${float}
+                  NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS=${binary}
+                  NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=${wb})
             endif()
           endforeach()
         endforeach()
@@ -173,24 +175,24 @@ npf_compilation_c_test(npf_c_default_flags)
 ################ Static compilation test
 
 add_executable(npf_static tests/static_nanoprintf.c tests/static_main.c)
-target_link_options(npf_static PRIVATE ${nanoprintf_link_flags})
+  target_link_options(npf_static PRIVATE ${nanoprintf_link_flags})
 
 ################# Examples
 
 add_executable(use_npf_directly
                examples/use_npf_directly/your_project_nanoprintf.cc
                examples/use_npf_directly/main.cc)
-target_link_options(use_npf_directly PRIVATE ${nanoprintf_link_flags})
+  target_link_options(use_npf_directly PRIVATE ${nanoprintf_link_flags})
 
 add_executable(wrap_npf
                examples/wrap_npf/your_project_printf.h
                examples/wrap_npf/your_project_printf.cc
                examples/wrap_npf/main.cc)
-target_link_options(wrap_npf PRIVATE ${nanoprintf_link_flags})
+  target_link_options(wrap_npf PRIVATE ${nanoprintf_link_flags})
 
 add_executable(npf_include_multiple tests/include_multiple.c)
-target_compile_options(npf_include_multiple PRIVATE ${nanoprintf_common_flags})
-target_link_options(npf_include_multiple PRIVATE ${nanoprintf_link_flags})
+  target_compile_options(npf_include_multiple PRIVATE ${nanoprintf_common_flags})
+  target_link_options(npf_include_multiple PRIVATE ${nanoprintf_link_flags})
 
 ############### Unit tests
 
@@ -209,29 +211,21 @@ set(unit_test_files
     tests/unit_vpprintf.cc)
 
 npf_test(unit_tests_normal_sized_formatters "${unit_test_files}")
-target_compile_definitions(unit_tests_normal_sized_formatters
-                           PRIVATE
-                           DOCTEST_CONFIG_SUPER_FAST_ASSERTS
-                           NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0)
-target_link_options(unit_tests_normal_sized_formatters
-                    PRIVATE
-                    ${nanoprintf_link_flags})
-if (NPF_32BIT)
-target_compile_definitions(unit_tests_normal_sized_formatters
-                           PRIVATE
-                           NANOPRINTF_32_BIT_TESTS)
-endif()
+  target_compile_definitions(unit_tests_normal_sized_formatters
+                             PRIVATE
+                             NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0)
+  if (NPF_32BIT)
+  target_compile_definitions(unit_tests_normal_sized_formatters
+                             PRIVATE
+                             NANOPRINTF_32_BIT_TESTS)
+  endif()
 
 npf_test(unit_tests_large_sized_formatters "${unit_test_files}")
-target_compile_definitions(unit_tests_large_sized_formatters
-                           PRIVATE
-                           DOCTEST_CONFIG_SUPER_FAST_ASSERTS
-                           NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=1)
-target_link_options(unit_tests_large_sized_formatters
-                    PRIVATE
-                    ${nanoprintf_link_flags})
-if (NPF_32BIT)
-target_compile_definitions(unit_tests_normal_sized_formatters
-                           PRIVATE
-                           NANOPRINTF_32_BIT_TESTS)
-endif()
+  target_compile_definitions(unit_tests_large_sized_formatters
+                             PRIVATE
+                             NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=1)
+  if (NPF_32BIT)
+  target_compile_definitions(unit_tests_normal_sized_formatters
+                             PRIVATE
+                             NANOPRINTF_32_BIT_TESTS)
+  endif()

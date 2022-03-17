@@ -32,6 +32,5 @@
   #pragma warning(disable:5039) // could throw inside extern c function
 #endif
 
-#define DOCTEST_CONFIG_NO_TRY_CATCH_IN_ASSERTS
 #include "doctest.h"
 
