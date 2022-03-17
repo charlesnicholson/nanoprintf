@@ -2,7 +2,6 @@
 
 #include <cmath>
 #include <string>
-#include <iostream>
 
 #if NANOPRINTF_HAVE_GCC_WARNING_PRAGMAS
   #pragma GCC diagnostic push

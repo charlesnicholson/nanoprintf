@@ -2,7 +2,6 @@
 
 #include <cstring>
 #include <string>
-#include <iostream>
 
 TEST_CASE("npf_parse_format_spec") {
   npf_format_spec_t spec;

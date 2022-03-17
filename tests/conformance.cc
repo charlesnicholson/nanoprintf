@@ -13,7 +13,6 @@
 #include "../nanoprintf.h"
 
 #include <string>
-#include <iostream>
 #include <limits.h>
 #include <cmath>
 
