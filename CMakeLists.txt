@@ -78,7 +78,7 @@ function(npf_test name files)
   set(timestamp "${CMAKE_CURRENT_BINARY_DIR}/${name}.timestamp")
   add_custom_target(run_${name} ALL DEPENDS ${timestamp})
   add_custom_command(OUTPUT ${timestamp}
-                     COMMAND ${name} && ${CMAKE_COMMAND} -E touch ${timestamp}
+                     COMMAND ${name} -m && ${CMAKE_COMMAND} -E touch ${timestamp}
                      DEPENDS ${name}
                      COMMENT "Running ${name}")
 endfunction()
