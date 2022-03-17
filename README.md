@@ -158,74 +158,74 @@ The following size measurements are taken against the Cortex-M0 build.
 Configuration "Minimal":
 arm-none-eabi-gcc -c -x c -Os -I/__w/nanoprintf/nanoprintf -o npf.o -mcpu=cortex-m0 -DNANOPRINTF_IMPLEMENTATION -DNANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=0 -
 arm-none-eabi-nm --print-size --size-sort npf.o
-00000016 00000002 t npf_bufputc_nop
-00000018 00000010 t npf_putc_cnt
-00000000 00000016 t npf_bufputc
-000002b4 00000016 T npf_pprintf
-000002fc 00000016 T npf_snprintf
-000002ca 00000032 T npf_vsnprintf
-00000028 0000028c T npf_vpprintf
-Total size: 0x312 (786) bytes
+00000014 00000002 t npf_bufputc_nop
+00000016 00000010 t npf_putc_cnt
+00000000 00000014 t npf_bufputc
+000002aa 00000016 T npf_pprintf
+000002f4 00000016 T npf_snprintf
+000002c0 00000034 T npf_vsnprintf
+00000026 00000284 T npf_vpprintf
+Total size: 0x30a (778) bytes
 
 Configuration "Binary":
 arm-none-eabi-gcc -c -x c -Os -I/__w/nanoprintf/nanoprintf -o npf.o -mcpu=cortex-m0 -DNANOPRINTF_IMPLEMENTATION -DNANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=0 -
 arm-none-eabi-nm --print-size --size-sort npf.o
-00000016 00000002 t npf_bufputc_nop
-00000018 00000010 t npf_putc_cnt
-00000000 00000016 t npf_bufputc
-00000308 00000016 T npf_pprintf
-00000350 00000016 T npf_snprintf
-0000031e 00000032 T npf_vsnprintf
-00000028 000002e0 T npf_vpprintf
-Total size: 0x366 (870) bytes
+00000014 00000002 t npf_bufputc_nop
+00000016 00000010 t npf_putc_cnt
+00000000 00000014 t npf_bufputc
+00000304 00000016 T npf_pprintf
+0000034c 00000016 T npf_snprintf
+0000031a 00000032 T npf_vsnprintf
+00000026 000002de T npf_vpprintf
+Total size: 0x362 (866) bytes
 
 Configuration "Field Width + Precision":
 arm-none-eabi-gcc -c -x c -Os -I/__w/nanoprintf/nanoprintf -o npf.o -mcpu=cortex-m0 -DNANOPRINTF_IMPLEMENTATION -DNANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=0 -
 arm-none-eabi-nm --print-size --size-sort npf.o
-00000016 00000002 t npf_bufputc_nop
-00000018 00000010 t npf_putc_cnt
-00000000 00000016 t npf_bufputc
-0000052a 00000016 T npf_pprintf
-00000574 00000016 T npf_snprintf
-00000540 00000034 T npf_vsnprintf
-00000028 00000502 T npf_vpprintf
-Total size: 0x58a (1418) bytes
+00000014 00000002 t npf_bufputc_nop
+00000016 00000010 t npf_putc_cnt
+00000000 00000014 t npf_bufputc
+00000526 00000016 T npf_pprintf
+00000570 00000016 T npf_snprintf
+0000053c 00000034 T npf_vsnprintf
+00000026 00000500 T npf_vpprintf
+Total size: 0x586 (1414) bytes
 
 Configuration "Field Width + Precision + Binary":
 arm-none-eabi-gcc -c -x c -Os -I/__w/nanoprintf/nanoprintf -o npf.o -mcpu=cortex-m0 -DNANOPRINTF_IMPLEMENTATION -DNANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=0 -
 arm-none-eabi-nm --print-size --size-sort npf.o
-00000016 00000002 t npf_bufputc_nop
-00000018 00000010 t npf_putc_cnt
-00000000 00000016 t npf_bufputc
-000005b4 00000016 T npf_pprintf
-000005fc 00000016 T npf_snprintf
-000005ca 00000032 T npf_vsnprintf
-00000028 0000058c T npf_vpprintf
-Total size: 0x612 (1554) bytes
+00000014 00000002 t npf_bufputc_nop
+00000016 00000010 t npf_putc_cnt
+00000000 00000014 t npf_bufputc
+0000059a 00000016 T npf_pprintf
+000005e4 00000016 T npf_snprintf
+000005b0 00000034 T npf_vsnprintf
+00000026 00000574 T npf_vpprintf
+Total size: 0x5fa (1530) bytes
 
 Configuration "Float":
 arm-none-eabi-gcc -c -x c -Os -I/__w/nanoprintf/nanoprintf -o npf.o -mcpu=cortex-m0 -DNANOPRINTF_IMPLEMENTATION -DNANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=0 -
 arm-none-eabi-nm --print-size --size-sort npf.o
-00000016 00000002 t npf_bufputc_nop
-00000018 00000010 t npf_putc_cnt
-00000000 00000016 t npf_bufputc
-000005d8 00000016 T npf_pprintf
-00000620 00000016 T npf_snprintf
-000005ee 00000032 T npf_vsnprintf
-00000028 000005b0 T npf_vpprintf
-Total size: 0x636 (1590) bytes
+00000014 00000002 t npf_bufputc_nop
+00000016 00000010 t npf_putc_cnt
+00000000 00000014 t npf_bufputc
+000005c8 00000016 T npf_pprintf
+00000610 00000016 T npf_snprintf
+000005de 00000032 T npf_vsnprintf
+00000026 000005a2 T npf_vpprintf
+Total size: 0x626 (1574) bytes
 
 Configuration "Everything":
 arm-none-eabi-gcc -c -x c -Os -I/__w/nanoprintf/nanoprintf -o npf.o -mcpu=cortex-m0 -DNANOPRINTF_IMPLEMENTATION -DNANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=1 -
 arm-none-eabi-nm --print-size --size-sort npf.o
-00000016 00000002 t npf_bufputc_nop
-00000018 00000010 t npf_putc_cnt
-00000000 00000016 t npf_bufputc
-000009d2 00000016 T npf_pprintf
-00000a1c 00000016 T npf_snprintf
-000009e8 00000034 T npf_vsnprintf
-00000028 000009aa T npf_vpprintf
-Total size: 0xa32 (2610) bytes
+00000014 00000002 t npf_bufputc_nop
+00000016 00000010 t npf_putc_cnt
+00000000 00000014 t npf_bufputc
+000009c4 00000016 T npf_pprintf
+00000a0c 00000016 T npf_snprintf
+000009da 00000032 T npf_vsnprintf
+00000026 0000099e T npf_vpprintf
+Total size: 0xa22 (2594) bytes
 ```
 
 ## Development
