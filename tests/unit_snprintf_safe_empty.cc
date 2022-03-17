@@ -2,7 +2,6 @@
 #include "unit_nanoprintf.h"
 
 #include <string>
-#include <iostream>
 
 TEST_CASE("snprintf safety: empty string") {
   char buf[9];

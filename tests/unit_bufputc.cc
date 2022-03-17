@@ -1,7 +1,6 @@
 #include "unit_nanoprintf.h"
 
 #include <string>
-#include <iostream>
 
 TEST_CASE("npf_bufputc") {
   npf_bufputc_ctx_t bpc;

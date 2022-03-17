@@ -1,7 +1,6 @@
 #include "unit_nanoprintf.h"
 
 #include <string>
-#include <iostream>
 
 #if NANOPRINTF_HAVE_GCC_WARNING_PRAGMAS
   #pragma GCC diagnostic push

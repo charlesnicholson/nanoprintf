@@ -13,7 +13,6 @@
 #include "../nanoprintf.h"
 
 #include <string>
-#include <iostream>
 #include <limits.h>
 #include <cmath>
 
@@ -31,6 +30,7 @@
   #pragma GCC diagnostic ignored "-Wformat"
 #endif
 
+#define DOCTEST_CONFIG_NO_TRY_CATCH_IN_ASSERTS
 #include "doctest.h"
 
 namespace {
