@@ -920,7 +920,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
           val = (float)va_arg(args, double);
         }
 
-        sign_c = (val < 0) ? '-' : fs.prepend;
+        sign_c = (val < 0.f) ? '-' : fs.prepend;
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
         zero = (val == 0.f);
 #endif
