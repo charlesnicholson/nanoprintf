@@ -615,7 +615,7 @@ int npf_ftoa_rev(char *buf, float f, unsigned base,
     for (unsigned i = 0; i < sizeof(f_bits); ++i) { dst[i] = src[i]; }
   }
 
-  if ((f_bits & 0x7f800000) == 0x7f800000) {
+  if ((uint8_t)(f_bits >> 23) == 0xFF) {
     if (f_bits & 0x7fffff) {
       for (int i = 0; i < 3; ++i) { *buf++ = (char)("NAN"[i] + case_adjust); }
     } else {
