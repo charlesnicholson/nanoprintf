@@ -615,14 +615,19 @@ int npf_ftoa_rev(char *buf, float f, unsigned base,
     for (unsigned i = 0; i < sizeof(f_bits); ++i) { dst[i] = src[i]; }
   }
 
-  if ((uint8_t)(f_bits >> 23) == 0xFF) {
+   if ((uint8_t)(f_bits >> 23) == 0xFF) {
+    char const *s = (f_bits & 0x7fffff) ? "NAN" : "FNI";
+    for (int i = 0; i < 3; ++i) {*buf++ = (char)(s[i] + case_adjust); }
+    return -3;
+  }
+  /*if ((uint8_t)(f_bits >> 23) == 0xFF) {
     if (f_bits & 0x7fffff) {
       for (int i = 0; i < 3; ++i) { *buf++ = (char)("NAN"[i] + case_adjust); }
     } else {
       for (int i = 0; i < 3; ++i) { *buf++ = (char)("FNI"[i] + case_adjust); }
     }
     return -3;
-  }
+  }*/
 
   uint64_t int_part, frac_part;
   int frac_base10_neg_exp;
