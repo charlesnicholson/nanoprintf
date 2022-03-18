@@ -609,13 +609,18 @@ int npf_fsplit_abs(float f, uint64_t *out_int_part, uint64_t *out_frac_part,
 
 int npf_ftoa_rev(char *buf, float f, unsigned base,
                  char case_adjust, int *out_frac_chars) {
-  if (f != f) {
-    for (int i = 0; i < 3; ++i) { *buf++ = (char)("NAN"[i] + case_adjust); }
-    return -3;
+  uint32_t f_bits; { // union-cast is UB, let compiler optimize byte-copy loop.
+    char const *src = (char const *)&f;
+    char *dst = (char *)&f_bits;
+    for (unsigned i = 0; i < sizeof(f_bits); ++i) { dst[i] = src[i]; }
   }
 
-  if ((f == INFINITY) || (f == -INFINITY)) {
-    for (int i = 0; i < 3; ++i) { *buf++ = (char)("FNI"[i] + case_adjust); }
+  if ((uint8_t)(f_bits >> 23) == 0xFF) {
+    if (f_bits & 0x7fffff) {
+      for (int i = 0; i < 3; ++i) { *buf++ = (char)("NAN"[i] + case_adjust); }
+    } else {
+      for (int i = 0; i < 3; ++i) { *buf++ = (char)("FNI"[i] + case_adjust); }
+    }
     return -3;
   }
 
