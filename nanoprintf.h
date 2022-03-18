@@ -213,9 +213,9 @@ typedef enum {
 typedef enum {
   NPF_FMT_SPEC_LEN_MOD_NONE,
   NPF_FMT_SPEC_LEN_MOD_SHORT,       // 'h'
-  NPF_FMT_SPEC_LEN_MOD_LONG,        // 'l'
   NPF_FMT_SPEC_LEN_MOD_LONG_DOUBLE, // 'L'
-  NPF_FMT_SPEC_LEN_MOD_CHAR         // 'hh'
+  NPF_FMT_SPEC_LEN_MOD_CHAR,        // 'hh'
+  NPF_FMT_SPEC_LEN_MOD_LONG         // 'l'
 #if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
   ,
   NPF_FMT_SPEC_LEN_MOD_LARGE_LONG_LONG, // 'll'
@@ -735,24 +735,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
     if (!fs_len) { NPF_PUTC(*cur++); continue; }
     cur += fs_len;
 
-    // Format specifier, convert and write argument
-    union { char cbuf_mem[32]; npf_uint_t binval; } u;
-    char *cbuf = u.cbuf_mem, sign_c = 0;
-    int cbuf_len = 0, need_0x = 0;
-#if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
-    int field_pad = 0;
-    char pad_c = 0;
-#endif
-#if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
-    int prec_pad = 0;
-#if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
-    int zero = 0; // A precision of 0 means that no character is written for the value 0.
-#endif
-#endif
-#if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
-    int frac_chars = 0, inf_or_nan = 0;
-#endif
-
+    // Extract star-args immediately
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
     if (fs.field_width_opt == NPF_FMT_SPEC_OPT_STAR) {
       fs.field_width_opt = NPF_FMT_SPEC_OPT_LITERAL;
@@ -763,7 +746,6 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
       }
     }
 #endif
-
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
     if (fs.prec_opt == NPF_FMT_SPEC_OPT_STAR) {
       fs.prec_opt = NPF_FMT_SPEC_OPT_NONE;
@@ -772,7 +754,24 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
     }
 #endif
 
-    // Convert the argument to string and point cbuf at it
+    union { char cbuf_mem[32]; npf_uint_t binval; } u;
+    char *cbuf = u.cbuf_mem, sign_c = 0;
+    int cbuf_len = 0, need_0x = 0;
+#if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
+    int field_pad = 0;
+    char pad_c = 0;
+#endif
+#if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
+    int prec_pad = 0;
+#if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
+    int zero = 0;
+#endif
+#endif
+#if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
+    int frac_chars = 0, inf_or_nan = 0;
+#endif
+
+    // Extract and convert the argument to string, point cbuf at the text.
     switch (fs.conv_spec) {
       case NPF_FMT_SPEC_CONV_PERCENT:
         *cbuf = '%';
@@ -799,9 +798,9 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
         switch (fs.length_modifier) {
           NPF_EXTRACT(NONE, int, int);
           NPF_EXTRACT(SHORT, short, int);
-          NPF_EXTRACT(LONG, long, long);
           NPF_EXTRACT(LONG_DOUBLE, int, int);
           NPF_EXTRACT(CHAR, char, int);
+          NPF_EXTRACT(LONG, long, long);
 #if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
           NPF_EXTRACT(LARGE_LONG_LONG, long long, long long);
           NPF_EXTRACT(LARGE_INTMAX, intmax_t, intmax_t);
@@ -838,9 +837,9 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
         switch (fs.length_modifier) {
           NPF_EXTRACT(NONE, unsigned, unsigned);
           NPF_EXTRACT(SHORT, unsigned short, unsigned);
-          NPF_EXTRACT(LONG, unsigned long, unsigned long);
           NPF_EXTRACT(LONG_DOUBLE, unsigned, unsigned);
           NPF_EXTRACT(CHAR, unsigned char, unsigned);
+          NPF_EXTRACT(LONG, unsigned long, unsigned long);
 #if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
           NPF_EXTRACT(LARGE_LONG_LONG, unsigned long long, unsigned long long);
           NPF_EXTRACT(LARGE_INTMAX, uintmax_t, uintmax_t);
