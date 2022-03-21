@@ -229,6 +229,9 @@ typedef enum {
 typedef enum {
   NPF_FMT_SPEC_CONV_PERCENT,      // '%'
   NPF_FMT_SPEC_CONV_CHAR,         // 'c'
+#if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
+  NPF_FMT_SPEC_CONV_FLOAT_DECIMAL, // 'f', 'F'
+#endif
   NPF_FMT_SPEC_CONV_STRING,       // 's'
   NPF_FMT_SPEC_CONV_SIGNED_INT,   // 'i', 'd'
 #if NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS == 1
@@ -240,9 +243,6 @@ typedef enum {
   NPF_FMT_SPEC_CONV_POINTER       // 'p'
 #if NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS == 1
   , NPF_FMT_SPEC_CONV_WRITEBACK   // 'n'
-#endif
-#if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
-  , NPF_FMT_SPEC_CONV_FLOAT_DECIMAL // 'f', 'F'
 #endif
 } npf_format_spec_conversion_t;
 
