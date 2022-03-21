@@ -291,12 +291,7 @@ static int npf_fsplit_abs(float f,
                           uint64_t *out_int_part,
                           uint64_t *out_frac_part,
                           int *out_frac_base10_neg_e);
-
-static int npf_ftoa_rev(char *buf,
-                        float f,
-                        unsigned base,
-                        char case_adjust,
-                        int *out_frac_chars);
+static int npf_ftoa_rev(char *buf, float f, char case_adj, int *out_frac_chars);
 #endif
 
 #if NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS == 1
@@ -607,8 +602,7 @@ int npf_fsplit_abs(float f, uint64_t *out_int_part, uint64_t *out_frac_part,
   return 1;
 }
 
-int npf_ftoa_rev(char *buf, float f, unsigned base,
-                 char case_adjust, int *out_frac_chars) {
+int npf_ftoa_rev(char *buf, float f, char case_adj, int *out_frac_chars) {
   uint32_t f_bits; { // union-cast is UB, let compiler optimize byte-copy loop.
     char const *src = (char const *)&f;
     char *dst = (char *)&f_bits;
@@ -617,9 +611,9 @@ int npf_ftoa_rev(char *buf, float f, unsigned base,
 
   if ((uint8_t)(f_bits >> 23) == 0xFF) {
     if (f_bits & 0x7fffff) {
-      for (int i = 0; i < 3; ++i) { *buf++ = (char)("NAN"[i] + case_adjust); }
+      for (int i = 0; i < 3; ++i) { *buf++ = (char)("NAN"[i] + case_adj); }
     } else {
-      for (int i = 0; i < 3; ++i) { *buf++ = (char)("FNI"[i] + case_adjust); }
+      for (int i = 0; i < 3; ++i) { *buf++ = (char)("FNI"[i] + case_adj); }
     }
     return -3;
   }
@@ -627,17 +621,16 @@ int npf_ftoa_rev(char *buf, float f, unsigned base,
   uint64_t int_part, frac_part;
   int frac_base10_neg_exp;
   if (npf_fsplit_abs(f, &int_part, &frac_part, &frac_base10_neg_exp) == 0) {
-    for (int i = 0; i < 3; ++i) { *buf++ = (char)("ROO"[i] + case_adjust); }
+    for (int i = 0; i < 3; ++i) { *buf++ = (char)("ROO"[i] + case_adj); }
     return -3;
   }
 
-  unsigned const base_c = 'A' + (unsigned)case_adjust;
   char *dst = buf;
 
   while (frac_part) { // write the fractional digits
-    unsigned const d = (unsigned)(frac_part % base);
-    frac_part /= base;
-    *dst++ = (d < 10) ? (char)('0' + d) : (char)(base_c + (d - 10));
+    unsigned const d = (unsigned)(frac_part % 10);
+    frac_part /= 10;
+    *dst++ = (char)('0' + d);
   }
 
   // write the 0 digits between the . and the first fractional digit
@@ -651,9 +644,9 @@ int npf_ftoa_rev(char *buf, float f, unsigned base,
     *dst++ = '0';
   } else {
     while (int_part) {
-      unsigned const d = (unsigned)(int_part % base);
-      int_part /= base;
-      *dst++ = (d < 10) ? (char)('0' + d) : (char)(base_c + (d - 10));
+      unsigned const d = (unsigned)(int_part % 10);
+      int_part /= 10;
+      *dst++ = (char)('0' + d);
     }
   }
   return (int)(dst - buf);
@@ -924,7 +917,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
         zero = (val == 0.f);
 #endif
-        cbuf_len = npf_ftoa_rev(cbuf, val, 10, fs.case_adjust, &frac_chars);
+        cbuf_len = npf_ftoa_rev(cbuf, val, fs.case_adjust, &frac_chars);
 
         if (cbuf_len < 0) {
           cbuf_len = -cbuf_len;
