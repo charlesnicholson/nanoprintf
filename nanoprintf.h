@@ -775,9 +775,37 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
         ++cbuf_len;
         break;
 
+#if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
+      case NPF_FMT_SPEC_CONV_FLOAT_DECIMAL: {
+        float val;
+        if (fs.length_modifier == NPF_FMT_SPEC_LEN_MOD_LONG_DOUBLE) {
+          val = (float)va_arg(args, long double);
+        } else {
+          val = (float)va_arg(args, double);
+        }
+
+        cbuf_len = npf_ftoa_rev(cbuf, val, fs.case_adjust, &frac_chars);
+
+        if (cbuf_len) {
+          sign_c = (val < 0.f) ? '-' : fs.prepend;
+#if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
+          zero = (val == 0.f);
+#endif
+          int const prec_adj = npf_max(0, frac_chars - fs.prec);
+          cbuf += prec_adj;
+          cbuf_len -= prec_adj;
+          break;
+        }
+      } // intentional fall-through, float parse errors are strings.
+#endif
+
       case NPF_FMT_SPEC_CONV_STRING: {
-        cbuf = va_arg(args, char *);
-npf_parse_string:
+#if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
+        if (fs.conv_spec == NPF_FMT_SPEC_CONV_FLOAT_DECIMAL) {
+          fs.conv_spec = NPF_FMT_SPEC_CONV_STRING;
+        } else
+#endif
+        { cbuf = va_arg(args, char *); }
         for (char const *s = cbuf; *s; ++s, ++cbuf_len); // strlen
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
         if (fs.prec_opt == NPF_FMT_SPEC_OPT_LITERAL) {
@@ -898,31 +926,6 @@ npf_parse_string:
         } break;
 #endif
 
-#if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
-      case NPF_FMT_SPEC_CONV_FLOAT_DECIMAL: {
-        float val;
-        if (fs.length_modifier == NPF_FMT_SPEC_LEN_MOD_LONG_DOUBLE) {
-          val = (float)va_arg(args, long double);
-        } else {
-          val = (float)va_arg(args, double);
-        }
-
-        cbuf_len = npf_ftoa_rev(cbuf, val, fs.case_adjust, &frac_chars);
-
-        if (!cbuf_len) {
-          fs.conv_spec = NPF_FMT_SPEC_CONV_STRING;
-          goto npf_parse_string;
-        }
-
-        sign_c = (val < 0.f) ? '-' : fs.prepend;
-#if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
-        zero = (val == 0.f);
-#endif
-        int const prec_adj = npf_max(0, frac_chars - fs.prec);
-        cbuf += prec_adj;
-        cbuf_len -= prec_adj;
-      } break;
-#endif
       default: break;
     }
 
