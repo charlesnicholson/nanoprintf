@@ -800,12 +800,8 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
 #endif
 
       case NPF_FMT_SPEC_CONV_STRING: {
-#if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
-        if (fs.conv_spec == NPF_FMT_SPEC_CONV_FLOAT_DECIMAL) {
-          fs.conv_spec = NPF_FMT_SPEC_CONV_STRING;
-        } else
-#endif
-        { cbuf = va_arg(args, char *); }
+        if (fs.conv_spec == NPF_FMT_SPEC_CONV_STRING) { cbuf = va_arg(args, char *); }
+        fs.conv_spec = NPF_FMT_SPEC_CONV_STRING;
         for (char const *s = cbuf; *s; ++s, ++cbuf_len); // strlen
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
         if (fs.prec_opt == NPF_FMT_SPEC_OPT_LITERAL) {
