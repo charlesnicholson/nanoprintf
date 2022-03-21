@@ -634,19 +634,11 @@ int npf_ftoa_rev(char *buf, float f, char case_adj, int *out_frac_chars) {
 
   // write the 0 digits between the . and the first fractional digit
   while (frac_base10_neg_exp-- > 0) { *dst++ = '0'; }
-
   *out_frac_chars = (int)(dst - buf);
   *dst++ = '.';
 
   // write the integer digits
-  if (int_part == 0) {
-    *dst++ = '0';
-  } else {
-    while (int_part) {
-      *dst++ = (char)('0' + (int_part % 10));
-      int_part /= 10;
-    }
-  }
+  do { *dst++ = (char)('0' + (int_part % 10)); int_part /= 10; } while (int_part);
   return (int)(dst - buf);
 }
 
