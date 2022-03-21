@@ -511,21 +511,21 @@ int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
 }
 
 int npf_itoa_rev(char *buf, npf_int_t i) {
-  char *dst = buf;
+  int n = 0;
   int const sign = (i >= 0) ? 1 : -1;
-  do { *dst++ = (char)('0' + (sign * (i % 10))); i /= 10; } while (i);
-  return (int)(dst - buf);
+  do { *buf++ = (char)('0' + (sign * (i % 10))); i /= 10; ++n; } while (i);
+  return n;
 }
 
-int npf_utoa_rev(char *buf, npf_uint_t i, unsigned base, unsigned case_adjust) {
-  char *dst = buf;
-  unsigned const base_c = case_adjust + 'A';
+int npf_utoa_rev(char *buf, npf_uint_t i, unsigned base, unsigned case_adj) {
+  int n = 0;
   do {
     unsigned const d = (unsigned)(i % base);
-    *dst++ = (char)((d < 10) ? ('0' + d) : (base_c + (d - 10)));
+    *buf++ = (char)((d < 10) ? ('0' + d) : ('A' + case_adj + (d - 10)));
     i /= base;
+    ++n;
   } while (i);
-  return (int)(dst - buf);
+  return n;
 }
 
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
