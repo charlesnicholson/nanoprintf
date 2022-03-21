@@ -610,6 +610,8 @@ int npf_ftoa_rev(char *buf, float f, char case_adj, int *out_frac_chars) {
     for (unsigned i = 0; i < sizeof(f_bits); ++i) { dst[i] = src[i]; }
   }
 
+  buf[3] = 0; buf[4] = 0;
+
   if ((uint8_t)(f_bits >> 23) == 0xFF) {
     if (f_bits & 0x7fffff) {
       for (int i = 0; i < 3; ++i) { *buf++ = (char)("NAN"[i] + case_adj); }
@@ -617,7 +619,6 @@ int npf_ftoa_rev(char *buf, float f, char case_adj, int *out_frac_chars) {
       if (f_bits >> 31) { *buf++ = '-'; }
       for (int i = 0; i < 3; ++i) { *buf++ = (char)("INF"[i] + case_adj); }
     }
-    *buf = 0;
     return 0;
   }
 
@@ -625,7 +626,6 @@ int npf_ftoa_rev(char *buf, float f, char case_adj, int *out_frac_chars) {
   int frac_base10_neg_exp;
   if (npf_fsplit_abs(f, &int_part, &frac_part, &frac_base10_neg_exp) == 0) {
     for (int i = 0; i < 3; ++i) { *buf++ = (char)("OOR"[i] + case_adj); }
-    *buf = 0;
     return 0;
   }
 
