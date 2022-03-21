@@ -628,9 +628,8 @@ int npf_ftoa_rev(char *buf, float f, char case_adj, int *out_frac_chars) {
   char *dst = buf;
 
   while (frac_part) { // write the fractional digits
-    unsigned const d = (unsigned)(frac_part % 10);
+    *dst++ = (char)('0' + (frac_part % 10));
     frac_part /= 10;
-    *dst++ = (char)('0' + d);
   }
 
   // write the 0 digits between the . and the first fractional digit
@@ -644,9 +643,8 @@ int npf_ftoa_rev(char *buf, float f, char case_adj, int *out_frac_chars) {
     *dst++ = '0';
   } else {
     while (int_part) {
-      unsigned const d = (unsigned)(int_part % 10);
+      *dst++ = (char)('0' + (int_part % 10));
       int_part /= 10;
-      *dst++ = (char)('0' + d);
     }
   }
   return (int)(dst - buf);
