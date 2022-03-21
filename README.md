@@ -161,11 +161,11 @@ arm-none-eabi-nm --print-size --size-sort npf.o
 00000014 00000002 t npf_bufputc_nop
 00000016 00000010 t npf_putc_cnt
 00000000 00000014 t npf_bufputc
-000002a4 00000016 T npf_pprintf
-000002ec 00000016 T npf_snprintf
-000002ba 00000032 T npf_vsnprintf
-00000026 0000027e T npf_vpprintf
-Total size: 0x302 (770) bytes
+00000298 00000016 T npf_pprintf
+000002e0 00000016 T npf_snprintf
+000002ae 00000032 T npf_vsnprintf
+00000026 00000272 T npf_vpprintf
+Total size: 0x2f6 (758) bytes
 
 Configuration "Binary":
 arm-none-eabi-gcc -c -x c -Os -I/__w/nanoprintf/nanoprintf -o npf.o -mcpu=cortex-m0 -DNANOPRINTF_IMPLEMENTATION -DNANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=0 -
@@ -173,11 +173,11 @@ arm-none-eabi-nm --print-size --size-sort npf.o
 00000014 00000002 t npf_bufputc_nop
 00000016 00000010 t npf_putc_cnt
 00000000 00000014 t npf_bufputc
-000002f8 00000016 T npf_pprintf
-00000340 00000016 T npf_snprintf
-0000030e 00000032 T npf_vsnprintf
-00000026 000002d2 T npf_vpprintf
-Total size: 0x356 (854) bytes
+000002de 00000016 T npf_pprintf
+00000328 00000016 T npf_snprintf
+000002f4 00000034 T npf_vsnprintf
+00000026 000002b8 T npf_vpprintf
+Total size: 0x33e (830) bytes
 
 Configuration "Field Width + Precision":
 arm-none-eabi-gcc -c -x c -Os -I/__w/nanoprintf/nanoprintf -o npf.o -mcpu=cortex-m0 -DNANOPRINTF_IMPLEMENTATION -DNANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=0 -
@@ -185,11 +185,11 @@ arm-none-eabi-nm --print-size --size-sort npf.o
 00000014 00000002 t npf_bufputc_nop
 00000016 00000010 t npf_putc_cnt
 00000000 00000014 t npf_bufputc
-00000536 00000016 T npf_pprintf
-00000580 00000016 T npf_snprintf
-0000054c 00000034 T npf_vsnprintf
-00000026 00000510 T npf_vpprintf
-Total size: 0x596 (1430) bytes
+00000546 00000016 T npf_pprintf
+00000590 00000016 T npf_snprintf
+0000055c 00000034 T npf_vsnprintf
+00000026 00000520 T npf_vpprintf
+Total size: 0x5a6 (1446) bytes
 
 Configuration "Field Width + Precision + Binary":
 arm-none-eabi-gcc -c -x c -Os -I/__w/nanoprintf/nanoprintf -o npf.o -mcpu=cortex-m0 -DNANOPRINTF_IMPLEMENTATION -DNANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=0 -
@@ -197,11 +197,11 @@ arm-none-eabi-nm --print-size --size-sort npf.o
 00000014 00000002 t npf_bufputc_nop
 00000016 00000010 t npf_putc_cnt
 00000000 00000014 t npf_bufputc
-000005a2 00000016 T npf_pprintf
-000005ec 00000016 T npf_snprintf
-000005b8 00000034 T npf_vsnprintf
-00000026 0000057c T npf_vpprintf
-Total size: 0x602 (1538) bytes
+00000590 00000016 T npf_pprintf
+000005d8 00000016 T npf_snprintf
+000005a6 00000032 T npf_vsnprintf
+00000026 0000056a T npf_vpprintf
+Total size: 0x5ee (1518) bytes
 
 Configuration "Float":
 arm-none-eabi-gcc -c -x c -Os -I/__w/nanoprintf/nanoprintf -o npf.o -mcpu=cortex-m0 -DNANOPRINTF_IMPLEMENTATION -DNANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=0 -
@@ -209,11 +209,11 @@ arm-none-eabi-nm --print-size --size-sort npf.o
 00000014 00000002 t npf_bufputc_nop
 00000016 00000010 t npf_putc_cnt
 00000000 00000014 t npf_bufputc
-00000592 00000016 T npf_pprintf
-000005dc 00000016 T npf_snprintf
-000005a8 00000034 T npf_vsnprintf
-00000026 0000056c T npf_vpprintf
-Total size: 0x5f2 (1522) bytes
+0000059c 00000016 T npf_pprintf
+000005e4 00000016 T npf_snprintf
+000005b2 00000032 T npf_vsnprintf
+00000026 00000576 T npf_vpprintf
+Total size: 0x5fa (1530) bytes
 
 Configuration "Everything":
 arm-none-eabi-gcc -c -x c -Os -I/__w/nanoprintf/nanoprintf -o npf.o -mcpu=cortex-m0 -DNANOPRINTF_IMPLEMENTATION -DNANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=1 -
@@ -221,11 +221,11 @@ arm-none-eabi-nm --print-size --size-sort npf.o
 00000014 00000002 t npf_bufputc_nop
 00000016 00000010 t npf_putc_cnt
 00000000 00000014 t npf_bufputc
-00000958 00000016 T npf_pprintf
-000009a0 00000016 T npf_snprintf
-0000096e 00000032 T npf_vsnprintf
-00000026 00000932 T npf_vpprintf
-Total size: 0x9b6 (2486) bytes
+00000934 00000016 T npf_pprintf
+0000097c 00000016 T npf_snprintf
+0000094a 00000032 T npf_vsnprintf
+00000026 0000090e T npf_vpprintf
+Total size: 0x992 (2450) bytes
 ```
 
 ## Development
