@@ -315,7 +315,7 @@ static int npf_min(int x, int y) { return (x < y) ? x : y; }
 static int npf_max(int x, int y) { return (x > y) ? x : y; }
 
 int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
-  char const *cur = format;
+  int i = 0;
 
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
   out_spec->left_justified = 0;
@@ -325,8 +325,8 @@ int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
   out_spec->prepend = 0;
   out_spec->alt_form = 0;
 
-  while (*++cur) { // cur points at the leading '%' character
-    switch (*cur) { // Optional flags
+  while (format[++i]) { // cur points at the leading '%' character
+    switch (format[i]) { // Optional flags
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
       case '-':
         out_spec->left_justified = '-';
@@ -352,14 +352,14 @@ int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
 
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
   out_spec->field_width_opt = NPF_FMT_SPEC_OPT_NONE;
-  if (*cur == '*') {
+  if (format[i] == '*') {
     out_spec->field_width_opt = NPF_FMT_SPEC_OPT_STAR;
-    ++cur;
+    ++i;
   } else {
     out_spec->field_width = 0;
-    while ((*cur >= '0') && (*cur <= '9')) {
+    while ((format[i] >= '0') && (format[i] <= '9')) {
       out_spec->field_width_opt = NPF_FMT_SPEC_OPT_LITERAL;
-      out_spec->field_width = (out_spec->field_width * 10) + (*cur++ - '0');
+      out_spec->field_width = (out_spec->field_width * 10) + (format[i++] - '0');
     }
   }
 #endif
@@ -367,40 +367,40 @@ int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
   out_spec->prec = 0;
   out_spec->prec_opt = NPF_FMT_SPEC_OPT_NONE;
-  if (*cur == '.') {
-    ++cur;
-    if (*cur == '*') {
+  if (format[i] == '.') {
+    ++i;
+    if (format[i] == '*') {
       out_spec->prec_opt = NPF_FMT_SPEC_OPT_STAR;
-      ++cur;
+      ++i;
     } else {
-      if (*cur == '-') {
-        ++cur;
+      if (format[i] == '-') {
+        ++i;
         out_spec->prec_opt = NPF_FMT_SPEC_OPT_NONE;
       } else {
         out_spec->prec_opt = NPF_FMT_SPEC_OPT_LITERAL;
       }
-      while ((*cur >= '0') && (*cur <= '9')) {
-        out_spec->prec = (out_spec->prec * 10) + (*cur++ - '0');
+      while ((format[i] >= '0') && (format[i] <= '9')) {
+        out_spec->prec = (out_spec->prec * 10) + (format[i++] - '0');
       }
     }
   }
 #endif
 
   out_spec->length_modifier = NPF_FMT_SPEC_LEN_MOD_NONE;
-  switch (*cur++) { // Length modifier
+  switch (format[i++]) { // Length modifier
     case 'h':
       out_spec->length_modifier = NPF_FMT_SPEC_LEN_MOD_SHORT;
-      if (*cur == 'h') {
+      if (format[i] == 'h') {
         out_spec->length_modifier = NPF_FMT_SPEC_LEN_MOD_CHAR;
-        ++cur;
+        ++i;
       }
       break;
     case 'l':
       out_spec->length_modifier = NPF_FMT_SPEC_LEN_MOD_LONG;
 #if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
-      if (*cur == 'l') {
+      if (format[i] == 'l') {
         out_spec->length_modifier = NPF_FMT_SPEC_LEN_MOD_LARGE_LONG_LONG;
-        ++cur;
+        ++i;
       }
 #endif
       break;
@@ -420,10 +420,10 @@ int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
       out_spec->length_modifier = NPF_FMT_SPEC_LEN_MOD_LARGE_PTRDIFFT;
       break;
 #endif
-    default: --cur; break;
+    default: --i; break;
   }
 
-  switch (*cur++) { // Conversion specifier
+  switch (format[i++]) { // Conversion specifier
     case '%':
       out_spec->conv_spec = NPF_FMT_SPEC_CONV_PERCENT;
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
@@ -498,7 +498,7 @@ int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
     default: return 0;
   }
 
-  return (int)(cur - format);
+  return i;
 }
 
 int npf_itoa_rev(char *buf, npf_int_t i) {
