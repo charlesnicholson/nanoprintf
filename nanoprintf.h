@@ -606,11 +606,9 @@ int npf_ftoa_rev(char *buf, float f, char case_adj, int *out_frac_chars) {
   }
 
   if ((uint8_t)(f_bits >> 23) == 0xFF) {
-    if (f_bits & 0x7fffff) {
-      for (int i = 0; i < 3; ++i) { *buf++ = (char)("NAN"[i] + case_adj); }
-    } else {
-      for (int i = 0; i < 3; ++i) { *buf++ = (char)("FNI"[i] + case_adj); }
-    }
+    char const *err[] = { "FNI", "NAN" };
+    int const nan = !!(f_bits & 0x7fffff);
+    for (int i = 0; i < 3; ++i) { *buf++ = (char)(err[nan][i] + case_adj); }
     return -3;
   }
 
