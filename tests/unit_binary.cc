@@ -1,5 +1,7 @@
 #include "unit_nanoprintf.h"
 
+#include <cmath>
+#include <limits>
 #include <string>
 
 #if NANOPRINTF_HAVE_GCC_WARNING_PRAGMAS
