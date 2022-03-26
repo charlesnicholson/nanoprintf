@@ -621,21 +621,21 @@ int npf_ftoa_rev(char *buf, float f, char case_adj, int *out_frac_chars) {
     return -3;
   }
 
-  char *dst = buf;
+  int i = 0;
 
   while (frac_part) { // write the fractional digits
-    *dst++ = (char)('0' + (frac_part % 10));
+    buf[i++] = (char)('0' + (frac_part % 10));
     frac_part /= 10;
   }
 
   // write the 0 digits between the . and the first fractional digit
-  while (frac_base10_neg_exp-- > 0) { *dst++ = '0'; }
-  *out_frac_chars = (int)(dst - buf);
-  *dst++ = '.';
+  while (frac_base10_neg_exp-- > 0) { buf[i++] = '0'; }
+  *out_frac_chars = i;
+  buf[i++] = '.';
 
   // write the integer digits
-  do { *dst++ = (char)('0' + (int_part % 10)); int_part /= 10; } while (int_part);
-  return (int)(dst - buf);
+  do { buf[i++] = (char)('0' + (int_part % 10)); int_part /= 10; } while (int_part);
+  return i;
 }
 
 #endif // NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS
