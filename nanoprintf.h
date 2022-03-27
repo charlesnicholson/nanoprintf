@@ -250,8 +250,8 @@ typedef struct {
   char alt_form;         // '#'
 
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
-  npf_fmt_spec_opt_t field_width_opt;
   int field_width;
+  char field_width_star;
   char left_justified;   // '-'
   char leading_zero_pad; // '0'
 #endif
@@ -351,14 +351,13 @@ int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
   }
 
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
-  out_spec->field_width_opt = NPF_FMT_SPEC_OPT_NONE;
+  out_spec->field_width_star = 0;
   if (*cur == '*') {
-    out_spec->field_width_opt = NPF_FMT_SPEC_OPT_STAR;
+    out_spec->field_width_star = 1;
     ++cur;
   } else {
     out_spec->field_width = 0;
     while ((*cur >= '0') && (*cur <= '9')) {
-      out_spec->field_width_opt = NPF_FMT_SPEC_OPT_LITERAL;
       out_spec->field_width = (out_spec->field_width * 10) + (*cur++ - '0');
     }
   }
@@ -721,8 +720,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
 
     // Extract star-args immediately
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
-    if (fs.field_width_opt == NPF_FMT_SPEC_OPT_STAR) {
-      fs.field_width_opt = NPF_FMT_SPEC_OPT_LITERAL;
+    if (fs.field_width_star) {
       fs.field_width = va_arg(args, int);
       if (fs.field_width < 0) {
         fs.field_width = -fs.field_width;
@@ -920,20 +918,18 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
 
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
     // Compute the field width pad character
-    if (fs.field_width_opt == NPF_FMT_SPEC_OPT_LITERAL) {
-      if (fs.leading_zero_pad) { // '0' flag is only legal with numeric types
-        if ((fs.conv_spec != NPF_FMT_SPEC_CONV_STRING) &&
-            (fs.conv_spec != NPF_FMT_SPEC_CONV_CHAR) &&
-            (fs.conv_spec != NPF_FMT_SPEC_CONV_PERCENT)) {
+    if (fs.leading_zero_pad) { // '0' flag is only legal with numeric types
+      if ((fs.conv_spec != NPF_FMT_SPEC_CONV_STRING) &&
+          (fs.conv_spec != NPF_FMT_SPEC_CONV_CHAR) &&
+          (fs.conv_spec != NPF_FMT_SPEC_CONV_PERCENT)) {
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
-          if ((fs.prec_opt == NPF_FMT_SPEC_OPT_LITERAL) && !fs.prec && zero) {
-            pad_c = ' ';
-          } else
+        if ((fs.prec_opt == NPF_FMT_SPEC_OPT_LITERAL) && !fs.prec && zero) {
+          pad_c = ' ';
+        } else
 #endif
-          { pad_c = '0'; }
-        }
-      } else { pad_c = ' '; }
-    }
+        { pad_c = '0'; }
+      }
+    } else { pad_c = ' '; }
 #endif
 
     // Compute the number of bytes to truncate or '0'-pad.
