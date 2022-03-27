@@ -955,8 +955,8 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
     if (need_0x) { field_pad -= 2; }
 
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
-    if (fs.conv_spec == NPF_FMT_SPEC_CONV_FLOAT_DECIMAL) {
-      field_pad += (!fs.prec && !fs.alt_form); // 0-pad, no decimal point.
+    if ((fs.conv_spec == NPF_FMT_SPEC_CONV_FLOAT_DECIMAL) && !fs.prec && !fs.alt_form) {
+      ++field_pad; // 0-pad, no decimal point.
     }
 #endif
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
