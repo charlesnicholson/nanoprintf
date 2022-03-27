@@ -353,7 +353,7 @@ int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
   out_spec->field_width_star = 0;
   if (*cur == '*') {
-    out_spec->field_width_star = 1;
+    out_spec->field_width_star = '*';
     ++cur;
   } else {
     out_spec->field_width = 0;
