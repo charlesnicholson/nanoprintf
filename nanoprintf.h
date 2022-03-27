@@ -291,7 +291,7 @@ static int npf_fsplit_abs(float f,
                           uint64_t *out_int_part,
                           uint64_t *out_frac_part,
                           int *out_frac_base10_neg_e);
-static int npf_ftoa_rev(char *buf, float f, char case_adj, int *out_frac_chars);
+static int npf_ftoa_rev(char *buf, float f, char case_adj);
 #endif
 
 #if NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS == 1
@@ -598,7 +598,7 @@ int npf_fsplit_abs(float f, uint64_t *out_int_part, uint64_t *out_frac_part,
   return 1;
 }
 
-int npf_ftoa_rev(char *buf, float f, char case_adj, int *out_frac_chars) {
+int npf_ftoa_rev(char *buf, float f, char case_adj) {
   uint32_t f_bits; { // union-cast is UB, let compiler optimize byte-copy loop.
     char const *src = (char const *)&f;
     char *dst = (char *)&f_bits;
@@ -623,16 +623,11 @@ int npf_ftoa_rev(char *buf, float f, char case_adj, int *out_frac_chars) {
 
   char *dst = buf;
 
-  while (frac_part) { // write the fractional digits
-    *dst++ = (char)('0' + (frac_part % 10));
-    frac_part /= 10;
-  }
-
+  // write the fractional digits
+  while (frac_part) { *dst++ = (char)('0' + (frac_part % 10)); frac_part /= 10; }
   // write the 0 digits between the . and the first fractional digit
   while (frac_base10_neg_exp-- > 0) { *dst++ = '0'; }
-  *out_frac_chars = (int)(dst - buf);
   *dst++ = '.';
-
   // write the integer digits
   do { *dst++ = (char)('0' + (int_part % 10)); int_part /= 10; } while (int_part);
   return (int)(dst - buf);
@@ -903,7 +898,8 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
         zero = (val == 0.f);
 #endif
-        cbuf_len = npf_ftoa_rev(cbuf, val, fs.case_adjust, &frac_chars);
+        cbuf_len = npf_ftoa_rev(cbuf, val, fs.case_adjust);
+        for (int i = 0; i < cbuf_len; ++i) { if (cbuf[i] == '.') { frac_chars = i; } }
 
         if (cbuf_len < 0) {
           cbuf_len = -cbuf_len;
