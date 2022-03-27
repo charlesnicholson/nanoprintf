@@ -172,21 +172,21 @@ TEST_CASE("npf_parse_format_spec") {
        as the beginning of a field width.
     */
 
-    SUBCASE("field width is none if not specified") {
-      REQUIRE(npf_parse_format_spec("%u", &spec) == 2);
-      REQUIRE(spec.field_width_opt == NPF_FMT_SPEC_OPT_NONE);
-    }
+    //SUBCASE("field width is none if not specified") {
+    //  REQUIRE(npf_parse_format_spec("%u", &spec) == 2);
+    //  REQUIRE(spec.field_width_opt == NPF_FMT_SPEC_OPT_NONE);
+    //}
 
-    SUBCASE("field width star is captured") {
-      REQUIRE(npf_parse_format_spec("%*u", &spec) == 3);
-      REQUIRE(spec.field_width_opt == NPF_FMT_SPEC_OPT_STAR);
-    }
+    //SUBCASE("field width star is captured") {
+    //  REQUIRE(npf_parse_format_spec("%*u", &spec) == 3);
+    //  REQUIRE(spec.field_width_opt == NPF_FMT_SPEC_OPT_STAR);
+    //}
 
-    SUBCASE("field width is literal") {
-      REQUIRE(npf_parse_format_spec("%123u", &spec) == 5);
-      REQUIRE(spec.field_width_opt == NPF_FMT_SPEC_OPT_LITERAL);
-      REQUIRE(spec.field_width == 123);
-    }
+    //SUBCASE("field width is literal") {
+    //  REQUIRE(npf_parse_format_spec("%123u", &spec) == 5);
+    //  REQUIRE(spec.field_width_opt == NPF_FMT_SPEC_OPT_LITERAL);
+    //  REQUIRE(spec.field_width == 123);
+    //}
   }
 
   SUBCASE("precision") {
