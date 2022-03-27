@@ -504,7 +504,7 @@ int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
 int npf_itoa_rev(char *buf, npf_int_t i) {
   int n = 0;
   int const sign = (i >= 0) ? 1 : -1;
-  do { *buf++ = (char)('0' + (sign * (i % 10))); i /= 10; ++n; } while (i);
+  do { buf[n++] = (char)('0' + (sign * (i % 10))); i /= 10; } while (i);
   return n;
 }
 
@@ -512,9 +512,8 @@ int npf_utoa_rev(char *buf, npf_uint_t i, unsigned base, unsigned case_adj) {
   int n = 0;
   do {
     unsigned const d = (unsigned)(i % base);
-    *buf++ = (char)((d < 10) ? ('0' + d) : ('A' + case_adj + (d - 10)));
+    buf[n++] = (char)((d < 10) ? ('0' + d) : ('A' + case_adj + (d - 10)));
     i /= base;
-    ++n;
   } while (i);
   return n;
 }
