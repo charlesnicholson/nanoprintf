@@ -230,10 +230,10 @@ Total size: 0x992 (2450) bytes
 
 ## Development
 
-To get the environment and run tests (linux / mac only for now):
+To get the environment and run tests:
 
 1. Clone or fork this repository.
-1. Run `./b` from the root.
+1. Run `./b` from the root (or `py -3 build.py` from the root, for Windows users)
 
 This will build all of the unit, conformance, and compilation tests for your host environment. Any test failures will return a non-zero exit code.
 
