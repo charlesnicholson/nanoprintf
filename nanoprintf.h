@@ -183,6 +183,7 @@ NPF_VISIBILITY int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format,
   #if NANOPRINTF_CLANG
     #pragma GCC diagnostic ignored "-Wc++98-compat-pedantic"
     #pragma GCC diagnostic ignored "-Wcovered-switch-default"
+    #pragma GCC diagnostic ignored "-Wdeclaration-after-statement"
   #elif NANOPRINTF_GCC_PAST_4_6
     #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
   #endif
