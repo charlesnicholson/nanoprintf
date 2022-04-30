@@ -16,10 +16,7 @@
   #define NPF_VISIBILITY extern
 #endif
 
-#if defined(__clang__)
-  #define NPF_PRINTF_ATTR(FORMAT_INDEX, VARGS_INDEX) \
-    __attribute__((__format__(__printf__, FORMAT_INDEX, VARGS_INDEX)))
-#elif defined(__GNUC__) || defined(__GNUG__)
+#if defined(__clang__) || defined(__GNUC__) || defined(__GNUG__)
   #define NPF_PRINTF_ATTR(FORMAT_INDEX, VARGS_INDEX) \
     __attribute__((format(printf, FORMAT_INDEX, VARGS_INDEX)))
 #else
