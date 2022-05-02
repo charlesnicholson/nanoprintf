@@ -838,7 +838,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
 
       case NPF_FMT_SPEC_CONV_POINTER: {
         cbuf_len = npf_utoa_rev(cbuf, (npf_uint_t)(uintptr_t)va_arg(args, void *),
-                                16, fs.case_adjust);
+                                16, (unsigned)fs.case_adjust);
         need_0x = 'x';
       } break;
 
