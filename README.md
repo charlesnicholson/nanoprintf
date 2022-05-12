@@ -2,7 +2,7 @@
 
 [![Presubmit Checks](https://github.com/charlesnicholson/nanoprintf/workflows/Presubmit%20Checks/badge.svg)](https://github.com/charlesnicholson/nanoprintf/tree/main/.github/workflows) [![](https://img.shields.io/badge/pylint-10.0-brightgreen.svg)](https://www.pylint.org/) [![](https://img.shields.io/badge/license-public_domain-brightgreen.svg)](https://github.com/charlesnicholson/nanoprintf/blob/master/LICENSE)
 
-nanoprintf is an implementation of snprintf and vsnprintf for embedded systems that, when fully enabled, aim for C11 standard compliance. The primary exceptions are `double` (they get casted to `float`), scientific notation (`%e`, `%g`, `%a`), and the conversions that require `wcrtomb` to exist. C23 binary integer output is optionally supported as per [N2630](http://www.open-std.org/jtc1/sc22/wg14/www/docs/n2630.pdf). Safety extensions for snprintf and vsnprintf can be optionally configured to return trimmed or fully-empty strings on buffer overflow events.
+nanoprintf is an unencumbered implementation of snprintf and vsnprintf for embedded systems that, when fully enabled, aim for C11 standard compliance. The primary exceptions are `double` (they get casted to `float`), scientific notation (`%e`, `%g`, `%a`), and the conversions that require `wcrtomb` to exist. C23 binary integer output is optionally supported as per [N2630](http://www.open-std.org/jtc1/sc22/wg14/www/docs/n2630.pdf). Safety extensions for snprintf and vsnprintf can be optionally configured to return trimmed or fully-empty strings on buffer overflow events.
 
 nanoprintf makes no memory allocations and uses less than 100 bytes of stack. It compiles to between *~760-2500 bytes of object code* on a Cortex-M0 architecture, depending on configuration.
 
