@@ -5,6 +5,7 @@ on:
     branches: [ main ]
   schedule:
     - cron: '0 2 * * 0'  # Weekly
+  workflow_dispatch:
 
 permissions:
   packages: read
