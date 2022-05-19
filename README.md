@@ -90,6 +90,9 @@ nanoprintf offers three options for configuring safety:
 
 In any of the above cases, nanoprintf will still return the number of bytes that would have been written to the buffer, had there been enough room. This value does not account for the null-terminator byte, in accordance with the C Standard.
 
+### Thread Safety
+nanoprintf uses only stack memory and no concurrency primitives, so internally it is oblivious to its execution environment. This makes it safe to call from multiple execution contexts concurrently, or to interrupt a `npf_` call with another `npf_` call (say, an ISR or something). If you use `npf_pprintf` concurrently with the same `npf_putc` target, it's up to you to ensure correctness inside your callback. If you `npf_snprintf` from multiple threads to the same buffer, you will have an obvious data race.
+
 ## Formatting
 
 Like `printf`, `nanoprintf` expects a conversion specification string of the following form:
