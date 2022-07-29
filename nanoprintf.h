@@ -556,10 +556,10 @@ int npf_fsplit_abs(float f, uint64_t *out_int_part, uint64_t *out_frac_part,
   }
 
   { // Convert the fractional part to base 10.
-    unsigned frac_part = 0;
+    uint64_t frac_part = 0;
     for (int i = 0; frac && (i < NPF_MAX_FRACTION_DEC_DIGITS); ++i) {
       frac_part *= 10;
-      frac_part += (unsigned)(frac >> (NPF_FRACTION_BIN_DIGITS - 4));
+      frac_part += (uint64_t)(frac >> (NPF_FRACTION_BIN_DIGITS - 4));
       frac &= 0x0fffffffffffffffllu;
       frac *= 10;
     }
