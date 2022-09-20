@@ -452,6 +452,19 @@ TEST_CASE("npf_parse_format_spec") {
       REQUIRE(spec.case_adjust == 0);
     }
 
+    SUBCASE("g") {
+      REQUIRE(npf_parse_format_spec("%g", &spec) == 2);
+      REQUIRE(spec.conv_spec == NPF_FMT_SPEC_CONV_FLOAT_SHORTEST);
+      REQUIRE(spec.case_adjust == 'a' - 'A');
+    }
+
+    SUBCASE("G") {
+      REQUIRE(npf_parse_format_spec("%G", &spec) == 2);
+      REQUIRE(spec.conv_spec == NPF_FMT_SPEC_CONV_FLOAT_SHORTEST);
+      REQUIRE(spec.case_adjust == 0);
+    }
+
+
     SUBCASE("a") {
       REQUIRE(npf_parse_format_spec("%a", &spec) == 2);
       REQUIRE(spec.conv_spec == NPF_FMT_SPEC_CONV_FLOAT_HEX);

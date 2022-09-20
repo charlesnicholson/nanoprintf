@@ -210,9 +210,10 @@ typedef enum {
   NPF_FMT_SPEC_CONV_WRITEBACK,    // 'n'
 #endif
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
-  NPF_FMT_SPEC_CONV_FLOAT_DEC,    // 'f', 'F'
-  NPF_FMT_SPEC_CONV_FLOAT_SCI,    // 'e', 'E'
-  NPF_FMT_SPEC_CONV_FLOAT_HEX,    // 'a', 'A'
+  NPF_FMT_SPEC_CONV_FLOAT_DEC,      // 'f', 'F'
+  NPF_FMT_SPEC_CONV_FLOAT_SCI,      // 'e', 'E'
+  NPF_FMT_SPEC_CONV_FLOAT_SHORTEST, // 'g', 'G'
+  NPF_FMT_SPEC_CONV_FLOAT_HEX,      // 'a', 'A'
 #endif
 } npf_format_spec_conversion_t;
 
@@ -444,6 +445,13 @@ int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
       out_spec->case_adjust = 0;
     case 'e':
       out_spec->conv_spec = NPF_FMT_SPEC_CONV_FLOAT_SCI;
+      if (out_spec->prec_opt == NPF_FMT_SPEC_OPT_NONE) { out_spec->prec = 6; }
+      break;
+
+    case 'G':
+      out_spec->case_adjust = 0;
+    case 'g':
+      out_spec->conv_spec = NPF_FMT_SPEC_CONV_FLOAT_SHORTEST;
       if (out_spec->prec_opt == NPF_FMT_SPEC_OPT_NONE) { out_spec->prec = 6; }
       break;
 
@@ -878,6 +886,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
       case NPF_FMT_SPEC_CONV_FLOAT_DEC:
       case NPF_FMT_SPEC_CONV_FLOAT_SCI:
+      case NPF_FMT_SPEC_CONV_FLOAT_SHORTEST:
       case NPF_FMT_SPEC_CONV_FLOAT_HEX: {
         float val;
         if (fs.length_modifier == NPF_FMT_SPEC_LEN_MOD_LONG_DOUBLE) {
