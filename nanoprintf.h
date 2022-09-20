@@ -211,7 +211,9 @@ typedef enum {
   , NPF_FMT_SPEC_CONV_WRITEBACK   // 'n'
 #endif
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
-  , NPF_FMT_SPEC_CONV_FLOAT_DECIMAL // 'f', 'F'
+  , NPF_FMT_SPEC_CONV_FLOAT_DEC   // 'f', 'F'
+  , NPF_FMT_SPEC_CONV_FLOAT_SCI   // 'e', 'E'
+  , NPF_FMT_SPEC_CONV_FLOAT_HEX   // 'a', 'A'
 #endif
 } npf_format_spec_conversion_t;
 
@@ -435,7 +437,21 @@ int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
     case 'F':
       out_spec->case_adjust = 0;
     case 'f':
-      out_spec->conv_spec = NPF_FMT_SPEC_CONV_FLOAT_DECIMAL;
+      out_spec->conv_spec = NPF_FMT_SPEC_CONV_FLOAT_DEC;
+      if (out_spec->prec_opt == NPF_FMT_SPEC_OPT_NONE) { out_spec->prec = 6; }
+      break;
+
+    case 'E':
+      out_spec->case_adjust = 0;
+    case 'e':
+      out_spec->conv_spec = NPF_FMT_SPEC_CONV_FLOAT_SCI;
+      if (out_spec->prec_opt == NPF_FMT_SPEC_OPT_NONE) { out_spec->prec = 6; }
+      break;
+
+    case 'A':
+      out_spec->case_adjust = 0;
+    case 'a':
+      out_spec->conv_spec = NPF_FMT_SPEC_CONV_FLOAT_HEX;
       if (out_spec->prec_opt == NPF_FMT_SPEC_OPT_NONE) { out_spec->prec = 6; }
       break;
 #endif
@@ -861,7 +877,9 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
 #endif
 
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
-      case NPF_FMT_SPEC_CONV_FLOAT_DECIMAL: {
+      case NPF_FMT_SPEC_CONV_FLOAT_DEC:
+      case NPF_FMT_SPEC_CONV_FLOAT_SCI:
+      case NPF_FMT_SPEC_CONV_FLOAT_HEX: {
         float val;
         if (fs.length_modifier == NPF_FMT_SPEC_LEN_MOD_LONG_DOUBLE) {
           val = (float)va_arg(args, long double);
@@ -911,7 +929,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
       if (!inf_or_nan) { // float precision is after the decimal point
         int const prec_start =
-          (fs.conv_spec == NPF_FMT_SPEC_CONV_FLOAT_DECIMAL) ? frac_chars : cbuf_len;
+          (fs.conv_spec == NPF_FMT_SPEC_CONV_FLOAT_DEC) ? frac_chars : cbuf_len;
         prec_pad = npf_max(0, fs.prec - prec_start);
       }
 #elif NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
@@ -925,7 +943,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
     if (need_0x) { field_pad -= 2; }
 
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
-    if ((fs.conv_spec == NPF_FMT_SPEC_CONV_FLOAT_DECIMAL) && !fs.prec && !fs.alt_form) {
+    if ((fs.conv_spec == NPF_FMT_SPEC_CONV_FLOAT_DEC) && !fs.prec && !fs.alt_form) {
       ++field_pad; // 0-pad, no decimal point.
     }
 #endif
@@ -956,7 +974,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
     } else {
       if (sign_c) { NPF_PUTC(sign_c); }
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
-      if (fs.conv_spec != NPF_FMT_SPEC_CONV_FLOAT_DECIMAL) {
+      if (fs.conv_spec != NPF_FMT_SPEC_CONV_FLOAT_DEC) {
 #endif
 
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
@@ -980,7 +998,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
 
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
       // real precision comes after the number.
-      if ((fs.conv_spec == NPF_FMT_SPEC_CONV_FLOAT_DECIMAL) && !inf_or_nan) {
+      if ((fs.conv_spec == NPF_FMT_SPEC_CONV_FLOAT_DEC) && !inf_or_nan) {
         while (prec_pad-- > 0) { NPF_PUTC('0'); }
       }
 #endif
