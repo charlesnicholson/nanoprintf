@@ -1,7 +1,7 @@
 /* nanoprintf: a tiny embeddable printf replacement written in C.
    https://github.com/charlesnicholson/nanoprintf
    charles.nicholson+nanoprintf@gmail.com
-   dual-licensed under 0bsd AND unlicense, see end of file for details. */
+   dual-licensed under 0bsd and unlicense, take your pick. see eof for details. */
 
 #ifndef NANOPRINTF_H_INCLUDED
 #define NANOPRINTF_H_INCLUDED
@@ -29,18 +29,18 @@
 extern "C" {
 #endif
 
-NPF_VISIBILITY int npf_snprintf(char *buffer, size_t bufsz, const char *format,
-                                ...) NPF_PRINTF_ATTR(3, 4);
+NPF_VISIBILITY int npf_snprintf(
+  char *buffer, size_t bufsz, const char *format, ...) NPF_PRINTF_ATTR(3, 4);
 
-NPF_VISIBILITY int npf_vsnprintf(char *buffer, size_t bufsz, char const *format,
-                                 va_list vlist) NPF_PRINTF_ATTR(3, 0);
+NPF_VISIBILITY int npf_vsnprintf(
+  char *buffer, size_t bufsz, char const *format, va_list vlist) NPF_PRINTF_ATTR(3, 0);
 
 typedef void (*npf_putc)(int c, void *ctx);
-NPF_VISIBILITY int npf_pprintf(npf_putc pc, void *pc_ctx, char const *format,
-                               ...) NPF_PRINTF_ATTR(3, 4);
+NPF_VISIBILITY int npf_pprintf(
+  npf_putc pc, void *pc_ctx, char const *format, ...) NPF_PRINTF_ATTR(3, 4);
 
-NPF_VISIBILITY int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format,
-                                va_list vlist) NPF_PRINTF_ATTR(3, 0);
+NPF_VISIBILITY int npf_vpprintf(
+  npf_putc pc, void *pc_ctx, char const *format, va_list vlist) NPF_PRINTF_ATTR(3, 0);
 
 #ifdef __cplusplus
 }
@@ -185,13 +185,12 @@ typedef enum {
   NPF_FMT_SPEC_LEN_MOD_SHORT,       // 'h'
   NPF_FMT_SPEC_LEN_MOD_LONG_DOUBLE, // 'L'
   NPF_FMT_SPEC_LEN_MOD_CHAR,        // 'hh'
-  NPF_FMT_SPEC_LEN_MOD_LONG         // 'l'
+  NPF_FMT_SPEC_LEN_MOD_LONG,        // 'l'
 #if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
-  ,
   NPF_FMT_SPEC_LEN_MOD_LARGE_LONG_LONG, // 'll'
   NPF_FMT_SPEC_LEN_MOD_LARGE_INTMAX,    // 'j'
   NPF_FMT_SPEC_LEN_MOD_LARGE_SIZET,     // 'z'
-  NPF_FMT_SPEC_LEN_MOD_LARGE_PTRDIFFT   // 't'
+  NPF_FMT_SPEC_LEN_MOD_LARGE_PTRDIFFT,  // 't'
 #endif
 } npf_format_spec_length_modifier_t;
 
@@ -206,14 +205,14 @@ typedef enum {
   NPF_FMT_SPEC_CONV_OCTAL,        // 'o'
   NPF_FMT_SPEC_CONV_HEX_INT,      // 'x', 'X'
   NPF_FMT_SPEC_CONV_UNSIGNED_INT, // 'u'
-  NPF_FMT_SPEC_CONV_POINTER       // 'p'
+  NPF_FMT_SPEC_CONV_POINTER,      // 'p'
 #if NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS == 1
-  , NPF_FMT_SPEC_CONV_WRITEBACK   // 'n'
+  NPF_FMT_SPEC_CONV_WRITEBACK,    // 'n'
 #endif
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
-  , NPF_FMT_SPEC_CONV_FLOAT_DEC   // 'f', 'F'
-  , NPF_FMT_SPEC_CONV_FLOAT_SCI   // 'e', 'E'
-  , NPF_FMT_SPEC_CONV_FLOAT_HEX   // 'a', 'A'
+  NPF_FMT_SPEC_CONV_FLOAT_DEC,    // 'f', 'F'
+  NPF_FMT_SPEC_CONV_FLOAT_SCI,    // 'e', 'E'
+  NPF_FMT_SPEC_CONV_FLOAT_HEX,    // 'a', 'A'
 #endif
 } npf_format_spec_conversion_t;
 
