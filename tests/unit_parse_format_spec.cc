@@ -430,13 +430,37 @@ TEST_CASE("npf_parse_format_spec") {
 
     SUBCASE("f") {
       REQUIRE(npf_parse_format_spec("%f", &spec) == 2);
-      REQUIRE(spec.conv_spec == NPF_FMT_SPEC_CONV_FLOAT_DECIMAL);
+      REQUIRE(spec.conv_spec == NPF_FMT_SPEC_CONV_FLOAT_DEC);
       REQUIRE(spec.case_adjust == 'a' - 'A');
     }
 
     SUBCASE("F") {
       REQUIRE(npf_parse_format_spec("%F", &spec) == 2);
-      REQUIRE(spec.conv_spec == NPF_FMT_SPEC_CONV_FLOAT_DECIMAL);
+      REQUIRE(spec.conv_spec == NPF_FMT_SPEC_CONV_FLOAT_DEC);
+      REQUIRE(spec.case_adjust == 0);
+    }
+
+    SUBCASE("e") {
+      REQUIRE(npf_parse_format_spec("%e", &spec) == 2);
+      REQUIRE(spec.conv_spec == NPF_FMT_SPEC_CONV_FLOAT_SCI);
+      REQUIRE(spec.case_adjust == 'a' - 'A');
+    }
+
+    SUBCASE("E") {
+      REQUIRE(npf_parse_format_spec("%E", &spec) == 2);
+      REQUIRE(spec.conv_spec == NPF_FMT_SPEC_CONV_FLOAT_SCI);
+      REQUIRE(spec.case_adjust == 0);
+    }
+
+    SUBCASE("a") {
+      REQUIRE(npf_parse_format_spec("%a", &spec) == 2);
+      REQUIRE(spec.conv_spec == NPF_FMT_SPEC_CONV_FLOAT_HEX);
+      REQUIRE(spec.case_adjust == 'a' - 'A');
+    }
+
+    SUBCASE("A") {
+      REQUIRE(npf_parse_format_spec("%A", &spec) == 2);
+      REQUIRE(spec.conv_spec == NPF_FMT_SPEC_CONV_FLOAT_HEX);
       REQUIRE(spec.case_adjust == 0);
     }
 
