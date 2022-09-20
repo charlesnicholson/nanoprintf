@@ -452,6 +452,18 @@ TEST_CASE("npf_parse_format_spec") {
       REQUIRE(spec.case_adjust == 0);
     }
 
+    SUBCASE("g") {
+      REQUIRE(npf_parse_format_spec("%g", &spec) == 2);
+      REQUIRE(spec.conv_spec == NPF_FMT_SPEC_CONV_FLOAT_SHORTEST);
+      REQUIRE(spec.case_adjust == 'a' - 'A');
+    }
+
+    SUBCASE("G") {
+      REQUIRE(npf_parse_format_spec("%G", &spec) == 2);
+      REQUIRE(spec.conv_spec == NPF_FMT_SPEC_CONV_FLOAT_SHORTEST);
+      REQUIRE(spec.case_adjust == 0);
+    }
+
     SUBCASE("a") {
       REQUIRE(npf_parse_format_spec("%a", &spec) == 2);
       REQUIRE(spec.conv_spec == NPF_FMT_SPEC_CONV_FLOAT_HEX);
@@ -473,42 +485,3 @@ TEST_CASE("npf_parse_format_spec") {
   }
 }
 
-/*
-    Not implemented yet
-
-TEST(npf_parse_format_spec, e) {
-    CHECK_EQUAL(2, npf_parse_format_spec("%e", &spec));
-    CHECK_EQUAL(NPF_FMT_SPEC_CONV_FLOAT_EXPONENT, spec.conv_spec);
-    CHECK_EQUAL(NPF_FMT_SPEC_CONV_CASE_LOWER, spec.conv_spec_case);
-}
-
-TEST(npf_parse_format_spec, E) {
-    CHECK_EQUAL(2, npf_parse_format_spec("%E", &spec));
-    CHECK_EQUAL(NPF_FMT_SPEC_CONV_FLOAT_EXPONENT, spec.conv_spec);
-    CHECK_EQUAL(NPF_FMT_SPEC_CONV_CASE_UPPER, spec.conv_spec_case);
-}
-
-TEST(npf_parse_format_spec, a) {
-    CHECK_EQUAL(2, npf_parse_format_spec("%a", &spec));
-    CHECK_EQUAL(NPF_FMT_SPEC_CONV_FLOAT_HEXPONENT, spec.conv_spec);
-    CHECK_EQUAL(NPF_FMT_SPEC_CONV_CASE_LOWER, spec.conv_spec_case);
-}
-
-TEST(npf_parse_format_spec, A) {
-    CHECK_EQUAL(2, npf_parse_format_spec("%A", &spec));
-    CHECK_EQUAL(NPF_FMT_SPEC_CONV_FLOAT_HEXPONENT, spec.conv_spec);
-    CHECK_EQUAL(NPF_FMT_SPEC_CONV_CASE_UPPER, spec.conv_spec_case);
-}
-
-TEST(npf_parse_format_spec, g) {
-    CHECK_EQUAL(2, npf_parse_format_spec("%g", &spec));
-    CHECK_EQUAL(NPF_FMT_SPEC_CONV_FLOAT_DYNAMIC, spec.conv_spec);
-    CHECK_EQUAL(NPF_FMT_SPEC_CONV_CASE_LOWER, spec.conv_spec_case);
-}
-
-TEST(npf_parse_format_spec, G) {
-    CHECK_EQUAL(2, npf_parse_format_spec("%G", &spec));
-    CHECK_EQUAL(NPF_FMT_SPEC_CONV_FLOAT_DYNAMIC, spec.conv_spec);
-    CHECK_EQUAL(NPF_FMT_SPEC_CONV_CASE_UPPER, spec.conv_spec_case);
-}
-*/

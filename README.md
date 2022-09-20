@@ -144,8 +144,9 @@ Like `printf`, `nanoprintf` expects a conversion specification string of the fol
 	* `p`: Pointers
 	* `n`: Write the number of bytes written to the pointer vararg
 	* `f`/`F`: Floating-point decimal
-	* `e`/`E`: Floating-point scientific (unimplemented, prints decimal)
-	* `a`/`A`: Floating-point hex (unimplemented, prints decimal)
+	* `e`/`E`: Floating-point scientific (unimplemented, prints float decimal)
+	* `g`/`G`: Floating-point shortest (unimplemented, prints float decimal)
+	* `a`/`A`: Floating-point hex (unimplemented, prints float decimal)
 	* `b`/`B`: Binary integers
 
 ## Floating Point
@@ -154,7 +155,7 @@ Floating point conversion is performed by extracting the value into 64:64 fixed-
 
 Because the float -> fixed code operates on the raw float value bits, no floating point operations are performed. This allows nanoprintf to efficiently format floats on soft-float architectures like Cortex-M0, and to function identically with or without optimizations like "fast math". Despite `nano` in the name, there's no way to do away with double entirely, since the C language standard says that floats are promoted to double any time they're passed into variadic argument lists. nanoprintf casts all doubles back down to floats before doing any conversions. No other single- or double- precision operations are performed.
 
-The `%e`/`%E` and `%a`/`%A` specifiers are parsed but not formatted. If used, the output will be identical to if `%f`/`%F` was used. Pull requests welcome! :)
+The `%e`/`%E`, `%a`/`%A`, and `%g`/`%G` specifiers are parsed but not formatted. If used, the output will be identical to if `%f`/`%F` was used. Pull requests welcome! :)
 
 ## Limitations
 
