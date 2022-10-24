@@ -87,6 +87,10 @@ def get_cmake(download, verbose):
                 cmake_local_tgz,
                 verbose)
         with tarfile.open(cmake_local_tgz, 'r') as tar:
+            for member in tar.getmembers():
+                member_path = pathlib.Path(cmake_local_dir / member.name).resolve()
+                if not cmake_local_dir in member_path.parents:
+                    raise ValueError('Tar file contents move upwards past sandbox root')
             tar.extractall(path=cmake_local_dir)
 
     return cmake_local_exe
