@@ -762,10 +762,13 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
 
       case NPF_FMT_SPEC_CONV_STRING: {
         cbuf = va_arg(args, char *);
-        for (char const *s = cbuf; *s; ++s, ++cbuf_len); // strlen
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
-        if (fs.prec_opt == NPF_FMT_SPEC_OPT_LITERAL) {
-          cbuf_len = npf_min(fs.prec, cbuf_len); // prec truncates strings
+        if (fs.prec_opt == NPF_FMT_SPEC_OPT_NONE) {
+#endif
+          for (char const *s = cbuf; *s; ++s, ++cbuf_len); // strlen
+#if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
+        } else {
+          for (char const *s = cbuf; *s && (cbuf_len < fs.prec); ++s, ++cbuf_len);
         }
 #endif
       } break;
