@@ -283,7 +283,6 @@ static int npf_bin_len(npf_uint_t i);
   #include <intrin.h>
 #endif
 
-static int npf_min(int x, int y) { return (x < y) ? x : y; }
 static int npf_max(int x, int y) { return (x > y) ? x : y; }
 
 int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
