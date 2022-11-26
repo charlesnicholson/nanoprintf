@@ -179,7 +179,8 @@ TEST_CASE("npf_parse_format_spec") {
 
     SUBCASE("field width star is captured") {
       REQUIRE(npf_parse_format_spec("%*u", &spec) == 3);
-      REQUIRE(spec.field_width_opt == NPF_FMT_SPEC_OPT_STAR);
+      REQUIRE(spec.field_width_opt == NPF_FMT_SPEC_OPT_LITERAL); //STAR);
+      REQUIRE(spec.field_width == -1);
     }
 
     SUBCASE("field width is literal") {
@@ -220,7 +221,8 @@ TEST_CASE("npf_parse_format_spec") {
 
     SUBCASE("precision captures star") {
       REQUIRE(npf_parse_format_spec("%.*u", &spec) == 4);
-      REQUIRE(spec.prec_opt == NPF_FMT_SPEC_OPT_STAR);
+      REQUIRE(spec.prec_opt == NPF_FMT_SPEC_OPT_LITERAL); //STAR);
+      REQUIRE(spec.prec == -1);
     }
 
     SUBCASE("precision is literal zero if only a period is specified") {

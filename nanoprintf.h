@@ -176,7 +176,6 @@ NPF_VISIBILITY int npf_vpprintf(
 typedef enum {
   NPF_FMT_SPEC_OPT_NONE,
   NPF_FMT_SPEC_OPT_LITERAL,
-  NPF_FMT_SPEC_OPT_STAR,
 } npf_fmt_spec_opt_t;
 #endif
 
@@ -324,7 +323,8 @@ int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
   out_spec->field_width_opt = NPF_FMT_SPEC_OPT_NONE;
   if (*cur == '*') {
-    out_spec->field_width_opt = NPF_FMT_SPEC_OPT_STAR;
+    out_spec->field_width_opt = NPF_FMT_SPEC_OPT_LITERAL;  //NPF_FMT_SPEC_OPT_STAR;
+    out_spec->field_width = -1;
     ++cur;
   } else {
     out_spec->field_width = 0;
@@ -341,7 +341,8 @@ int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
   if (*cur == '.') {
     ++cur;
     if (*cur == '*') {
-      out_spec->prec_opt = NPF_FMT_SPEC_OPT_STAR;
+      out_spec->prec_opt = NPF_FMT_SPEC_OPT_LITERAL; //NPF_FMT_SPEC_OPT_STAR;
+      out_spec->prec = -1;
       ++cur;
     } else {
       if (*cur == '-') {
@@ -713,8 +714,8 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
 
     // Extract star-args immediately
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
-    if (fs.field_width_opt == NPF_FMT_SPEC_OPT_STAR) {
-      fs.field_width_opt = NPF_FMT_SPEC_OPT_LITERAL;
+    if ((fs.field_width_opt == NPF_FMT_SPEC_OPT_LITERAL) && (fs.field_width == -1)) { // NPF_FMT_SPEC_OPT_STAR) {
+      // fs.field_width_opt = NPF_FMT_SPEC_OPT_LITERAL;
       fs.field_width = va_arg(args, int);
       if (fs.field_width < 0) {
         fs.field_width = -fs.field_width;
@@ -723,7 +724,8 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
     }
 #endif
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
-    if (fs.prec_opt == NPF_FMT_SPEC_OPT_STAR) {
+    if ((fs.prec_opt == NPF_FMT_SPEC_OPT_LITERAL) && (fs.prec == -1)) { // NPF_FMT_SPEC_OPT_STAR) {
+    //if (fs.prec_opt == NPF_FMT_SPEC_OPT_STAR) {
       fs.prec_opt = NPF_FMT_SPEC_OPT_NONE;
       fs.prec = va_arg(args, int);
       if (fs.prec >= 0) { fs.prec_opt = NPF_FMT_SPEC_OPT_LITERAL; }
