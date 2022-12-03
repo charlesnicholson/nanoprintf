@@ -7,6 +7,7 @@
   #pragma warning(disable:5039) // extern "c" throw
   #pragma warning(disable:4710) // function not inlined
   #pragma warning(disable:4711) // selected for inline
+  #pragma warning(disable:5264) // const variable not used (shut up doctest)
 #endif
 
 #define NANOPRINTF_IMPLEMENTATION
