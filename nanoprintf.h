@@ -751,12 +751,12 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
     switch (fs.conv_spec) {
       case NPF_FMT_SPEC_CONV_PERCENT:
         *cbuf = '%';
-        ++cbuf_len;
+        cbuf_len = 1;
         break;
 
       case NPF_FMT_SPEC_CONV_CHAR:
         *cbuf = (char)va_arg(args, int);
-        ++cbuf_len;
+        cbuf_len = 1;
         break;
 
       case NPF_FMT_SPEC_CONV_STRING: {
