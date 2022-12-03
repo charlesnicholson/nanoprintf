@@ -4,6 +4,10 @@ structure is to make nanoprintf as consumable as possible in as many
 environments / countries / companies as possible without encumbering
 users.
 
+This license applies to all of the nanoprintf source code, build code,
+and tests, with the explicit exception of doctest.h, which exists under
+its own license and is included in this repository.
+
 The text of the two licenses follows below:
 
 ============================== UNLICENSE ==============================
