@@ -92,8 +92,8 @@ By default, npf_snprintf and npf_vsnprintf behave according to the C Standard: t
 
 nanoprintf offers three options for configuring safety:
 * Do nothing. User-provided buffers will not be null-terminated if exhausted.
-* `NANOPRINTF_SNPRINTF_SAFE_TRIM_STRING_ON_OVERFLOW`: When exhausted, the final byte of the buffer will be overwritten with a null-terimator byte. This is similar in spirit to the behavior of [BSD strlcpy](https://linux.die.net/man/3/strlcpy).
-* `NANOPRINTF_SNPRINTF_SAFE_EMPTY_STRING_ON_OVERFLOW`: When exhausted, the _first_ byte of the buffer will be overwritten with a null-terminator byte. This is similar in spirit to [Microsoft's snprintf_s](https://docs.microsoft.com/en-us/cpp/c-runtime-library/reference/snprintf-s-snprintf-s-l-snwprintf-s-snwprintf-s-l).
+* Define `NANOPRINTF_SNPRINTF_SAFE_TRIM_STRING_ON_OVERFLOW`: When exhausted, the final byte of the buffer will be overwritten with a null-terimator byte. This is similar in spirit to the behavior of [BSD strlcpy](https://linux.die.net/man/3/strlcpy).
+* Define `NANOPRINTF_SNPRINTF_SAFE_EMPTY_STRING_ON_OVERFLOW`: When exhausted, the _first_ byte of the buffer will be overwritten with a null-terminator byte. This is similar in spirit to [Microsoft's snprintf_s](https://docs.microsoft.com/en-us/cpp/c-runtime-library/reference/snprintf-s-snprintf-s-l-snwprintf-s-snwprintf-s-l).
 
 In any of the above cases, nanoprintf will still return the number of bytes that would have been written to the buffer, had there been enough room. This value does not account for the null-terminator byte, in accordance with the C Standard.
 
