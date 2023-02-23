@@ -264,6 +264,10 @@ static int npf_fsplit_abs(float f,
                           uint64_t *out_int_part,
                           uint64_t *out_frac_part,
                           int *out_frac_base10_neg_e);
+static int npf_fsplit_abs2(float f,
+                           uint64_t *out_int_part,
+                           uint64_t *out_frac_part,
+                           int *out_frac_base10_neg_e);
 static int npf_ftoa_rev(char *buf, float f, char case_adj, int *out_frac_chars);
 #endif
 
@@ -591,6 +595,28 @@ int npf_fsplit_abs(float f, uint64_t *out_int_part, uint64_t *out_frac_part,
   return 1;
 }
 
+int npf_fsplit_abs2(float f, uint64_t *out_int_part, uint64_t *out_frac_part,
+                    int *out_frac_base10_neg_exp) {
+  if (f < 0.f) { f = -f; }
+  uint64_t const int_part = (uint64_t)f;
+  float frac = f - (int)f;
+  int frac_base10_neg_exp = -1;
+  while ((frac != 0.f) && (frac < 1.f)) {
+    ++frac_base10_neg_exp;
+    frac *= 10.f;
+  }
+  int digits = 1;
+  while ((digits < 8) && ((frac - (int)frac) != 0.f)) {
+    ++digits;
+    frac *= 10.f;
+  }
+
+  *out_int_part = int_part;
+  *out_frac_base10_neg_exp = frac_base10_neg_exp;
+  *out_frac_part = (uint64_t)frac;
+  return 1;
+}
+
 int npf_ftoa_rev(char *buf, float f, char case_adj, int *out_frac_chars) {
   uint32_t f_bits; { // union-cast is UB, let compiler optimize byte-copy loop.
     char const *src = (char const *)&f;
@@ -609,7 +635,7 @@ int npf_ftoa_rev(char *buf, float f, char case_adj, int *out_frac_chars) {
 
   uint64_t int_part, frac_part;
   int frac_base10_neg_exp;
-  if (npf_fsplit_abs(f, &int_part, &frac_part, &frac_base10_neg_exp) == 0) {
+  if (npf_fsplit_abs2(f, &int_part, &frac_part, &frac_base10_neg_exp) == 0) {
     for (int i = 0; i < 3; ++i) { *buf++ = (char)("ROO"[i] + case_adj); }
     return -3;
   }
