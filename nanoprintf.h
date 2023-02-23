@@ -598,14 +598,14 @@ int npf_fsplit_abs(float f, uint64_t *out_int_part, uint64_t *out_frac_part,
 int npf_fsplit_abs2(float f, uint32_t *out_int_part, uint32_t *out_frac_part,
                     int *out_frac_base10_neg_exp) {
   if (f < 0.f) { f = -f; }
-  float frac = f - (int)f;
+  float frac = f - (int)(float)f;
   int frac_base10_neg_exp = -1;
   while ((frac != 0.f) && (frac < 1.f)) {
     ++frac_base10_neg_exp;
     frac *= 10.f;
   }
   int digits = 1;
-  while ((digits < 8) && ((frac - (int)frac) != 0.f)) {
+  while ((digits < 8) && ((frac - (int)(float)frac) != 0.f)) {
     ++digits;
     frac *= 10.f;
   }
