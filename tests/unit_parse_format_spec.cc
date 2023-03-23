@@ -160,6 +160,11 @@ TEST_CASE("npf_parse_format_spec") {
       REQUIRE(spec.left_justified);
       REQUIRE(!spec.leading_zero_pad);
     }
+
+    SUBCASE("0 flag is ignored when precision is specified") {
+      REQUIRE(npf_parse_format_spec("%0.1u", &spec) == 5);
+      REQUIRE(!spec.leading_zero_pad);
+    }
   }
 
   SUBCASE("field width") {
