@@ -203,6 +203,7 @@ TEST_CASE("conformance to system printf") {
 #if (NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1) && \
     (NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1)
     require_conform(" +01", "%+4.2i", 1);
+    require_conform(" 0", "%02.1d", 0);
 #endif
 
 #if (NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1)
