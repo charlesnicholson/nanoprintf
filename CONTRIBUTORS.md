@@ -5,3 +5,4 @@
 * [Dino Dai Zovi](https://github.com/ddz)
 * [Shang Yuanchun](https://github.com/ideal)
 * [Shreyas Balakrishna](https://github.com/shreyasbharath)
+* [Jim Keener](https://github.com/jimktrains)

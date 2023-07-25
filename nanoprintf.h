@@ -512,7 +512,7 @@ int npf_fsplit_abs(float f, uint64_t *out_int_part, uint64_t *out_frac_part,
 
   if (exponent >= (64 - NPF_MANTISSA_BITS)) { return 0; } // value is out of range
 
-  uint32_t const implicit_one = 1u << NPF_MANTISSA_BITS;
+  uint32_t const implicit_one = ((uint32_t)1) << NPF_MANTISSA_BITS;
   uint32_t const mantissa = f_bits & (implicit_one - 1);
   uint32_t const mantissa_norm = mantissa | implicit_one;
 
