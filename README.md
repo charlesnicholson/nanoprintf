@@ -70,6 +70,12 @@ Pass `NULL` or `nullptr` to `npf_[v]snprintf` to write nothing, and only return 
 
 nanoprintf does *not* provide `printf` or `putchar` itself; those are seen as system-level services and nanoprintf is a utility library. nanoprintf is hopefully a good building block for rolling your own `printf`, though.
 
+### Return Values
+
+The nanoprintf functions all return the same value: the number of characters that were either sent to the callback (for npf_pprintf) or the number of characters that would have been written to the buffer provided sufficient space. The null-terminator 0 byte is not part of the count.
+
+The C Standard allows for the printf functions to return negative values in case string or character encodings can not be performed, or if the output stream encounters EOF. Since nanoprintf is oblivious to OS resources like files, and does not support the `l` length modifier for `wchar_t` support, any runtime errors are either internal bugs (please report!) or incorrect usage. Because of this, nanoprintf only returns non-negative values representing how many bytes the formatted string contains (again, minus the null-terminator byte).
+
 ## Configuration
 
 ### Features

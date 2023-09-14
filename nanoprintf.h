@@ -29,6 +29,11 @@
 extern "C" {
 #endif
 
+// The npf_ functions all return the number of bytes required to express the
+// fully-formatted string, not including the null terminator character.
+// The npf_ functions do not return negative values, since the lack of 'l' length
+// modifier support makes encoding errors impossible.
+
 NPF_VISIBILITY int npf_snprintf(
   char *buffer, size_t bufsz, const char *format, ...) NPF_PRINTF_ATTR(3, 4);
 
