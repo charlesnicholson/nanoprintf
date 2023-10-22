@@ -19,9 +19,9 @@
   #pragma GCC diagnostic push
   #if NANOPRINTF_CLANG
     #pragma GCC diagnostic ignored "-Wc++98-compat-pedantic"
-    #pragma GCC diagnostic ignored "-Wunsafe-buffer-usage"
     #ifndef __APPLE__
       #pragma GCC diagnostic ignored "-Wreserved-identifier"
+      #pragma GCC diagnostic ignored "-Wunsafe-buffer-usage"
     #endif
   #endif
 #endif
