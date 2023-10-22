@@ -26,6 +26,7 @@
     #pragma GCC diagnostic ignored "-Wold-style-cast"
     #ifndef __APPLE__
       #pragma GCC diagnostic ignored "-Wreserved-identifier"
+      #pragma GCC diagnostic ignored "-Wunsafe-buffer-usage"
     #endif
   #endif
   #pragma GCC diagnostic ignored "-Wformat"

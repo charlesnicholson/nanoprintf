@@ -21,6 +21,7 @@
     #pragma GCC diagnostic ignored "-Wc++98-compat-pedantic"
     #ifndef __APPLE__
       #pragma GCC diagnostic ignored "-Wreserved-identifier"
+      #pragma GCC diagnostic ignored "-Wunsafe-buffer-usage"
     #endif
   #endif
 #endif

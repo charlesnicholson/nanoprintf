@@ -158,6 +158,9 @@ NPF_VISIBILITY int npf_vpprintf(
     #pragma GCC diagnostic ignored "-Wc++98-compat-pedantic"
     #pragma GCC diagnostic ignored "-Wcovered-switch-default"
     #pragma GCC diagnostic ignored "-Wdeclaration-after-statement"
+    #ifndef __APPLE__
+      #pragma GCC diagnostic ignored "-Wunsafe-buffer-usage"
+    #endif
   #elif NANOPRINTF_GCC_PAST_4_6
     #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
   #endif
