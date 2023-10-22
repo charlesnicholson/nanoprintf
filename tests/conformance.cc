@@ -24,6 +24,7 @@
     #pragma GCC diagnostic ignored "-Wformat-pedantic"
     #pragma GCC diagnostic ignored "-Wformat-nonliteral"
     #pragma GCC diagnostic ignored "-Wold-style-cast"
+    #pragma GCC diagnostic ignored "-Wunsafe-buffer-usage"
     #ifndef __APPLE__
       #pragma GCC diagnostic ignored "-Wreserved-identifier"
     #endif
