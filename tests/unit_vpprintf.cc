@@ -10,6 +10,8 @@
   #if NANOPRINTF_CLANG
     #pragma GCC diagnostic ignored "-Wformat-pedantic"
     #pragma GCC diagnostic ignored "-Wold-style-cast"
+  #else
+    #pragma GCC diagnostic ignored "-Wformat-overflow"
   #endif
   #pragma GCC diagnostic ignored "-Wformat"
   #pragma GCC diagnostic ignored "-Wformat-zero-length"
@@ -76,6 +78,11 @@ TEST_CASE("npf_vpprintf") {
   SUBCASE("string multiple") {
     REQUIRE(npf_pprintf(r.PutC, &r, "%s%s%s", "abcd", "e", "fgh") == 8);
     REQUIRE(r.String() == std::string{"abcdefgh"});
+  }
+
+  SUBCASE("string precision zero null pointer") {
+    REQUIRE(npf_pprintf(r.PutC, &r, "%.0s", nullptr) == 0);
+    REQUIRE(r.String() == std::string{""});
   }
 
   SUBCASE("signed int zero") {
