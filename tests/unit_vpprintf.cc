@@ -10,11 +10,12 @@
   #if NANOPRINTF_CLANG
     #pragma GCC diagnostic ignored "-Wformat-pedantic"
     #pragma GCC diagnostic ignored "-Wold-style-cast"
+  #else
+    #pragma GCC diagnostic ignored "-Wformat-overflow"
   #endif
   #pragma GCC diagnostic ignored "-Wformat"
   #pragma GCC diagnostic ignored "-Wformat-zero-length"
   #pragma GCC diagnostic ignored "-Wformat-security"
-  #pragma GCC diagnostic ignored "-Wformat-overflow"
 #endif
 
 struct Recorder {
