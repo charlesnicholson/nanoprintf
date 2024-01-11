@@ -14,6 +14,7 @@
   #pragma GCC diagnostic ignored "-Wformat"
   #pragma GCC diagnostic ignored "-Wformat-zero-length"
   #pragma GCC diagnostic ignored "-Wformat-security"
+  #pragma GCC diagnostic ignored "-Wformat-overflow"
 #endif
 
 struct Recorder {
