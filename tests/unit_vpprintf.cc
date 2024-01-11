@@ -78,6 +78,11 @@ TEST_CASE("npf_vpprintf") {
     REQUIRE(r.String() == std::string{"abcdefgh"});
   }
 
+  SUBCASE("string precision zero null pointer") {
+    REQUIRE(npf_pprintf(r.PutC, &r, "%.0s", nullptr) == 0);
+    REQUIRE(r.String() == std::string{""});
+  }
+
   SUBCASE("signed int zero") {
     REQUIRE(npf_pprintf(r.PutC, &r, "%i", 0) == 1);
     REQUIRE(r.String() == std::string{"0"});
