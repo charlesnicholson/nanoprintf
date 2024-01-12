@@ -608,7 +608,7 @@ int npf_ftoa_rev(char *buf, float f, npf_format_spec_t const *spec, int *out_fra
   // round the value to the specified precision
   if (spec->prec < *out_frac_chars) {
     char *digit = dst - spec->prec - 1;
-    int carry = (*digit >= '5');
+    unsigned carry = (*digit >= '5');
     while (carry && (++digit < dst)) {
       carry = (*digit == '9');
       *digit = carry ? '0' : (*digit + 1);
