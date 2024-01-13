@@ -111,5 +111,9 @@ TEST_CASE("npf_snprintf") {
       REQUIRE(std::string{buf} == "1234567");
       REQUIRE(buf[8] == '!');
     }
+
+    SUBCASE("null buffer with non-null length doesn't get terminated") {
+      npf_snprintf(nullptr, 4, "abcd");
+    }
   }
 }

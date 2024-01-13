@@ -1028,9 +1028,9 @@ int npf_vsnprintf(char *buffer, size_t bufsz, char const *format, va_list vlist)
   int const n = npf_vpprintf(pc, &bufputc_ctx, format, vlist);
   pc('\0', &bufputc_ctx);
 
-  if (bufsz && (n >= (int)bufsz)) {
+  if (buffer && bufsz) {
 #ifdef NANOPRINTF_SNPRINTF_SAFE_EMPTY_STRING_ON_OVERFLOW
-    buffer[0] = '\0';
+    if (n >= (int)bufsz) { buffer[0] = '\0'; }
 #else
     buffer[bufsz - 1] = '\0';
 #endif
