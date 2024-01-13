@@ -7,3 +7,4 @@
 * [Shreyas Balakrishna](https://github.com/shreyasbharath)
 * [Jim Keener](https://github.com/jimktrains)
 * [Dean T](https://github.com/deanoburrito)
+* [Oskars Rubenis](https://github.com/Okarss)

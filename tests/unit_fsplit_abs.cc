@@ -40,8 +40,8 @@ TEST_CASE("npf_fsplit_abs") {
   // fractional base-10 negative exponent
   require_fsplit_abs(0.03125f, 0, 3125, 1);
   require_fsplit_abs(0.0078125f, 0, 78125, 2);
-  require_fsplit_abs(2.4414062E-4f, 0, 24414062, 3);
-  require_fsplit_abs(3.8146973E-6f, 0, 38146972, 5);
+  require_fsplit_abs(2.4414062E-4f, 0, 244140625, 3);
+  require_fsplit_abs(3.8146973E-6f, 0, 381469726, 5);
 
   // perfectly-representable fractions, adding 1 bit to mantissa each time.
   require_fsplit_abs(1.5f, 1, 5, 0);
@@ -55,19 +55,19 @@ TEST_CASE("npf_fsplit_abs") {
   require_fsplit_abs(1.9960938f, 1, 99609375, 0); // first truncation divergence.
 
   // truncations, but continue adding mantissa bits
-  require_fsplit_abs(1.9980469f, 1, 99804687, 0); // 1.998046875 is stored.
-  require_fsplit_abs(1.9990234f, 1, 99902343, 0); // 1.9990234375 is stored.
-  require_fsplit_abs(1.9995117f, 1, 99951171, 0); // 1.99951171875 is stored.
-  require_fsplit_abs(1.9997559f, 1, 99975585, 0); // 1.999755859375 is stored.
-  require_fsplit_abs(1.9998779f, 1, 99987792, 0); // 1.9998779296875 is stored.
-  require_fsplit_abs(1.999939f,  1, 99993896, 0); // 1.99993896484375 is stored.
-  require_fsplit_abs(1.9999695f, 1, 99996948, 0); // 1.999969482421875 is stored.
-  require_fsplit_abs(1.9999847f, 1, 99998474, 0); // 1.9999847412109375 is stored.
-  require_fsplit_abs(1.9999924f, 1, 99999237, 0); // 1.99999237060546875 is stored.
-  require_fsplit_abs(1.9999962f, 1, 99999618, 0); // 1.999996185302734375 is stored.
-  require_fsplit_abs(1.9999981f, 1, 99999809, 0); // 1.9999980926513671875 is stored.
-  require_fsplit_abs(1.999999f,  1, 99999904, 0); // 1.99999904632568359375 is stored.
-  require_fsplit_abs(1.9999995f, 1, 99999952, 0); // 1.999999523162841796875 is stored.
-  require_fsplit_abs(1.9999998f, 1, 99999976, 0); // 1.9999997615814208984375 is stored.
-  require_fsplit_abs(1.9999999f, 1, 99999988, 0); // 1.99999988079071044921875 is stored.
+  require_fsplit_abs(1.9980469f, 1, 998046875, 0); // 1.998046875 is stored.
+  require_fsplit_abs(1.9990234f, 1, 999023437, 0); // 1.9990234375 is stored.
+  require_fsplit_abs(1.9995117f, 1, 999511718, 0); // 1.99951171875 is stored.
+  require_fsplit_abs(1.9997559f, 1, 999755859, 0); // 1.999755859375 is stored.
+  require_fsplit_abs(1.9998779f, 1, 999877929, 0); // 1.9998779296875 is stored.
+  require_fsplit_abs(1.999939f,  1, 999938964, 0); // 1.99993896484375 is stored.
+  require_fsplit_abs(1.9999695f, 1, 999969482, 0); // 1.999969482421875 is stored.
+  require_fsplit_abs(1.9999847f, 1, 999984741, 0); // 1.9999847412109375 is stored.
+  require_fsplit_abs(1.9999924f, 1, 999992370, 0); // 1.99999237060546875 is stored.
+  require_fsplit_abs(1.9999962f, 1, 999996185, 0); // 1.999996185302734375 is stored.
+  require_fsplit_abs(1.9999981f, 1, 999998092, 0); // 1.9999980926513671875 is stored.
+  require_fsplit_abs(1.999999f,  1, 999999046, 0); // 1.99999904632568359375 is stored.
+  require_fsplit_abs(1.9999995f, 1, 999999523, 0); // 1.999999523162841796875 is stored.
+  require_fsplit_abs(1.9999998f, 1, 999999761, 0); // 1.9999997615814208984375 is stored.
+  require_fsplit_abs(1.9999999f, 1, 999999880, 0); // 1.99999988079071044921875 is stored.
 }

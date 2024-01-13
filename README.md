@@ -157,7 +157,7 @@ Like `printf`, `nanoprintf` expects a conversion specification string of the fol
 
 ## Floating Point
 
-Floating point conversion is performed by extracting the value into 64:64 fixed-point with an extra field that specifies the number of leading zero fractional digits before the first nonzero digit. No rounding is currently performed; values are simply truncated at the specified precision. This is done for simplicity, speed, and code footprint.
+Floating point conversion is performed by extracting the value into 64:64 fixed-point with an extra field that specifies the number of leading zero fractional digits before the first nonzero digit. This is done for simplicity, speed, and code footprint.
 
 Because the float -> fixed code operates on the raw float value bits, no floating point operations are performed. This allows nanoprintf to efficiently format floats on soft-float architectures like Cortex-M0, and to function identically with or without optimizations like "fast math". Despite `nano` in the name, there's no way to do away with double entirely, since the C language standard says that floats are promoted to double any time they're passed into variadic argument lists. nanoprintf casts all doubles back down to floats before doing any conversions. No other single- or double- precision operations are performed.
 
