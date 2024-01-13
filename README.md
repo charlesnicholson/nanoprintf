@@ -94,14 +94,11 @@ If no configuration flags are specified, nanoprintf will default to "reasonable"
 If a disabled format specifier feature is used, no conversion will occur and the format specifier string simply will be printed instead.
 
 ### Sprintf Safety
-By default, npf_snprintf and npf_vsnprintf behave according to the C Standard: the provided buffer will be filled but not overrun, though a null-terminator `0` byte will *not* be written at the end if the buffer is exhausted!
+By default, npf_snprintf and npf_vsnprintf behave according to the C Standard: the provided buffer will be filled but not overrun. If the string would have overrun the buffer, a null-terminator byte will be written to the final byte of the buffer. If the buffer is `null` or zero-sized, no bytes will be written.
 
-nanoprintf offers three options for configuring safety:
-* Do nothing. User-provided buffers will not be null-terminated if exhausted.
-* Define `NANOPRINTF_SNPRINTF_SAFE_TRIM_STRING_ON_OVERFLOW`: When exhausted, the final byte of the buffer will be overwritten with a null-terimator byte. This is similar in spirit to the behavior of [BSD strlcpy](https://linux.die.net/man/3/strlcpy).
-* Define `NANOPRINTF_SNPRINTF_SAFE_EMPTY_STRING_ON_OVERFLOW`: When exhausted, the _first_ byte of the buffer will be overwritten with a null-terminator byte. This is similar in spirit to [Microsoft's snprintf_s](https://docs.microsoft.com/en-us/cpp/c-runtime-library/reference/snprintf-s-snprintf-s-l-snwprintf-s-snwprintf-s-l).
+If you define `NANOPRINTF_SNPRINTF_SAFE_EMPTY_STRING_ON_OVERFLOW` and your string is larger than your buffer, the _first_ byte of the buffer will be overwritten with a null-terminator byte. This is similar in spirit to [Microsoft's snprintf_s](https://docs.microsoft.com/en-us/cpp/c-runtime-library/reference/snprintf-s-snprintf-s-l-snwprintf-s-snwprintf-s-l).
 
-In any of the above cases, nanoprintf will still return the number of bytes that would have been written to the buffer, had there been enough room. This value does not account for the null-terminator byte, in accordance with the C Standard.
+In all cases, nanoprintf will return the number of bytes that would have been written to the buffer, had there been enough room. This value does not account for the null-terminator byte, in accordance with the C Standard.
 
 ### Thread Safety
 nanoprintf uses only stack memory and no concurrency primitives, so internally it is oblivious to its execution environment. This makes it safe to call from multiple execution contexts concurrently, or to interrupt a `npf_` call with another `npf_` call (say, an ISR or something). If you use `npf_pprintf` concurrently with the same `npf_putc` target, it's up to you to ensure correctness inside your callback. If you `npf_snprintf` from multiple threads to the same buffer, you will have an obvious data race.

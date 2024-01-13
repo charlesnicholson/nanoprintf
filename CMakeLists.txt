@@ -208,7 +208,6 @@ set(unit_test_files
     tests/unit_fsplit_abs.cc
     tests/unit_snprintf.cc
     tests/unit_snprintf_safe_empty.cc
-    tests/unit_snprintf_safe_trim.cc
     tests/unit_vpprintf.cc)
 
 npf_test(unit_tests_normal_sized_formatters "${unit_test_files}")
