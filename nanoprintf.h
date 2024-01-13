@@ -1026,10 +1026,10 @@ int npf_snprintf(char *buffer, size_t bufsz, const char *format, ...) {
 int npf_vsnprintf(char *buffer, size_t bufsz, char const *format, va_list vlist) {
   npf_bufputc_ctx_t bufputc_ctx;
   bufputc_ctx.dst = buffer;
-  bufputc_ctx.len = bufsz;
+  bufputc_ctx.len = bufsz - 1; // underflow ok
   bufputc_ctx.cur = 0;
 
-  npf_putc const pc = buffer ? npf_bufputc : npf_bufputc_nop;
+  npf_putc const pc = (buffer && bufsz) ? npf_bufputc : npf_bufputc_nop;
   int const n = npf_vpprintf(pc, &bufputc_ctx, format, vlist);
   pc('\0', &bufputc_ctx);
 

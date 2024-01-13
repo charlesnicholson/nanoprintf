@@ -4,11 +4,11 @@
 #include <string>
 
 #if NANOPRINTF_HAVE_GCC_WARNING_PRAGMAS
-  #pragma GCC diagnostic push
-  #if NANOPRINTF_CLANG
-    #pragma GCC diagnostic ignored "-Wformat-pedantic"
-  #endif
-  #pragma GCC diagnostic ignored "-Wformat-zero-length"
+#pragma GCC diagnostic push
+#if NANOPRINTF_CLANG
+#pragma GCC diagnostic ignored "-Wformat-pedantic"
+#endif
+#pragma GCC diagnostic ignored "-Wformat-zero-length"
 #endif
 
 TEST_CASE("npf_snprintf") {
@@ -54,19 +54,28 @@ TEST_CASE("npf_snprintf") {
   }
 
   SUBCASE("fills buffer fully") {
-    REQUIRE(npf_snprintf(buf, 4, "abcd") == 4);
+    REQUIRE(npf_snprintf(buf, 5, "abcd") == 4);
     REQUIRE(buf[0] == 'a');
     REQUIRE(buf[1] == 'b');
     REQUIRE(buf[2] == 'c');
     REQUIRE(buf[3] == 'd');
+    REQUIRE(buf[4] == '\0');
   }
 
-  SUBCASE("doesn't write past end of buffer") {
+  SUBCASE("last byte is null terminator") {
+    REQUIRE(npf_snprintf(buf, 4, "abcd") == 4);
+    REQUIRE(buf[0] == 'a');
+    REQUIRE(buf[1] == 'b');
+    REQUIRE(buf[2] == 'c');
+    REQUIRE(buf[3] == '\0');
+  }
+
+  SUBCASE("terminates before end of buffer") {
     buf[3] = '*';
     REQUIRE(npf_snprintf(buf, 3, "abcd") == 4);
     REQUIRE(buf[0] == 'a');
     REQUIRE(buf[1] == 'b');
-    REQUIRE(buf[2] == 'c');
+    REQUIRE(buf[2] == '\0');
     REQUIRE(buf[3] == '*');
   }
 }
