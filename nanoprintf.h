@@ -172,8 +172,11 @@ NPF_VISIBILITY int npf_vpprintf(
 
 #ifdef _MSC_VER
   #pragma warning(push)
-  #pragma warning(disable:4514) // unreferenced inline function removed
+  #pragma warning(disable:4619) // there is no warning number 'number'
+  // C4619 has to be disabled first!
+  #pragma warning(disable:4127) // conditional expression is constant
   #pragma warning(disable:4505) // unreferenced function removed
+  #pragma warning(disable:4514) // unreferenced inline function removed
   #pragma warning(disable:4701) // possibly uninitialized
   #pragma warning(disable:4706) // assignment in conditional
   #pragma warning(disable:4710) // not inlined
@@ -539,9 +542,9 @@ static int npf_ftoa_rev(double f, char *buf, npf_format_spec_t const *spec) {
     for (uint_fast8_t i = 0; i < sizeof(f); ++i) { dst[i] = src[i]; }
   }
   // Unsigned to signed integer casting is UB, but it works for two's complement implementations.
-  npf_ftoa_exp_t exp = (npf_ftoa_exp_t)(bin >> NPF_DOUBLE_MAN_BITS) & NPF_DOUBLE_EXP_MASK;
+  npf_ftoa_exp_t exp; exp = (npf_ftoa_exp_t)(bin >> NPF_DOUBLE_MAN_BITS) & NPF_DOUBLE_EXP_MASK;
   bin &= ((npf_double_bin_t)0x1 << NPF_DOUBLE_MAN_BITS) - 1;
-  if (exp == NPF_DOUBLE_EXP_MASK) { // special value
+  if (exp == (npf_ftoa_exp_t)NPF_DOUBLE_EXP_MASK) { // special value
     ret = (bin) ? "NAN" : "FNI";
     goto exit;
   }
@@ -553,94 +556,102 @@ static int npf_ftoa_rev(double f, char *buf, npf_format_spec_t const *spec) {
   exp -= NPF_DOUBLE_EXP_BIAS;
   uint_fast8_t carry;
 
-  // fraction part
-  npf_ftoa_man_t man_f;
-  int dec_f = spec->prec;
+  { // fraction part
+    npf_ftoa_man_t man_f;
+    int dec_f = spec->prec;
 
-  if (exp < NPF_DOUBLE_MAN_BITS) {
-    int_fast8_t shift_f = (int_fast8_t)((exp < 0) ? -1 : exp);
-    npf_ftoa_exp_t exp_f = exp - shift_f;
-    man_f = (bin << ((NPF_DOUBLE_BIN_BITS - NPF_DOUBLE_MAN_BITS) + shift_f)) >> (NPF_DOUBLE_BIN_BITS - NPF_FTOA_MAN_BITS);
-
-    // Scale the fraction up to the decimal separator and prepare the first digit.
-    for (uint_fast8_t digit = 0; dec_f && (exp_f < 4); ++exp_f) {
-      if ((man_f > ((npf_ftoa_man_t)-1 / 5)) || digit) {
-        man_f >>= 1;
+    if (exp < NPF_DOUBLE_MAN_BITS) {
+      int_fast8_t shift_f = (int_fast8_t)((exp < 0) ? -1 : exp);
+      npf_ftoa_exp_t exp_f = exp - shift_f;
+      npf_double_bin_t frac = bin << ((NPF_DOUBLE_BIN_BITS - NPF_DOUBLE_MAN_BITS) + shift_f);
+      // This if-else statement can be completely optimized at compile time.
+      if (NPF_DOUBLE_BIN_BITS > NPF_FTOA_MAN_BITS) {
+        man_f = frac >> ((unsigned)(NPF_DOUBLE_BIN_BITS - NPF_FTOA_MAN_BITS) % NPF_DOUBLE_BIN_BITS);
       } else {
-        man_f *= 5;
+        man_f = (npf_ftoa_man_t)frac << ((unsigned)(NPF_FTOA_MAN_BITS - NPF_DOUBLE_BIN_BITS) % NPF_FTOA_MAN_BITS);
+      }
 
-        if (exp_f < 0) {
-          buf[--dec_f] = '0';
+      // Scale the fraction up to the decimal separator and prepare the first digit.
+      for (uint_fast8_t digit = 0; dec_f && (exp_f < 4); ++exp_f) {
+        if ((man_f > ((npf_ftoa_man_t)-1 / 5)) || digit) {
+          man_f >>= 1;
         } else {
-          digit = 1;
+          man_f *= 5;
+
+          if (exp_f < 0) {
+            buf[--dec_f] = '0';
+          } else {
+            digit = 1;
+          }
         }
       }
+      carry = (exp_f >= 0);
+    } else {
+      man_f = 0;
+      carry = 0;
     }
-    carry = (exp_f >= 0);
-  } else {
-    man_f = 0;
-    carry = 0;
-  }
 
-  if (dec_f) {
-    // print the fraction
-    for (;;) {
-      buf[--dec_f] = '0' + (man_f >> (NPF_FTOA_MAN_BITS - 4));
-      man_f &= ~((npf_ftoa_man_t)0xF << (NPF_FTOA_MAN_BITS - 4));
-      if (!dec_f) { break; }
-      man_f *= 10;
-    }
-    man_f <<= 4;
-  }
-  carry &= man_f >> (NPF_FTOA_MAN_BITS - 1);
-
-  // round the fraction
-  for (; carry && (dec_f < spec->prec); ++dec_f) {
-    carry = (buf[dec_f] == '9');
-    buf[dec_f] = carry ? '0' : (buf[dec_f] + 1);
-  }
-
-  // integer part
-  npf_ftoa_man_t man_i;
-  int dec_i = spec->prec;
-
-  if (spec->prec || spec->alt_form) {
-    buf[dec_i++] = '.';
-  }
-
-  if (exp >= 0) {
-    int_fast8_t shift_i = (int_fast8_t)((exp > NPF_FTOA_SHIFT_BITS) ? NPF_FTOA_SHIFT_BITS : exp);
-    npf_ftoa_exp_t exp_i = exp - shift_i;
-    man_i = (npf_ftoa_man_t)(bin >> (NPF_DOUBLE_MAN_BITS - shift_i));
-
-    // Scale the integer down to the decimal separator.
-    for (; (exp_i > 0) || (carry && (man_i == (npf_ftoa_man_t)-1)); --exp_i) {
-      if (!(man_i & ((npf_ftoa_man_t)0x1 << (NPF_FTOA_MAN_BITS - 1)))) {
-        man_i <<= 1;
-      } else {
-        if (dec_i >= NANOPRINTF_CONVERSION_BUFFER_SIZE) { goto exit; }
-        buf[dec_i++] = '0';
-
-        man_i /= 5;
-        carry = 0;
+    if (dec_f) {
+      // print the fraction
+      for (;;) {
+        buf[--dec_f] = '0' + (char)(man_f >> (NPF_FTOA_MAN_BITS - 4));
+        man_f &= ~((npf_ftoa_man_t)0xF << (NPF_FTOA_MAN_BITS - 4));
+        if (!dec_f) { break; }
+        man_f *= 10;
       }
+      man_f <<= 4;
     }
-    if (exp_i < 0) {
-      man_i = (man_i + 1) >> 1;
+    carry &= man_f >> (NPF_FTOA_MAN_BITS - 1);
+
+    // round the fraction
+    for (; carry && (dec_f < spec->prec); ++dec_f) {
+      carry = (buf[dec_f] == '9');
+      buf[dec_f] = carry ? '0' : (buf[dec_f] + 1);
     }
-  } else {
-    man_i = 0;
   }
-  man_i += carry;
 
-  // print the integer
-  do {
-    if (dec_i >= NANOPRINTF_CONVERSION_BUFFER_SIZE) { goto exit; }
-    buf[dec_i++] = '0' + (man_i % 10);
-    man_i /= 10;
-  } while (man_i);
+  { // integer part
+    npf_ftoa_man_t man_i;
+    int dec_i = spec->prec;
 
-  return dec_i;
+    if (spec->prec || spec->alt_form) {
+      buf[dec_i++] = '.';
+    }
+
+    if (exp >= 0) {
+      int_fast8_t shift_i = (int_fast8_t)((exp > NPF_FTOA_SHIFT_BITS) ? (int)NPF_FTOA_SHIFT_BITS : exp);
+      npf_ftoa_exp_t exp_i = exp - shift_i;
+      man_i = (npf_ftoa_man_t)(bin >> (NPF_DOUBLE_MAN_BITS - shift_i));
+
+      // Scale the integer down to the decimal separator.
+      for (; (exp_i > 0) || (carry && (man_i == (npf_ftoa_man_t)-1)); --exp_i) {
+        if (!(man_i & ((npf_ftoa_man_t)0x1 << (NPF_FTOA_MAN_BITS - 1)))) {
+          man_i <<= 1;
+        } else {
+          if (dec_i >= NANOPRINTF_CONVERSION_BUFFER_SIZE) { goto exit; }
+          buf[dec_i++] = '0';
+
+          man_i /= 5;
+          carry = 0;
+        }
+      }
+      if (exp_i < 0) {
+        man_i = (man_i + 1) >> 1;
+      }
+    } else {
+      man_i = 0;
+    }
+    man_i += carry;
+
+    // print the integer
+    do {
+      if (dec_i >= NANOPRINTF_CONVERSION_BUFFER_SIZE) { goto exit; }
+      buf[dec_i++] = '0' + (char)(man_i % 10);
+      man_i /= 10;
+    } while (man_i);
+
+    return dec_i;
+  }
 exit:
   if (!ret) { ret = "ROO"; }
   uint_fast8_t i;
@@ -1101,4 +1112,3 @@ int npf_vsnprintf(char *buffer, size_t bufsz, char const *format, va_list vlist)
   ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
   OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
-
