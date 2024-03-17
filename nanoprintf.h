@@ -564,20 +564,26 @@ static int npf_ftoa_rev(double f, char *buf, npf_format_spec_t const *spec) {
       int_fast8_t shift_f = (int_fast8_t)((exp < 0) ? -1 : exp);
       npf_ftoa_exp_t exp_f = exp - shift_f;
       npf_double_bin_t frac = bin << ((NPF_DOUBLE_BIN_BITS - NPF_DOUBLE_MAN_BITS) + shift_f);
+      uint_fast8_t round_f;
+
       // This if-else statement can be completely optimized at compile time.
       if (NPF_DOUBLE_BIN_BITS > NPF_FTOA_MAN_BITS) {
         man_f = frac >> ((unsigned)(NPF_DOUBLE_BIN_BITS - NPF_FTOA_MAN_BITS) % NPF_DOUBLE_BIN_BITS);
+        round_f = (frac >> ((unsigned)(NPF_DOUBLE_BIN_BITS - NPF_FTOA_MAN_BITS - 1) % NPF_DOUBLE_BIN_BITS)) & 0x1;
       } else {
         man_f = (npf_ftoa_man_t)frac << ((unsigned)(NPF_FTOA_MAN_BITS - NPF_DOUBLE_BIN_BITS) % NPF_FTOA_MAN_BITS);
+        round_f = 0;
       }
 
       // Scale the fraction up to the decimal separator and prepare the first digit.
       for (uint_fast8_t digit = 0; dec_f && (exp_f < 4); ++exp_f) {
-        if ((man_f > ((npf_ftoa_man_t)-1 / 5)) || digit) {
+        if ((man_f > ((npf_ftoa_man_t)-4 / 5)) || digit) {
+          round_f = man_f & 0x1;
           man_f >>= 1;
         } else {
           man_f *= 5;
-
+          if (round_f) { man_f += 3; round_f = 0; }
+          //man_f += (uint_fast8_t)(3 * round_f); round_f = 0;
           if (exp_f < 0) {
             buf[--dec_f] = '0';
           } else {
@@ -585,6 +591,7 @@ static int npf_ftoa_rev(double f, char *buf, npf_format_spec_t const *spec) {
           }
         }
       }
+      man_f += round_f;
       carry = (exp_f >= 0);
     } else {
       man_f = 0;
@@ -601,7 +608,7 @@ static int npf_ftoa_rev(double f, char *buf, npf_format_spec_t const *spec) {
       }
       man_f <<= 4;
     }
-    carry &= man_f >> (NPF_FTOA_MAN_BITS - 1);
+    carry &= (uint_fast8_t)(man_f >> (NPF_FTOA_MAN_BITS - 1));
 
     // round the fraction
     for (; carry && (dec_f < spec->prec); ++dec_f) {
@@ -621,27 +628,30 @@ static int npf_ftoa_rev(double f, char *buf, npf_format_spec_t const *spec) {
     if (exp >= 0) {
       int_fast8_t shift_i = (int_fast8_t)((exp > NPF_FTOA_SHIFT_BITS) ? (int)NPF_FTOA_SHIFT_BITS : exp);
       npf_ftoa_exp_t exp_i = exp - shift_i;
-      man_i = (npf_ftoa_man_t)(bin >> (NPF_DOUBLE_MAN_BITS - shift_i));
+      shift_i = NPF_DOUBLE_MAN_BITS - shift_i;
+      man_i = (npf_ftoa_man_t)(bin >> shift_i);
+      uint_fast8_t round_i = (exp_i && shift_i) ? ((bin >> (shift_i - 1)) & 0x1) : carry;
 
       // Scale the integer down to the decimal separator.
-      for (; (exp_i > 0) || (carry && (man_i == (npf_ftoa_man_t)-1)); --exp_i) {
+      for (; (exp_i > 0) || (round_i && (man_i == (npf_ftoa_man_t)-1)); --exp_i) {
         if (!(man_i & ((npf_ftoa_man_t)0x1 << (NPF_FTOA_MAN_BITS - 1)))) {
           man_i <<= 1;
+          man_i |= round_i; round_i = 0;
         } else {
           if (dec_i >= NANOPRINTF_CONVERSION_BUFFER_SIZE) { goto exit; }
           buf[dec_i++] = '0';
-
+          round_i = (((man_i % 5) + round_i) > 2);
           man_i /= 5;
-          carry = 0;
         }
       }
-      if (exp_i < 0) {
-        man_i = (man_i + 1) >> 1;
+      if (exp_i) {
+        round_i = man_i & 0x1;
+        man_i >>= 1;
       }
+      man_i += round_i;
     } else {
-      man_i = 0;
+      man_i = carry;
     }
-    man_i += carry;
 
     // print the integer
     do {
