@@ -275,7 +275,7 @@ static int npf_itoa_rev(char *buf, npf_int_t i);
 static int npf_utoa_rev(char *buf, npf_uint_t i, unsigned base, unsigned case_adjust);
 
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
-static int npf_ftoa_rev(double f, char *buf, npf_format_spec_t const *spec);
+static int npf_ftoa_rev(char *buf, npf_format_spec_t const *spec, double f);
 #endif
 
 #if NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS == 1
@@ -518,6 +518,12 @@ int npf_utoa_rev(char *buf, npf_uint_t i, unsigned base, unsigned case_adj) {
 #endif
 typedef NANOPRINTF_CONVERSION_FLOAT_TYPE    npf_ftoa_man_t;
 
+#if (NANOPRINTF_CONVERSION_BUFFER_SIZE <= UINT_FAST8_MAX) && (UINT_FAST8_MAX <= INT_MAX)
+  typedef uint_fast8_t    npf_ftoa_dec_t;
+#else
+  typedef int    npf_ftoa_dec_t;
+#endif
+
 enum {
   NPF_DOUBLE_EXP_MASK = DBL_MAX_EXP * 2 - 1,
   NPF_DOUBLE_EXP_BIAS = DBL_MAX_EXP - 1,
@@ -532,7 +538,7 @@ enum {
    grisu2 (https://bit.ly/2JgMggX) and ryu (https://bit.ly/2RLXSg0)
    are fast + precise + round, but require large lookup tables.
 */
-static int npf_ftoa_rev(double f, char *buf, npf_format_spec_t const *spec) {
+static int npf_ftoa_rev(char *buf, npf_format_spec_t const *spec, double f) {
   char const *ret = NULL;
   if (spec->prec > (NANOPRINTF_CONVERSION_BUFFER_SIZE - 2)) { goto exit; }
 
@@ -554,48 +560,92 @@ static int npf_ftoa_rev(double f, char *buf, npf_format_spec_t const *spec) {
     ++exp;
   }
   exp -= NPF_DOUBLE_EXP_BIAS;
-  uint_fast8_t carry;
+
+  uint_fast8_t carry; carry = 0;
+  npf_ftoa_dec_t end, dec; dec = (npf_ftoa_dec_t)spec->prec;
+  if (dec || spec->alt_form) {
+    buf[dec++] = '.';
+  }
+
+  { // integer part
+    npf_ftoa_man_t man_i;
+
+    if (exp >= 0) {
+      int_fast8_t shift_i = (int_fast8_t)((exp > NPF_FTOA_SHIFT_BITS) ? (int)NPF_FTOA_SHIFT_BITS : exp);
+      npf_ftoa_exp_t exp_i = exp - shift_i;
+      shift_i = NPF_DOUBLE_MAN_BITS - shift_i;
+      man_i = (npf_ftoa_man_t)(bin >> shift_i);
+
+      if (exp_i) {
+        if (shift_i) {
+          carry = (bin >> (shift_i - 1)) & 0x1;
+        }
+        exp = NPF_DOUBLE_MAN_BITS; // disable the fraction part
+      }
+
+      // Scale the integer down to the decimal separator.
+      for (; exp_i; --exp_i) {
+        if (!(man_i & ((npf_ftoa_man_t)0x1 << (NPF_FTOA_MAN_BITS - 1)))) {
+          man_i <<= 1;
+          man_i |= carry; carry = 0;
+        } else {
+          if (dec >= NANOPRINTF_CONVERSION_BUFFER_SIZE) { goto exit; }
+          buf[dec++] = '0';
+          carry = (((uint_fast8_t)(man_i % 5) + carry) > 2);
+          man_i /= 5;
+        }
+      }
+    } else {
+      man_i = 0;
+    }
+    end = dec;
+
+    // print the integer
+    do {
+      if (end >= NANOPRINTF_CONVERSION_BUFFER_SIZE) { goto exit; }
+      buf[end++] = '0' + (char)(man_i % 10);
+      man_i /= 10;
+    } while (man_i);
+  }
 
   { // fraction part
     npf_ftoa_man_t man_f;
-    int dec_f = spec->prec;
+    npf_ftoa_dec_t dec_f = (npf_ftoa_dec_t)spec->prec;
 
     if (exp < NPF_DOUBLE_MAN_BITS) {
       int_fast8_t shift_f = (int_fast8_t)((exp < 0) ? -1 : exp);
       npf_ftoa_exp_t exp_f = exp - shift_f;
-      npf_double_bin_t frac = bin << ((NPF_DOUBLE_BIN_BITS - NPF_DOUBLE_MAN_BITS) + shift_f);
-      uint_fast8_t round_f;
+      npf_double_bin_t bin_f = bin << ((NPF_DOUBLE_BIN_BITS - NPF_DOUBLE_MAN_BITS) + shift_f);
 
       // This if-else statement can be completely optimized at compile time.
       if (NPF_DOUBLE_BIN_BITS > NPF_FTOA_MAN_BITS) {
-        man_f = frac >> ((unsigned)(NPF_DOUBLE_BIN_BITS - NPF_FTOA_MAN_BITS) % NPF_DOUBLE_BIN_BITS);
-        round_f = (frac >> ((unsigned)(NPF_DOUBLE_BIN_BITS - NPF_FTOA_MAN_BITS - 1) % NPF_DOUBLE_BIN_BITS)) & 0x1;
+        man_f = bin_f >> ((unsigned)(NPF_DOUBLE_BIN_BITS - NPF_FTOA_MAN_BITS) % NPF_DOUBLE_BIN_BITS);
+        carry = (bin_f >> ((unsigned)(NPF_DOUBLE_BIN_BITS - NPF_FTOA_MAN_BITS - 1) % NPF_DOUBLE_BIN_BITS)) & 0x1;
       } else {
-        man_f = (npf_ftoa_man_t)frac << ((unsigned)(NPF_FTOA_MAN_BITS - NPF_DOUBLE_BIN_BITS) % NPF_FTOA_MAN_BITS);
-        round_f = 0;
+        man_f = (npf_ftoa_man_t)((npf_ftoa_man_t)bin_f << ((unsigned)(NPF_FTOA_MAN_BITS - NPF_DOUBLE_BIN_BITS) % NPF_FTOA_MAN_BITS));
+        carry = 0;
       }
 
       // Scale the fraction up to the decimal separator and prepare the first digit.
       for (uint_fast8_t digit = 0; dec_f && (exp_f < 4); ++exp_f) {
         if ((man_f > ((npf_ftoa_man_t)-4 / 5)) || digit) {
-          round_f = man_f & 0x1;
+          carry = (uint_fast8_t)(man_f & 0x1);
           man_f >>= 1;
         } else {
           man_f *= 5;
-          if (round_f) { man_f += 3; round_f = 0; }
-          //man_f += (uint_fast8_t)(3 * round_f); round_f = 0;
+          if (carry) { man_f += 3; carry = 0; }
           if (exp_f < 0) {
             buf[--dec_f] = '0';
           } else {
-            digit = 1;
+            ++digit;
           }
         }
       }
-      man_f += round_f;
+      man_f += carry;
       carry = (exp_f >= 0);
+      dec = 0;
     } else {
       man_f = 0;
-      carry = 0;
     }
 
     if (dec_f) {
@@ -608,60 +658,21 @@ static int npf_ftoa_rev(double f, char *buf, npf_format_spec_t const *spec) {
       }
       man_f <<= 4;
     }
-    carry &= (uint_fast8_t)(man_f >> (NPF_FTOA_MAN_BITS - 1));
-
-    // round the fraction
-    for (; carry && (dec_f < spec->prec); ++dec_f) {
-      carry = (buf[dec_f] == '9');
-      buf[dec_f] = carry ? '0' : (buf[dec_f] + 1);
+    if (exp < NPF_DOUBLE_MAN_BITS) {
+      carry &= (uint_fast8_t)(man_f >> (NPF_FTOA_MAN_BITS - 1));
     }
   }
 
-  { // integer part
-    npf_ftoa_man_t man_i;
-    int dec_i = spec->prec;
-
-    if (spec->prec || spec->alt_form) {
-      buf[dec_i++] = '.';
-    }
-
-    if (exp >= 0) {
-      int_fast8_t shift_i = (int_fast8_t)((exp > NPF_FTOA_SHIFT_BITS) ? (int)NPF_FTOA_SHIFT_BITS : exp);
-      npf_ftoa_exp_t exp_i = exp - shift_i;
-      shift_i = NPF_DOUBLE_MAN_BITS - shift_i;
-      man_i = (npf_ftoa_man_t)(bin >> shift_i);
-      uint_fast8_t round_i = (exp_i && shift_i) ? ((bin >> (shift_i - 1)) & 0x1) : carry;
-
-      // Scale the integer down to the decimal separator.
-      for (; (exp_i > 0) || (round_i && (man_i == (npf_ftoa_man_t)-1)); --exp_i) {
-        if (!(man_i & ((npf_ftoa_man_t)0x1 << (NPF_FTOA_MAN_BITS - 1)))) {
-          man_i <<= 1;
-          man_i |= round_i; round_i = 0;
-        } else {
-          if (dec_i >= NANOPRINTF_CONVERSION_BUFFER_SIZE) { goto exit; }
-          buf[dec_i++] = '0';
-          round_i = (((man_i % 5) + round_i) > 2);
-          man_i /= 5;
-        }
-      }
-      if (exp_i) {
-        round_i = man_i & 0x1;
-        man_i >>= 1;
-      }
-      man_i += round_i;
-    } else {
-      man_i = carry;
-    }
-
-    // print the integer
-    do {
-      if (dec_i >= NANOPRINTF_CONVERSION_BUFFER_SIZE) { goto exit; }
-      buf[dec_i++] = '0' + (char)(man_i % 10);
-      man_i /= 10;
-    } while (man_i);
-
-    return dec_i;
+  // round the number
+  for (; carry; ++dec) {
+    if (dec >= NANOPRINTF_CONVERSION_BUFFER_SIZE) { goto exit; }
+    if (dec >= end) { buf[end++] = '0'; }
+    if (buf[dec] == '.') { continue; }
+    carry = (buf[dec] == '9');
+    buf[dec] = carry ? '0' : (buf[dec] + 1);
   }
+
+  return end;
 exit:
   if (!ret) { ret = "ROO"; }
   uint_fast8_t i;
@@ -935,7 +946,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
         zero = (val == 0.);
 #endif
-        cbuf_len = npf_ftoa_rev(val, cbuf, &fs);
+        cbuf_len = npf_ftoa_rev(cbuf, &fs, val);
       } break;
 #endif
       default: break;
