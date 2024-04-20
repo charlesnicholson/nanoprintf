@@ -13,13 +13,12 @@
 TEST_CASE("ftoa_rev") {
   char buf[64];
   npf_format_spec_t spec;
-  int frac_bytes;
   memset(buf, 0, sizeof(buf));
   memset(&spec, 0, sizeof(spec));
   spec.prec = 1;
 
   SUBCASE("zero") {
-    REQUIRE(npf_ftoa_rev(buf, 0.f, &spec, &frac_bytes) == 2);
-    REQUIRE(std::string{".0"} == buf);
+    REQUIRE(npf_ftoa_rev(buf, &spec, 0.) == 3);
+    REQUIRE(std::string{"0.0"} == buf);
   }
 }

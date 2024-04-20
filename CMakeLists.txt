@@ -205,7 +205,6 @@ set(unit_test_files
     tests/unit_ftoa_rev.cc
     tests/unit_itoa_rev.cc
     tests/unit_utoa_rev.cc
-    tests/unit_fsplit_abs.cc
     tests/unit_snprintf.cc
     tests/unit_snprintf_safe_empty.cc
     tests/unit_vpprintf.cc)
