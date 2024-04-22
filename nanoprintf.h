@@ -162,6 +162,7 @@ NPF_VISIBILITY int npf_vpprintf(
     #pragma GCC diagnostic ignored "-Wc++98-compat-pedantic"
     #pragma GCC diagnostic ignored "-Wcovered-switch-default"
     #pragma GCC diagnostic ignored "-Wdeclaration-after-statement"
+    #pragma GCC diagnostic ignored "-Wzero-as-null-pointer-constant"
     #ifndef __APPLE__
       #pragma GCC diagnostic ignored "-Wunsafe-buffer-usage"
     #endif
@@ -540,26 +541,26 @@ enum {
 */
 static int npf_ftoa_rev(char *buf, npf_format_spec_t const *spec, double f) {
   char const *ret = NULL;
-  if (spec->prec > (NANOPRINTF_CONVERSION_BUFFER_SIZE - 2)) { goto exit; }
-
   npf_double_bin_t bin; { // Union-cast is UB, let compiler optimize byte-copy loop.
     char const *src = (char const *)&f;
     char *dst = (char *)&bin;
     for (uint_fast8_t i = 0; i < sizeof(f); ++i) { dst[i] = src[i]; }
   }
+
   // Unsigned to signed integer casting is UB, but it works for two's complement implementations.
-  npf_ftoa_exp_t exp; exp = (npf_ftoa_exp_t)(bin >> NPF_DOUBLE_MAN_BITS) & NPF_DOUBLE_EXP_MASK;
+  npf_ftoa_exp_t exp = (npf_ftoa_exp_t)((npf_ftoa_exp_t)(bin >> NPF_DOUBLE_MAN_BITS) & NPF_DOUBLE_EXP_MASK);
   bin &= ((npf_double_bin_t)0x1 << NPF_DOUBLE_MAN_BITS) - 1;
   if (exp == (npf_ftoa_exp_t)NPF_DOUBLE_EXP_MASK) { // special value
     ret = (bin) ? "NAN" : "FNI";
     goto exit;
   }
+  if (spec->prec > (NANOPRINTF_CONVERSION_BUFFER_SIZE - 2)) { goto exit; }
   if (exp) { // normal number
     bin |= (npf_double_bin_t)0x1 << NPF_DOUBLE_MAN_BITS;
   } else { // subnormal number
     ++exp;
   }
-  exp -= NPF_DOUBLE_EXP_BIAS;
+  exp = (npf_ftoa_exp_t)(exp - NPF_DOUBLE_EXP_BIAS);
 
   uint_fast8_t carry; carry = 0;
   npf_ftoa_dec_t end, dec; dec = (npf_ftoa_dec_t)spec->prec;
@@ -572,8 +573,8 @@ static int npf_ftoa_rev(char *buf, npf_format_spec_t const *spec, double f) {
 
     if (exp >= 0) {
       int_fast8_t shift_i = (int_fast8_t)((exp > NPF_FTOA_SHIFT_BITS) ? (int)NPF_FTOA_SHIFT_BITS : exp);
-      npf_ftoa_exp_t exp_i = exp - shift_i;
-      shift_i = NPF_DOUBLE_MAN_BITS - shift_i;
+      npf_ftoa_exp_t exp_i = (npf_ftoa_exp_t)(exp - shift_i);
+      shift_i = (int_fast8_t)(NPF_DOUBLE_MAN_BITS - shift_i);
       man_i = (npf_ftoa_man_t)(bin >> shift_i);
 
       if (exp_i) {
@@ -586,8 +587,8 @@ static int npf_ftoa_rev(char *buf, npf_format_spec_t const *spec, double f) {
       // Scale the integer down to the decimal separator.
       for (; exp_i; --exp_i) {
         if (!(man_i & ((npf_ftoa_man_t)0x1 << (NPF_FTOA_MAN_BITS - 1)))) {
-          man_i <<= 1;
-          man_i |= carry; carry = 0;
+          man_i = (npf_ftoa_man_t)(man_i << 1);
+          man_i = (npf_ftoa_man_t)(man_i | carry); carry = 0;
         } else {
           if (dec >= NANOPRINTF_CONVERSION_BUFFER_SIZE) { goto exit; }
           buf[dec++] = '0';
@@ -603,7 +604,7 @@ static int npf_ftoa_rev(char *buf, npf_format_spec_t const *spec, double f) {
     // print the integer
     do {
       if (end >= NANOPRINTF_CONVERSION_BUFFER_SIZE) { goto exit; }
-      buf[end++] = '0' + (char)(man_i % 10);
+      buf[end++] = (char)('0' + (char)(man_i % 10));
       man_i /= 10;
     } while (man_i);
   }
@@ -614,13 +615,13 @@ static int npf_ftoa_rev(char *buf, npf_format_spec_t const *spec, double f) {
 
     if (exp < NPF_DOUBLE_MAN_BITS) {
       int_fast8_t shift_f = (int_fast8_t)((exp < 0) ? -1 : exp);
-      npf_ftoa_exp_t exp_f = exp - shift_f;
+      npf_ftoa_exp_t exp_f = (npf_ftoa_exp_t)(exp - shift_f);
       npf_double_bin_t bin_f = bin << ((NPF_DOUBLE_BIN_BITS - NPF_DOUBLE_MAN_BITS) + shift_f);
 
       // This if-else statement can be completely optimized at compile time.
       if (NPF_DOUBLE_BIN_BITS > NPF_FTOA_MAN_BITS) {
-        man_f = bin_f >> ((unsigned)(NPF_DOUBLE_BIN_BITS - NPF_FTOA_MAN_BITS) % NPF_DOUBLE_BIN_BITS);
-        carry = (bin_f >> ((unsigned)(NPF_DOUBLE_BIN_BITS - NPF_FTOA_MAN_BITS - 1) % NPF_DOUBLE_BIN_BITS)) & 0x1;
+        man_f = (npf_ftoa_man_t)(bin_f >> ((unsigned)(NPF_DOUBLE_BIN_BITS - NPF_FTOA_MAN_BITS) % NPF_DOUBLE_BIN_BITS));
+        carry = (uint_fast8_t)((bin_f >> ((unsigned)(NPF_DOUBLE_BIN_BITS - NPF_FTOA_MAN_BITS - 1) % NPF_DOUBLE_BIN_BITS)) & 0x1);
       } else {
         man_f = (npf_ftoa_man_t)((npf_ftoa_man_t)bin_f << ((unsigned)(NPF_FTOA_MAN_BITS - NPF_DOUBLE_BIN_BITS) % NPF_FTOA_MAN_BITS));
         carry = 0;
@@ -630,10 +631,10 @@ static int npf_ftoa_rev(char *buf, npf_format_spec_t const *spec, double f) {
       for (uint_fast8_t digit = 0; dec_f && (exp_f < 4); ++exp_f) {
         if ((man_f > ((npf_ftoa_man_t)-4 / 5)) || digit) {
           carry = (uint_fast8_t)(man_f & 0x1);
-          man_f >>= 1;
+          man_f = (npf_ftoa_man_t)(man_f >> 1);
         } else {
-          man_f *= 5;
-          if (carry) { man_f += 3; carry = 0; }
+          man_f = (npf_ftoa_man_t)(man_f * 5);
+          if (carry) { man_f = (npf_ftoa_man_t)(man_f + 3); carry = 0; }
           if (exp_f < 0) {
             buf[--dec_f] = '0';
           } else {
@@ -641,7 +642,7 @@ static int npf_ftoa_rev(char *buf, npf_format_spec_t const *spec, double f) {
           }
         }
       }
-      man_f += carry;
+      man_f = (npf_ftoa_man_t)(man_f + carry);
       carry = (exp_f >= 0);
       dec = 0;
     } else {
@@ -651,12 +652,12 @@ static int npf_ftoa_rev(char *buf, npf_format_spec_t const *spec, double f) {
     if (dec_f) {
       // print the fraction
       for (;;) {
-        buf[--dec_f] = '0' + (char)(man_f >> (NPF_FTOA_MAN_BITS - 4));
-        man_f &= ~((npf_ftoa_man_t)0xF << (NPF_FTOA_MAN_BITS - 4));
+        buf[--dec_f] = (char)('0' + (char)(man_f >> (NPF_FTOA_MAN_BITS - 4)));
+        man_f = (npf_ftoa_man_t)(man_f & ~((npf_ftoa_man_t)0xF << (NPF_FTOA_MAN_BITS - 4)));
         if (!dec_f) { break; }
-        man_f *= 10;
+        man_f = (npf_ftoa_man_t)(man_f * 10);
       }
-      man_f <<= 4;
+      man_f = (npf_ftoa_man_t)(man_f << 4);
     }
     if (exp < NPF_DOUBLE_MAN_BITS) {
       carry &= (uint_fast8_t)(man_f >> (NPF_FTOA_MAN_BITS - 1));
@@ -669,15 +670,15 @@ static int npf_ftoa_rev(char *buf, npf_format_spec_t const *spec, double f) {
     if (dec >= end) { buf[end++] = '0'; }
     if (buf[dec] == '.') { continue; }
     carry = (buf[dec] == '9');
-    buf[dec] = carry ? '0' : (buf[dec] + 1);
+    buf[dec] = (char)(carry ? '0' : (buf[dec] + 1));
   }
 
-  return end;
+  return (int)end;
 exit:
   if (!ret) { ret = "ROO"; }
   uint_fast8_t i;
-  for (i = 0; ret[i]; ++i) { buf[i] = ret[i] + spec->case_adjust; }
-  return i;
+  for (i = 0; ret[i]; ++i) { buf[i] = (char)(ret[i] + spec->case_adjust); }
+  return (int)i;
 }
 
 #endif // NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS
