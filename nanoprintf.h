@@ -176,16 +176,17 @@ NPF_VISIBILITY int npf_vpprintf(
   #pragma warning(disable:4619) // there is no warning number 'number'
   // C4619 has to be disabled first!
   #pragma warning(disable:4127) // conditional expression is constant
-  #pragma warning(disable:4505) // unreferenced function removed
-  #pragma warning(disable:4514) // unreferenced inline function removed
-  #pragma warning(disable:4701) // possibly uninitialized
-  #pragma warning(disable:4706) // assignment in conditional
-  #pragma warning(disable:4710) // not inlined
-  #pragma warning(disable:4711) // selected for inline
-  #pragma warning(disable:4820) // padding after data member
-  #pragma warning(disable:5039) // extern "C" throw
-  #pragma warning(disable:5045) // spectre mitigation
+  #pragma warning(disable:4505) // unreferenced local function has been removed
+  #pragma warning(disable:4514) // unreferenced inline function has been removed
+  #pragma warning(disable:4701) // potentially uninitialized local variable used
+  #pragma warning(disable:4706) // assignment within conditional expression
+  #pragma warning(disable:4710) // function not inlined
+  #pragma warning(disable:4711) // function selected for inline expansion
+  #pragma warning(disable:4820) // padding added after struct member
+  #pragma warning(disable:5039) // potentially throwing function passed to extern C function
+  #pragma warning(disable:5045) // compiler will insert Spectre mitigation for memory load
   #pragma warning(disable:5262) // implicit switch fall-through
+  #pragma warning(disable:26812) // enum type is unscoped
 #endif
 
 #if (NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1) || \
