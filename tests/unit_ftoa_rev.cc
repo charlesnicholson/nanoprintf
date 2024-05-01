@@ -1,10 +1,12 @@
 #include "unit_nanoprintf.h"
 
+#include <cmath>
 #include <cstring>
 #include <string>
 
 #if NANOPRINTF_HAVE_GCC_WARNING_PRAGMAS
   #pragma GCC diagnostic push
+  #pragma GCC diagnostic ignored "-Wunused-function"
   #if NANOPRINTF_CLANG
     #pragma GCC diagnostic ignored "-Wformat-pedantic"
     #pragma GCC diagnostic ignored "-Wmissing-prototypes"
@@ -14,11 +16,20 @@
 
 static npf_format_spec_t spec;
 
+static void memrev(char *lhs, char *rhs) {
+  --rhs;
+  while (lhs < rhs) {
+    char c = *lhs;
+    *lhs++ = *rhs;
+    *rhs-- = c;
+  }
+}
+
 static void require_ftoa_rev(std::string const &expected, double dbl) {
   char buf[NANOPRINTF_CONVERSION_BUFFER_SIZE + 1];
   int const n = npf_ftoa_rev(buf, &spec, dbl);
   REQUIRE(n <= NANOPRINTF_CONVERSION_BUFFER_SIZE);
-  std::reverse(buf, &buf[n]);
+  memrev(buf, &buf[n]);
   buf[n] = '\0';
   CHECK(std::string{buf} == std::string{expected});
   CHECK(n == (int)expected.size());
