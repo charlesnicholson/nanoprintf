@@ -573,7 +573,7 @@ static int npf_ftoa_rev(char *buf, npf_format_spec_t const *spec, double f) {
     buf[dec++] = '.';
   }
 
-  { // integer part
+  { // Integer part
     npf_ftoa_man_t man_i;
 
     if (exp >= 0) {
@@ -586,10 +586,10 @@ static int npf_ftoa_rev(char *buf, npf_format_spec_t const *spec, double f) {
         if (shift_i) {
           carry = (bin >> (shift_i - 1)) & 0x1;
         }
-        exp = NPF_DOUBLE_MAN_BITS; // disable the fraction part
+        exp = NPF_DOUBLE_MAN_BITS; // invalidate the fraction part
       }
 
-      // Scale the integer down to the decimal separator.
+      // Scale the exponent from base-2 to base-10.
       for (; exp_i; --exp_i) {
         if (!(man_i & ((npf_ftoa_man_t)0x1 << (NPF_FTOA_MAN_BITS - 1)))) {
           man_i = (npf_ftoa_man_t)(man_i << 1);
@@ -606,7 +606,7 @@ static int npf_ftoa_rev(char *buf, npf_format_spec_t const *spec, double f) {
     }
     end = dec;
 
-    // print the integer
+    // Print the integer
     do {
       if (end >= NANOPRINTF_CONVERSION_BUFFER_SIZE) { goto exit; }
       buf[end++] = (char)('0' + (char)(man_i % 10));
@@ -614,7 +614,7 @@ static int npf_ftoa_rev(char *buf, npf_format_spec_t const *spec, double f) {
     } while (man_i);
   }
 
-  { // fraction part
+  { // Fraction part
     npf_ftoa_man_t man_f;
     npf_ftoa_dec_t dec_f = (npf_ftoa_dec_t)spec->prec;
 
@@ -632,7 +632,7 @@ static int npf_ftoa_rev(char *buf, npf_format_spec_t const *spec, double f) {
         carry = 0;
       }
 
-      // Scale the fraction up to the decimal separator and prepare the first digit.
+      // Scale the exponent from base-2 to base-10 and prepare the first digit.
       for (uint_fast8_t digit = 0; dec_f && (exp_f < 4); ++exp_f) {
         if ((man_f > ((npf_ftoa_man_t)-4 / 5)) || digit) {
           carry = (uint_fast8_t)(man_f & 0x1);
@@ -655,7 +655,7 @@ static int npf_ftoa_rev(char *buf, npf_format_spec_t const *spec, double f) {
     }
 
     if (dec_f) {
-      // print the fraction
+      // Print the fraction
       for (;;) {
         buf[--dec_f] = (char)('0' + (char)(man_f >> (NPF_FTOA_MAN_BITS - 4)));
         man_f = (npf_ftoa_man_t)(man_f & ~((npf_ftoa_man_t)0xF << (NPF_FTOA_MAN_BITS - 4)));
@@ -669,7 +669,7 @@ static int npf_ftoa_rev(char *buf, npf_format_spec_t const *spec, double f) {
     }
   }
 
-  // round the number
+  // Round the number
   for (; carry; ++dec) {
     if (dec >= NANOPRINTF_CONVERSION_BUFFER_SIZE) { goto exit; }
     if (dec >= end) { buf[end++] = '0'; }
@@ -680,7 +680,7 @@ static int npf_ftoa_rev(char *buf, npf_format_spec_t const *spec, double f) {
 
   return (int)end;
 exit:
-  if (!ret) { ret = "ROO"; }
+  if (!ret) { ret = "RRE"; }
   uint_fast8_t i;
   for (i = 0; ret[i]; ++i) { buf[i] = (char)(ret[i] + spec->case_adjust); }
   return (int)i;

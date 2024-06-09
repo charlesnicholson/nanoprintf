@@ -96,7 +96,7 @@ If a disabled format specifier feature is used, no conversion will occur and the
 ### Floating-Point Conversion
 nanoprintf has the following floating-point specific configuration defines.
 
-* `NANOPRINTF_CONVERSION_BUFFER_SIZE`: Optional, defaults to `23`. Sets the size of a character buffer used for storing the converted value. Set to a larger number to enable printing of floating-point numbers with more characters. The buffer size does include the integer part, the fraction part and the decimal separator, but does not include the sign and the padding characters. If the number does not fit into buffer, an `oor` is printed. Be careful with large sizes as the conversion buffer is allocated on stack memory.
+* `NANOPRINTF_CONVERSION_BUFFER_SIZE`: Optional, defaults to `23`. Sets the size of a character buffer used for storing the converted value. Set to a larger number to enable printing of floating-point numbers with more characters. The buffer size does include the integer part, the fraction part and the decimal separator, but does not include the sign and the padding characters. If the number does not fit into buffer, an `err` is printed. Be careful with large sizes as the conversion buffer is allocated on stack memory.
 * `NANOPRINTF_CONVERSION_FLOAT_TYPE`: Optional, defaults to `unsigned int`. Sets the integer type used for float conversion algorithm, which determines the conversion accuracy. Can be set to any unsigned integer type, like for example `uint64_t` or `uint8_t`.
 
 ### Sprintf Safety
@@ -160,7 +160,7 @@ Like `printf`, `nanoprintf` expects a conversion specification string of the fol
 
 ## Floating-Point
 
-Floating-point conversion is performed by extracting the integer and fraction parts of the number into two separate integer variables and then doing a dynamic scaling to bring those values down or up to the decimal separator. The dynamic scaling multiplies and divides the value by 2 and 10 iteratively to keep the most significant bits of the value. The further the value is away from the decimal separator, the more of an error the scaling will accumulate. With an integer width of `N` bits on average the algorithm keeps `N - log2(5)` or `N - 2.322` bits of accuracy. In addition integer parts up to `2 ^^ N - 1` and fraction parts with up to `N - 2.322` bits after the decimal separator are converted perfectly without loosing any bits.
+Floating-point conversion is performed by extracting the integer and fraction parts of the number into two separate integer variables. For each part the exponent is then scaled from base-2 to base-10 by iteratively multiplying and dividing the mantissa by 2 and 5 appropriately. The order of the scaling operations is selected dynamically (depending on value) to retain as much of the most significant bits of the mantissa as possible. The further the value is away from the decimal separator, the more of an error the scaling will accumulate. With a conversion integer type width of `N` bits on average the algorithm retains `N - log2(5)` or `N - 2.322` bits of accuracy. In addition integer parts up to `2 ^^ N - 1` and fraction parts with up to `N - 2.322` bits after the decimal separator are converted perfectly without loosing any bits.
 
 Because the float -> fixed code operates on the raw float value bits, no floating-point operations are performed. This allows nanoprintf to efficiently format floats on soft-float architectures like Cortex-M0, to function identically with or without optimizations like "fast math", and to minimize the code footprint.
 

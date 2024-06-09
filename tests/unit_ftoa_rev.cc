@@ -49,13 +49,13 @@ TEST_CASE("ftoa_rev") {
     require_ftoa_rev("NAN", (double)-NAN);
     require_ftoa_rev("INF", (double)+INFINITY);
     require_ftoa_rev("INF", (double)-INFINITY);
-    require_ftoa_rev("OOR", DBL_MAX);
+    require_ftoa_rev("ERR", DBL_MAX);
     spec.prec = NANOPRINTF_CONVERSION_BUFFER_SIZE - 2;
-    require_ftoa_rev("OOR", 10.);
+    require_ftoa_rev("ERR", 10.);
     spec.prec += 1;
-    require_ftoa_rev("OOR", 9.);
+    require_ftoa_rev("ERR", 9.);
     spec.case_adjust = 'a' - 'A'; // lowercase
-    require_ftoa_rev("oor", 0.);
+    require_ftoa_rev("err", 0.);
   }
 
   SUBCASE("zero and decimal separator") {
