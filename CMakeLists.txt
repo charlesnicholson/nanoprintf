@@ -203,9 +203,12 @@ set(unit_test_files
     tests/unit_binary.cc
     tests/unit_bufputc.cc
     tests/unit_ftoa_rev.cc
+    tests/unit_ftoa_rev_08.cc
+    tests/unit_ftoa_rev_16.cc
+    tests/unit_ftoa_rev_32.cc
+    tests/unit_ftoa_rev_64.cc
     tests/unit_itoa_rev.cc
     tests/unit_utoa_rev.cc
-    tests/unit_fsplit_abs.cc
     tests/unit_snprintf.cc
     tests/unit_snprintf_safe_empty.cc
     tests/unit_vpprintf.cc)

@@ -1,16 +1,19 @@
 #pragma once
 
-// Each unit test file compiles nanoprintf privately for access to helper functions.
 #define NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS 1
 #define NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS 1
 #define NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS 1
 #define NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS 1
 #define NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS 1
+
+// Each unit test file compiles nanoprintf privately for access to helper functions.
 #define NANOPRINTF_VISIBILITY_STATIC
 #define NANOPRINTF_IMPLEMENTATION
 
 #ifdef _MSC_VER
-  #pragma warning(disable:4464) // relative include uses ..
+  #pragma warning(disable:4619) // there is no warning number 'number'
+  // C4619 has to be disabled first!
+  #pragma warning(disable:4464) // relative include path contains '..'
 #endif
 
 #include "../nanoprintf.h"
@@ -27,12 +30,14 @@
 #endif
 
 #ifdef _MSC_VER
-  #pragma warning(disable:4710) // function wasn't inlined
-  #pragma warning(disable:4711) // function was inlined
+  #pragma warning(disable:4365) // type conversion, signed/unsigned mismatch
+  #pragma warning(disable:4505) // unreferenced local function has been removed
   #pragma warning(disable:4514) // unreferenced inline function has been removed
-  #pragma warning(disable:5039) // could throw inside extern c function
-  #pragma warning(disable:5264) // const variable not used (shut up doctest)
+  #pragma warning(disable:4710) // function not inlined
+  #pragma warning(disable:4711) // function selected for inline expansion
+  #pragma warning(disable:5039) // potentially throwing function passed to extern C function
+  #pragma warning(disable:5264) // const variable is not used
+  #pragma warning(disable:26451) // casting the operator result value to a wider type
 #endif
 
 #include "doctest.h"
-

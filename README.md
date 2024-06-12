@@ -7,17 +7,17 @@
 [![](https://img.shields.io/badge/license-public_domain-brightgreen.svg)](https://github.com/charlesnicholson/nanoprintf/blob/master/LICENSE)
 [![](https://img.shields.io/badge/license-0BSD-brightgreen)](https://github.com/charlesnicholson/nanoprintf/blob/master/LICENSE)
 
-nanoprintf is an unencumbered implementation of snprintf and vsnprintf for embedded systems that, when fully enabled, aim for C11 standard compliance. The primary exceptions are `double` (they get casted to `float`), scientific notation (`%e`, `%g`, `%a`), and the conversions that require `wcrtomb` to exist. C23 binary integer output is optionally supported as per [N2630](http://www.open-std.org/jtc1/sc22/wg14/www/docs/n2630.pdf). Safety extensions for snprintf and vsnprintf can be optionally configured to return trimmed or fully-empty strings on buffer overflow events.
+nanoprintf is an unencumbered implementation of snprintf and vsnprintf for embedded systems that, when fully enabled, aim for C11 standard compliance. The primary exceptions are floating-point, scientific notation (`%e`, `%g`, `%a`), and the conversions that require `wcrtomb` to exist. C23 binary integer output is optionally supported as per [N2630](http://www.open-std.org/jtc1/sc22/wg14/www/docs/n2630.pdf). Safety extensions for snprintf and vsnprintf can be optionally configured to return trimmed or fully-empty strings on buffer overflow events.
 
 Additionally, nanoprintf can be used to parse printf-style format strings to extract the various parameters and conversion specifiers, without doing any actual text formatting.
 
-nanoprintf makes no memory allocations and uses less than 100 bytes of stack. It compiles to between *~760-2500 bytes of object code* on a Cortex-M0 architecture, depending on configuration.
+nanoprintf makes no memory allocations and uses less than 100 bytes of stack. It compiles to between *~800-2700 bytes of object code* on a Cortex-M0 architecture, depending on configuration.
 
-All code is written in a minimal dialect of C99 for maximal compiler compatibility, compiles cleanly at the highest warning levels on clang + gcc + msvc, raises no issues from UBsan or Asan, and is exhaustively tested on 32-bit and 64-bit architectures. nanoprintf does include C standard headers but only uses them for C99 types and argument lists; no calls are made into stdlib / libc, with the exception of any internal double-to-float conversion ABI calls your compiler might emit. As usual, some Windows-specific headers are required if you're compiling natively for msvc.
+All code is written in a minimal dialect of C99 for maximal compiler compatibility, compiles cleanly at the highest warning levels on clang + gcc + msvc, raises no issues from UBsan or Asan, and is exhaustively tested on 32-bit and 64-bit architectures. nanoprintf does include C standard headers but only uses them for C99 types and argument lists; no calls are made into stdlib / libc, with the exception of any internal large integer arithmetic calls your compiler might emit. As usual, some Windows-specific headers are required if you're compiling natively for msvc.
 
 nanoprintf is a [single header file](https://github.com/charlesnicholson/nanoprintf/blob/master/nanoprintf.h) in the style of the [stb libraries](https://github.com/nothings/stb). The rest of the repository is tests and scaffolding and not required for use.
 
-nanoprintf is statically configurable so users can find a balance between size, compiler requirements, and feature set. Floating point conversion, "large" length modifiers, and size write-back are all configurable and are only compiled if explicitly requested, see [Configuration](https://github.com/charlesnicholson/nanoprintf#configuration) for details.
+nanoprintf is statically configurable so users can find a balance between size, compiler requirements, and feature set. Floating-point conversion, "large" length modifiers, and size write-back are all configurable and are only compiled if explicitly requested, see [Configuration](https://github.com/charlesnicholson/nanoprintf#configuration) for details.
 
 ## Usage
 
@@ -93,6 +93,12 @@ If no configuration flags are specified, nanoprintf will default to "reasonable"
 
 If a disabled format specifier feature is used, no conversion will occur and the format specifier string simply will be printed instead.
 
+### Floating-Point Conversion
+nanoprintf has the following floating-point specific configuration defines.
+
+* `NANOPRINTF_CONVERSION_BUFFER_SIZE`: Optional, defaults to `23`. Sets the size of a character buffer used for storing the converted value. Set to a larger number to enable printing of floating-point numbers with more characters. The buffer size does include the integer part, the fraction part and the decimal separator, but does not include the sign and the padding characters. If the number does not fit into buffer, an `err` is printed. Be careful with large sizes as the conversion buffer is allocated on stack memory.
+* `NANOPRINTF_CONVERSION_FLOAT_TYPE`: Optional, defaults to `unsigned int`. Sets the integer type used for float conversion algorithm, which determines the conversion accuracy. Can be set to any unsigned integer type, like for example `uint64_t` or `uint8_t`.
+
 ### Sprintf Safety
 By default, npf_snprintf and npf_vsnprintf behave according to the C Standard: the provided buffer will be filled but not overrun. If the string would have overrun the buffer, a null-terminator byte will be written to the final byte of the buffer. If the buffer is `null` or zero-sized, no bytes will be written.
 
@@ -127,7 +133,7 @@ Like `printf`, `nanoprintf` expects a conversion specification string of the fol
 
 	None or more of the following:
 	* `h`: Use `short` for integral and write-back vararg width.
-	* `L`: Use `long double` for float vararg width (note: it will then be casted down to `float`)
+	* `L`: Use `long double` for float vararg width (note: it will then be casted down to `double`)
 	* `l`: Use `long`, `double`, or wide vararg width.
 	* `hh`: Use `char` for integral and write-back vararg width.
 	* `ll`: (large specifier) Use `long long` for integral and write-back vararg width.
@@ -152,11 +158,11 @@ Like `printf`, `nanoprintf` expects a conversion specification string of the fol
 	* `a`/`A`: Floating-point hex (unimplemented, prints float decimal)
 	* `b`/`B`: Binary integers
 
-## Floating Point
+## Floating-Point
 
-Floating point conversion is performed by extracting the value into 64:64 fixed-point with an extra field that specifies the number of leading zero fractional digits before the first nonzero digit. This is done for simplicity, speed, and code footprint.
+Floating-point conversion is performed by extracting the integer and fraction parts of the number into two separate integer variables. For each part the exponent is then scaled from base-2 to base-10 by iteratively multiplying and dividing the mantissa by 2 and 5 appropriately. The order of the scaling operations is selected dynamically (depending on value) to retain as much of the most significant bits of the mantissa as possible. The further the value is away from the decimal separator, the more of an error the scaling will accumulate. With a conversion integer type width of `N` bits on average the algorithm retains `N - log2(5)` or `N - 2.322` bits of accuracy. In addition integer parts up to `2 ^^ N - 1` and fraction parts with up to `N - 2.322` bits after the decimal separator are converted perfectly without loosing any bits.
 
-Because the float -> fixed code operates on the raw float value bits, no floating point operations are performed. This allows nanoprintf to efficiently format floats on soft-float architectures like Cortex-M0, and to function identically with or without optimizations like "fast math". Despite `nano` in the name, there's no way to do away with double entirely, since the C language standard says that floats are promoted to double any time they're passed into variadic argument lists. nanoprintf casts all doubles back down to floats before doing any conversions. No other single- or double- precision operations are performed.
+Because the float -> fixed code operates on the raw float value bits, no floating-point operations are performed. This allows nanoprintf to efficiently format floats on soft-float architectures like Cortex-M0, to function identically with or without optimizations like "fast math", and to minimize the code footprint.
 
 The `%e`/`%E`, `%a`/`%A`, and `%g`/`%G` specifiers are parsed but not formatted. If used, the output will be identical to if `%f`/`%F` was used. Pull requests welcome! :)
 
@@ -179,11 +185,11 @@ arm-none-eabi-nm --print-size --size-sort npf.o
 00000014 00000002 t npf_bufputc_nop
 00000016 00000010 t npf_putc_cnt
 00000000 00000014 t npf_bufputc
-00000298 00000016 T npf_pprintf
-000002e0 00000016 T npf_snprintf
-000002ae 00000032 T npf_vsnprintf
-00000026 00000272 T npf_vpprintf
-Total size: 0x2f6 (758) bytes
+000002b6 00000016 T npf_pprintf
+00000314 00000016 T npf_snprintf
+000002cc 00000048 T npf_vsnprintf
+00000026 00000290 T npf_vpprintf
+Total size: 0x32a (810) bytes
 
 Configuration "Binary":
 arm-none-eabi-gcc -c -x c -Os -I/__w/nanoprintf/nanoprintf -o npf.o -mcpu=cortex-m0 -DNANOPRINTF_IMPLEMENTATION -DNANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=0 -
@@ -191,11 +197,11 @@ arm-none-eabi-nm --print-size --size-sort npf.o
 00000014 00000002 t npf_bufputc_nop
 00000016 00000010 t npf_putc_cnt
 00000000 00000014 t npf_bufputc
-000002de 00000016 T npf_pprintf
-00000328 00000016 T npf_snprintf
-000002f4 00000034 T npf_vsnprintf
-00000026 000002b8 T npf_vpprintf
-Total size: 0x33e (830) bytes
+000002f2 00000016 T npf_pprintf
+00000350 00000016 T npf_snprintf
+00000308 00000048 T npf_vsnprintf
+00000026 000002cc T npf_vpprintf
+Total size: 0x366 (870) bytes
 
 Configuration "Field Width + Precision":
 arm-none-eabi-gcc -c -x c -Os -I/__w/nanoprintf/nanoprintf -o npf.o -mcpu=cortex-m0 -DNANOPRINTF_IMPLEMENTATION -DNANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=0 -
@@ -203,10 +209,10 @@ arm-none-eabi-nm --print-size --size-sort npf.o
 00000014 00000002 t npf_bufputc_nop
 00000016 00000010 t npf_putc_cnt
 00000000 00000014 t npf_bufputc
-00000546 00000016 T npf_pprintf
+00000534 00000016 T npf_pprintf
 00000590 00000016 T npf_snprintf
-0000055c 00000034 T npf_vsnprintf
-00000026 00000520 T npf_vpprintf
+0000054a 00000046 T npf_vsnprintf
+00000026 0000050e T npf_vpprintf
 Total size: 0x5a6 (1446) bytes
 
 Configuration "Field Width + Precision + Binary":
@@ -215,11 +221,11 @@ arm-none-eabi-nm --print-size --size-sort npf.o
 00000014 00000002 t npf_bufputc_nop
 00000016 00000010 t npf_putc_cnt
 00000000 00000014 t npf_bufputc
-00000590 00000016 T npf_pprintf
-000005d8 00000016 T npf_snprintf
-000005a6 00000032 T npf_vsnprintf
-00000026 0000056a T npf_vpprintf
-Total size: 0x5ee (1518) bytes
+0000058c 00000016 T npf_pprintf
+000005e8 00000016 T npf_snprintf
+000005a2 00000046 T npf_vsnprintf
+00000026 00000566 T npf_vpprintf
+Total size: 0x5fe (1534) bytes
 
 Configuration "Float":
 arm-none-eabi-gcc -c -x c -Os -I/__w/nanoprintf/nanoprintf -o npf.o -mcpu=cortex-m0 -DNANOPRINTF_IMPLEMENTATION -DNANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=0 -
@@ -227,11 +233,11 @@ arm-none-eabi-nm --print-size --size-sort npf.o
 00000014 00000002 t npf_bufputc_nop
 00000016 00000010 t npf_putc_cnt
 00000000 00000014 t npf_bufputc
-0000059c 00000016 T npf_pprintf
-000005e4 00000016 T npf_snprintf
-000005b2 00000032 T npf_vsnprintf
-00000026 00000576 T npf_vpprintf
-Total size: 0x5fa (1530) bytes
+0000067c 00000016 T npf_pprintf
+000006d8 00000016 T npf_snprintf
+00000692 00000046 T npf_vsnprintf
+00000026 00000656 T npf_vpprintf
+Total size: 0x6ee (1774) bytes
 
 Configuration "Everything":
 arm-none-eabi-gcc -c -x c -Os -I/__w/nanoprintf/nanoprintf -o npf.o -mcpu=cortex-m0 -DNANOPRINTF_IMPLEMENTATION -DNANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=1 -
@@ -239,11 +245,11 @@ arm-none-eabi-nm --print-size --size-sort npf.o
 00000014 00000002 t npf_bufputc_nop
 00000016 00000010 t npf_putc_cnt
 00000000 00000014 t npf_bufputc
-00000934 00000016 T npf_pprintf
-0000097c 00000016 T npf_snprintf
-0000094a 00000032 T npf_vsnprintf
-00000026 0000090e T npf_vpprintf
-Total size: 0x992 (2450) bytes
+00000a24 00000016 T npf_pprintf
+00000a80 00000016 T npf_snprintf
+00000a3a 00000046 T npf_vsnprintf
+00000026 000009fe T npf_vpprintf
+Total size: 0xa96 (2710) bytes
 ```
 
 ## Development
@@ -265,7 +271,7 @@ One test suite is a fork from the [printf test suite](), which is MIT licensed. 
 
 ## Acknowledgments
 
-I implemented Float-to-int conversion using the ideas from [Wojciech Muła](mailto:zdjęcia@garnek.pl)'s [float -> 64:64 fixed algorithm](http://0x80.pl/notesen/2015-12-29-float-to-string.html).
+The basic idea of float-to-int conversion was inspired by [Wojciech Muła](mailto:zdjęcia@garnek.pl)'s [float -> 64:64 fixed algorithm](http://0x80.pl/notesen/2015-12-29-float-to-string.html) and extended further by adding dynamic scaling and configurable integer width by [Oskars Rubenis](https://github.com/Okarss).
 
 I ported the [printf test suite](https://github.com/eyalroz/printf/blob/master/test/test_suite.cpp) to nanoprintf. It was originally from the [mpaland printf project](https://github.com/mpaland/printf) codebase but adopted and improved by [Eyal Rozenberg](https://github.com/eyalroz) and others. (Nanoprintf has many of its own tests, but these are also very thorough and very good!)
 
