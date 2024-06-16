@@ -17,9 +17,15 @@
 #endif
 
 #if defined(__clang__) || defined(__GNUC__) || defined(__GNUG__)
+  #define NPF_NOINLINE __attribute__((noinline))
   #define NPF_PRINTF_ATTR(FORMAT_INDEX, VARGS_INDEX) \
     __attribute__((format(printf, FORMAT_INDEX, VARGS_INDEX)))
 #else
+  #ifdef _MSC_VER
+    #define NPF_NOINLINE __declspec(noinline)
+  #else
+    #define NPF_NOINLINE
+  #endif
   #define NPF_PRINTF_ATTR(FORMAT_INDEX, VARGS_INDEX)
 #endif
 
@@ -273,14 +279,14 @@ typedef struct npf_bufputc_ctx {
 static int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec);
 static void npf_bufputc(int c, void *ctx);
 static void npf_bufputc_nop(int c, void *ctx);
-static int npf_utoa_rev(char *buf, npf_uint_t i, unsigned base, unsigned case_adjust);
+NPF_NOINLINE static int npf_utoa_rev(npf_uint_t val, char *buf, uint_fast8_t base, char case_adj);
 
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
 static int npf_ftoa_rev(char *buf, npf_format_spec_t const *spec, double f);
 #endif
 
 #if NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS == 1
-static int npf_bin_len(npf_uint_t i);
+static int npf_bin_len(npf_uint_t u);
 #endif
 
 #if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
@@ -298,14 +304,14 @@ static int npf_bin_len(npf_uint_t i);
 
 static int npf_max(int x, int y) { return (x > y) ? x : y; }
 
-int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
+static int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
   char const *cur = format;
 
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
   out_spec->left_justified = 0;
   out_spec->leading_zero_pad = 0;
 #endif
-  out_spec->case_adjust = 'a'-'A'; // lowercase
+  out_spec->case_adjust = 'a' - 'A'; // lowercase
   out_spec->prepend = 0;
   out_spec->alt_form = 0;
 
@@ -478,15 +484,15 @@ int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
   return (int)(cur - format);
 }
 
-int npf_utoa_rev(char *buf, npf_uint_t i, unsigned base, unsigned case_adj) {
-  int n = 0;
+static int npf_utoa_rev(npf_uint_t val, char *buf, uint_fast8_t base, char case_adj) {
+  uint_fast8_t n = 0;
   do {
-    unsigned const d = (unsigned)(i % base);
-    *buf++ = (char)((d < 10) ? ('0' + d) : ('A' + case_adj + (d - 10)));
-    i /= base;
+    int_fast8_t const d = (int_fast8_t)(val % base);
+    *buf++ = (char)(((d < 10) ? '0' : ('A' - 10 + case_adj)) + d);
     ++n;
-  } while (i);
-  return n;
+    val /= base;
+  } while (val);
+  return (int)n;
 }
 
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
@@ -681,7 +687,7 @@ exit:
 #endif // NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS
 
 #if NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS == 1
-int npf_bin_len(npf_uint_t u) {
+static int npf_bin_len(npf_uint_t u) {
   // Return the length of the binary string format of 'u', preferring intrinsics.
   if (!u) { return 1; }
 
@@ -719,12 +725,12 @@ int npf_bin_len(npf_uint_t u) {
 }
 #endif
 
-void npf_bufputc(int c, void *ctx) {
+static void npf_bufputc(int c, void *ctx) {
   npf_bufputc_ctx_t *bpc = (npf_bufputc_ctx_t *)ctx;
   if (bpc->cur < bpc->len) { bpc->dst[bpc->cur++] = (char)c; }
 }
 
-void npf_bufputc_nop(int c, void *ctx) { (void)c; (void)ctx; }
+static void npf_bufputc_nop(int c, void *ctx) { (void)c; (void)ctx; }
 
 typedef struct npf_cnt_putc_ctx {
   npf_putc pc;
@@ -846,7 +852,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
         {
           npf_uint_t uval = (npf_uint_t)val;
           if (val < 0) { uval = 0 - uval; }
-          cbuf_len = npf_utoa_rev(cbuf, uval, 10, (unsigned)fs.case_adjust);
+          cbuf_len = npf_utoa_rev(uval, cbuf, 10, fs.case_adjust);
         }
       } break;
 
@@ -890,9 +896,9 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
         } else
 #endif
         {
-          unsigned const base = (fs.conv_spec == NPF_FMT_SPEC_CONV_OCTAL) ?
+          uint_fast8_t const base = (fs.conv_spec == NPF_FMT_SPEC_CONV_OCTAL) ?
             8u : ((fs.conv_spec == NPF_FMT_SPEC_CONV_HEX_INT) ? 16u : 10u);
-          cbuf_len = npf_utoa_rev(cbuf, val, base, (unsigned)fs.case_adjust);
+          cbuf_len = npf_utoa_rev(val, cbuf, base, fs.case_adjust);
         }
 
         if (val && fs.alt_form && (fs.conv_spec == NPF_FMT_SPEC_CONV_OCTAL)) {
@@ -909,8 +915,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
       } break;
 
       case NPF_FMT_SPEC_CONV_POINTER: {
-        cbuf_len =
-          npf_utoa_rev(cbuf, (npf_uint_t)(uintptr_t)va_arg(args, void *), 16, 'a'-'A');
+        cbuf_len = npf_utoa_rev((npf_uint_t)(uintptr_t)va_arg(args, void *), cbuf, 16, 'a' - 'A');
         need_0x = 'x';
       } break;
 
