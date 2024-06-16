@@ -273,7 +273,6 @@ typedef struct npf_bufputc_ctx {
 static int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec);
 static void npf_bufputc(int c, void *ctx);
 static void npf_bufputc_nop(int c, void *ctx);
-static int npf_itoa_rev(char *buf, npf_int_t i);
 static int npf_utoa_rev(char *buf, npf_uint_t i, unsigned base, unsigned case_adjust);
 
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
@@ -479,13 +478,6 @@ int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
   return (int)(cur - format);
 }
 
-int npf_itoa_rev(char *buf, npf_int_t i) {
-  int n = 0;
-  int const sign = (i >= 0) ? 1 : -1;
-  do { *buf++ = (char)('0' + (sign * (i % 10))); i /= 10; ++n; } while (i);
-  return n;
-}
-
 int npf_utoa_rev(char *buf, npf_uint_t i, unsigned base, unsigned case_adj) {
   int n = 0;
   do {
@@ -540,7 +532,7 @@ enum {
    which are mathematically exact and fast, but require large lookup tables.
 
    This implementation was inspired by Wojciech Muła's (zdjęcia@garnek.pl)
-   algorithm (http://0x80.pl/notesen/2015-12-29-float-to-string.html) and 
+   algorithm (http://0x80.pl/notesen/2015-12-29-float-to-string.html) and
    extended further by adding dynamic scaling and configurable integer width by
    Oskars Rubenis (https://github.com/Okarss).
 */
@@ -851,7 +843,11 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
           cbuf_len = 0;
         } else
 #endif
-        { cbuf_len = npf_itoa_rev(cbuf, val); }
+        {
+          npf_uint_t uval = (npf_uint_t)val;
+          if (val < 0) { uval = 0 - uval; }
+          cbuf_len = npf_utoa_rev(cbuf, uval, 10, (unsigned)fs.case_adjust);
+        }
       } break;
 
 #if NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS == 1
