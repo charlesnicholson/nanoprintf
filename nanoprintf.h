@@ -17,15 +17,9 @@
 #endif
 
 #if defined(__clang__) || defined(__GNUC__) || defined(__GNUG__)
-  #define NPF_NOINLINE __attribute__((noinline))
   #define NPF_PRINTF_ATTR(FORMAT_INDEX, VARGS_INDEX) \
     __attribute__((format(printf, FORMAT_INDEX, VARGS_INDEX)))
 #else
-  #ifdef _MSC_VER
-    #define NPF_NOINLINE __declspec(noinline)
-  #else
-    #define NPF_NOINLINE
-  #endif
   #define NPF_PRINTF_ATTR(FORMAT_INDEX, VARGS_INDEX)
 #endif
 
@@ -193,6 +187,14 @@ NPF_VISIBILITY int npf_vpprintf(
   #pragma warning(disable:5045) // compiler will insert Spectre mitigation for memory load
   #pragma warning(disable:5262) // implicit switch fall-through
   #pragma warning(disable:26812) // enum type is unscoped
+#endif
+
+#if defined(__clang__) || defined(__GNUC__) || defined(__GNUG__)
+  #define NPF_NOINLINE __attribute__((noinline))
+#elif defined(_MSC_VER)
+  #define NPF_NOINLINE __declspec(noinline)
+#else
+  #define NPF_NOINLINE
 #endif
 
 #if (NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1) || \
