@@ -15,10 +15,10 @@
 void require_npf_utoa(
     std::string const &expected,
     npf_uint_t val,
-    unsigned base,
-    unsigned case_adjust = 'a' - 'A') {
+    uint_fast8_t base,
+    char case_adj = 'a' - 'A') {
   char buf[64];
-  int const n = npf_utoa_rev(buf, val, base, case_adjust);
+  int const n = npf_utoa_rev(val, buf, base, case_adj);
   buf[n] = '\0';
   REQUIRE(n == (int)expected.size());
   REQUIRE(std::string{buf} == expected);
