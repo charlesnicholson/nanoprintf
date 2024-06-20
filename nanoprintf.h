@@ -221,6 +221,7 @@ typedef enum {
 } npf_format_spec_length_modifier_t;
 
 typedef enum {
+  NPF_FMT_SPEC_CONV_NONE,
   NPF_FMT_SPEC_CONV_PERCENT,      // '%'
   NPF_FMT_SPEC_CONV_CHAR,         // 'c'
   NPF_FMT_SPEC_CONV_STRING,       // 's'
@@ -244,24 +245,21 @@ typedef enum {
 } npf_format_spec_conversion_t;
 
 typedef struct npf_format_spec {
-  char prepend;          // ' ' or '+'
-  char alt_form;         // '#'
-
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
-  npf_fmt_spec_opt_t field_width_opt;
   int field_width;
+  uint8_t field_width_opt; // npf_fmt_spec_opt_t
   char left_justified;   // '-'
   char leading_zero_pad; // '0'
 #endif
-
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
-  npf_fmt_spec_opt_t prec_opt;
   int prec;
+  uint8_t prec_opt;        // npf_fmt_spec_opt_t
 #endif
-
-  npf_format_spec_length_modifier_t length_modifier;
-  npf_format_spec_conversion_t conv_spec;
-  char case_adjust;
+  char prepend;          // ' ' or '+'
+  char alt_form;         // '#'
+  char case_adjust;      // 'a' - 'A'
+  uint8_t length_modifier; // npf_format_spec_length_modifier_t
+  uint8_t conv_spec;       // npf_format_spec_conversion_t
 } npf_format_spec_t;
 
 #if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 0
@@ -366,7 +364,7 @@ static int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec
   }
 #endif
 
-  int tmp_conv = -1;
+  uint_fast8_t tmp_conv = NPF_FMT_SPEC_CONV_NONE;
   out_spec->length_modifier = NPF_FMT_SPEC_LEN_MOD_NONE;
   switch (*cur++) { // Length modifier
     case 'h':
@@ -417,11 +415,11 @@ static int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec
 
     case 'i':
     case 'd': tmp_conv = NPF_FMT_SPEC_CONV_SIGNED_INT;
-    case 'o': if (tmp_conv == -1) { tmp_conv = NPF_FMT_SPEC_CONV_OCTAL; }
-    case 'u': if (tmp_conv == -1) { tmp_conv = NPF_FMT_SPEC_CONV_UNSIGNED_INT; }
-    case 'X': if (tmp_conv == -1) { out_spec->case_adjust = 0; }
-    case 'x': if (tmp_conv == -1) { tmp_conv = NPF_FMT_SPEC_CONV_HEX_INT; }
-      out_spec->conv_spec = (npf_format_spec_conversion_t)tmp_conv;
+    case 'o': if (tmp_conv == NPF_FMT_SPEC_CONV_NONE) { tmp_conv = NPF_FMT_SPEC_CONV_OCTAL; }
+    case 'u': if (tmp_conv == NPF_FMT_SPEC_CONV_NONE) { tmp_conv = NPF_FMT_SPEC_CONV_UNSIGNED_INT; }
+    case 'X': if (tmp_conv == NPF_FMT_SPEC_CONV_NONE) { out_spec->case_adjust = 0; }
+    case 'x': if (tmp_conv == NPF_FMT_SPEC_CONV_NONE) { tmp_conv = NPF_FMT_SPEC_CONV_HEX_INT; }
+      out_spec->conv_spec = tmp_conv;
 #if (NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1) && \
     (NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1)
       if (out_spec->prec_opt != NPF_FMT_SPEC_OPT_NONE) { out_spec->leading_zero_pad = 0; }
