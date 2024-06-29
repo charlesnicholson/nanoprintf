@@ -504,14 +504,14 @@ static int npf_utoa_rev(npf_uint_t val, char *buf, uint_fast8_t base, char case_
 
 // The floating point conversion code works with an unsigned integer type of any size.
 #ifndef NANOPRINTF_CONVERSION_FLOAT_TYPE
-  #define NANOPRINTF_CONVERSION_FLOAT_TYPE    unsigned int
+  #define NANOPRINTF_CONVERSION_FLOAT_TYPE unsigned int
 #endif
-typedef NANOPRINTF_CONVERSION_FLOAT_TYPE    npf_ftoa_man_t;
+typedef NANOPRINTF_CONVERSION_FLOAT_TYPE npf_ftoa_man_t;
 
 #if (NANOPRINTF_CONVERSION_BUFFER_SIZE <= UINT_FAST8_MAX) && (UINT_FAST8_MAX <= INT_MAX)
-  typedef uint_fast8_t    npf_ftoa_dec_t;
+  typedef uint_fast8_t npf_ftoa_dec_t;
 #else
-  typedef int    npf_ftoa_dec_t;
+  typedef int npf_ftoa_dec_t;
 #endif
 
 enum {
@@ -535,7 +535,7 @@ enum {
 */
 static int npf_ftoa_rev(char *buf, npf_format_spec_t const *spec, double f) {
   char const *ret = NULL;
-  npf_double_bin_t bin; { // Union-cast is UB, let compiler optimize byte-copy loop.
+  npf_double_bin_t bin; { // Union-cast is UB pre-C11, compiler optimizes byte-copy loop.
     char const *src = (char const *)&f;
     char *dst = (char *)&bin;
     for (uint_fast8_t i = 0; i < sizeof(f); ++i) { dst[i] = src[i]; }
@@ -598,8 +598,7 @@ static int npf_ftoa_rev(char *buf, npf_format_spec_t const *spec, double f) {
     }
     end = dec;
 
-    // Print the integer
-    do {
+    do { // Print the integer
       if (end >= NANOPRINTF_CONVERSION_BUFFER_SIZE) { goto exit; }
       buf[end++] = (char)('0' + (char)(man_i % 10));
       man_i /= 10;
