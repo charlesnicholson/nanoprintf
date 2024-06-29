@@ -474,7 +474,8 @@ static int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec
   return (int)(cur - format);
 }
 
-static int npf_utoa_rev(npf_uint_t val, char *buf, uint_fast8_t base, char case_adj) {
+static NPF_NOINLINE int npf_utoa_rev(
+    npf_uint_t val, char *buf, uint_fast8_t base, char case_adj) {
   uint_fast8_t n = 0;
   do {
     int_fast8_t const d = (int_fast8_t)(val % base);
@@ -489,15 +490,15 @@ static int npf_utoa_rev(npf_uint_t val, char *buf, uint_fast8_t base, char case_
 
 #include <float.h>
 
-#if   (DBL_MANT_DIG <= 11) && (DBL_MAX_EXP <= 16)
-  typedef uint_fast16_t    npf_double_bin_t;
-  typedef  int_fast8_t     npf_ftoa_exp_t;
+#if (DBL_MANT_DIG <= 11) && (DBL_MAX_EXP <= 16)
+  typedef uint_fast16_t npf_double_bin_t;
+  typedef int_fast8_t npf_ftoa_exp_t;
 #elif (DBL_MANT_DIG <= 24) && (DBL_MAX_EXP <= 128)
-  typedef uint_fast32_t    npf_double_bin_t;
-  typedef  int_fast8_t     npf_ftoa_exp_t;
+  typedef uint_fast32_t npf_double_bin_t;
+  typedef int_fast8_t npf_ftoa_exp_t;
 #elif (DBL_MANT_DIG <= 53) && (DBL_MAX_EXP <= 1024)
-  typedef uint_fast64_t    npf_double_bin_t;
-  typedef  int_fast16_t    npf_ftoa_exp_t;
+  typedef uint_fast64_t npf_double_bin_t;
+  typedef int_fast16_t npf_ftoa_exp_t;
 #else
   #error Unsupported width of the double type.
 #endif
