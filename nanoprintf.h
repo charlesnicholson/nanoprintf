@@ -1,4 +1,4 @@
-/* nanoprintf v0.5.0: a tiny embeddable printf replacement written in C.
+/* nanoprintf v0.5.1: a tiny embeddable printf replacement written in C.
    https://github.com/charlesnicholson/nanoprintf
    charles.nicholson+nanoprintf@gmail.com
    dual-licensed under 0bsd and unlicense, take your pick. see eof for details. */
@@ -474,7 +474,8 @@ static int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec
   return (int)(cur - format);
 }
 
-static int npf_utoa_rev(npf_uint_t val, char *buf, uint_fast8_t base, char case_adj) {
+static NPF_NOINLINE int npf_utoa_rev(
+    npf_uint_t val, char *buf, uint_fast8_t base, char case_adj) {
   uint_fast8_t n = 0;
   do {
     int_fast8_t const d = (int_fast8_t)(val % base);
@@ -489,15 +490,15 @@ static int npf_utoa_rev(npf_uint_t val, char *buf, uint_fast8_t base, char case_
 
 #include <float.h>
 
-#if   (DBL_MANT_DIG <= 11) && (DBL_MAX_EXP <= 16)
-  typedef uint_fast16_t    npf_double_bin_t;
-  typedef  int_fast8_t     npf_ftoa_exp_t;
+#if (DBL_MANT_DIG <= 11) && (DBL_MAX_EXP <= 16)
+  typedef uint_fast16_t npf_double_bin_t;
+  typedef int_fast8_t npf_ftoa_exp_t;
 #elif (DBL_MANT_DIG <= 24) && (DBL_MAX_EXP <= 128)
-  typedef uint_fast32_t    npf_double_bin_t;
-  typedef  int_fast8_t     npf_ftoa_exp_t;
+  typedef uint_fast32_t npf_double_bin_t;
+  typedef int_fast8_t npf_ftoa_exp_t;
 #elif (DBL_MANT_DIG <= 53) && (DBL_MAX_EXP <= 1024)
-  typedef uint_fast64_t    npf_double_bin_t;
-  typedef  int_fast16_t    npf_ftoa_exp_t;
+  typedef uint_fast64_t npf_double_bin_t;
+  typedef int_fast16_t npf_ftoa_exp_t;
 #else
   #error Unsupported width of the double type.
 #endif
@@ -524,15 +525,15 @@ enum {
     ((NPF_FTOA_MAN_BITS < DBL_MANT_DIG) ? NPF_FTOA_MAN_BITS : DBL_MANT_DIG) - 1
 };
 
-/* Generally floating-point conversion implementations use
+/* Generally, floating-point conversion implementations use
    grisu2 (https://bit.ly/2JgMggX) and ryu (https://bit.ly/2RLXSg0) algorithms,
    which are mathematically exact and fast, but require large lookup tables.
 
    This implementation was inspired by Wojciech Muła's (zdjęcia@garnek.pl)
    algorithm (http://0x80.pl/notesen/2015-12-29-float-to-string.html) and
    extended further by adding dynamic scaling and configurable integer width by
-   Oskars Rubenis (https://github.com/Okarss).
-*/
+   Oskars Rubenis (https://github.com/Okarss). */
+
 static int npf_ftoa_rev(char *buf, npf_format_spec_t const *spec, double f) {
   char const *ret = NULL;
   npf_double_bin_t bin; { // Union-cast is UB pre-C11, compiler optimizes byte-copy loop.
