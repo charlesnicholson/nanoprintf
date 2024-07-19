@@ -705,7 +705,7 @@ static int npf_bin_len(npf_uint_t u) {
     NPF_CLZ(&idx, u);
     return (int)(idx + 1);
   #endif
-#elif defined(NANOPRINTF_CLANG) || defined(NANOPRINTF_GCC_PAST_4_6)
+#elif NANOPRINTF_CLANG || NANOPRINTF_GCC_PAST_4_6
   #define NPF_HAVE_BUILTIN_CLZ
   #if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
     #define NPF_CLZ(X) ((sizeof(long long) * CHAR_BIT) - (size_t)__builtin_clzll(X))
