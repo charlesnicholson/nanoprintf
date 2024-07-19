@@ -1,4 +1,4 @@
-/* nanoprintf v0.5.1: a tiny embeddable printf replacement written in C.
+/* nanoprintf v0.5.2: a tiny embeddable printf replacement written in C.
    https://github.com/charlesnicholson/nanoprintf
    charles.nicholson+nanoprintf@gmail.com
    dual-licensed under 0bsd and unlicense, take your pick. see eof for details. */
