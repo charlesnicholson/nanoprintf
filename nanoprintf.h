@@ -277,7 +277,9 @@ typedef struct npf_bufputc_ctx {
 } npf_bufputc_ctx_t;
 
 #if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
-  #ifdef _MSC_VER
+  #ifdef NANOPRINTF_SSIZE_TYPE_OVERRIDE
+    typedef NANOPRINTF_SSIZE_TYPE_OVERRIDE ssize_t;
+  #elif defined(_MSC_VER)
     #include <BaseTsd.h>
     typedef SSIZE_T ssize_t;
   #else
