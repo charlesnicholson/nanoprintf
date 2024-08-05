@@ -276,9 +276,9 @@ typedef struct npf_bufputc_ctx {
 } npf_bufputc_ctx_t;
 
 #if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
-  #if PTRDIFF_MAX != SIZE_MAX / 2
-    #error ptrdiff_t and size_t must be the same size
-  #endif
+  //compile-time assertion
+  typedef char size_t_and_ptrdiff_t_have_same_size[(sizeof(size_t) == sizeof(ptrdiff_t)) ? 1 : -1];
+
   typedef ptrdiff_t ssize_t;
 #endif
 
