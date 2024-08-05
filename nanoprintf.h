@@ -64,7 +64,6 @@ NPF_VISIBILITY int npf_vpprintf(
 
 #include <limits.h>
 #include <stdint.h>
-#include <inttypes.h>
 
 // The conversion buffer must fit at least UINT64_MAX in octal format with the leading '0'.
 #ifndef NANOPRINTF_CONVERSION_BUFFER_SIZE
@@ -277,14 +276,10 @@ typedef struct npf_bufputc_ctx {
 } npf_bufputc_ctx_t;
 
 #if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
-  #ifdef NANOPRINTF_SSIZE_TYPE_OVERRIDE
-    typedef NANOPRINTF_SSIZE_TYPE_OVERRIDE ssize_t;
-  #elif defined(_MSC_VER)
-    #include <BaseTsd.h>
-    typedef SSIZE_T ssize_t;
-  #else
-    #include <sys/types.h>
+  #if PTRDIFF_MAX != SIZE_MAX / 2
+    #error ptrdiff_t and size_t must be the same size
   #endif
+  typedef ptrdiff_t ssize_t;
 #endif
 
 #ifdef _MSC_VER
