@@ -1,4 +1,4 @@
-/* nanoprintf v0.5.2: a tiny embeddable printf replacement written in C.
+/* nanoprintf v0.5.3: a tiny embeddable printf replacement written in C.
    https://github.com/charlesnicholson/nanoprintf
    charles.nicholson+nanoprintf@gmail.com
    dual-licensed under 0bsd and unlicense, take your pick. see eof for details. */
@@ -276,9 +276,7 @@ typedef struct npf_bufputc_ctx {
 } npf_bufputc_ctx_t;
 
 #if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
-  //compile-time assertion
-  typedef char npf_ssize_t_and_ptrdiff_t_have_same_size[(sizeof(size_t) == sizeof(ptrdiff_t)) ? 1 : -1];
-
+  typedef char npf_size_is_ptrdiff[(sizeof(size_t) == sizeof(ptrdiff_t)) ? 1 : -1];
   typedef ptrdiff_t npf_ssize_t;
 #endif
 
