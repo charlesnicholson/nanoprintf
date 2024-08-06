@@ -277,9 +277,9 @@ typedef struct npf_bufputc_ctx {
 
 #if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
   //compile-time assertion
-  typedef char size_t_and_ptrdiff_t_have_same_size[(sizeof(size_t) == sizeof(ptrdiff_t)) ? 1 : -1];
+  typedef char npf_ssize_t_and_ptrdiff_t_have_same_size[(sizeof(size_t) == sizeof(ptrdiff_t)) ? 1 : -1];
 
-  typedef ptrdiff_t ssize_t;
+  typedef ptrdiff_t npf_ssize_t;
 #endif
 
 #ifdef _MSC_VER
@@ -828,7 +828,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
 #if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
           NPF_EXTRACT(LARGE_LONG_LONG, long long, long long);
           NPF_EXTRACT(LARGE_INTMAX, intmax_t, intmax_t);
-          NPF_EXTRACT(LARGE_SIZET, ssize_t, ssize_t);
+          NPF_EXTRACT(LARGE_SIZET, npf_ssize_t, npf_ssize_t);
           NPF_EXTRACT(LARGE_PTRDIFFT, ptrdiff_t, ptrdiff_t);
 #endif
           default: break;
