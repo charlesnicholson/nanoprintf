@@ -977,7 +977,10 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
     if (fs.conv_spec != NPF_FMT_SPEC_CONV_STRING) {
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
       // float precision is after the decimal point
-      if (fs.conv_spec != NPF_FMT_SPEC_CONV_FLOAT_DEC)
+      if ((fs.conv_spec != NPF_FMT_SPEC_CONV_FLOAT_DEC) &&
+          (fs.conv_spec != NPF_FMT_SPEC_CONV_FLOAT_SCI) &&
+          (fs.conv_spec != NPF_FMT_SPEC_CONV_FLOAT_SHORTEST) &&
+          (fs.conv_spec != NPF_FMT_SPEC_CONV_FLOAT_HEX))
 #endif
       { prec_pad = npf_max(0, fs.prec - cbuf_len); }
     }
