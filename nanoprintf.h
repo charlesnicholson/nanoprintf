@@ -165,8 +165,6 @@ NPF_VISIBILITY int npf_vpprintf(
     #ifndef __APPLE__
       #pragma GCC diagnostic ignored "-Wunsafe-buffer-usage"
     #endif
-  #elif NANOPRINTF_GCC_PAST_4_6
-    #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
   #endif
 #endif
 
@@ -749,7 +747,7 @@ static void npf_putc_cnt(int c, void *ctx) {
   case NPF_FMT_SPEC_LEN_MOD_##MOD: *(va_arg(args, TYPE *)) = (TYPE)pc_cnt.n; break
 
 int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
-  npf_format_spec_t fs;
+  npf_format_spec_t fs = {0};
   char const *cur = format;
   npf_cnt_putc_ctx_t pc_cnt;
   pc_cnt.pc = pc;
