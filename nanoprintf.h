@@ -312,12 +312,12 @@ static int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec
   }
 
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
+  out_spec->field_width = 0;
   out_spec->field_width_opt = NPF_FMT_SPEC_OPT_NONE;
   if (*cur == '*') {
     out_spec->field_width_opt = NPF_FMT_SPEC_OPT_STAR;
     ++cur;
   } else {
-    out_spec->field_width = 0;
     while ((*cur >= '0') && (*cur <= '9')) {
       out_spec->field_width_opt = NPF_FMT_SPEC_OPT_LITERAL;
       out_spec->field_width = (out_spec->field_width * 10) + (*cur++ - '0');
