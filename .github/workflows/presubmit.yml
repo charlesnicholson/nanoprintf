@@ -100,6 +100,12 @@ jobs:
   linux-arm64:
     runs-on: ubuntu-24.04-arm
 
+    container:
+      image: ghcr.io/charlesnicholson/docker-image:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
     strategy:
       matrix:
         compiler: [gcc, clang]
