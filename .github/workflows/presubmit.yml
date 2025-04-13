@@ -65,8 +65,8 @@ jobs:
           CXX: /usr/bin/clang++
         run: ./b --arch ${{ matrix.architecture }} --${{ matrix.sanitizer }} --paland -v
 
-  linux-gcc:
-    runs-on: ["${{ matrix.runner }}"]
+  linux-x64:
+    runs-on: ubuntu-latest
 
     container:
       image: ghcr.io/charlesnicholson/docker-image:latest
@@ -76,9 +76,9 @@ jobs:
 
     strategy:
       matrix:
+        compiler: [gcc, clang]
         configuration: [Debug, Release]
         architecture: [32, 64]
-        runner: [ubuntu-latest, ubuntu-24.04-arm]
 
     steps:
       - uses: actions/checkout@v4
@@ -86,24 +86,18 @@ jobs:
           submodules: recursive
       - name: Build
         env:
-          CC: /usr/bin/gcc
-          CXX: /usr/bin/g++
+          CC: ${{ compiler }}
+          CXX: ${{ compiler }}++
         run: ./b --cfg ${{ matrix.configuration }} --arch ${{ matrix.architecture }} --paland -v
 
-  linux-clang:
-    runs-on: ["${{ matrix.runner }}"]
-
-    container:
-      image: ghcr.io/charlesnicholson/docker-image:latest
-      credentials:
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
+  linux-arm64:
+    runs-on: ubuntu-24.04-arm
 
     strategy:
       matrix:
+        compiler: [gcc, clang]
         configuration: [Debug, Release]
         architecture: [32, 64]
-        runner: [ubuntu-latest, ubuntu-24.04-arm]
 
     steps:
       - uses: actions/checkout@v4
@@ -111,8 +105,8 @@ jobs:
           submodules: recursive
       - name: Build
         env:
-          CC: /usr/bin/clang
-          CXX: /usr/bin/clang++
+          CC: ${{ compiler }}
+          CXX: ${{ compiler }}++
         run: ./b --cfg ${{ matrix.configuration }} --arch ${{ matrix.architecture }} --paland -v
 
   macos:
