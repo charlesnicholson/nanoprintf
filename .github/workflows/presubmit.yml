@@ -65,7 +65,7 @@ jobs:
           CXX: /usr/bin/clang++
         run: ./b --arch ${{ matrix.architecture }} --${{ matrix.sanitizer }} --paland -v
 
-  linux-gcc:
+  linux-x64:
     runs-on: ubuntu-latest
 
     container:
@@ -76,8 +76,16 @@ jobs:
 
     strategy:
       matrix:
+        compiler: [gcc, clang]
         configuration: [Debug, Release]
         architecture: [32, 64]
+        include:
+        - compiler: gcc
+          cc: gcc
+          cxx: g++
+        - compiler: clang
+          cc: clang
+          cxx: clang++
 
     steps:
       - uses: actions/checkout@v4
@@ -85,23 +93,24 @@ jobs:
           submodules: recursive
       - name: Build
         env:
-          CC: /usr/bin/gcc
-          CXX: /usr/bin/g++
+          CC: ${{ matrix.cc }}
+          CXX: ${{ matrix.cxx }}
         run: ./b --cfg ${{ matrix.configuration }} --arch ${{ matrix.architecture }} --paland -v
 
-  linux-clang:
-    runs-on: ubuntu-latest
-
-    container:
-      image: ghcr.io/charlesnicholson/docker-image:latest
-      credentials:
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
+  linux-arm64:
+    runs-on: ubuntu-24.04-arm
 
     strategy:
       matrix:
+        compiler: [gcc, clang]
         configuration: [Debug, Release]
-        architecture: [32, 64]
+        include:
+        - compiler: gcc
+          cc: gcc
+          cxx: g++
+        - compiler: clang
+          cc: clang
+          cxx: clang++
 
     steps:
       - uses: actions/checkout@v4
@@ -109,9 +118,9 @@ jobs:
           submodules: recursive
       - name: Build
         env:
-          CC: /usr/bin/clang
-          CXX: /usr/bin/clang++
-        run: ./b --cfg ${{ matrix.configuration }} --arch ${{ matrix.architecture }} --paland -v
+          CC: ${{ matrix.cc }}
+          CXX: ${{ matrix.cxx }}
+        run: ./b --cfg ${{ matrix.configuration }} --arch 64 --paland -v
 
   macos:
     runs-on: macos-latest
@@ -184,7 +193,7 @@ jobs:
           python3 tests/size_report.py -p host
 
   all-checks-pass:
-    needs: [pylint, download, sanitizers, linux-gcc, linux-clang, macos, win, size-reports]
+    needs: [pylint, download, sanitizers, linux-x64, linux-arm64, macos, win, size-reports]
     runs-on: ubuntu-latest
     steps:
     - run: echo Done
