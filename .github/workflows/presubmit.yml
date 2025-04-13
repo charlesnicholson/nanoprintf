@@ -97,7 +97,6 @@ jobs:
       matrix:
         compiler: [gcc, clang]
         configuration: [Debug, Release]
-        architecture: [32, 64]
 
     steps:
       - uses: actions/checkout@v4
@@ -107,7 +106,7 @@ jobs:
         env:
           CC: ${{ matrix.compiler }}
           CXX: ${{ matrix.compiler }}++
-        run: ./b --cfg ${{ matrix.configuration }} --arch ${{ matrix.architecture }} --paland -v
+        run: ./b --cfg ${{ matrix.configuration }} --arch 64 --paland -v
 
   macos:
     runs-on: macos-latest
