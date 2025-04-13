@@ -79,6 +79,13 @@ jobs:
         compiler: [gcc, clang]
         configuration: [Debug, Release]
         architecture: [32, 64]
+        include:
+        - compiler: gcc
+          cc: gcc
+          cxx: g++
+        - compiler: clang
+          cc: clang
+          cxx: clang++
 
     steps:
       - uses: actions/checkout@v4
@@ -86,8 +93,8 @@ jobs:
           submodules: recursive
       - name: Build
         env:
-          CC: ${{ matrix.compiler }}
-          CXX: ${{ matrix.compiler }}++
+          CC: ${{ matrix.cc }}
+          CXX: ${{ matrix.cxx }}
         run: ./b --cfg ${{ matrix.configuration }} --arch ${{ matrix.architecture }} --paland -v
 
   linux-arm64:
@@ -97,6 +104,14 @@ jobs:
       matrix:
         compiler: [gcc, clang]
         configuration: [Debug, Release]
+        architecture: [32, 64]
+        include:
+        - compiler: gcc
+          cc: gcc
+          cxx: g++
+        - compiler: clang
+          cc: clang
+          cxx: clang++
 
     steps:
       - uses: actions/checkout@v4
@@ -104,8 +119,8 @@ jobs:
           submodules: recursive
       - name: Build
         env:
-          CC: ${{ matrix.compiler }}
-          CXX: ${{ matrix.compiler }}++
+          CC: ${{ matrix.cc }}
+          CXX: ${{ matrix.cxx }}
         run: ./b --cfg ${{ matrix.configuration }} --arch 64 --paland -v
 
   macos:
