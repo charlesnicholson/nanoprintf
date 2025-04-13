@@ -86,8 +86,8 @@ jobs:
           submodules: recursive
       - name: Build
         env:
-          CC: ${{ compiler }}
-          CXX: ${{ compiler }}++
+          CC: ${{ matrix.compiler }}
+          CXX: ${{ matrix.compiler }}++
         run: ./b --cfg ${{ matrix.configuration }} --arch ${{ matrix.architecture }} --paland -v
 
   linux-arm64:
@@ -105,8 +105,8 @@ jobs:
           submodules: recursive
       - name: Build
         env:
-          CC: ${{ compiler }}
-          CXX: ${{ compiler }}++
+          CC: ${{ matrix.compiler }}
+          CXX: ${{ matrix.compiler }}++
         run: ./b --cfg ${{ matrix.configuration }} --arch ${{ matrix.architecture }} --paland -v
 
   macos:
