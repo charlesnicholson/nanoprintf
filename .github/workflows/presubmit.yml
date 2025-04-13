@@ -104,7 +104,6 @@ jobs:
       matrix:
         compiler: [gcc, clang]
         configuration: [Debug, Release]
-        architecture: [32, 64]
         include:
         - compiler: gcc
           cc: gcc
