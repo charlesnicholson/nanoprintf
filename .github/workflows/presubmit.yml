@@ -177,26 +177,24 @@ jobs:
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
 
+    strategy:
+      matrix:
+        include:
+          - platform: cm0
+            label: Cortex-M0
+          - platform: cm4
+            label: Cortex-M4
+          - platform: host
+            label: Linux x64
+
     steps:
       - uses: actions/checkout@v4
 
-      - name: Cortex-M0
+      - name: ${{ matrix.label }}
         shell: bash
         run: |
           . /work/venv/bin/activate
-          python3 tests/size_report.py -p cm0
-
-      - name: Cortex-M4
-        shell: bash
-        run: |
-          . /work/venv/bin/activate
-          python3 tests/size_report.py -p cm4
-
-      - name: Linux x64
-        shell: bash
-        run: |
-          . /work/venv/bin/activate
-          python3 tests/size_report.py -p host
+          python3 tests/size_report.py -p ${{ matrix.platform }}
 
   all-checks-pass:
     needs: [pylint, download, sanitizers, linux-x64, linux-arm64, macos, win, size-reports]
