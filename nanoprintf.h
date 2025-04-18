@@ -806,6 +806,9 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
 
       case NPF_FMT_SPEC_CONV_STRING: {
         cbuf = va_arg(args, char *);
+        if (cbuf == NULL) {
+            cbuf = "(null)";
+        }
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
         for (char const *s = cbuf;
              ((fs.prec_opt == NPF_FMT_SPEC_OPT_NONE) || (cbuf_len < fs.prec)) && *s;
