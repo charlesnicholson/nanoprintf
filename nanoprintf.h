@@ -469,7 +469,7 @@ static int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec
   return (int)(cur - format);
 }
 
-static NPF_NOINLINE int npf_utoa_rev(
+static int npf_utoa_rev(
     npf_uint_t val, char *buf, uint_fast8_t base, char case_adj) {
   uint_fast8_t n = 0;
   do {
