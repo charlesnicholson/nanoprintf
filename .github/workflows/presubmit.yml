@@ -2,53 +2,63 @@ name: Presubmit Checks
 
 on:
   pull_request:
-    branches: [main]
+    branches: [ main ]
   schedule:
-    - cron: '0 2 * * 0'
+    - cron: '0 2 * * 0'  # Weekly
   workflow_dispatch:
 
 permissions:
   packages: read
 
-# Shared container config
-x-container: &docker-container
-  image: ghcr.io/charlesnicholson/docker-image:latest
-  credentials:
-    username: ${{ github.actor }}
-    password: ${{ secrets.GITHUB_TOKEN }}
-
-# Shared checkout step
-x-checkout: &checkout
-  uses: actions/checkout@v4
-  with:
-    submodules: recursive
-
 jobs:
   pylint:
     runs-on: ubuntu-latest
-    container: *docker-container
+
+    container:
+      image: ghcr.io/charlesnicholson/docker-image:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
     steps:
-      - *checkout
+      - uses: actions/checkout@v4
       - name: Pylint build.py
         run: . /work/venv/bin/activate && python -m pylint build.py tests/size_report.py
 
   download:
     runs-on: ubuntu-latest
-    container: *docker-container
+
+    container:
+      image: ghcr.io/charlesnicholson/docker-image:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
     steps:
-      - *checkout
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - name: Build
         run: ./b --download --paland -v
 
   sanitizers:
     runs-on: ubuntu-latest
-    container: *docker-container
+
+    container:
+      image: ghcr.io/charlesnicholson/docker-image:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
     strategy:
       matrix:
         sanitizer: [ubsan, asan]
         architecture: [32, 64]
+
     steps:
-      - *checkout
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - name: Build
         env:
           CC: /usr/bin/clang
@@ -57,21 +67,30 @@ jobs:
 
   linux-x64:
     runs-on: ubuntu-latest
-    container: *docker-container
+
+    container:
+      image: ghcr.io/charlesnicholson/docker-image:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
     strategy:
       matrix:
         compiler: [gcc, clang]
         configuration: [Debug, Release]
         architecture: [32, 64]
         include:
-          - compiler: gcc
-            cc: gcc
-            cxx: g++
-          - compiler: clang
-            cc: clang
-            cxx: clang++
+        - compiler: gcc
+          cc: gcc
+          cxx: g++
+        - compiler: clang
+          cc: clang
+          cxx: clang++
+
     steps:
-      - *checkout
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - name: Build
         env:
           CC: ${{ matrix.cc }}
@@ -80,20 +99,29 @@ jobs:
 
   linux-arm64:
     runs-on: ubuntu-24.04-arm
-    container: *docker-container
+
+    container:
+      image: ghcr.io/charlesnicholson/docker-image:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
     strategy:
       matrix:
         compiler: [gcc, clang]
         configuration: [Debug, Release]
         include:
-          - compiler: gcc
-            cc: gcc
-            cxx: g++
-          - compiler: clang
-            cc: clang
-            cxx: clang++
+        - compiler: gcc
+          cc: gcc
+          cxx: g++
+        - compiler: clang
+          cc: clang
+          cxx: clang++
+
     steps:
-      - *checkout
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - name: Build
         env:
           CC: ${{ matrix.cc }}
@@ -102,11 +130,15 @@ jobs:
 
   macos:
     runs-on: macos-latest
+
     strategy:
       matrix:
         configuration: [Debug, Release]
+
     steps:
-      - *checkout
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - name: Set up Python 3.x
         uses: actions/setup-python@v5
         with:
@@ -116,12 +148,16 @@ jobs:
 
   win:
     runs-on: windows-latest
+
     strategy:
       matrix:
         configuration: [Debug, Release]
         architecture: [32, 64]
+
     steps:
-      - *checkout
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - name: Set up Python 3.x
         uses: actions/setup-python@v5
         with:
@@ -134,7 +170,13 @@ jobs:
 
   size-reports:
     runs-on: ubuntu-latest
-    container: *docker-container
+
+    container:
+      image: ghcr.io/charlesnicholson/docker-image:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
     strategy:
       matrix:
         include:
@@ -144,8 +186,10 @@ jobs:
             label: Cortex-M4
           - platform: host
             label: Linux x64
+
     steps:
       - uses: actions/checkout@v4
+
       - name: ${{ matrix.label }}
         shell: bash
         run: |
@@ -156,5 +200,5 @@ jobs:
     needs: [pylint, download, sanitizers, linux-x64, linux-arm64, macos, win, size-reports]
     runs-on: ubuntu-latest
     steps:
-      - run: echo Done
+    - run: echo Done
 
