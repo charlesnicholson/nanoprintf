@@ -7,9 +7,10 @@
   #pragma GCC diagnostic push
   #if NANOPRINTF_CLANG
     #pragma GCC diagnostic ignored "-Wformat-pedantic"
+  #else
+    #pragma GCC diagnostic ignored "-Wformat-overflow"
   #endif
   #pragma GCC diagnostic ignored "-Wformat-zero-length"
-  #pragma GCC diagnostic ignored "-Wformat-overflow"
 #endif
 
 TEST_CASE("npf_snprintf") {
