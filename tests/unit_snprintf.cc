@@ -84,8 +84,8 @@ TEST_CASE("npf_snprintf") {
   SUBCASE("null string param") {
     REQUIRE(npf_snprintf(buf, 16, "%s", static_cast<char const *>(nullptr)) == 0);
     REQUIRE(buf[0] == 0);
-    REQUIRE(npf_snprintf(buf, 16, "-%s-", static_cast<char const *>(nullptr)) == 2);
-    REQUIRE(std::string{"--"} == std::string{buf});
+    REQUIRE(npf_snprintf(buf, 16, "-%s+", static_cast<char const *>(nullptr)) == 2);
+    REQUIRE(std::string{"-+"} == std::string{buf});
   }
 
   SUBCASE("string trimming") {
