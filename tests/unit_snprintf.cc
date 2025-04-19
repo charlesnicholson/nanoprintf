@@ -7,6 +7,8 @@
   #pragma GCC diagnostic push
   #if NANOPRINTF_CLANG
     #pragma GCC diagnostic ignored "-Wformat-pedantic"
+  #else
+    #pragma GCC diagnostic ignored "-Wformat-overflow"
   #endif
   #pragma GCC diagnostic ignored "-Wformat-zero-length"
 #endif
@@ -77,6 +79,13 @@ TEST_CASE("npf_snprintf") {
     REQUIRE(buf[1] == 'b');
     REQUIRE(buf[2] == '\0');
     REQUIRE(buf[3] == '*');
+  }
+
+  SUBCASE("null string param") {
+    REQUIRE(npf_snprintf(buf, 16, "%s", static_cast<char const *>(nullptr)) == 0);
+    REQUIRE(buf[0] == 0);
+    REQUIRE(npf_snprintf(buf, 16, "-%s+", static_cast<char const *>(nullptr)) == 2);
+    REQUIRE(std::string{"-+"} == std::string{buf});
   }
 
   SUBCASE("string trimming") {

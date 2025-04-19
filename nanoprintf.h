@@ -1,4 +1,4 @@
-/* nanoprintf v0.5.4: a tiny embeddable printf replacement written in C.
+/* nanoprintf v0.5.5: a tiny embeddable printf replacement written in C.
    https://github.com/charlesnicholson/nanoprintf
    charles.nicholson+nanoprintf@gmail.com
    dual-licensed under 0bsd and unlicense, take your pick. see eof for details. */
@@ -808,10 +808,10 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
         cbuf = va_arg(args, char *);
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
         for (char const *s = cbuf;
-             ((fs.prec_opt == NPF_FMT_SPEC_OPT_NONE) || (cbuf_len < fs.prec)) && *s;
+             ((fs.prec_opt == NPF_FMT_SPEC_OPT_NONE) || (cbuf_len < fs.prec)) && cbuf && *s;
              ++s, ++cbuf_len);
 #else
-        for (char const *s = cbuf; *s; ++s, ++cbuf_len); // strlen
+        for (char const *s = cbuf; cbuf && *s; ++s, ++cbuf_len); // strlen
 #endif
       } break;
 
@@ -1011,7 +1011,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
 
     // Write the converted payload
     if (fs.conv_spec == NPF_FMT_SPEC_CONV_STRING) {
-      for (int i = 0; i < cbuf_len; ++i) { NPF_PUTC(cbuf[i]); }
+      for (int i = 0; cbuf && (i < cbuf_len); ++i) { NPF_PUTC(cbuf[i]); }
     } else {
       if (sign_c) { NPF_PUTC(sign_c); }
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
