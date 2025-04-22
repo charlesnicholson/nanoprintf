@@ -23,6 +23,23 @@
   #define NPF_PRINTF_ATTR(FORMAT_INDEX, VARGS_INDEX)
 #endif
 
+// Pick reasonable defaults if nothing's been configured.
+#if !defined(NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS) && \
+    !defined(NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS) && \
+    !defined(NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS) && \
+    !defined(NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS) && \
+    !defined(NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS) && \
+    !defined(NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS) && \
+    !defined(NANOPRINTF_USE_BUFFERED_CALLBACK)
+  #define NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS 1
+  #define NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS 1
+  #define NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS 1
+  #define NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS 0
+  #define NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS 0
+  #define NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS 0
+  #define NANOPRINTF_USE_BUFFERED_CALLBACK 0
+#endif
+
 // Public API
 
 #ifdef __cplusplus
@@ -40,7 +57,11 @@ NPF_VISIBILITY int npf_snprintf(
 NPF_VISIBILITY int npf_vsnprintf(
   char *buffer, size_t bufsz, char const *format, va_list vlist) NPF_PRINTF_ATTR(3, 0);
 
-typedef void (*npf_putc)(int c, void *ctx);
+#if NANOPRINTF_USE_BUFFERED_CALLBACK
+  typedef void (*npf_putc)(const char *buff, int n, void *ctx);
+#else
+  typedef void (*npf_putc)(int c, void *ctx);
+#endif
 NPF_VISIBILITY int npf_pprintf(
   npf_putc pc, void *pc_ctx, char const *format, ...) NPF_PRINTF_ATTR(3, 4);
 
@@ -73,21 +94,6 @@ NPF_VISIBILITY int npf_vpprintf(
   #error The size of the conversion buffer must be at least 23 bytes.
 #endif
 
-// Pick reasonable defaults if nothing's been configured.
-#if !defined(NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS) && \
-    !defined(NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS) && \
-    !defined(NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS) && \
-    !defined(NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS) && \
-    !defined(NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS) && \
-    !defined(NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS)
-  #define NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS 1
-  #define NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS 1
-  #define NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS 1
-  #define NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS 0
-  #define NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS 0
-  #define NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS 0
-#endif
-
 // If anything's been configured, everything must be configured.
 #ifndef NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS
   #error NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS must be #defined to 0 or 1
@@ -106,6 +112,9 @@ NPF_VISIBILITY int npf_vpprintf(
 #endif
 #ifndef NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS
   #error NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS must be #defined to 0 or 1
+#endif
+#ifndef NANOPRINTF_USE_BUFFERED_CALLBACK
+  #error NANOPRINTF_USE_BUFFERED_CALLBACK must be #defined to 0 or 1
 #endif
 
 // Ensure flags are compatible.
@@ -721,12 +730,25 @@ static int npf_bin_len(npf_uint_t u) {
 }
 #endif
 
+#if NANOPRINTF_USE_BUFFERED_CALLBACK
+static void npf_bufputc(const char *buff, int n, void *ctx) {
+  npf_bufputc_ctx_t *bpc = (npf_bufputc_ctx_t *)ctx;
+  int avlb = (int)(bpc->len - bpc->cur);
+  if (n > avlb) { n = avlb; }
+  for (int i = 0; i < n; i++) {
+    bpc->dst[bpc->cur++] = buff[i];
+  }
+}
+
+static void npf_bufputc_nop(const char *buff, int n, void *ctx) { (void)buff; (void)n; (void)ctx; }
+#else
 static void npf_bufputc(int c, void *ctx) {
   npf_bufputc_ctx_t *bpc = (npf_bufputc_ctx_t *)ctx;
   if (bpc->cur < bpc->len) { bpc->dst[bpc->cur++] = (char)c; }
 }
 
 static void npf_bufputc_nop(int c, void *ctx) { (void)c; (void)ctx; }
+#endif
 
 typedef struct npf_cnt_putc_ctx {
   npf_putc pc;
@@ -734,13 +756,27 @@ typedef struct npf_cnt_putc_ctx {
   int n;
 } npf_cnt_putc_ctx_t;
 
+#if NANOPRINTF_USE_BUFFERED_CALLBACK
+static void npf_putc_cnt(const char *buff, int n, void *ctx) {
+  npf_cnt_putc_ctx_t *pc_cnt = (npf_cnt_putc_ctx_t *)ctx;
+  pc_cnt->n += n;
+  pc_cnt->pc(buff, n, pc_cnt->ctx); // sibling-call optimization
+}
+#else
 static void npf_putc_cnt(int c, void *ctx) {
   npf_cnt_putc_ctx_t *pc_cnt = (npf_cnt_putc_ctx_t *)ctx;
   ++pc_cnt->n;
   pc_cnt->pc(c, pc_cnt->ctx); // sibling-call optimization
 }
+#endif
 
-#define NPF_PUTC(VAL) do { npf_putc_cnt((int)(VAL), &pc_cnt); } while (0)
+#if NANOPRINTF_USE_BUFFERED_CALLBACK
+#define NPF_PUTC(VAL) do { char c = VAL; npf_putc_cnt(&c, 1, &pc_cnt); } while (0)
+#define NPF_PUTS(BUFF, N) do { npf_putc_cnt(BUFF, N, &pc_cnt); } while (0)
+#else
+#define NPF_PUTC(VAL) do { npf_putc_cnt((int)VAL, &pc_cnt); } while (0)
+#define NPF_PUTS(BUFF, N) for (int i = 0; i < N; i++) { npf_putc_cnt((int)BUFF[i], &pc_cnt); } while (0)
+#endif
 
 #define NPF_EXTRACT(MOD, CAST_TO, EXTRACT_AS) \
   case NPF_FMT_SPEC_LEN_MOD_##MOD: val = (CAST_TO)va_arg(args, EXTRACT_AS); break
@@ -757,6 +793,15 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
   pc_cnt.n = 0;
 
   while (*cur) {
+#if NANOPRINTF_USE_BUFFERED_CALLBACK
+    if(*cur != '%') {
+        const char* end = cur + 1;
+        while(*end && *end != '%') { end++; }
+        NPF_PUTS(cur, end - cur);
+        cur = end;
+        continue;
+    }
+#endif
     int const fs_len = (*cur != '%') ? 0 : npf_parse_format_spec(cur, &fs);
     if (!fs_len) { NPF_PUTC(*cur++); continue; }
     cur += fs_len;
@@ -1000,18 +1045,18 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
       if (pad_c == '0') {
         if (sign_c) { NPF_PUTC(sign_c); sign_c = 0; }
         // Pad byte is '0', write '0x' before '0' pad chars.
-        if (need_0x) { NPF_PUTC('0'); NPF_PUTC(need_0x); }
+        if (need_0x) { char cc[2] = {'0', need_0x}; NPF_PUTS(cc, 2); }
       }
       while (field_pad-- > 0) { NPF_PUTC(pad_c); }
       // Pad byte is ' ', write '0x' after ' ' pad chars but before number.
-      if ((pad_c != '0') && need_0x) { NPF_PUTC('0'); NPF_PUTC(need_0x); }
+      if ((pad_c != '0') && need_0x) { char cc[2] = {'0', need_0x}; NPF_PUTS(cc, 2); }
     } else
 #endif
-    { if (need_0x) { NPF_PUTC('0'); NPF_PUTC(need_0x); } } // no pad, '0x' requested.
+    { if (need_0x) { char cc[2] = {'0', need_0x}; NPF_PUTS(cc, 2); } } // no pad, '0x' requested.
 
     // Write the converted payload
     if (fs.conv_spec == NPF_FMT_SPEC_CONV_STRING) {
-      for (int i = 0; cbuf && (i < cbuf_len); ++i) { NPF_PUTC(cbuf[i]); }
+      NPF_PUTS(cbuf, cbuf_len);
     } else {
       if (sign_c) { NPF_PUTC(sign_c); }
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
@@ -1022,7 +1067,19 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
         while (cbuf_len) { NPF_PUTC('0' + ((u.binval >> --cbuf_len) & 1)); }
       } else
 #endif
+
+#if NANOPRINTF_USE_BUFFERED_CALLBACK
+      { // reverse the payload
+        for (int i = 0; i < cbuf_len / 2; i++) {
+          char c = cbuf[i];
+          cbuf[i] = cbuf[cbuf_len - 1 - i];
+          cbuf[cbuf_len - 1 - i] = c;
+        }
+        NPF_PUTS(cbuf, cbuf_len);
+      }
+#else
       { while (cbuf_len-- > 0) { NPF_PUTC(cbuf[cbuf_len]); } } // payload is reversed
+#endif
     }
 
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
@@ -1063,7 +1120,12 @@ int npf_vsnprintf(char *buffer, size_t bufsz, char const *format, va_list vlist)
 
   npf_putc const pc = buffer ? npf_bufputc : npf_bufputc_nop;
   int const n = npf_vpprintf(pc, &bufputc_ctx, format, vlist);
+#if NANOPRINTF_USE_BUFFERED_CALLBACK
+  char nul = '\0';
+  pc(&nul, 1, &bufputc_ctx);
+#else
   pc('\0', &bufputc_ctx);
+#endif
 
   if (buffer && bufsz) {
 #ifdef NANOPRINTF_SNPRINTF_SAFE_EMPTY_STRING_ON_OVERFLOW
