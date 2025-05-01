@@ -677,7 +677,7 @@ exit:
   if (!ret) { ret = "RRE"; }
   uint_fast8_t i;
   for (i = 0; ret[i]; ++i) { buf[i] = (char)(ret[i] + spec->case_adjust); }
-  return (int)i;
+  return -(int)i;
 }
 
 #endif // NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS
@@ -949,6 +949,10 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
         zero = (val == 0.);
 #endif
         cbuf_len = npf_ftoa_rev(cbuf, &fs, val);
+        if (cbuf_len < 0) { // negative means "err" or non-finite, for which we must ignore the '0' flag
+           cbuf_len = -cbuf_len;
+           fs.leading_zero_pad = 0;
+        }
       } break;
 #endif
       default: break;
