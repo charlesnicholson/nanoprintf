@@ -61,8 +61,10 @@ TEST_CASE("ftoa_rev") {
   SUBCASE("zero and decimal separator") {
     require_ftoa_rev("0", +0.);
     require_ftoa_rev("0", -0.);
+#if NANOPRINTF_USE_ALT_FORM_MODIFIER
     spec.alt_form = '#';
     require_ftoa_rev("0.", 0.);
+#endif
     spec.prec = 1;
     require_ftoa_rev("0.0", 0.);
   }

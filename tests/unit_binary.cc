@@ -133,6 +133,7 @@ TEST_CASE("binary") {
   }
 #endif
 
+#if NANOPRINTF_USE_ALT_FORM_MODIFIER
   SUBCASE("alternate form") {
     require_equal("0", "%#b", 0);
     require_equal("0b1", "%#b", 1);
@@ -146,4 +147,5 @@ TEST_CASE("binary") {
 #endif
 #endif
   }
+#endif
 }

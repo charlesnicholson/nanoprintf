@@ -261,6 +261,7 @@ TEST_CASE("npf_vpprintf") {
     REQUIRE(r.String() == std::string{"ABCD"});
   }
 
+#if NANOPRINTF_USE_ALT_FORM_MODIFIER
   SUBCASE("alternative flag: hex doesn't prepend 0x if value is 0") {
     REQUIRE(npf_pprintf(r.PutC, &r, "%#x", 0) == 1);
     REQUIRE(r.String() == std::string{"0"});
@@ -285,4 +286,5 @@ TEST_CASE("npf_vpprintf") {
     REQUIRE(npf_pprintf(r.PutC, &r, "%#o", 2) == 2);
     REQUIRE(r.String() == std::string{"02"});
   }
+#endif
 }
