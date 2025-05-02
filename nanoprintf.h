@@ -515,7 +515,7 @@ enum {
   NPF_DOUBLE_EXP_BIAS = DBL_MAX_EXP - 1,
   NPF_DOUBLE_MAN_BITS = DBL_MANT_DIG - 1,
   NPF_DOUBLE_BIN_BITS = sizeof(npf_double_bin_t) * CHAR_BIT,
-  NPF_DOUBLE_SIGN_POS = sizeof(double) * CHAR_BIT - 1, // this is true for f32 and f64; if we were paranoid, we should calculate it as (NPF_DOUBLE_MAN_BITS + NPF_DOUBLE_EXP_BITS), where NPF_DOUBLE_EXP_BITS is ceil(log2(DBL_MAX_EXP)), hard to get as a compile-time constant unless we check against all the possible powers-of-2
+  NPF_DOUBLE_SIGN_POS = sizeof(double) * CHAR_BIT - 1, // this is true for f32 and f64; if we were paranoid, we should calculate it as (NPF_DOUBLE_MAN_BITS + NPF_DOUBLE_EXP_BITS), where NPF_DOUBLE_EXP_BITS is ceil(log2(DBL_MAX_EXP-DBL_MIN_EXP)), hard to get as a compile-time constant unless we check against all the possible powers-of-2
   NPF_FTOA_MAN_BITS   = sizeof(npf_ftoa_man_t) * CHAR_BIT,
   NPF_FTOA_SHIFT_BITS =
     ((NPF_FTOA_MAN_BITS < DBL_MANT_DIG) ? NPF_FTOA_MAN_BITS : DBL_MANT_DIG) - 1
