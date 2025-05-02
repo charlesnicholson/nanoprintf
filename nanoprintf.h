@@ -515,6 +515,7 @@ enum {
   NPF_DOUBLE_EXP_BIAS = DBL_MAX_EXP - 1,
   NPF_DOUBLE_MAN_BITS = DBL_MANT_DIG - 1,
   NPF_DOUBLE_BIN_BITS = sizeof(npf_double_bin_t) * CHAR_BIT,
+  NPF_DOUBLE_SIGN_POS = sizeof(double) * CHAR_BIT - 1, // this is true for f32 and f64; if we were paranoid, we should calculate it as (NPF_DOUBLE_MAN_BITS + NPF_DOUBLE_EXP_BITS), where NPF_DOUBLE_EXP_BITS is ceil(log2(DBL_MAX_EXP)), hard to get as a compile-time constant unless we check against all the possible powers-of-2
   NPF_FTOA_MAN_BITS   = sizeof(npf_ftoa_man_t) * CHAR_BIT,
   NPF_FTOA_SHIFT_BITS =
     ((NPF_FTOA_MAN_BITS < DBL_MANT_DIG) ? NPF_FTOA_MAN_BITS : DBL_MANT_DIG) - 1
@@ -678,6 +679,20 @@ exit:
   uint_fast8_t i;
   for (i = 0; ret[i]; ++i) { buf[i] = (char)(ret[i] + spec->case_adjust); }
   return (int)i;
+}
+
+// return 1 for negative, 0 for non-negative
+static inline
+bool npf_signbit(double f)
+{
+  // alternatively to this function, we could use the standard signbit() from math.h
+
+  npf_double_bin_t bin; { // Union-cast is UB pre-C11, compiler optimizes byte-copy loop.
+    char const *src = (char const *)&f;
+    char *dst = (char *)&bin;
+    for (uint_fast8_t i = 0; i < sizeof(f); ++i) { dst[i] = src[i]; }
+  }
+  return (bin >> NPF_DOUBLE_SIGN_POS) & 0x1;
 }
 
 #endif // NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS
@@ -944,7 +959,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
           val = va_arg(args, double);
         }
 
-        sign_c = (val < 0.) ? '-' : fs.prepend;
+        sign_c = npf_signbit(val) ? '-' : fs.prepend;
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
         zero = (val == 0.);
 #endif
