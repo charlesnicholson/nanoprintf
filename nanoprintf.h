@@ -951,7 +951,9 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
         cbuf_len = npf_ftoa_rev(cbuf, &fs, val);
         if (cbuf_len < 0) { // negative means "err" or non-finite, for which we must ignore the '0' flag
            cbuf_len = -cbuf_len;
+#if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
            fs.leading_zero_pad = 0;
+#endif
         }
       } break;
 #endif
