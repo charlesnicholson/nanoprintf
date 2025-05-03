@@ -16,6 +16,12 @@
   #define NPF_VISIBILITY extern
 #endif
 
+#if !defined(NANOPRINTF_NO_RESTRICT) && (__STDC_VERSION__ + 0) >= 199901L  // restrict only exists in C, not C++
+  #define NPF_RESTRICT    restrict
+#else
+  #define NPF_RESTRICT
+#endif
+
 #if defined(__clang__) || defined(__GNUC__) || defined(__GNUG__)
   #define NPF_PRINTF_ATTR(FORMAT_INDEX, VARGS_INDEX) \
     __attribute__((format(printf, FORMAT_INDEX, VARGS_INDEX)))
@@ -35,17 +41,17 @@ extern "C" {
 // modifier support makes encoding errors impossible.
 
 NPF_VISIBILITY int npf_snprintf(
-  char *buffer, size_t bufsz, const char *format, ...) NPF_PRINTF_ATTR(3, 4);
+  char * NPF_RESTRICT buffer, size_t bufsz, const char * NPF_RESTRICT format, ...) NPF_PRINTF_ATTR(3, 4);
 
 NPF_VISIBILITY int npf_vsnprintf(
-  char *buffer, size_t bufsz, char const *format, va_list vlist) NPF_PRINTF_ATTR(3, 0);
+  char * NPF_RESTRICT buffer, size_t bufsz, char const * NPF_RESTRICT format, va_list vlist) NPF_PRINTF_ATTR(3, 0);
 
 typedef void (*npf_putc)(int c, void *ctx);
 NPF_VISIBILITY int npf_pprintf(
-  npf_putc pc, void *pc_ctx, char const *format, ...) NPF_PRINTF_ATTR(3, 4);
+  npf_putc pc, void * NPF_RESTRICT pc_ctx, char const * NPF_RESTRICT format, ...) NPF_PRINTF_ATTR(3, 4);
 
 NPF_VISIBILITY int npf_vpprintf(
-  npf_putc pc, void *pc_ctx, char const *format, va_list vlist) NPF_PRINTF_ATTR(3, 0);
+  npf_putc pc, void * NPF_RESTRICT pc_ctx, char const * NPF_RESTRICT format, va_list vlist) NPF_PRINTF_ATTR(3, 0);
 
 #ifdef __cplusplus
 }
@@ -748,7 +754,7 @@ static void npf_putc_cnt(int c, void *ctx) {
 #define NPF_WRITEBACK(MOD, TYPE) \
   case NPF_FMT_SPEC_LEN_MOD_##MOD: *(va_arg(args, TYPE *)) = (TYPE)pc_cnt.n; break
 
-int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
+int npf_vpprintf(npf_putc pc, void * NPF_RESTRICT pc_ctx, char const * NPF_RESTRICT format, va_list args) {
   npf_format_spec_t fs;
   char const *cur = format;
   npf_cnt_putc_ctx_t pc_cnt;
@@ -1039,7 +1045,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
 #undef NPF_EXTRACT
 #undef NPF_WRITEBACK
 
-int npf_pprintf(npf_putc pc, void *pc_ctx, char const *format, ...) {
+int npf_pprintf(npf_putc pc, void * NPF_RESTRICT pc_ctx, char const * NPF_RESTRICT format, ...) {
   va_list val;
   va_start(val, format);
   int const rv = npf_vpprintf(pc, pc_ctx, format, val);
@@ -1047,7 +1053,7 @@ int npf_pprintf(npf_putc pc, void *pc_ctx, char const *format, ...) {
   return rv;
 }
 
-int npf_snprintf(char *buffer, size_t bufsz, const char *format, ...) {
+int npf_snprintf(char * NPF_RESTRICT buffer, size_t bufsz, const char * NPF_RESTRICT format, ...) {
   va_list val;
   va_start(val, format);
   int const rv = npf_vsnprintf(buffer, bufsz, format, val);
@@ -1055,7 +1061,7 @@ int npf_snprintf(char *buffer, size_t bufsz, const char *format, ...) {
   return rv;
 }
 
-int npf_vsnprintf(char *buffer, size_t bufsz, char const *format, va_list vlist) {
+int npf_vsnprintf(char * NPF_RESTRICT buffer, size_t bufsz, char const * NPF_RESTRICT format, va_list vlist) {
   npf_bufputc_ctx_t bufputc_ctx;
   bufputc_ctx.dst = buffer;
   bufputc_ctx.len = bufsz;
