@@ -16,7 +16,7 @@
   #define NPF_VISIBILITY extern
 #endif
 
-#if !defined(NANOPRINTF_NO_RESTRICT) && (__STDC_VERSION__ + 0) >= 199901L  // restrict only exists in C, not C++
+#if !defined(NANOPRINTF_NO_RESTRICT) && defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L  // restrict only exists in C, not C++
   #define NPF_RESTRICT    restrict
 #else
   #define NPF_RESTRICT
