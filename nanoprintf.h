@@ -88,6 +88,8 @@ NPF_VISIBILITY int npf_vpprintf(
   #define NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS 0
 #endif
 
+#define NANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS    1 // 0: no;  1: parsing only;  2: also proper casting when fetching arguments
+
 // If anything's been configured, everything must be configured.
 #ifndef NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS
   #error NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS must be #defined to 0 or 1
@@ -207,9 +209,10 @@ enum {
 
 enum {
   NPF_FMT_SPEC_LEN_MOD_NONE,
+#if NANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS
   NPF_FMT_SPEC_LEN_MOD_SHORT,       // 'h'
-  NPF_FMT_SPEC_LEN_MOD_LONG_DOUBLE, // 'L'
   NPF_FMT_SPEC_LEN_MOD_CHAR,        // 'hh'
+#endif
   NPF_FMT_SPEC_LEN_MOD_LONG,        // 'l'
 #if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
   NPF_FMT_SPEC_LEN_MOD_LARGE_LONG_LONG, // 'll'
@@ -217,6 +220,7 @@ enum {
   NPF_FMT_SPEC_LEN_MOD_LARGE_SIZET,     // 'z'
   NPF_FMT_SPEC_LEN_MOD_LARGE_PTRDIFFT,  // 't'
 #endif
+  NPF_FMT_SPEC_LEN_MOD_LONG_DOUBLE, // 'L'
 };
 
 enum {
@@ -349,6 +353,7 @@ static int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec
   uint_fast8_t tmp_conv = NPF_FMT_SPEC_CONV_NONE;
   out_spec->length_modifier = NPF_FMT_SPEC_LEN_MOD_NONE;
   switch (*cur++) { // Length modifier
+#if NANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS
     case 'h':
       out_spec->length_modifier = NPF_FMT_SPEC_LEN_MOD_SHORT;
       if (*cur == 'h') {
@@ -356,6 +361,7 @@ static int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec
         ++cur;
       }
       break;
+#endif
     case 'l':
       out_spec->length_modifier = NPF_FMT_SPEC_LEN_MOD_LONG;
 #if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
@@ -819,9 +825,13 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
         npf_int_t val = 0;
         switch (fs.length_modifier) {
           NPF_EXTRACT(NONE, int, int);
+#if NANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS == 2
           NPF_EXTRACT(SHORT, short, int);
-          NPF_EXTRACT(LONG_DOUBLE, int, int);
           NPF_EXTRACT(CHAR, signed char, int);
+#elif NANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS == 1
+          NPF_EXTRACT(SHORT, int, int);
+          NPF_EXTRACT(CHAR, int, int);
+#endif
           NPF_EXTRACT(LONG, long, long);
 #if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
           NPF_EXTRACT(LARGE_LONG_LONG, long long, long long);
@@ -860,9 +870,13 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
 
         switch (fs.length_modifier) {
           NPF_EXTRACT(NONE, unsigned, unsigned);
+#if NANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS == 2
           NPF_EXTRACT(SHORT, unsigned short, unsigned);
-          NPF_EXTRACT(LONG_DOUBLE, unsigned, unsigned);
           NPF_EXTRACT(CHAR, unsigned char, unsigned);
+#elif NANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS == 1
+          NPF_EXTRACT(SHORT, unsigned, unsigned);
+          NPF_EXTRACT(CHAR, unsigned, unsigned);
+#endif
           NPF_EXTRACT(LONG, unsigned long, unsigned long);
 #if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
           NPF_EXTRACT(LARGE_LONG_LONG, unsigned long long, unsigned long long);
@@ -918,10 +932,11 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
       case NPF_FMT_SPEC_CONV_WRITEBACK:
         switch (fs.length_modifier) {
           NPF_WRITEBACK(NONE, int);
-          NPF_WRITEBACK(SHORT, short);
-          NPF_WRITEBACK(LONG, long);
-          NPF_WRITEBACK(LONG_DOUBLE, double);
+#if NANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS // can't support '1', as it would result in memory corruption; we must treat it as '2'
           NPF_WRITEBACK(CHAR, signed char);
+          NPF_WRITEBACK(SHORT, short);
+#endif
+          NPF_WRITEBACK(LONG, long);
 #if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
           NPF_WRITEBACK(LARGE_LONG_LONG, long long);
           NPF_WRITEBACK(LARGE_INTMAX, intmax_t);
