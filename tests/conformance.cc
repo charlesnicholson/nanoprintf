@@ -59,6 +59,49 @@ void require_conform(const std::string& expected, char const *fmt, ...) {
   REQUIRE(sys_printf_result == expected);
   REQUIRE(npf_result == expected);
 }
+
+#if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
+double npf_u64_to_dbl(uint64_t v) {
+    double d;
+    memcpy(&d, &v, 8);
+    return d;
+}
+
+double npf_nan(bool negative, bool quiet, uint64_t extra_payload) {
+    // compile-time check that double fits in uint64_t
+#if FLT_RADIX != 2 || DBL_MAX_EXP > 1024 || DBL_MANT_DIG > 53 || CHAR_BIT != 8
+    #error Unsupported double format
+#endif
+    static_assert(sizeof(double) <= sizeof(uint64_t));
+
+    // IEEE 754 floating-point values are encoded as <sign><exp><mantissa>
+    // NAN has <exp> set to the maximum value (all 1s), and non-0 <mantissa> (to distinguish it from infinities)
+    // A NAN value can encode arbitrary data in the mantissa (as long as it is non-0).
+    // "signalling NANs" have the highest mantissa bit set to 0.
+    // "quiet NANs" have the highest mantissa bit set to 1.
+
+    int const DBL_MANT_BITS = DBL_MANT_DIG - 1; // 1 digit is implicit
+    int const DBL_EXP_BITS = sizeof(double) * CHAR_BIT - 1 - DBL_MANT_BITS;
+    int const DBL_SIGN_POS = DBL_EXP_BITS + DBL_MANT_BITS;
+
+    extra_payload &= (1ull << DBL_MANT_BITS) - 1;
+
+    if (quiet) {
+        extra_payload |= 1ull << (DBL_MANT_BITS - 1);
+    }
+
+    if (extra_payload == 0) {
+        extra_payload = 1;
+    }
+
+    uint64_t const u = 0ull
+        | ((negative ? 1ull : 0ull) << DBL_SIGN_POS) // sign
+        | (((1ull << DBL_EXP_BITS) - 1) << DBL_MANT_BITS) // make nan/inf exponent
+        | extra_payload;
+
+    return npf_u64_to_dbl(u);
+}
+#endif
 }
 
 TEST_CASE("conformance to system printf") {
@@ -504,6 +547,85 @@ TEST_CASE("conformance to system printf") {
     require_conform("0.00390625", "%.8Lf", (long double)0.00390625);
     require_conform("-0.00390625", "%.8f", -0.00390625);
     require_conform("-0.00390625", "%.8Lf", (long double)-0.00390625);
+
+    // lowercase
+    require_conform("nan" , "%f", npf_nan(0, 1, 0));
+    require_conform("-nan", "%f", npf_nan(1, 1, 0));
+    require_conform("nan" , "%f", npf_nan(0, 1, 1));
+    require_conform("-nan", "%f", npf_nan(1, 1, 1));
+    require_conform("nan" , "%f", npf_nan(0, 0, 0));
+    require_conform("-nan", "%f", npf_nan(1, 0, 0));
+    require_conform("nan" , "%f", npf_nan(0, 0, 1));
+    require_conform("-nan", "%f", npf_nan(1, 0, 1));
+
+    // uppercase
+    require_conform("NAN" , "%F", npf_nan(0, 1, 0));
+    require_conform("-NAN", "%F", npf_nan(1, 1, 0));
+    require_conform("NAN" , "%F", npf_nan(0, 1, 1));
+    require_conform("-NAN", "%F", npf_nan(1, 1, 1));
+    require_conform("NAN" , "%F", npf_nan(0, 0, 0));
+    require_conform("-NAN", "%F", npf_nan(1, 0, 0));
+    require_conform("NAN" , "%F", npf_nan(0, 0, 1));
+    require_conform("-NAN", "%F", npf_nan(1, 0, 1));
+
+#if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
+    require_conform("   nan", "%06f", npf_nan(0, 1, 0));
+    require_conform("  -nan", "%06f", npf_nan(1, 1, 0));
+    require_conform("  +nan", "%+6f", npf_nan(0, 1, 0));
+    require_conform("  -nan", "%+6f", npf_nan(1, 1, 0));
+    require_conform("   nan", "%#6f", npf_nan(0, 1, 0));
+    require_conform("  -nan", "%#6f", npf_nan(1, 1, 0));
+    require_conform("   nan", "%#06f", npf_nan(0, 1, 0));
+    require_conform("  -nan", "%#06f", npf_nan(1, 1, 0));
+    require_conform("   nan", "% 6f", npf_nan(0, 1, 0));
+    require_conform("  -nan", "% 6f", npf_nan(1, 1, 0));
+    require_conform(" nan", "% 1f", npf_nan(0, 1, 0));
+    require_conform("-nan", "% 1f", npf_nan(1, 1, 0));
+    require_conform("nan   ", "%-6f", npf_nan(0, 1, 0));
+    require_conform("-nan  ", "%-6f", npf_nan(1, 1, 0));
+
+#if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
+    require_conform("nan", "%0.6f", npf_nan(0, 1, 0));
+    require_conform("-nan", "%0.6f", npf_nan(1, 1, 0));
+    require_conform("+nan", "%+.6f", npf_nan(0, 1, 0));
+    require_conform("-nan", "%+.6f", npf_nan(1, 1, 0));
+    require_conform("nan", "%#.6f", npf_nan(0, 1, 0));
+    require_conform("-nan", "%#.6f", npf_nan(1, 1, 0));
+    require_conform("nan", "%#0.6f", npf_nan(0, 1, 0));
+    require_conform("-nan", "%#0.6f", npf_nan(1, 1, 0));
+    require_conform(" nan", "% .1f", npf_nan(0, 1, 0));
+    require_conform("-nan", "% .1f", npf_nan(1, 1, 0));
+    require_conform("nan", "%-.6f", npf_nan(0, 1, 0));
+    require_conform("-nan", "%-.6f", npf_nan(1, 1, 0));
+    require_conform("inf", "%0.6f", (double)INFINITY);
+    require_conform("-inf", "%0.6f", (double)-INFINITY);
+    require_conform("+inf", "%+.6f", (double)INFINITY);
+    require_conform("-inf", "%+.6f", (double)-INFINITY);
+    require_conform("inf", "%#.6f", (double)INFINITY);
+    require_conform("-inf", "%#.6f", (double)-INFINITY);
+    require_conform("inf", "%#0.6f", (double)INFINITY);
+    require_conform("-inf", "%#0.6f", (double)-INFINITY);
+    require_conform(" inf", "% .1f", (double)INFINITY);
+    require_conform("-inf", "% .1f", (double)-INFINITY);
+    require_conform("inf", "%-.6f", (double)INFINITY);
+    require_conform("-inf", "%-.6f", (double)-INFINITY);
+#endif
+
+    require_conform("   inf", "%06f", (double)INFINITY);
+    require_conform("  -inf", "%06f", (double)-INFINITY);
+    require_conform("  +inf", "%+6f", (double)INFINITY);
+    require_conform("  -inf", "%+6f", (double)-INFINITY);
+    require_conform("   inf", "%#6f", (double)INFINITY);
+    require_conform("  -inf", "%#6f", (double)-INFINITY);
+    require_conform("   inf", "%#06f", (double)INFINITY);
+    require_conform("  -inf", "%#06f", (double)-INFINITY);
+    require_conform("   inf", "% 6f", (double)INFINITY);
+    require_conform("  -inf", "% 6f", (double)-INFINITY);
+    require_conform(" inf", "% 1f", (double)INFINITY);
+    require_conform("-inf", "% 1f", (double)-INFINITY);
+    require_conform("inf   ", "%-6f", (double)INFINITY);
+    require_conform("-inf  ", "%-6f", (double)-INFINITY);
+#endif
   }
 #endif // NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS
 }
