@@ -265,7 +265,7 @@ Total size: 0xa4e (2638) bytes
 To get the environment and run tests:
 
 1. Clone or fork this repository.
-1. Run `./b` from the root (or `py -3 build.py` from the root, for Windows users)
+1. Run `./b` from the root (or `py -3 build.py` in a Visual Studio Developer Command Prompt, for Windows users)
 
 This will build all of the unit, conformance, and compilation tests for your host environment. Any test failures will return a non-zero exit code.
 
