@@ -81,8 +81,8 @@ def _get_cmake(download: bool, verbose: bool) -> pathlib.Path:
 
     cmake_prefix = f"cmake-{_CMAKE_VERSION}-{plat}"
     cmake_local_dir = _SCRIPT_PATH / "external/cmake"
-    cmake_file = f"{cmake_prefix}.tar.gz"
-    cmake_local_tgz = cmake_local_dir / cmake_file
+    cmake_file = f"{cmake_prefix}.{suffix}"
+    cmake_local_archive = cmake_local_dir / cmake_file
     cmake_local_exe = (
         cmake_local_dir
         / cmake_prefix
@@ -91,17 +91,27 @@ def _get_cmake(download: bool, verbose: bool) -> pathlib.Path:
     )
 
     if not cmake_local_exe.exists():
-        if not cmake_local_tgz.exists():
+        if not cmake_local_archive.exists():
             cmake_local_dir.mkdir(parents=True, exist_ok=True)
-            download_file(_CMAKE_URL.format(plat, suffix), cmake_local_tgz, verbose)
+            download_file(_CMAKE_URL.format(plat, suffix), cmake_local_archive, verbose)
 
-        with tarfile.open(cmake_local_tgz, "r") as tar:
-            for member in tar.getmembers():
-                member_path = pathlib.Path(cmake_local_dir / member.name).resolve()
-                if cmake_local_dir not in member_path.parents:
-                    raise ValueError("Tar file contents move upwards past sandbox root")
+        match suffix:
+            case "tar.gz":
+                with tarfile.open(cmake_local_archive, "r") as tar:
+                    for member in tar.getmembers():
+                        member_path = pathlib.Path(
+                            cmake_local_dir / member.name
+                        ).resolve()
+                        if cmake_local_dir not in member_path.parents:
+                            raise ValueError(
+                                "Tar file contents move upwards past sandbox root"
+                            )
 
-            tar.extractall(path=cmake_local_dir)
+                    tar.extractall(path=cmake_local_dir)
+
+            case "zip":
+                with zipfile.ZipFile(cmake_local_archive, "r") as zip_file:
+                    zip_file.extractall(cmake_local_dir)
 
     return cmake_local_exe
 
