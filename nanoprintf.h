@@ -80,14 +80,14 @@ NPF_VISIBILITY int npf_vpprintf(
     !defined(NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS) && \
     !defined(NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS) && \
     !defined(NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS) && \
-    !defined(NANOPRINTF_USE_ALT_FORM_MODIFIER)
+    !defined(NANOPRINTF_USE_ALT_FORM_FLAG)
   #define NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS 1
   #define NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS 1
   #define NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS 1
   #define NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS 0
   #define NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS 0
   #define NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS 0
-  #define NANOPRINTF_USE_ALT_FORM_MODIFIER 1
+  #define NANOPRINTF_USE_ALT_FORM_FLAG 1
 #endif
 
 // If anything's been configured, everything must be configured.
@@ -254,7 +254,7 @@ typedef struct npf_format_spec {
   uint8_t prec_opt;
 #endif
   char prepend;          // ' ' or '+'
-#if NANOPRINTF_USE_ALT_FORM_MODIFIER == 1
+#if NANOPRINTF_USE_ALT_FORM_FLAG == 1
   char alt_form;         // '#'
 #endif
   char case_adjust;      // 'a' - 'A'
@@ -301,7 +301,7 @@ static int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec
 #endif
   out_spec->case_adjust = 'a' - 'A'; // lowercase
   out_spec->prepend = 0;
-#if NANOPRINTF_USE_ALT_FORM_MODIFIER == 1
+#if NANOPRINTF_USE_ALT_FORM_FLAG == 1
   out_spec->alt_form = 0;
 #endif
 
@@ -313,7 +313,7 @@ static int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec
 #endif
       case '+': out_spec->prepend = '+'; continue;
       case ' ': if (out_spec->prepend == 0) { out_spec->prepend = ' '; } continue;
-#if NANOPRINTF_USE_ALT_FORM_MODIFIER == 1
+#if NANOPRINTF_USE_ALT_FORM_FLAG == 1
       case '#': out_spec->alt_form = '#'; continue;
 #endif
       default: break;
@@ -567,7 +567,7 @@ static int npf_ftoa_rev(char *buf, npf_format_spec_t const *spec, double f) {
   uint_fast8_t carry; carry = 0;
   npf_ftoa_dec_t end, dec; dec = (npf_ftoa_dec_t)spec->prec;
   if (dec
-#if NANOPRINTF_USE_ALT_FORM_MODIFIER == 1
+#if NANOPRINTF_USE_ALT_FORM_FLAG == 1
     || spec->alt_form
 #endif
     ) {
@@ -893,7 +893,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
 #endif
         if (!val && (fs.prec_opt != NPF_FMT_SPEC_OPT_NONE) && !fs.prec) {
           // Zero value and explicitly-requested zero precision means "print nothing".
-#if NANOPRINTF_USE_ALT_FORM_MODIFIER == 1
+#if NANOPRINTF_USE_ALT_FORM_FLAG == 1
           if ((fs.conv_spec == NPF_FMT_SPEC_CONV_OCTAL) && fs.alt_form) {
             fs.prec = 1; // octal special case, print a single '0'
           }
@@ -911,13 +911,13 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
           cbuf_len = npf_utoa_rev(val, cbuf, base, fs.case_adjust);
         }
 
-#if NANOPRINTF_USE_ALT_FORM_MODIFIER == 1
+#if NANOPRINTF_USE_ALT_FORM_FLAG == 1
         if (val && fs.alt_form && (fs.conv_spec == NPF_FMT_SPEC_CONV_OCTAL)) {
           cbuf[cbuf_len++] = '0'; // OK to add leading octal '0' immediately.
         }
 #endif
 
-#if NANOPRINTF_USE_ALT_FORM_MODIFIER == 1
+#if NANOPRINTF_USE_ALT_FORM_FLAG == 1
         if (val && fs.alt_form) { // 0x or 0b but can't write it yet.
           if (fs.conv_spec == NPF_FMT_SPEC_CONV_HEX_INT) { need_0x = 'X'; }
 #if NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS == 1

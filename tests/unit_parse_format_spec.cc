@@ -104,7 +104,7 @@ TEST_CASE("npf_parse_format_spec") {
        conversions, the behavior is undefined.
     */
 
-#if NANOPRINTF_USE_ALT_FORM_MODIFIER
+#if NANOPRINTF_USE_ALT_FORM_FLAG == 1
     REQUIRE(!npf_parse_format_spec("%#", &spec)); // alternative form alone
 
     SUBCASE("alternative form off by default") {
