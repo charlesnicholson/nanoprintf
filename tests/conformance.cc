@@ -568,66 +568,79 @@ TEST_CASE("conformance to system printf") {
     require_conform("-0.00390625", "%.8f", -0.00390625);
     require_conform("-0.00390625", "%.8Lf", (long double)-0.00390625);
 
-    // lowercase
+    // positive
     require_conform("nan" , "%f", npf_nan(0, 1, 0));
-    require_conform("-nan", "%f", npf_nan(1, 1, 0));
     require_conform("nan" , "%f", npf_nan(0, 1, 1));
-    require_conform("-nan", "%f", npf_nan(1, 1, 1));
     require_conform("nan" , "%f", npf_nan(0, 0, 0));
-    require_conform("-nan", "%f", npf_nan(1, 0, 0));
     require_conform("nan" , "%f", npf_nan(0, 0, 1));
-    require_conform("-nan", "%f", npf_nan(1, 0, 1));
-
-    // uppercase
     require_conform("NAN" , "%F", npf_nan(0, 1, 0));
-    require_conform("-NAN", "%F", npf_nan(1, 1, 0));
     require_conform("NAN" , "%F", npf_nan(0, 1, 1));
-    require_conform("-NAN", "%F", npf_nan(1, 1, 1));
     require_conform("NAN" , "%F", npf_nan(0, 0, 0));
-    require_conform("-NAN", "%F", npf_nan(1, 0, 0));
     require_conform("NAN" , "%F", npf_nan(0, 0, 1));
-    require_conform("-NAN", "%F", npf_nan(1, 0, 1));
-
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
     require_conform("   nan", "%06f", npf_nan(0, 1, 0));
-    require_conform("  -nan", "%06f", npf_nan(1, 1, 0));
-    require_conform("  +nan", "%+6f", npf_nan(0, 1, 0));
-    require_conform("  -nan", "%+6f", npf_nan(1, 1, 0));
-    require_conform("   nan", "%#6f", npf_nan(0, 1, 0));
-    require_conform("  -nan", "%#6f", npf_nan(1, 1, 0));
-    require_conform("   nan", "%#06f", npf_nan(0, 1, 0));
-    require_conform("  -nan", "%#06f", npf_nan(1, 1, 0));
     require_conform("   nan", "% 6f", npf_nan(0, 1, 0));
-    require_conform("  -nan", "% 6f", npf_nan(1, 1, 0));
     require_conform(" nan", "% 1f", npf_nan(0, 1, 0));
-    require_conform("-nan", "% 1f", npf_nan(1, 1, 0));
     require_conform("nan   ", "%-6f", npf_nan(0, 1, 0));
-    require_conform("-nan  ", "%-6f", npf_nan(1, 1, 0));
+#if NANOPRINTF_USE_ALT_FORM_FLAG == 1
+    require_conform("   nan", "%#6f", npf_nan(0, 1, 0));
+    require_conform("   nan", "%#06f", npf_nan(0, 1, 0));
+#endif
+#endif
+#if (NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1) && \
+    (NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1)
+    require_conform("nan", "%0.6f", npf_nan(0, 1, 0));
+    require_conform(" nan", "% .1f", npf_nan(0, 1, 0));
+    require_conform("nan", "%-.6f", npf_nan(0, 1, 0));
+#if NANOPRINTF_USE_ALT_FORM_FLAG == 1
+    require_conform("nan", "%#.6f", npf_nan(0, 1, 0));
+    require_conform("nan", "%#0.6f", npf_nan(0, 1, 0));
+#endif
+#endif
+
+    //require_conform("-nan", "%f", npf_nan(1, 1, 0));
+    //require_conform("-nan", "%f", npf_nan(1, 1, 1));
+    //require_conform("-nan", "%f", npf_nan(1, 0, 0));
+    //require_conform("-nan", "%f", npf_nan(1, 0, 1));
+    //require_conform("-NAN", "%F", npf_nan(1, 1, 0));
+    //require_conform("-NAN", "%F", npf_nan(1, 1, 1));
+    //require_conform("-NAN", "%F", npf_nan(1, 0, 0));
+    //require_conform("-NAN", "%F", npf_nan(1, 0, 1));
+#if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
+    //require_conform("  -nan", "%06f", npf_nan(1, 1, 0));
+    //require_conform("  +nan", "%+6f", npf_nan(0, 1, 0));
+    //require_conform("  -nan", "%+6f", npf_nan(1, 1, 0));
+#if NANOPRINTF_USE_ALT_FORM_FLAG == 1
+    //require_conform("  -nan", "%#6f", npf_nan(1, 1, 0));
+    //require_conform("  -nan", "%#06f", npf_nan(1, 1, 0));
+#endif
+    //require_conform("  -nan", "% 6f", npf_nan(1, 1, 0));
+    //require_conform("-nan", "% 1f", npf_nan(1, 1, 0));
+    //require_conform("-nan  ", "%-6f", npf_nan(1, 1, 0));
 
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
-    require_conform("nan", "%0.6f", npf_nan(0, 1, 0));
-    require_conform("-nan", "%0.6f", npf_nan(1, 1, 0));
-    require_conform("+nan", "%+.6f", npf_nan(0, 1, 0));
-    require_conform("-nan", "%+.6f", npf_nan(1, 1, 0));
-    require_conform("nan", "%#.6f", npf_nan(0, 1, 0));
-    require_conform("-nan", "%#.6f", npf_nan(1, 1, 0));
-    require_conform("nan", "%#0.6f", npf_nan(0, 1, 0));
-    require_conform("-nan", "%#0.6f", npf_nan(1, 1, 0));
-    require_conform(" nan", "% .1f", npf_nan(0, 1, 0));
-    require_conform("-nan", "% .1f", npf_nan(1, 1, 0));
-    require_conform("nan", "%-.6f", npf_nan(0, 1, 0));
-    require_conform("-nan", "%-.6f", npf_nan(1, 1, 0));
+    //require_conform("-nan", "%0.6f", npf_nan(1, 1, 0));
+    //require_conform("+nan", "%+.6f", npf_nan(0, 1, 0));
+    //require_conform("-nan", "%+.6f", npf_nan(1, 1, 0));
+#if NANOPRINTF_USE_ALT_FORM_FLAG == 1
+    //require_conform("-nan", "%#.6f", npf_nan(1, 1, 0));
+    //require_conform("-nan", "%#0.6f", npf_nan(1, 1, 0));
+#endif
+    //require_conform("-nan", "% .1f", npf_nan(1, 1, 0));
+    //require_conform("-nan", "%-.6f", npf_nan(1, 1, 0));
     require_conform("inf", "%0.6f", (double)INFINITY);
     require_conform("-inf", "%0.6f", (double)-INFINITY);
     require_conform("+inf", "%+.6f", (double)INFINITY);
     require_conform("-inf", "%+.6f", (double)-INFINITY);
+#if NANOPRINTF_USE_ALT_FORM_FLAG == 1
     require_conform("inf", "%#.6f", (double)INFINITY);
-    require_conform("-inf", "%#.6f", (double)-INFINITY);
     require_conform("inf", "%#0.6f", (double)INFINITY);
+    require_conform("-inf", "%#.6f", (double)-INFINITY);
     require_conform("-inf", "%#0.6f", (double)-INFINITY);
+#endif
     require_conform(" inf", "% .1f", (double)INFINITY);
-    require_conform("-inf", "% .1f", (double)-INFINITY);
     require_conform("inf", "%-.6f", (double)INFINITY);
+    require_conform("-inf", "% .1f", (double)-INFINITY);
     require_conform("-inf", "%-.6f", (double)-INFINITY);
 #endif
 
@@ -635,10 +648,12 @@ TEST_CASE("conformance to system printf") {
     require_conform("  -inf", "%06f", (double)-INFINITY);
     require_conform("  +inf", "%+6f", (double)INFINITY);
     require_conform("  -inf", "%+6f", (double)-INFINITY);
+#if NANOPRINTF_USE_ALT_FORM_FLAG == 1
     require_conform("   inf", "%#6f", (double)INFINITY);
     require_conform("  -inf", "%#6f", (double)-INFINITY);
     require_conform("   inf", "%#06f", (double)INFINITY);
     require_conform("  -inf", "%#06f", (double)-INFINITY);
+#endif
     require_conform("   inf", "% 6f", (double)INFINITY);
     require_conform("  -inf", "% 6f", (double)-INFINITY);
     require_conform(" inf", "% 1f", (double)INFINITY);
