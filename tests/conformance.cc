@@ -359,16 +359,20 @@ TEST_CASE("conformance to system printf") {
   SUBCASE("pointer") {
     // require_conform("%p", nullptr); implementation defined
     int x, *p = &x;
-    char buf[32];
-    snprintf(buf, sizeof(buf), "%p", (void *)p);
-    require_conform(buf, "%p", p);
+    char snp_buf[32];
+    char npf_buf[32];
+    snprintf(snp_buf, sizeof(snp_buf), "%p", (void *)p);
+    npf_snprintf(npf_buf, sizeof(npf_buf), "0x%p", (void *)p);
+    REQUIRE(std::string{snp_buf} == npf_buf);
     // require_conform("%030p", p); 0 flag + 'p' is undefined
     // require_conform("%.30p", p); precision + 'p' is undefined
 
-#if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
-    snprintf(buf, sizeof(buf), "%30p", (void *)p);
-    require_conform(buf, "%30p", p);
-#endif // NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS
+#if (NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1) && \
+    (NANOPRINTF_USE_ALT_FORM_FLAG == 1)
+    snprintf(snp_buf, sizeof(snp_buf), "%30p", (void *)p);
+    npf_snprintf(npf_buf, sizeof(npf_buf), "%#30p", (void *)p);
+    REQUIRE(std::string{snp_buf} == npf_buf);
+#endif 
   }
 #endif // _MSC_VER
 
