@@ -79,13 +79,15 @@ NPF_VISIBILITY int npf_vpprintf(
     !defined(NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS) && \
     !defined(NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS) && \
     !defined(NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS) && \
-    !defined(NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS)
+    !defined(NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS) && \
+    !defined(NANOPRINTF_USE_ALT_FORM_FLAG)
   #define NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS 1
   #define NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS 1
   #define NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS 1
   #define NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS 0
   #define NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS 0
   #define NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS 0
+  #define NANOPRINTF_USE_ALT_FORM_FLAG 1
 #endif
 
 // If anything's been configured, everything must be configured.
@@ -249,16 +251,20 @@ enum {
 typedef struct npf_format_spec {
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
   int field_width;
-  uint8_t field_width_opt;
-  char left_justified;   // '-'
-  char leading_zero_pad; // '0'
 #endif
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
   int prec;
   uint8_t prec_opt;
 #endif
+#if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
+  uint8_t field_width_opt;
+  char left_justified;   // '-'
+  char leading_zero_pad; // '0'
+#endif
   char prepend;          // ' ' or '+'
+#if NANOPRINTF_USE_ALT_FORM_FLAG == 1
   char alt_form;         // '#'
+#endif
   char case_adjust;      // 'a' - 'A'
   uint8_t length_modifier;
   uint8_t conv_spec;
@@ -298,7 +304,9 @@ static int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec
 #endif
   out_spec->case_adjust = 'a' - 'A'; // lowercase
   out_spec->prepend = 0;
+#if NANOPRINTF_USE_ALT_FORM_FLAG == 1
   out_spec->alt_form = 0;
+#endif
 
   while (*++cur) { // cur points at the leading '%' character
     switch (*cur) { // Optional flags
@@ -308,7 +316,9 @@ static int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec
 #endif
       case '+': out_spec->prepend = '+'; continue;
       case ' ': if (out_spec->prepend == 0) { out_spec->prepend = ' '; } continue;
+#if NANOPRINTF_USE_ALT_FORM_FLAG == 1
       case '#': out_spec->alt_form = '#'; continue;
+#endif
       default: break;
     }
     break;
@@ -565,7 +575,11 @@ static int npf_ftoa_rev(char *buf, npf_format_spec_t const *spec, double f) {
 
   uint_fast8_t carry; carry = 0;
   npf_ftoa_dec_t end, dec; dec = (npf_ftoa_dec_t)spec->prec;
-  if (dec || spec->alt_form) {
+  if (dec
+#if NANOPRINTF_USE_ALT_FORM_FLAG == 1
+      || spec->alt_form
+#endif
+  ) {
     buf[dec++] = '.';
   }
 
@@ -864,22 +878,27 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
 #endif
       case NPF_FMT_SPEC_CONV_OCTAL:
       case NPF_FMT_SPEC_CONV_HEX_INT:
-      case NPF_FMT_SPEC_CONV_UNSIGNED_INT: {
+      case NPF_FMT_SPEC_CONV_UNSIGNED_INT:
+      case NPF_FMT_SPEC_CONV_POINTER: {
         npf_uint_t val = 0;
 
-        switch (fs.length_modifier) {
-          NPF_EXTRACT(NONE, unsigned, unsigned);
-          NPF_EXTRACT(SHORT, unsigned short, unsigned);
-          NPF_EXTRACT(LONG_DOUBLE, unsigned, unsigned);
-          NPF_EXTRACT(CHAR, unsigned char, unsigned);
-          NPF_EXTRACT(LONG, unsigned long, unsigned long);
+        if (fs.conv_spec == NPF_FMT_SPEC_CONV_POINTER) {
+          val = (npf_uint_t)(uintptr_t)va_arg(args, void *);
+        } else {
+          switch (fs.length_modifier) {
+            NPF_EXTRACT(NONE, unsigned, unsigned);
+            NPF_EXTRACT(SHORT, unsigned short, unsigned);
+            NPF_EXTRACT(LONG_DOUBLE, unsigned, unsigned);
+            NPF_EXTRACT(CHAR, unsigned char, unsigned);
+            NPF_EXTRACT(LONG, unsigned long, unsigned long);
 #if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
-          NPF_EXTRACT(LARGE_LONG_LONG, unsigned long long, unsigned long long);
-          NPF_EXTRACT(LARGE_INTMAX, uintmax_t, uintmax_t);
-          NPF_EXTRACT(LARGE_SIZET, size_t, size_t);
-          NPF_EXTRACT(LARGE_PTRDIFFT, size_t, size_t);
+            NPF_EXTRACT(LARGE_LONG_LONG, unsigned long long, unsigned long long);
+            NPF_EXTRACT(LARGE_INTMAX, uintmax_t, uintmax_t);
+            NPF_EXTRACT(LARGE_SIZET, size_t, size_t);
+            NPF_EXTRACT(LARGE_PTRDIFFT, size_t, size_t);
 #endif
-          default: break;
+            default: break;
+          }
         }
 
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
@@ -888,9 +907,11 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
 #endif
         if (!val && (fs.prec_opt != NPF_FMT_SPEC_OPT_NONE) && !fs.prec) {
           // Zero value and explicitly-requested zero precision means "print nothing".
+#if NANOPRINTF_USE_ALT_FORM_FLAG == 1
           if ((fs.conv_spec == NPF_FMT_SPEC_CONV_OCTAL) && fs.alt_form) {
             fs.prec = 1; // octal special case, print a single '0'
           }
+#endif
         } else
 #endif
 #if NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS == 1
@@ -900,27 +921,24 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
 #endif
         {
           uint_fast8_t const base = (fs.conv_spec == NPF_FMT_SPEC_CONV_OCTAL) ?
-            8u : ((fs.conv_spec == NPF_FMT_SPEC_CONV_HEX_INT) ? 16u : 10u);
+            8u : ((fs.conv_spec == NPF_FMT_SPEC_CONV_UNSIGNED_INT) ? 10u : 16u);
           cbuf_len = npf_utoa_rev(val, cbuf, base, fs.case_adjust);
         }
 
+#if NANOPRINTF_USE_ALT_FORM_FLAG == 1
         if (val && fs.alt_form && (fs.conv_spec == NPF_FMT_SPEC_CONV_OCTAL)) {
           cbuf[cbuf_len++] = '0'; // OK to add leading octal '0' immediately.
         }
 
         if (val && fs.alt_form) { // 0x or 0b but can't write it yet.
-          if (fs.conv_spec == NPF_FMT_SPEC_CONV_HEX_INT) { need_0x = 'X'; }
+          if ((fs.conv_spec == NPF_FMT_SPEC_CONV_HEX_INT) ||
+              (fs.conv_spec == NPF_FMT_SPEC_CONV_POINTER)) { need_0x = 'X'; }
 #if NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS == 1
           else if (fs.conv_spec == NPF_FMT_SPEC_CONV_BINARY) { need_0x = 'B'; }
 #endif
           if (need_0x) { need_0x += fs.case_adjust; }
         }
-      } break;
-
-      case NPF_FMT_SPEC_CONV_POINTER: {
-        cbuf_len =
-          npf_utoa_rev((npf_uint_t)(uintptr_t)va_arg(args, void *), cbuf, 16, 'a' - 'A');
-        need_0x = 'x';
+#endif
       } break;
 
 #if NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS == 1
