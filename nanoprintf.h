@@ -190,10 +190,13 @@ NPF_VISIBILITY int npf_vpprintf(
 
 #if defined(__clang__) || defined(__GNUC__) || defined(__GNUG__)
   #define NPF_NOINLINE __attribute__((noinline))
+  #define NPF_FORCE_INLINE inline __attribute__((always_inline))
 #elif defined(_MSC_VER)
   #define NPF_NOINLINE __declspec(noinline)
+  #define NPF_FORCE_INLINE inline __forceinline
 #else
   #define NPF_NOINLINE
+  #define NPF_FORCE_INLINE
 #endif
 
 #if (NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1) || \
@@ -515,6 +518,7 @@ enum {
   NPF_DOUBLE_EXP_BIAS = DBL_MAX_EXP - 1,
   NPF_DOUBLE_MAN_BITS = DBL_MANT_DIG - 1,
   NPF_DOUBLE_BIN_BITS = sizeof(npf_double_bin_t) * CHAR_BIT,
+  NPF_DOUBLE_SIGN_POS = sizeof(double) * CHAR_BIT - 1,
   NPF_FTOA_MAN_BITS   = sizeof(npf_ftoa_man_t) * CHAR_BIT,
   NPF_FTOA_SHIFT_BITS =
     ((NPF_FTOA_MAN_BITS < DBL_MANT_DIG) ? NPF_FTOA_MAN_BITS : DBL_MANT_DIG) - 1
@@ -529,13 +533,18 @@ enum {
    extended further by adding dynamic scaling and configurable integer width by
    Oskars Rubenis (https://github.com/Okarss). */
 
+static NPF_FORCE_INLINE npf_double_bin_t npf_double_to_int_rep(double f) {
+  // Union-cast is UB pre-C11 and in all C++; the compiler optimizes the code below.
+  npf_double_bin_t bin;
+  char const *src = (char const *)&f;
+  char *dst = (char *)&bin;
+  for (uint_fast8_t i = 0; i < sizeof(f); ++i) { dst[i] = src[i]; }
+  return bin;
+}
+
 static int npf_ftoa_rev(char *buf, npf_format_spec_t const *spec, double f) {
   char const *ret = NULL;
-  npf_double_bin_t bin; { // Union-cast is UB pre-C11, compiler optimizes byte-copy loop.
-    char const *src = (char const *)&f;
-    char *dst = (char *)&bin;
-    for (uint_fast8_t i = 0; i < sizeof(f); ++i) { dst[i] = src[i]; }
-  }
+  npf_double_bin_t bin = npf_double_to_int_rep(f);
 
   // Unsigned -> signed int casting is IB and can raise a signal but generally doesn't.
   npf_ftoa_exp_t exp =
@@ -944,7 +953,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
           val = va_arg(args, double);
         }
 
-        sign_c = (val < 0.) ? '-' : fs.prepend;
+        sign_c = (npf_double_to_int_rep(val) >> NPF_DOUBLE_SIGN_POS) ? '-' : fs.prepend;
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
         zero = (val == 0.);
 #endif

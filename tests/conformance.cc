@@ -467,6 +467,7 @@ TEST_CASE("conformance to system printf") {
 
   SUBCASE("float") {
     require_conform("inf", "%f", (double)INFINITY);
+    require_conform("-inf", "%f", -(double)INFINITY);
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
     require_conform(" inf", "%4f", (double)INFINITY);
 #endif // NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS
@@ -477,6 +478,9 @@ TEST_CASE("conformance to system printf") {
     require_conform("inf", "%.10a", (double)INFINITY);
     require_conform("INF", "%F", (double)INFINITY);
     require_conform("0.000000", "%f", 0.0);
+    require_conform("-0.000000", "%f", -0.0);
+    require_conform("0.000000", "%f", 1e-20);
+    require_conform("-0.000000", "%f", -1e-20);
     require_conform("0.00", "%.2f", 0.0);
     require_conform("1.0", "%.1f", 1.0);
     require_conform("1", "%.0f", 1.0);
