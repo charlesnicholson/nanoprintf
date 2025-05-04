@@ -19,6 +19,7 @@
 #define NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS 1
 #define NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS 1
 #define NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS 1
+#define NANOPRINTF_USE_ALT_FORM_FLAG 1
 #define NANOPRINTF_IMPLEMENTATION
 
 // Include the implementation multiple times to make sure it guards against itself.

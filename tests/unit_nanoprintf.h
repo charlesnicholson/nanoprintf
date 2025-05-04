@@ -5,6 +5,7 @@
 #define NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS 1
 #define NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS 1
 #define NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS 1
+#define NANOPRINTF_USE_ALT_FORM_FLAG 1
 
 // Each unit test file compiles nanoprintf privately for access to helper functions.
 #define NANOPRINTF_VISIBILITY_STATIC
