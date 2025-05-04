@@ -153,7 +153,7 @@ Like `printf`, `nanoprintf` expects a conversion specification string of the fol
 	* `u`: Unsigned integers
 	* `o`: Unsigned octal integers
 	* `x` / `X`: Unsigned hexadecimal integers
-	* `p`: Pointers
+	* `p`: Pointers (Use with `#` for the leading `0x`)
 	* `n`: Write the number of bytes written to the pointer vararg
 	* `f`/`F`: Floating-point decimal
 	* `e`/`E`: Floating-point scientific (unimplemented, prints float decimal)
