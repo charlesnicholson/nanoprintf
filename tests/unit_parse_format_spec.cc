@@ -369,9 +369,9 @@ TEST_CASE("npf_parse_format_spec") {
       REQUIRE(spec.conv_spec == NPF_FMT_SPEC_CONV_STRING);
     }
 
-    SUBCASE("s clears leading 0") {
+    SUBCASE("s preserves leading 0") {
       REQUIRE(npf_parse_format_spec("%0s", &spec) == 3);
-      REQUIRE(!spec.leading_zero_pad);
+      REQUIRE(spec.leading_zero_pad);
     }
 
     SUBCASE("string negative left-justify field width") {
