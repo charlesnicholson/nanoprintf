@@ -84,7 +84,8 @@ function(npf_test name files)
                      COMMAND ${name} -m
                      COMMAND ${CMAKE_COMMAND} -E touch ${timestamp}
                      DEPENDS ${name}
-                     COMMENT "Running ${name}")
+                     COMMENT "Running ${name}"
+                     VERBATIM)
 endfunction()
 
 ################ Language compilation tests
