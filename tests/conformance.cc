@@ -524,7 +524,6 @@ TEST_CASE("conformance to system printf") {
     require_conform("0.00390625", "%.8Lf", (long double)0.00390625);
     require_conform("-0.00390625", "%.8f", -0.00390625);
     require_conform("-0.00390625", "%.8Lf", (long double)-0.00390625);
-
   }
 #endif // NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS
 }
