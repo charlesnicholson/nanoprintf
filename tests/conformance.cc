@@ -28,6 +28,8 @@
       #pragma GCC diagnostic ignored "-Wreserved-identifier"
       #pragma GCC diagnostic ignored "-Wunsafe-buffer-usage"
     #endif
+  #else
+    #pragma GCC diagnostic ignored "-Wformat-extra-args"
   #endif
   #pragma GCC diagnostic ignored "-Wformat"
 #endif
