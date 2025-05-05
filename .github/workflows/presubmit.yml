@@ -209,7 +209,7 @@ jobs:
           python-version: '3.x'
       - name: Build
         shell: bash
-        run: ./b --cfg ${{ matrix.configuration }} --paland -v
+        run: ./b --paland -v
 
   size-reports:
     runs-on: ubuntu-latest
