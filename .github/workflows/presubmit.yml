@@ -196,7 +196,7 @@ jobs:
           call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars${{ matrix.architecture }}.bat"
           python.exe build.py --cfg ${{ matrix.configuration }} --paland -v --arch ${{ matrix.architecture }}
 
-  win-mingw:
+  win-msys:
     runs-on: windows-latest
 
     steps:
@@ -242,7 +242,7 @@ jobs:
           python3 tests/size_report.py -p host
 
   all-checks-pass:
-    needs: [pylint, download-linux, download-mac, download-win, sanitizers, linux-x64, linux-arm64, macos, win, win-mingw, size-reports]
+    needs: [pylint, download-linux, download-mac, download-win, sanitizers, linux-x64, linux-arm64, macos, win, win-msys, size-reports]
     runs-on: ubuntu-latest
     steps:
     - run: echo Done
