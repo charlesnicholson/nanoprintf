@@ -209,6 +209,7 @@ set(unit_test_files
     tests/unit_parse_format_spec.cc
     tests/unit_binary.cc
     tests/unit_bufputc.cc
+    tests/unit_ftoa_nan.cc
     tests/unit_ftoa_rev.cc
     tests/unit_ftoa_rev_08.cc
     tests/unit_ftoa_rev_16.cc
