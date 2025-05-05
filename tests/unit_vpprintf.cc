@@ -263,14 +263,14 @@ TEST_CASE("npf_vpprintf") {
     REQUIRE(r.String() == std::string{"-1"});
   }
 
-  SUBCASE("leading zero-pad flag does nothing on char (undefined)") {
-    REQUIRE(npf_pprintf(r.PutC, &r, "%010c", 'A') == 1);
-    REQUIRE(r.String() == std::string{"A"});
+  SUBCASE("leading zero-pad flag is honored for char (undefined)") {
+    REQUIRE(npf_pprintf(r.PutC, &r, "%010c", 'A') == 10);
+    REQUIRE(r.String() == std::string{"000000000A"});
   }
 
-  SUBCASE("leading zero-pad flag does nothing on string (undefined)") {
-    REQUIRE(npf_pprintf(r.PutC, &r, "%0s", "ABCD") == 4);
-    REQUIRE(r.String() == std::string{"ABCD"});
+  SUBCASE("leading zero-pad flag is honored for string (undefined)") {
+    REQUIRE(npf_pprintf(r.PutC, &r, "%05s", "ABCD") == 5);
+    REQUIRE(r.String() == std::string{"0ABCD"});
   }
 
   SUBCASE("alternative flag: hex doesn't prepend 0x if value is 0") {
