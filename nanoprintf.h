@@ -205,17 +205,80 @@ enum {
 };
 #endif
 
+#define NPF_LEN_MOD_SHORT_IS_ALIASED     (SHRT_MAX == INT_MAX)
+#define NPF_LEN_MOD_LONG_IS_ALIASED      (LONG_MAX == INT_MAX)
+#define NPF_LEN_MOD_LLONG_IS_ALIASED     (LLONG_MAX == LONG_MAX)
+// Note: intmax_t, ptrdiff_t are signed; size_t is unsigned
+// However, 'j', 't', 'z' are treated as signed/unsigned based solely on the
+// conversion specifier (i d ; b o u x)
+#define NPF_LEN_MOD_INTMAX_IS_ALIASED     (INTMAX_MAX == LLONG_MAX || INTMAX_MAX == LONG_MAX || INTMAX_MAX == INT_MAX)
+#define NPF_LEN_MOD_SIZET_IS_ALIASED      (SIZE_MAX == ULLONG_MAX || SIZE_MAX == ULONG_MAX || SIZE_MAX == UINT_MAX)
+#define NPF_LEN_MOD_PTRDIFFT_IS_ALIASED   (PTRDIFF_MAX == LLONG_MAX || PTRDIFF_MAX == LONG_MAX || PTRDIFF_MAX == INT_MAX)
+
 enum {
+  // We define all the non-aliased first, so that enum values are automatic and increasing
   NPF_FMT_SPEC_LEN_MOD_NONE,
-  NPF_FMT_SPEC_LEN_MOD_SHORT,       // 'h'
-  NPF_FMT_SPEC_LEN_MOD_LONG_DOUBLE, // 'L'
+
   NPF_FMT_SPEC_LEN_MOD_CHAR,        // 'hh'
+
+#if !NPF_LEN_MOD_SHORT_IS_ALIASED
+  NPF_FMT_SPEC_LEN_MOD_SHORT,       // 'h'
+#endif
+
+#if !NPF_LEN_MOD_LONG_IS_ALIASED
   NPF_FMT_SPEC_LEN_MOD_LONG,        // 'l'
+#endif
+
 #if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
-  NPF_FMT_SPEC_LEN_MOD_LARGE_LONG_LONG, // 'll'
-  NPF_FMT_SPEC_LEN_MOD_LARGE_INTMAX,    // 'j'
-  NPF_FMT_SPEC_LEN_MOD_LARGE_SIZET,     // 'z'
-  NPF_FMT_SPEC_LEN_MOD_LARGE_PTRDIFFT,  // 't'
+  #if !NPF_LEN_MOD_LLONG_IS_ALIASED
+    NPF_FMT_SPEC_LEN_MOD_LARGE_LONG_LONG, // 'll'
+  #endif
+
+  #if !NPF_LEN_MOD_INTMAX_IS_ALIASED
+    NPF_FMT_SPEC_LEN_MOD_LARGE_INTMAX, // 'j'
+  #endif
+
+  #if !NPF_LEN_MOD_SIZET_IS_ALIASED
+    NPF_FMT_SPEC_LEN_MOD_LARGE_SIZET, // 'z'
+  #endif
+
+  #if !NPF_LEN_MOD_PTRDIFFT_IS_ALIASED
+    NPF_FMT_SPEC_LEN_MOD_LARGE_PTRDIFFT, // 't'
+  #endif
+#endif
+
+    NPF_FMT_SPEC_LEN_MOD_LONG_DOUBLE, // 'L'
+
+#if NPF_LEN_MOD_SHORT_IS_ALIASED
+  NPF_FMT_SPEC_LEN_MOD_SHORT = NPF_FMT_SPEC_LEN_MOD_NONE,
+#endif
+
+#if NPF_LEN_MOD_LONG_IS_ALIASED
+  NPF_FMT_SPEC_LEN_MOD_LONG = NPF_FMT_SPEC_LEN_MOD_NONE,
+#endif
+
+#if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
+  #if NPF_LEN_MOD_LLONG_IS_ALIASED
+    NPF_FMT_SPEC_LEN_MOD_LARGE_LONG_LONG = NPF_FMT_SPEC_LEN_MOD_LONG,
+  #endif
+
+  #if INTMAX_MAX == LLONG_MAX
+    NPF_FMT_SPEC_LEN_MOD_LARGE_INTMAX = NPF_FMT_SPEC_LEN_MOD_LARGE_LONG_LONG,
+  #elif INTMAX_MAX == LONG_MAX
+    NPF_FMT_SPEC_LEN_MOD_LARGE_INTMAX = NPF_FMT_SPEC_LEN_MOD_LONG,
+  #endif
+
+  #if SIZE_MAX == ULLONG_MAX
+    NPF_FMT_SPEC_LEN_MOD_LARGE_SIZET = NPF_FMT_SPEC_LEN_MOD_LARGE_LONG_LONG,
+  #elif SIZE_MAX == ULONG_MAX
+    NPF_FMT_SPEC_LEN_MOD_LARGE_SIZET = NPF_FMT_SPEC_LEN_MOD_LONG,
+  #endif
+
+  #if PTRDIFF_MAX == LLONG_MAX
+    NPF_FMT_SPEC_LEN_MOD_LARGE_PTRDIFFT = NPF_FMT_SPEC_LEN_MOD_LARGE_LONG_LONG,
+  #elif PTRDIFF_MAX == LONG_MAX
+    NPF_FMT_SPEC_LEN_MOD_LARGE_PTRDIFFT = NPF_FMT_SPEC_LEN_MOD_LONG,
+  #endif
 #endif
 };
 
@@ -819,15 +882,26 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
         npf_int_t val = 0;
         switch (fs.length_modifier) {
           NPF_EXTRACT(NONE, int, int);
-          NPF_EXTRACT(SHORT, short, int);
-          NPF_EXTRACT(LONG_DOUBLE, int, int);
           NPF_EXTRACT(CHAR, signed char, int);
+#if !NPF_LEN_MOD_SHORT_IS_ALIASED
+          NPF_EXTRACT(SHORT, short, int);
+#endif
+#if !NPF_LEN_MOD_LONG_IS_ALIASED
           NPF_EXTRACT(LONG, long, long);
+#endif
 #if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
+  #if !NPF_LEN_MOD_LLONG_IS_ALIASED
           NPF_EXTRACT(LARGE_LONG_LONG, long long, long long);
+  #endif
+  #if !NPF_LEN_MOD_INTMAX_IS_ALIASED
           NPF_EXTRACT(LARGE_INTMAX, intmax_t, intmax_t);
+  #endif
+  #if !NPF_LEN_MOD_SIZET_IS_ALIASED
           NPF_EXTRACT(LARGE_SIZET, npf_ssize_t, npf_ssize_t);
+  #endif
+  #if !NPF_LEN_MOD_PTRDIFFT_IS_ALIASED
           NPF_EXTRACT(LARGE_PTRDIFFT, ptrdiff_t, ptrdiff_t);
+  #endif
 #endif
           default: break;
         }
@@ -860,15 +934,26 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
 
         switch (fs.length_modifier) {
           NPF_EXTRACT(NONE, unsigned, unsigned);
-          NPF_EXTRACT(SHORT, unsigned short, unsigned);
-          NPF_EXTRACT(LONG_DOUBLE, unsigned, unsigned);
           NPF_EXTRACT(CHAR, unsigned char, unsigned);
+#if !NPF_LEN_MOD_SHORT_IS_ALIASED
+          NPF_EXTRACT(SHORT, unsigned short, unsigned);
+#endif
+#if !NPF_LEN_MOD_LONG_IS_ALIASED
           NPF_EXTRACT(LONG, unsigned long, unsigned long);
+#endif
 #if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
+  #if !NPF_LEN_MOD_LLONG_IS_ALIASED
           NPF_EXTRACT(LARGE_LONG_LONG, unsigned long long, unsigned long long);
+  #endif
+  #if !NPF_LEN_MOD_INTMAX_IS_ALIASED
           NPF_EXTRACT(LARGE_INTMAX, uintmax_t, uintmax_t);
+  #endif
+  #if !NPF_LEN_MOD_SIZET_IS_ALIASED
           NPF_EXTRACT(LARGE_SIZET, size_t, size_t);
+  #endif
+  #if !NPF_LEN_MOD_PTRDIFFT_IS_ALIASED
           NPF_EXTRACT(LARGE_PTRDIFFT, size_t, size_t);
+  #endif
 #endif
           default: break;
         }
@@ -918,15 +1003,26 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
       case NPF_FMT_SPEC_CONV_WRITEBACK:
         switch (fs.length_modifier) {
           NPF_WRITEBACK(NONE, int);
-          NPF_WRITEBACK(SHORT, short);
-          NPF_WRITEBACK(LONG, long);
-          NPF_WRITEBACK(LONG_DOUBLE, double);
           NPF_WRITEBACK(CHAR, signed char);
+#if !NPF_LEN_MOD_SHORT_IS_ALIASED
+          NPF_WRITEBACK(SHORT, short);
+#endif
+#if !NPF_LEN_MOD_LONG_IS_ALIASED
+          NPF_WRITEBACK(LONG, long);
+#endif
 #if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
+  #if !NPF_LEN_MOD_LLONG_IS_ALIASED
           NPF_WRITEBACK(LARGE_LONG_LONG, long long);
+  #endif
+  #if !NPF_LEN_MOD_INTMAX_IS_ALIASED
           NPF_WRITEBACK(LARGE_INTMAX, intmax_t);
+  #endif
+  #if !NPF_LEN_MOD_SIZET_IS_ALIASED
           NPF_WRITEBACK(LARGE_SIZET, size_t);
+  #endif
+  #if !NPF_LEN_MOD_PTRDIFFT_IS_ALIASED
           NPF_WRITEBACK(LARGE_PTRDIFFT, ptrdiff_t);
+  #endif
 #endif
           default: break;
         } break;
