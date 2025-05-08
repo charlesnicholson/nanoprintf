@@ -38,19 +38,21 @@ namespace {
 void require_conform(const std::string& expected, char const *fmt, ...) {
   char buf[256];
 
+  int n_sys;
   std::string sys_printf_result; {
     va_list args;
     va_start(args, fmt);
-    vsnprintf(buf, sizeof(buf), fmt, args);
+    n_sys = vsnprintf(buf, sizeof(buf), fmt, args);
     va_end(args);
     buf[sizeof(buf)-1] = '\0';
     sys_printf_result = buf;
   }
 
+  int n_npf;
   std::string npf_result; {
     va_list args;
     va_start(args, fmt);
-    npf_vsnprintf(buf, sizeof(buf), fmt, args);
+    n_npf = npf_vsnprintf(buf, sizeof(buf), fmt, args);
     va_end(args);
     buf[sizeof(buf)-1] = '\0';
     npf_result = buf;
@@ -58,6 +60,12 @@ void require_conform(const std::string& expected, char const *fmt, ...) {
 
   REQUIRE(sys_printf_result == expected);
   REQUIRE(npf_result == expected);
+  // by transitivity, we fail whenever any of the four lengths does not agree
+  // (npf string, npf ret value, sys string, sys ret value)
+  REQUIRE(n_npf >= 0);
+  REQUIRE(n_npf == n_sys);
+  REQUIRE(n_npf == npf_result.length());
+  REQUIRE(n_npf == sys_printf_result.length()); // remove this, since we already directly compare the two strings?
 }
 }
 
