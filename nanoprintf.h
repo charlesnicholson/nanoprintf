@@ -108,6 +108,19 @@ NPF_VISIBILITY int npf_vpprintf(
   #error NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS must be #defined to 0 or 1
 #endif
 
+#if !defined(NANOPRINTF_USE_FLOAT_HEX_FORMAT_SPECIFIER)
+  #define NANOPRINTF_USE_FLOAT_HEX_FORMAT_SPECIFIER    0
+#endif
+#if !defined(NANOPRINTF_USE_FLOAT_DEC_FORMAT_SPECIFIER)
+  #define NANOPRINTF_USE_FLOAT_DEC_FORMAT_SPECIFIER    1
+#endif
+
+#if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS && !( \
+    NANOPRINTF_USE_FLOAT_DEC_FORMAT_SPECIFIER == 1 \
+    || NANOPRINTF_USE_FLOAT_HEX_FORMAT_SPECIFIER == 1)
+  #error Float support needs at least one float-specifier to be enabled
+#endif
+
 // Ensure flags are compatible.
 #if (NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1) && \
     (NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 0)
@@ -152,6 +165,7 @@ NPF_VISIBILITY int npf_vpprintf(
   #pragma GCC diagnostic push
   #pragma GCC diagnostic ignored "-Wunused-function"
   #pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
+  #pragma GCC diagnostic ignored "-Wunused-label"
   #ifdef __cplusplus
     #pragma GCC diagnostic ignored "-Wold-style-cast"
   #endif
@@ -174,6 +188,7 @@ NPF_VISIBILITY int npf_vpprintf(
   #pragma warning(push)
   #pragma warning(disable:4619) // there is no warning number 'number'
   // C4619 has to be disabled first!
+  #pragma warning(disable:4102) // unused label
   #pragma warning(disable:4127) // conditional expression is constant
   #pragma warning(disable:4505) // unreferenced local function has been removed
   #pragma warning(disable:4514) // unreferenced inline function has been removed
@@ -190,10 +205,13 @@ NPF_VISIBILITY int npf_vpprintf(
 
 #if defined(__clang__) || defined(__GNUC__) || defined(__GNUG__)
   #define NPF_NOINLINE __attribute__((noinline))
+  #define NPF_FORCE_INLINE inline __attribute__((always_inline))
 #elif defined(_MSC_VER)
   #define NPF_NOINLINE __declspec(noinline)
+  #define NPF_FORCE_INLINE inline __forceinline
 #else
   #define NPF_NOINLINE
+  #define NPF_FORCE_INLINE
 #endif
 
 #if (NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1) || \
@@ -284,7 +302,50 @@ typedef struct npf_bufputc_ctx {
   #include <intrin.h>
 #endif
 
+#define NPF_MIN(a, b)    ((a) <= (b) ? (a) : (b))
+#define NPF_MAX(a, b)    ((a) >= (b) ? (a) : (b))
 static int npf_max(int x, int y) { return (x > y) ? x : y; }
+
+#if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
+
+#include <float.h>
+
+#if (DBL_MANT_DIG <= 11) && (DBL_MAX_EXP <= 16)
+  typedef uint_fast16_t npf_double_bin_t;
+  typedef int_fast8_t npf_ftoa_exp_t;
+#elif (DBL_MANT_DIG <= 24) && (DBL_MAX_EXP <= 128)
+  typedef uint_fast32_t npf_double_bin_t;
+  typedef int_fast8_t npf_ftoa_exp_t;
+#elif (DBL_MANT_DIG <= 53) && (DBL_MAX_EXP <= 1024)
+  typedef uint_fast64_t npf_double_bin_t;
+  typedef int_fast16_t npf_ftoa_exp_t;
+#else
+  #error Unsupported width of the double type.
+#endif
+
+// The floating point conversion code works with an unsigned integer type of any size.
+#ifndef NANOPRINTF_CONVERSION_FLOAT_TYPE
+  #define NANOPRINTF_CONVERSION_FLOAT_TYPE unsigned int
+#endif
+typedef NANOPRINTF_CONVERSION_FLOAT_TYPE npf_ftoa_man_t;
+
+#if (NANOPRINTF_CONVERSION_BUFFER_SIZE <= UINT_FAST8_MAX) && (UINT_FAST8_MAX <= INT_MAX)
+  typedef uint_fast8_t npf_ftoa_dec_t;
+#else
+  typedef int npf_ftoa_dec_t;
+#endif
+
+enum {
+  NPF_DOUBLE_EXP_MASK = DBL_MAX_EXP * 2 - 1,
+  NPF_DOUBLE_EXP_BIAS = DBL_MAX_EXP - 1,
+  NPF_DOUBLE_MAN_BITS = DBL_MANT_DIG - 1, // these are the explicitly-stored bits, whereas DBL_MANT_DIG includes the leading implicit 1
+  NPF_DOUBLE_BIN_BITS = sizeof(npf_double_bin_t) * CHAR_BIT,
+  NPF_DOUBLE_SIGN_POS = sizeof(double) * CHAR_BIT - 1,
+  NPF_FTOA_MAN_BITS   = sizeof(npf_ftoa_man_t) * CHAR_BIT,
+  NPF_FTOA_SHIFT_BITS =
+    ((NPF_FTOA_MAN_BITS < DBL_MANT_DIG) ? NPF_FTOA_MAN_BITS : DBL_MANT_DIG) - 1
+};
+#endif
 
 static int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
   char const *cur = format;
@@ -415,12 +476,18 @@ static int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
     case 'F': out_spec->case_adjust = 0;
     case 'f':
+    case_f:
+#if NANOPRINTF_USE_FLOAT_DEC_FORMAT_SPECIFIER == 1
       out_spec->conv_spec = NPF_FMT_SPEC_CONV_FLOAT_DEC;
       if (out_spec->prec_opt == NPF_FMT_SPEC_OPT_NONE) { out_spec->prec = 6; }
+#else
+      goto case_a;
+#endif
       break;
 
     case 'E': out_spec->case_adjust = 0;
     case 'e':
+    case_e:
       out_spec->conv_spec = NPF_FMT_SPEC_CONV_FLOAT_SCI;
       if (out_spec->prec_opt == NPF_FMT_SPEC_OPT_NONE) { out_spec->prec = 6; }
       break;
@@ -433,8 +500,22 @@ static int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec
 
     case 'A': out_spec->case_adjust = 0;
     case 'a':
+    case_a:
+#if NANOPRINTF_USE_FLOAT_HEX_FORMAT_SPECIFIER == 1
       out_spec->conv_spec = NPF_FMT_SPEC_CONV_FLOAT_HEX;
-      if (out_spec->prec_opt == NPF_FMT_SPEC_OPT_NONE) { out_spec->prec = 6; }
+      if (out_spec->prec_opt == NPF_FMT_SPEC_OPT_NONE) {
+        // If the precision is missing, "then the precision is sufficient for an
+        // exact representation of the value". We can just pick the max
+        // precision ever needed for any value.
+        // The format we use for %a is to have the implicit leading 1 in its
+        // own hex digit, and mantissa_bits in the fractional digits.
+        // The precision doesn't count the leading integral digit.
+        // So: prec = ceil(fractional_mantissa_bits / 4.0)
+        out_spec->prec = (NPF_DOUBLE_MAN_BITS + 3) / 4;
+      }
+#else
+      goto case_f;
+#endif
       break;
 #endif
 
@@ -482,44 +563,6 @@ static NPF_NOINLINE int npf_utoa_rev(
 }
 
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
-
-#include <float.h>
-
-#if (DBL_MANT_DIG <= 11) && (DBL_MAX_EXP <= 16)
-  typedef uint_fast16_t npf_double_bin_t;
-  typedef int_fast8_t npf_ftoa_exp_t;
-#elif (DBL_MANT_DIG <= 24) && (DBL_MAX_EXP <= 128)
-  typedef uint_fast32_t npf_double_bin_t;
-  typedef int_fast8_t npf_ftoa_exp_t;
-#elif (DBL_MANT_DIG <= 53) && (DBL_MAX_EXP <= 1024)
-  typedef uint_fast64_t npf_double_bin_t;
-  typedef int_fast16_t npf_ftoa_exp_t;
-#else
-  #error Unsupported width of the double type.
-#endif
-
-// The floating point conversion code works with an unsigned integer type of any size.
-#ifndef NANOPRINTF_CONVERSION_FLOAT_TYPE
-  #define NANOPRINTF_CONVERSION_FLOAT_TYPE unsigned int
-#endif
-typedef NANOPRINTF_CONVERSION_FLOAT_TYPE npf_ftoa_man_t;
-
-#if (NANOPRINTF_CONVERSION_BUFFER_SIZE <= UINT_FAST8_MAX) && (UINT_FAST8_MAX <= INT_MAX)
-  typedef uint_fast8_t npf_ftoa_dec_t;
-#else
-  typedef int npf_ftoa_dec_t;
-#endif
-
-enum {
-  NPF_DOUBLE_EXP_MASK = DBL_MAX_EXP * 2 - 1,
-  NPF_DOUBLE_EXP_BIAS = DBL_MAX_EXP - 1,
-  NPF_DOUBLE_MAN_BITS = DBL_MANT_DIG - 1,
-  NPF_DOUBLE_BIN_BITS = sizeof(npf_double_bin_t) * CHAR_BIT,
-  NPF_FTOA_MAN_BITS   = sizeof(npf_ftoa_man_t) * CHAR_BIT,
-  NPF_FTOA_SHIFT_BITS =
-    ((NPF_FTOA_MAN_BITS < DBL_MANT_DIG) ? NPF_FTOA_MAN_BITS : DBL_MANT_DIG) - 1
-};
-
 /* Generally, floating-point conversion implementations use
    grisu2 (https://bit.ly/2JgMggX) and ryu (https://bit.ly/2RLXSg0) algorithms,
    which are mathematically exact and fast, but require large lookup tables.
@@ -529,13 +572,18 @@ enum {
    extended further by adding dynamic scaling and configurable integer width by
    Oskars Rubenis (https://github.com/Okarss). */
 
+static NPF_FORCE_INLINE npf_double_bin_t npf_double_to_int_rep(double f) {
+  // Union-cast is UB pre-C11 and in all C++; the compiler optimizes the code below.
+  npf_double_bin_t bin;
+  char const *src = (char const *)&f;
+  char *dst = (char *)&bin;
+  for (uint_fast8_t i = 0; i < sizeof(f); ++i) { dst[i] = src[i]; }
+  return bin;
+}
+
 static int npf_ftoa_rev(char *buf, npf_format_spec_t const *spec, double f) {
   char const *ret = NULL;
-  npf_double_bin_t bin; { // Union-cast is UB pre-C11, compiler optimizes byte-copy loop.
-    char const *src = (char const *)&f;
-    char *dst = (char *)&bin;
-    for (uint_fast8_t i = 0; i < sizeof(f); ++i) { dst[i] = src[i]; }
-  }
+  npf_double_bin_t bin = npf_double_to_int_rep(f);
 
   // Unsigned -> signed int casting is IB and can raise a signal but generally doesn't.
   npf_ftoa_exp_t exp =
@@ -678,6 +726,124 @@ exit:
   uint_fast8_t i;
   for (i = 0; ret[i]; ++i) { buf[i] = (char)(ret[i] + spec->case_adjust); }
   return (int)i;
+}
+
+static int npf_atoa_rev(char *buf, npf_format_spec_t const *spec, double f) {
+  // We compose the string backwards.
+  // We determine how many digits we need (we drop unused bits, and round
+  // properly). This may also affect the exponent we use.
+  // We can determine the exponent before printing the digits, so we print
+  // the exponent immediately (it will be at the start of the reversed buffer).
+  // Then we print all the digits (from the units up, as an integer).
+  // We add the decimal point (if needed) just before the most significant digit.
+
+  char const *ret = NULL;
+  npf_double_bin_t bin = npf_double_to_int_rep(f);
+
+  // Quite silly test, but it documents that we need the mantissa bits, plus the
+  // implicit 1, plus at most one bit that might be produced by rounding.
+  //static_assert(NPF_DOUBLE_MAN_BITS + 1 + 1 <= NPF_DOUBLE_BIN_BITS);
+
+  // exp is always the binary exponent to be printed (ie the one associated with the
+  // most significant digit, not with the most significant bit -- ie the one associated
+  // with the leading char of the output string, not with the bit in the "implicit 1" position)
+
+  // Unsigned -> signed int casting is IB and can raise a signal but generally doesn't.
+  npf_ftoa_exp_t exp =
+    (npf_ftoa_exp_t)((npf_ftoa_exp_t)(bin >> NPF_DOUBLE_MAN_BITS) & NPF_DOUBLE_EXP_MASK);
+
+  bin &= ((npf_double_bin_t)0x1 << NPF_DOUBLE_MAN_BITS) - 1;
+  if (exp == (npf_ftoa_exp_t)NPF_DOUBLE_EXP_MASK) { // special value
+    ret = (bin) ? "NAN" : "FNI";
+    goto exit;
+  }
+  {
+    // We need room for at least "p+0" and the leading digit (not part of precision)
+    // TODO: isn't it better to omit this check? it's not the common case, we don't care if "err" takes a long time to be produced
+    if (spec->prec > (NANOPRINTF_CONVERSION_BUFFER_SIZE - 4)) { goto exit; }
+
+    if (exp) { // normal number
+      bin |= (npf_double_bin_t)0x1 << NPF_DOUBLE_MAN_BITS;
+    } else { // subnormal number
+      if(bin != 0) {
+        ++exp;
+      } else {
+        exp = NPF_DOUBLE_EXP_BIAS; // 0.0 must get an exponent of 0 (+bias - bias)
+      }
+    }
+    exp = (npf_ftoa_exp_t)(exp - NPF_DOUBLE_EXP_BIAS);
+
+    const int bin_n_dig = (NPF_DOUBLE_MAN_BITS + 1 + 3) / 4;
+    int n_dig;
+    if (spec->prec < 0) {
+      // default: any precision that is sufficient to print all the significant digits
+      n_dig = bin_n_dig;
+    } else {
+      n_dig = spec->prec + 1;
+      const int n_dig_to_remove = bin_n_dig - NPF_MIN(bin_n_dig, n_dig);
+      if (n_dig_to_remove) {
+        if(1) { // TODO: rounding is IB; choose whether to skip it and save some code (but the behavior becomes "surprising")
+          // Remove the unwanted digits. Shift all of them out, but stop one bit
+          // earlier so that we can get that bit as the carry. The missing shift-by-1
+          // is done later
+          bin = bin >> (4 * n_dig_to_remove - 1);
+          const int carry = (bin & 0x1);
+          // The carry can cause a new high bit to appear. We don't care, since
+          // the high nibble was 0x1 (or 0x0 for subnormal numbers), so now it can't grow
+          // larger than 0x2 (or 0x1), so it can be handled by the normal nibble-to-hexdigit logic.
+          bin >>= 1;
+          bin += carry;
+        } else {
+          // note: shifting by >= the left-hand variable bitsize is UB; but this
+          // shift is well-defined -- we can never never remove the leading
+          // significant digit, so we never shift out all the bits, so
+          // the shift amount is always less than the bitsize of the variable.
+          bin = bin >> (4 * n_dig_to_remove);
+        }
+      }
+    }
+
+    // print the exponent
+    int end = -1;
+    int neg_exp = 0;
+    if (exp < 0) {
+      neg_exp = 1;
+      exp = -exp;
+    }
+    do {
+      buf[++end] = (char)(exp % 10) + (char)'0';
+      exp /= 10;
+    } while(exp);
+    buf[++end] = neg_exp ? '-' : '+';
+    buf[++end] = 'P' + spec->case_adjust;
+    // Check if the string fits in the buffer.
+    // We always count the decimal point: if it's removed, we have no fractional
+    // digits, so the test cannot be wrong just because of this mis-accounting.
+    // count: exponent (end +1) + fractional+integral (n_dig) + dot (1)
+    if (end + 1 + n_dig + 1 > NANOPRINTF_CONVERSION_BUFFER_SIZE) {
+      goto exit;
+    }
+    for(; n_dig > bin_n_dig; --n_dig) { // pad with trailing zeros (for precision)
+      buf[++end] = '0';
+    }
+    for (int i = n_dig - 1; i > 0; --i) { // print fractional digits
+      uint_fast8_t d = bin & 0xF;
+      buf[++end] = (char)(((d < 10) ? '0' : ('A' - 10 + spec->case_adjust)) + d);
+      bin >>= 4;
+    }
+    if (n_dig > 1 || spec->alt_form) {
+      buf[++end] = '.';
+    }
+    buf[++end] = (char)(bin & 0xF) + (char)'0';
+    // the sign and the '0x' prefix are handled outside
+
+    return end + 1;
+  }
+exit:
+  if (!ret) { ret = "RRE"; }
+  uint_fast8_t i;
+  for (i = 0; ret[i]; ++i) { buf[i] = (char)(ret[i] + spec->case_adjust); }
+  return -(int)i;
 }
 
 #endif // NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS
@@ -944,11 +1110,28 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
           val = va_arg(args, double);
         }
 
-        sign_c = (val < 0.) ? '-' : fs.prepend;
+        sign_c = (npf_double_to_int_rep(val) >> NPF_DOUBLE_SIGN_POS) ? '-' : fs.prepend;
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
         zero = (val == 0.);
 #endif
-        cbuf_len = npf_ftoa_rev(cbuf, &fs, val);
+
+#if NANOPRINTF_USE_FLOAT_HEX_FORMAT_SPECIFIER == 1
+        if(fs.conv_spec == NPF_FMT_SPEC_CONV_FLOAT_HEX) {
+          cbuf_len = npf_atoa_rev(cbuf, &fs, val);
+          if(cbuf_len > 0) {
+            need_0x = 'X' + fs.case_adjust;
+          }
+        } else
+#endif
+        {
+          cbuf_len = npf_ftoa_rev(cbuf, &fs, val);
+        }
+        if (cbuf_len < 0) { // negative means text (not number), so ignore the '0' flag
+           cbuf_len = -cbuf_len;
+#if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
+           fs.leading_zero_pad = 0;
+#endif
+        }
       } break;
 #endif
       default: break;
@@ -1004,10 +1187,20 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
       }
       while (field_pad-- > 0) { NPF_PUTC(pad_c); }
       // Pad byte is ' ', write '0x' after ' ' pad chars but before number.
-      if ((pad_c != '0') && need_0x) { NPF_PUTC('0'); NPF_PUTC(need_0x); }
+      if ((pad_c != '0') && need_0x) {
+#if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1 && NANOPRINTF_USE_FLOAT_HEX_FORMAT_SPECIFIER == 1
+        if (sign_c) { NPF_PUTC(sign_c); sign_c = 0; }
+#endif
+        NPF_PUTC('0'); NPF_PUTC(need_0x);
+      }
     } else
 #endif
-    { if (need_0x) { NPF_PUTC('0'); NPF_PUTC(need_0x); } } // no pad, '0x' requested.
+    { // no pad, '0x' requested.
+#if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1 && NANOPRINTF_USE_FLOAT_HEX_FORMAT_SPECIFIER == 1
+      if (sign_c) { NPF_PUTC(sign_c); sign_c = 0; }
+#endif
+      if (need_0x) { NPF_PUTC('0'); NPF_PUTC(need_0x); }
+    }
 
     // Write the converted payload
     if (fs.conv_spec == NPF_FMT_SPEC_CONV_STRING) {
