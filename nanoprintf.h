@@ -111,14 +111,28 @@ NPF_VISIBILITY int npf_vpprintf(
 #if !defined(NANOPRINTF_USE_FLOAT_HEX_FORMAT_SPECIFIER)
   #define NANOPRINTF_USE_FLOAT_HEX_FORMAT_SPECIFIER    0
 #endif
+#if !defined(NANOPRINTF_USE_FLOAT_SCI_FORMAT_SPECIFIER)
+  #define NANOPRINTF_USE_FLOAT_SCI_FORMAT_SPECIFIER    0
+#endif
+#if !defined(NANOPRINTF_USE_FLOAT_SHORTEST_FORMAT_SPECIFIER)
+  #define NANOPRINTF_USE_FLOAT_SHORTEST_FORMAT_SPECIFIER    0
+#endif
 #if !defined(NANOPRINTF_USE_FLOAT_DEC_FORMAT_SPECIFIER)
   #define NANOPRINTF_USE_FLOAT_DEC_FORMAT_SPECIFIER    1
 #endif
 
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS && !( \
     NANOPRINTF_USE_FLOAT_DEC_FORMAT_SPECIFIER == 1 \
+    || NANOPRINTF_USE_FLOAT_SCI_FORMAT_SPECIFIER == 1 \
+    || NANOPRINTF_USE_FLOAT_SHORTEST_FORMAT_SPECIFIER == 1 \
     || NANOPRINTF_USE_FLOAT_HEX_FORMAT_SPECIFIER == 1)
   #error Float support needs at least one float-specifier to be enabled
+#endif
+#if NANOPRINTF_USE_FLOAT_SCI_FORMAT_SPECIFIER == 1
+  #error The %e specifier is not supported yet
+#endif
+#if NANOPRINTF_USE_FLOAT_SHORTEST_FORMAT_SPECIFIER == 1
+  #error The %g specifier is not supported yet
 #endif
 
 // Ensure flags are compatible.
@@ -254,10 +268,18 @@ enum {
   NPF_FMT_SPEC_CONV_WRITEBACK,    // 'n'
 #endif
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
-  NPF_FMT_SPEC_CONV_FLOAT_DEC,      // 'f', 'F'
-  NPF_FMT_SPEC_CONV_FLOAT_SCI,      // 'e', 'E'
-  NPF_FMT_SPEC_CONV_FLOAT_SHORTEST, // 'g', 'G'
-  NPF_FMT_SPEC_CONV_FLOAT_HEX,      // 'a', 'A'
+  #if NANOPRINTF_USE_FLOAT_DEC_FORMAT_SPECIFIER
+    NPF_FMT_SPEC_CONV_FLOAT_DEC,      // 'f', 'F'
+  #endif
+  #if NANOPRINTF_USE_FLOAT_SCI_FORMAT_SPECIFIER
+    NPF_FMT_SPEC_CONV_FLOAT_SCI,      // 'e', 'E'
+  #endif
+  #if NANOPRINTF_USE_FLOAT_SHORTEST_FORMAT_SPECIFIER
+    NPF_FMT_SPEC_CONV_FLOAT_SHORTEST, // 'g', 'G'
+  #endif
+  #if NANOPRINTF_USE_FLOAT_HEX_FORMAT_SPECIFIER
+    NPF_FMT_SPEC_CONV_FLOAT_HEX,      // 'a', 'A'
+  #endif
 #endif
 };
 
@@ -361,8 +383,8 @@ static int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec
   while (*++cur) { // cur points at the leading '%' character
     switch (*cur) { // Optional flags
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
-      case '-': out_spec->left_justified = '-'; out_spec->leading_zero_pad = 0; continue;
-      case '0': out_spec->leading_zero_pad = !out_spec->left_justified; continue;
+      case '-': out_spec->left_justified = '-'; continue;
+      case '0': out_spec->leading_zero_pad = 1; continue;
 #endif
       case '+': out_spec->prepend = '+'; continue;
       case ' ': if (out_spec->prepend == 0) { out_spec->prepend = ' '; } continue;
@@ -479,8 +501,11 @@ static int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec
     case_f:
 #if NANOPRINTF_USE_FLOAT_DEC_FORMAT_SPECIFIER == 1
       out_spec->conv_spec = NPF_FMT_SPEC_CONV_FLOAT_DEC;
-      if (out_spec->prec_opt == NPF_FMT_SPEC_OPT_NONE) { out_spec->prec = 6; }
-#else
+#elif NANOPRINTF_USE_FLOAT_SHORTEST_FORMAT_SPECIFIER == 1
+      goto case_g;
+#elif NANOPRINTF_USE_FLOAT_SCI_FORMAT_SPECIFIER == 1
+      goto case_e;
+#elif NANOPRINTF_USE_FLOAT_HEX_FORMAT_SPECIFIER == 1
       goto case_a;
 #endif
       break;
@@ -488,14 +513,28 @@ static int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec
     case 'E': out_spec->case_adjust = 0;
     case 'e':
     case_e:
+#if NANOPRINTF_USE_FLOAT_SCI_FORMAT_SPECIFIER == 1
       out_spec->conv_spec = NPF_FMT_SPEC_CONV_FLOAT_SCI;
-      if (out_spec->prec_opt == NPF_FMT_SPEC_OPT_NONE) { out_spec->prec = 6; }
+#elif NANOPRINTF_USE_FLOAT_SHORTEST_FORMAT_SPECIFIER == 1
+      goto case_g;
+#elif NANOPRINTF_USE_FLOAT_DEC_FORMAT_SPECIFIER == 1
+      goto case_f;
+#elif NANOPRINTF_USE_FLOAT_HEX_FORMAT_SPECIFIER == 1
+      goto case_a;
+#endif
       break;
 
     case 'G': out_spec->case_adjust = 0;
     case 'g':
+#if NANOPRINTF_USE_FLOAT_SHORTEST_FORMAT_SPECIFIER == 1
       out_spec->conv_spec = NPF_FMT_SPEC_CONV_FLOAT_SHORTEST;
-      if (out_spec->prec_opt == NPF_FMT_SPEC_OPT_NONE) { out_spec->prec = 6; }
+#elif NANOPRINTF_USE_FLOAT_SCI_FORMAT_SPECIFIER == 1
+      goto case_g;
+#elif NANOPRINTF_USE_FLOAT_DEC_FORMAT_SPECIFIER == 1
+      goto case_f;
+#elif NANOPRINTF_USE_FLOAT_HEX_FORMAT_SPECIFIER == 1
+      goto case_a;
+#endif
       break;
 
     case 'A': out_spec->case_adjust = 0;
@@ -503,17 +542,11 @@ static int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec
     case_a:
 #if NANOPRINTF_USE_FLOAT_HEX_FORMAT_SPECIFIER == 1
       out_spec->conv_spec = NPF_FMT_SPEC_CONV_FLOAT_HEX;
-      if (out_spec->prec_opt == NPF_FMT_SPEC_OPT_NONE) {
-        // If the precision is missing, "then the precision is sufficient for an
-        // exact representation of the value". We can just pick the max
-        // precision ever needed for any value.
-        // The format we use for %a is to have the implicit leading 1 in its
-        // own hex digit, and mantissa_bits in the fractional digits.
-        // The precision doesn't count the leading integral digit.
-        // So: prec = ceil(fractional_mantissa_bits / 4.0)
-        out_spec->prec = (NPF_DOUBLE_MAN_BITS + 3) / 4;
-      }
-#else
+#elif NANOPRINTF_USE_FLOAT_SCI_FORMAT_SPECIFIER == 1
+      goto case_e;
+#elif NANOPRINTF_USE_FLOAT_SHORTEST_FORMAT_SPECIFIER == 1
+      goto case_g;
+#elif NANOPRINTF_USE_FLOAT_DEC_FORMAT_SPECIFIER == 1
       goto case_f;
 #endif
       break;
@@ -521,24 +554,16 @@ static int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec
 
 #if NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS == 1
     case 'n':
-      // todo: reject string if flags or width or precision exist
       out_spec->conv_spec = NPF_FMT_SPEC_CONV_WRITEBACK;
-#if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
-      out_spec->prec_opt = NPF_FMT_SPEC_OPT_NONE;
-#endif
       break;
 #endif
 
     case 'p':
       out_spec->conv_spec = NPF_FMT_SPEC_CONV_POINTER;
-#if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
-      out_spec->prec_opt = NPF_FMT_SPEC_OPT_NONE;
-#endif
       break;
 
 #if NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS == 1
-    case 'B':
-      out_spec->case_adjust = 0;
+    case 'B': out_spec->case_adjust = 0;
     case 'b':
       out_spec->conv_spec = NPF_FMT_SPEC_CONV_BINARY;
       break;
@@ -940,7 +965,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
     if (fs.prec_opt == NPF_FMT_SPEC_OPT_STAR) {
       fs.prec = va_arg(args, int);
-      if (fs.prec < 0) { fs.prec_opt = NPF_FMT_SPEC_OPT_NONE; }
+      if (fs.prec < 0) { fs.prec = 0; fs.prec_opt = NPF_FMT_SPEC_OPT_NONE; }
     }
 #endif
 
@@ -956,6 +981,40 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
     int zero = 0;
 #endif
+#endif
+
+#if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
+    // Set default precision (we can do that only now that we have extracted the
+    // argument-provided precision (".*"), and know whether to ignore that or not
+    if (fs.prec_opt == NPF_FMT_SPEC_OPT_NONE) {
+      switch(fs.conv_spec) {
+      #if NANOPRINTF_USE_FLOAT_DEC_FORMAT_SPECIFIER == 1
+        case NPF_FMT_SPEC_CONV_FLOAT_DEC:
+      #endif
+      #if NANOPRINTF_USE_FLOAT_SCI_FORMAT_SPECIFIER == 1
+        case NPF_FMT_SPEC_CONV_FLOAT_SCI:
+      #endif
+      #if NANOPRINTF_USE_FLOAT_SHORTEST_FORMAT_SPECIFIER == 1
+        case NPF_FMT_SPEC_CONV_FLOAT_SHORTEST:
+      #endif
+          fs.prec = 6;
+          break;
+      #if NANOPRINTF_USE_FLOAT_HEX_FORMAT_SPECIFIER == 1
+        case NPF_FMT_SPEC_CONV_FLOAT_HEX:
+          // If the precision is missing, "then the precision is sufficient for an
+          // exact representation of the value". We can just pick the max
+          // precision ever needed for any value.
+          // The format we use for %a is to have the implicit leading 1 in its
+          // own hex digit, and mantissa_bits in the fractional digits.
+          // The precision doesn't count the leading integral digit.
+          // So: prec = ceil(fractional_mantissa_bits / 4.0)
+          fs.prec = (NPF_DOUBLE_MAN_BITS + 3) / 4;
+          break;
+      #endif
+        default: // keep 0 as the default
+          break;
+      }
+    }
 #endif
 
     // Extract and convert the argument to string, point cbuf at the text.
@@ -1099,10 +1158,19 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
 #endif
 
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
+  #if NANOPRINTF_USE_FLOAT_DEC_FORMAT_SPECIFIER
       case NPF_FMT_SPEC_CONV_FLOAT_DEC:
+  #endif
+  #if NANOPRINTF_USE_FLOAT_SCI_FORMAT_SPECIFIER
       case NPF_FMT_SPEC_CONV_FLOAT_SCI:
+  #endif
+  #if NANOPRINTF_USE_FLOAT_SHORTEST_FORMAT_SPECIFIER
       case NPF_FMT_SPEC_CONV_FLOAT_SHORTEST:
-      case NPF_FMT_SPEC_CONV_FLOAT_HEX: {
+  #endif
+  #if NANOPRINTF_USE_FLOAT_HEX_FORMAT_SPECIFIER
+      case NPF_FMT_SPEC_CONV_FLOAT_HEX:
+  #endif
+      {
         double val;
         if (fs.length_modifier == NPF_FMT_SPEC_LEN_MOD_LONG_DOUBLE) {
           val = (double)va_arg(args, long double);
@@ -1121,11 +1189,16 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
           if(cbuf_len > 0) {
             need_0x = 'X' + fs.case_adjust;
           }
-        } else
-#endif
-        {
-          cbuf_len = npf_ftoa_rev(cbuf, &fs, val);
+          goto end_float_toa;
         }
+#endif
+#if NANOPRINTF_USE_FLOAT_DEC_FORMAT_SPECIFIER == 1
+        if(fs.conv_spec == NPF_FMT_SPEC_CONV_FLOAT_DEC) {
+          cbuf_len = npf_ftoa_rev(cbuf, &fs, val);
+          goto end_float_toa;
+        }
+#endif
+      end_float_toa: ;
         if (cbuf_len < 0) { // negative means text (not number), so ignore the '0' flag
            cbuf_len = -cbuf_len;
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
@@ -1140,7 +1213,9 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
     // Compute the field width pad character
     if (fs.field_width_opt != NPF_FMT_SPEC_OPT_NONE) {
-      if (fs.leading_zero_pad) { // '0' flag is only legal with numeric types
+      // '0' flag is only legal with numeric types
+      // '-' flag overrides '0' flag
+      if (fs.leading_zero_pad && !fs.left_justified) {
         if ((fs.conv_spec != NPF_FMT_SPEC_CONV_STRING) &&
             (fs.conv_spec != NPF_FMT_SPEC_CONV_CHAR) &&
             (fs.conv_spec != NPF_FMT_SPEC_CONV_PERCENT)) {
@@ -1157,15 +1232,21 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
 
     // Compute the number of bytes to truncate or '0'-pad.
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
-    if (fs.conv_spec != NPF_FMT_SPEC_CONV_STRING) {
-#if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
-      // float precision is after the decimal point
-      if ((fs.conv_spec != NPF_FMT_SPEC_CONV_FLOAT_DEC) &&
-          (fs.conv_spec != NPF_FMT_SPEC_CONV_FLOAT_SCI) &&
-          (fs.conv_spec != NPF_FMT_SPEC_CONV_FLOAT_SHORTEST) &&
-          (fs.conv_spec != NPF_FMT_SPEC_CONV_FLOAT_HEX))
+    if (fs.conv_spec != NPF_FMT_SPEC_CONV_STRING
+#if NANOPRINTF_USE_FLOAT_DEC_FORMAT_SPECIFIER == 1
+        && (fs.conv_spec != NPF_FMT_SPEC_CONV_FLOAT_DEC)
 #endif
-      { prec_pad = npf_max(0, fs.prec - cbuf_len); }
+#if NANOPRINTF_USE_FLOAT_SCI_FORMAT_SPECIFIER == 1
+        && (fs.conv_spec != NPF_FMT_SPEC_CONV_FLOAT_SCI)
+#endif
+#if NANOPRINTF_USE_FLOAT_SHORTEST_FORMAT_SPECIFIER == 1
+        && (fs.conv_spec != NPF_FMT_SPEC_CONV_FLOAT_SHORTEST)
+#endif
+#if NANOPRINTF_USE_FLOAT_HEX_FORMAT_SPECIFIER == 1
+        && (fs.conv_spec != NPF_FMT_SPEC_CONV_FLOAT_HEX)
+#endif
+    ) {
+      prec_pad = npf_max(0, fs.prec - cbuf_len);
     }
 #endif
 
