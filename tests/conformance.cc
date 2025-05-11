@@ -13,9 +13,13 @@
 #define NANOPRINTF_IMPLEMENTATION
 #include "../nanoprintf.h"
 
-#include <string>
+#if defined(__cplusplus)
+  #include <string>
+  #include <cmath>
+#else
+  #include <math.h>
+#endif
 #include <limits.h>
-#include <cmath>
 
 #if NANOPRINTF_HAVE_GCC_WARNING_PRAGMAS
   #pragma GCC diagnostic push
@@ -32,34 +36,141 @@
   #pragma GCC diagnostic ignored "-Wformat"
 #endif
 
-#include "doctest.h"
+#define NPF_USE_DOCTEST    0 // "1" can only work when compiling as C++
 
-namespace {
-void require_conform(const std::string& expected, char const *fmt, ...) {
-  char buf[256];
+#if NPF_USE_DOCTEST
+  #include "doctest.h"
 
-  std::string sys_printf_result; {
-    va_list args;
-    va_start(args, fmt);
-    vsnprintf(buf, sizeof(buf), fmt, args);
-    va_end(args);
-    buf[sizeof(buf)-1] = '\0';
-    sys_printf_result = buf;
+  #define TEST_MAIN_BEGIN
+  #define TEST_MAIN_END
+  #define NPF_NULLPTR    nullptr
+#else
+  #include <stdio.h>
+  #include <stdlib.h>
+  #include <string.h> // this is different from <string>, already included above
+  #define TEST_MAIN_BEGIN    int main(void) {
+  #define TEST_MAIN_END      test_summary(); return 0; }
+  #define TEST_CASE(...)
+  #define SUBCASE(...)
+  #define REQUIRE(cond)    SUB_REQUIRE(__LINE__, cond)
+  #define SUB_REQUIRE(line, cond)               SUB_REQUIRE_HELPER(line, __LINE__, cond, #cond)
+  #define SUB_REQUIRE_HELPER(line, subline, cond, cond_str)    do { ++checks_count; if (!(cond)) { FAIL(line, subline, cond_str); } } while (0)
+  #define SUB_FAIL(line)    FAIL(line, __LINE__, "");
+  #define CHECK_OK()        do { ++checks_count; } while (0)
+  #define require_conform(...)    check_conform(__LINE__, __VA_ARGS__)
+  #define NPF_NULLPTR    ((void*)NULL) //ensure that it is indeed a pointer, for rare overloading corner cases
+
+  #define ABORT_ON_FAILURE    0
+
+  static int failures_count;
+  static int checks_count;
+
+  static
+  void FAIL(int line, int subline, const char* cond_str) {
+    ++failures_count;
+    if (line != subline) {
+      printf("  -> Fail @%d (originated @%d): \"%s\"\n", subline, line, cond_str);
+    } else {
+      printf("  -> Fail @%d: \"%s\"\n", line, cond_str);
+    }
+    if (ABORT_ON_FAILURE) {
+      printf("\nAbort.\n");
+      exit(1);
+    }
   }
 
-  std::string npf_result; {
-    va_list args;
-    va_start(args, fmt);
-    npf_vsnprintf(buf, sizeof(buf), fmt, args);
-    va_end(args);
-    buf[sizeof(buf)-1] = '\0';
-    npf_result = buf;
+  static
+  void test_summary(void) {
+    printf(
+      "\nTests failed: %d / %d. %s.\n",
+      failures_count, checks_count,
+      (checks_count == 0) ? "NO CHECKS"
+        : (failures_count != 0) ? "FAIL"
+        : "OK"
+    );
+    printf("Done.");
   }
+#endif
 
-  REQUIRE(sys_printf_result == expected);
-  REQUIRE(npf_result == expected);
+#if NPF_USE_DOCTEST
+  namespace {
+  void require_conform(const std::string& expected, char const *fmt, ...) {
+    char buf[256];
+
+    std::string sys_printf_result; {
+      va_list args;
+      va_start(args, fmt);
+      vsnprintf(buf, sizeof(buf), fmt, args);
+      va_end(args);
+      buf[sizeof(buf)-1] = '\0';
+      sys_printf_result = buf;
+    }
+
+    std::string npf_result; {
+      va_list args;
+      va_start(args, fmt);
+      npf_vsnprintf(buf, sizeof(buf), fmt, args);
+      va_end(args);
+      buf[sizeof(buf)-1] = '\0';
+      npf_result = buf;
+    }
+
+    REQUIRE(sys_printf_result == expected);
+    REQUIRE(npf_result == expected);
+  }
+  }
+#else
+
+  void check_conform(int line, const char* expected, char const *fmt, ...) {
+    static char buf_sys[256];
+    static char buf_npf[256];
+
+    int n_sys;
+    int n_npf;
+
+    {
+      va_list args;
+      va_start(args, fmt);
+      n_sys = vsnprintf(buf_sys, sizeof(buf_sys), fmt, args);
+      va_end(args);
+      buf_sys[sizeof(buf_sys)-1] = '\0';
+    }
+
+    {
+      va_list args;
+      va_start(args, fmt);
+      n_npf = npf_vsnprintf(buf_npf, sizeof(buf_npf), fmt, args);
+      va_end(args);
+      buf_npf[sizeof(buf_npf)-1] = '\0';
+    }
+
+    if (0) { // more compact
+      SUB_REQUIRE(line, 0 == strcmp(buf_npf, buf_sys));
+      SUB_REQUIRE(line, 0 == strcmp(buf_npf, expected));
+      SUB_REQUIRE(line, n_npf >= 0);
+      SUB_REQUIRE(line, n_npf < (int)sizeof(buf_npf));
+      SUB_REQUIRE(line, (n_npf < 0 ? 0u : (size_t)n_npf) == strlen(buf_npf));
+      SUB_REQUIRE(line, n_npf == n_sys);
+    } else { // more informative
+      int len_npf = strlen(buf_npf);
+      if (0 == strcmp(buf_npf, buf_sys))     { CHECK_OK(); } else { printf("npf!=sys: \"%s\" \"%s\"\n", buf_npf, buf_sys); SUB_FAIL(line); }
+      if (0 == strcmp(buf_npf, expected))    { CHECK_OK(); } else { printf("npf!=exp: \"%s\" \"%s\"\n", buf_npf, expected); SUB_FAIL(line); }
+      if (n_npf >= 0)                        { CHECK_OK(); } else { printf("npf err result: %d; for \"%s\" (exp \"%s\")\n", n_npf, buf_npf, expected); SUB_FAIL(line); }
+      if (n_npf < (int)sizeof(buf_npf))      { CHECK_OK(); } else { printf("npf ovf: %d; for \"%s\" (exp \"%s\")\n", n_npf, buf_npf, expected); SUB_FAIL(line); }
+      if ((n_npf < 0 ? 0 : n_npf) == len_npf){ CHECK_OK(); } else { printf("ret!=len: %d != %d; for \"%s\" (exp \"%s\")\n", n_npf, len_npf, buf_npf, expected); SUB_FAIL(line); }
+      if (n_npf == n_sys)                    { CHECK_OK(); } else { printf("ret!=sys: %d != %d; for \"%s\" vs \"%s\" (exp \"%s\")\n", n_npf, n_sys, buf_npf, buf_sys, expected); SUB_FAIL(line); }
+    }
+  }
+#endif
+
+// TODO: should silence the "unused function" warning with __attribute__((unused)) with GCC/clang; what about MSVC?
+static
+void nul_putc(int c, void *ctx) {
+  (void)c;
+  (void)ctx;
 }
-}
+
+TEST_MAIN_BEGIN
 
 TEST_CASE("conformance to system printf") {
   SUBCASE("percent") {
@@ -80,11 +191,11 @@ TEST_CASE("conformance to system printf") {
     // every char
     for (int i = CHAR_MIN; i < CHAR_MAX; ++i) {
         char output[2] = {(char)i, 0};
-        require_conform(output, "%c", i);
+        require_conform(output, "%c", i); // TOFIX: '\0' as argument for %c: return value inconsistent with the string length
     }
 
     require_conform("A", "%+c", 'A');
-    require_conform("", "%+c", 0);
+    require_conform("", "%+c", 0); // TOFIX: '\0' as argument for %c: return value inconsistent with the string length
 
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
     // right justify field width
@@ -343,11 +454,11 @@ TEST_CASE("conformance to system printf") {
 
 #if !defined(_MSC_VER)  // Visual Studio prints "00000ABCDEF" (upper, no 0x)
   SUBCASE("pointer") {
-    // require_conform("%p", nullptr); implementation defined
+    // require_conform("%p", NPF_NULLPTR); implementation defined
     int x, *p = &x;
     char buf[32];
     snprintf(buf, sizeof(buf), "%p", (void *)p);
-    require_conform(buf, "%p", p);
+    require_conform(buf, "%p", p); // TOFIX: %p is IB
     // require_conform("%030p", p); 0 flag + 'p' is undefined
     // require_conform("%.30p", p); precision + 'p' is undefined
 
@@ -361,58 +472,58 @@ TEST_CASE("conformance to system printf") {
 #if NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS == 1
   SUBCASE("writeback int") {
     int writeback = -1;
-    npf_pprintf(+[](int, void*) {}, nullptr, "%n", &writeback);
+    npf_pprintf(nul_putc, NPF_NULLPTR, "%n", &writeback);
     REQUIRE(writeback == 0);
-    npf_pprintf(+[](int, void*) {}, nullptr, " %n", &writeback);
+    npf_pprintf(nul_putc, NPF_NULLPTR, " %n", &writeback);
     REQUIRE(writeback == 1);
-    npf_pprintf(+[](int, void*) {}, nullptr, "  %n", &writeback);
+    npf_pprintf(nul_putc, NPF_NULLPTR, "  %n", &writeback);
     REQUIRE(writeback == 2);
-    npf_pprintf(+[](int, void*) {}, nullptr, "%s%n", "abcd", &writeback);
+    npf_pprintf(nul_putc, NPF_NULLPTR, "%s%n", "abcd", &writeback);
     REQUIRE(writeback == 4);
-    npf_pprintf(+[](int, void*) {}, nullptr, "%u%s%n", 0, "abcd", &writeback);
+    npf_pprintf(nul_putc, NPF_NULLPTR, "%u%s%n", 0, "abcd", &writeback);
     REQUIRE(writeback == 5);
   }
 
   SUBCASE("writeback short") {
     short writeback = -1;
-    npf_pprintf(+[](int, void*) {}, nullptr, "1234%hn", &writeback);
+    npf_pprintf(nul_putc, NPF_NULLPTR, "1234%hn", &writeback);
     REQUIRE(writeback == 4);
   }
 
   SUBCASE("writeback long") {
     long writeback = -1;
-    npf_pprintf(+[](int, void*) {}, nullptr, "1234567%ln", &writeback);
+    npf_pprintf(nul_putc, NPF_NULLPTR, "1234567%ln", &writeback);
     REQUIRE(writeback == 7);
   }
 
   SUBCASE("writeback char") {
     signed char writeback = -1;
-    npf_pprintf(+[](int, void*) {}, nullptr, "1234567%hhn", &writeback);
+    npf_pprintf(nul_putc, NPF_NULLPTR, "1234567%hhn", &writeback);
     REQUIRE(writeback == 7);
   }
 
 #if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
   SUBCASE("writeback long long") {
     long long writeback = -1;
-    npf_pprintf(+[](int, void*) {}, nullptr, "12345678%lln", &writeback);
+    npf_pprintf(nul_putc, NPF_NULLPTR, "12345678%lln", &writeback);
     REQUIRE(writeback == 8);
   }
 
   SUBCASE("writeback intmax_t") {
     intmax_t writeback = -1;
-    npf_pprintf(+[](int, void*) {}, nullptr, "12345678%jn", &writeback);
+    npf_pprintf(nul_putc, NPF_NULLPTR, "12345678%jn", &writeback);
     REQUIRE(writeback == 8);
   }
 
   SUBCASE("writeback size_t") {
     intmax_t writeback = 100000;
-    npf_pprintf(+[](int, void*) {}, nullptr, "12345678%zn", &writeback);
+    npf_pprintf(nul_putc, NPF_NULLPTR, "12345678%zn", &writeback);
     REQUIRE(writeback == 8);
   }
 
   SUBCASE("writeback ptrdiff_t") {
     ptrdiff_t writeback = -1;
-    npf_pprintf(+[](int, void*) {}, nullptr, "12345678%tn", &writeback);
+    npf_pprintf(nul_putc, NPF_NULLPTR, "12345678%tn", &writeback);
     REQUIRE(writeback == 8);
   }
 #endif // NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS
@@ -437,6 +548,8 @@ TEST_CASE("conformance to system printf") {
   }
 
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
+  // removed temporarily: no std::string in C, and nan tests should be moved out of this file anyway
+  /*
   SUBCASE("float NaN") {
     std::string const lowercase_nan = []{
       char buf[32];
@@ -464,6 +577,7 @@ TEST_CASE("conformance to system printf") {
       REQUIRE(uppercase_nan == "NAN");
     }
   }
+  */
 
   SUBCASE("float") {
     require_conform("inf", "%f", (double)INFINITY);
@@ -497,9 +611,11 @@ TEST_CASE("conformance to system printf") {
     require_conform("0.003906", "%f", 0.00390625);
     require_conform("0.0039", "%.4f", 0.00390625);
     require_conform("0.00390625", "%.8f", 0.00390625);
-    require_conform("0.00390625", "%.8Lf", (long double)0.00390625);
+    require_conform("0.00390625", "%.8Lf", (long double)0.00390625); // TOFIX?: some implementations do not handle long double (they do extract and print it, but it's all-0s)
     require_conform("-0.00390625", "%.8f", -0.00390625);
-    require_conform("-0.00390625", "%.8Lf", (long double)-0.00390625);
+    require_conform("-0.00390625", "%.8Lf", (long double)-0.00390625); // TOFIX?: some implementations do not handle long double (they do extract and print it, but it's all-0s)
   }
 #endif // NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS
 }
+
+TEST_MAIN_END
