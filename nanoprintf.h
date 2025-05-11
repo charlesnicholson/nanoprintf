@@ -78,6 +78,7 @@ NPF_VISIBILITY int npf_vpprintf(
     !defined(NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS) && \
     !defined(NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS) && \
     !defined(NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS) && \
+    !defined(NANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS) && \
     !defined(NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS) && \
     !defined(NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS) && \
     !defined(NANOPRINTF_USE_ALT_FORM_FLAG)
@@ -85,6 +86,7 @@ NPF_VISIBILITY int npf_vpprintf(
   #define NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS 1
   #define NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS 1
   #define NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS 0
+  #define NANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS 1
   #define NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS 0
   #define NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS 0
   #define NANOPRINTF_USE_ALT_FORM_FLAG 1
@@ -102,6 +104,9 @@ NPF_VISIBILITY int npf_vpprintf(
 #endif
 #ifndef NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS
   #error NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS must be #defined to 0 or 1
+#endif
+#ifndef NANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS
+  #error NANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS must be #defined to 0 or 1
 #endif
 #ifndef NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS
   #error NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS must be #defined to 0 or 1
@@ -212,10 +217,12 @@ enum {
 
 enum {
   NPF_FMT_SPEC_LEN_MOD_NONE,
+#if NANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS == 1
   NPF_FMT_SPEC_LEN_MOD_SHORT,       // 'h'
-  NPF_FMT_SPEC_LEN_MOD_LONG_DOUBLE, // 'L'
   NPF_FMT_SPEC_LEN_MOD_CHAR,        // 'hh'
+#endif
   NPF_FMT_SPEC_LEN_MOD_LONG,        // 'l'
+  NPF_FMT_SPEC_LEN_MOD_LONG_DOUBLE, // 'L'
 #if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
   NPF_FMT_SPEC_LEN_MOD_LARGE_LONG_LONG, // 'll'
   NPF_FMT_SPEC_LEN_MOD_LARGE_INTMAX,    // 'j'
@@ -362,6 +369,7 @@ static int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec
   uint_fast8_t tmp_conv = NPF_FMT_SPEC_CONV_NONE;
   out_spec->length_modifier = NPF_FMT_SPEC_LEN_MOD_NONE;
   switch (*cur++) { // Length modifier
+#if NANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS == 1
     case 'h':
       out_spec->length_modifier = NPF_FMT_SPEC_LEN_MOD_SHORT;
       if (*cur == 'h') {
@@ -369,6 +377,7 @@ static int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec
         ++cur;
       }
       break;
+#endif
     case 'l':
       out_spec->length_modifier = NPF_FMT_SPEC_LEN_MOD_LONG;
 #if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
@@ -838,8 +847,10 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
         npf_int_t val = 0;
         switch (fs.length_modifier) {
           NPF_EXTRACT(NONE, int, int);
+#if NANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS == 1
           NPF_EXTRACT(SHORT, short, int);
           NPF_EXTRACT(CHAR, signed char, int);
+#endif
           NPF_EXTRACT(LONG, long, long);
 #if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
           NPF_EXTRACT(LARGE_LONG_LONG, long long, long long);
@@ -882,8 +893,10 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
         } else {
           switch (fs.length_modifier) {
             NPF_EXTRACT(NONE, unsigned, unsigned);
+#if NANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS == 1
             NPF_EXTRACT(SHORT, unsigned short, unsigned);
             NPF_EXTRACT(CHAR, unsigned char, unsigned);
+#endif
             NPF_EXTRACT(LONG, unsigned long, unsigned long);
 #if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
             NPF_EXTRACT(LARGE_LONG_LONG, unsigned long long, unsigned long long);
@@ -939,9 +952,11 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
       case NPF_FMT_SPEC_CONV_WRITEBACK:
         switch (fs.length_modifier) {
           NPF_WRITEBACK(NONE, int);
+#if NANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS == 1
           NPF_WRITEBACK(SHORT, short);
-          NPF_WRITEBACK(LONG, long);
           NPF_WRITEBACK(CHAR, signed char);
+#endif
+          NPF_WRITEBACK(LONG, long);
 #if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
           NPF_WRITEBACK(LARGE_LONG_LONG, long long);
           NPF_WRITEBACK(LARGE_INTMAX, intmax_t);

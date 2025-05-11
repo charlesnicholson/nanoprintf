@@ -132,11 +132,14 @@ TEST_CASE("conformance to system printf") {
     require_conform("4294967295", "%u", UINT_MAX);
     require_conform("0", "%+u", 0);
     require_conform("1", "%+u", 1);
+#if NANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS == 1
+    require_conform("0", "%hhu", 256u);
     require_conform("13", "%hu", (1 << 21u) + 13u);  // "short" mod clips
+#endif
+
 #if ULONG_MAX > UINT_MAX
     require_conform("4294967296", "%lu", (unsigned long)UINT_MAX + 1u);
 #endif
-    require_conform("0", "%hhu", 256u);
 
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
     require_conform("   1", "%+4u", 1);  // undefined but usually skips +
@@ -182,7 +185,10 @@ TEST_CASE("conformance to system printf") {
     require_conform("+0", "%+i", 0);
     require_conform("+1", "%+i", 1);
     // require_conform("%.-123i", 400); xcode libc doesn't ignore negative
+
+#if NANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS == 1
     require_conform("-128", "%hhi", 128);
+#endif
 
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
     require_conform("  -1", "% 4i", -1);
@@ -246,11 +252,15 @@ TEST_CASE("conformance to system printf") {
     require_conform("0", "%#o", 0);
 #endif
     require_conform("37777777777", "%o", UINT_MAX);
+
+#if NANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS == 1
     require_conform("17", "%ho", (1 << 29u) + 15u);
+    require_conform("2", "%hho", 258u);
+#endif
+
 #if ULONG_MAX > UINT_MAX
     require_conform("40000000000", "%lo", (unsigned long)UINT_MAX + 1u);
 #endif
-    require_conform("2", "%hho", 258u);
 
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
     require_conform("      2322", "%10o", 1234);
@@ -307,11 +317,15 @@ TEST_CASE("conformance to system printf") {
 #endif
     require_conform("0", "%+x", 0);
     require_conform("1", "%+x", 1);
+
+#if NANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS == 1
     require_conform("7b", "%hx", (1 << 26u) + 123u);
+    require_conform("b", "%hhx", 256u + 0xb);
+#endif
+
 #if ULONG_MAX > UINT_MAX
     require_conform("100000000", "%lx", (unsigned long)UINT_MAX + 1u);
 #endif
-    require_conform("b", "%hhx", 256u + 0xb);
 
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
     require_conform("      1234", "%10x", 0x1234);
@@ -391,21 +405,23 @@ TEST_CASE("conformance to system printf") {
     REQUIRE(writeback == 5);
   }
 
+#if NANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS == 1
   SUBCASE("writeback short") {
     short writeback = -1;
     npf_pprintf(+[](int, void*) {}, nullptr, "1234%hn", &writeback);
     REQUIRE(writeback == 4);
   }
 
-  SUBCASE("writeback long") {
-    long writeback = -1;
-    npf_pprintf(+[](int, void*) {}, nullptr, "1234567%ln", &writeback);
-    REQUIRE(writeback == 7);
-  }
-
   SUBCASE("writeback char") {
     signed char writeback = -1;
     npf_pprintf(+[](int, void*) {}, nullptr, "1234567%hhn", &writeback);
+    REQUIRE(writeback == 7);
+  }
+#endif
+
+  SUBCASE("writeback long") {
+    long writeback = -1;
+    npf_pprintf(+[](int, void*) {}, nullptr, "1234567%ln", &writeback);
     REQUIRE(writeback == 7);
   }
 
