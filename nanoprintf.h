@@ -65,7 +65,63 @@ NPF_VISIBILITY int npf_vpprintf(
 #include <limits.h>
 #include <stdint.h>
 
-// The conversion buffer must fit at least UINT64_MAX in octal format with the leading '0'.
+/*
+The conversion buffer must be large enough for the largest intermediate result,
+which depends on the conversion specifier.
+The sign, and space/0 padding are handled outside of this buffer. The precision
+for non-float specifiers (integers, %s, %c) is handled outside as well, whereas
+the precision for float specifiers is handled in the buffer itself.
+The "0x" prefixes are handled outside, with the exception of the octal "0",
+which is placed in the buffer.
+Requirements for each specifier:
+%a: "<digit>.<prec_digits>p<sign><exp_digits>"
+  exp_digits is <= 4 (the exponent is the decimal representation of the binary
+  exponent, which is in [-1077, 1023], for float64 -- [-1023, 1023] for the
+  exponent, [-1074, 1023] considering denormals, [-1077, 1023] considering the
+  freedom in choosing the most significant digit).
+  The precision is user-provided, so there are no bounds on the buffer size.
+  However, float64 has 52+1 bits of mantissa, which means 53*log16(2) ~= 13.25
+  hex digits of precision (including the most significant digit), which means
+  at most 14 chars.
+  So, any float64 can be accurately represented with 1+1+13+1+1+4 = 21 chars
+%b: does not use the buffer, outputs the chars directly
+%c: does not use the buffer
+%d/i: supported integers are at most 64 bits, so <= 20 digits
+%e: not supported. When supported, it will use the buffer for:
+  "<digit>.<prec_digits>e<sign><exp_digits>"
+  exp_digits is <= 3 (the exponent is the decimal representation of the decimal
+  exponent, which is in [-324, 308], for float64)
+  The precision is user-provided, so there are no bounds on the buffer size.
+  However, float64 has 52+1 bits of mantissa, which means 53*log10(2) ~= 15.95
+  decimal digits of precision (including the most significant digit), which
+  means at most 16 chars.
+  So, any float64 can be accurately represented with 1+1+15+1+1+3 = 22 chars
+%f: "<integer_digits>.<prec_digits>"
+  The precision is user-provided, so there are no bounds on the buffer size.
+  However, float64 has 52+1 bits of mantissa, which means 53*log10(2) ~= 15.95
+  decimal digits of precision (in total, among the integer and fractional parts),
+  which means at most 16 chars.
+  So, any float64 can be accurately represented with 1+16 = 17 chars
+%g: not supported. When supported, it will use either %e or %f, with possible
+  final tweaks to remove (never add) some digits.
+  So, the same limits and considerations as %e and %f apply.
+%n: does not use the buffer
+%o: "0<octal_digits>". supported integers are at most 64 bits, so <= 22 digits
+  Plus the "0" prefix, we need 23 chars.
+%p: equivalent to %x with appropriate flags. The same limits apply
+%s: does not use the buffer, outputs the chars directly
+%u: supported integers are at most 64 bits, so <= 20 digits
+%x: supported integers are at most 64 bits, so <= 16 digits
+
+In summary: the minimum buffer size is 23, so that we can fit any integer,
+without adding overrun checks. For floats, 23 is also sufficient for perfect
+representations (ie representation that can distinguish any two different float
+values), for exponential formats, and for the %f format if the number is "close
+to 0", ie if no extra space is required for leading/trailing zeros.
+So, the default value is appropriate for most cases. The user might want to
+increase it to fit more (useless) precision digits for exponential-format floats,
+or to fit very large or very small %f-format floats.
+*/
 #ifndef NANOPRINTF_CONVERSION_BUFFER_SIZE
   #define NANOPRINTF_CONVERSION_BUFFER_SIZE    23
 #endif
@@ -798,7 +854,7 @@ static int npf_atoa_rev(char *buf, npf_format_spec_t const *spec, double f) {
     }
     exp = (npf_ftoa_exp_t)(exp - NPF_DOUBLE_EXP_BIAS);
 
-    const int bin_n_dig = (NPF_DOUBLE_MAN_BITS + 1 + 3) / 4;
+    const int bin_n_dig = (NPF_DOUBLE_MAN_BITS + 1 + 3) / 4; // tot digits -- must count the implicit 1
     int n_dig;
     if (spec->prec < 0) {
       // default: any precision that is sufficient to print all the significant digits
