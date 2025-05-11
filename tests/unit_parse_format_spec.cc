@@ -298,6 +298,7 @@ TEST_CASE("npf_parse_format_spec") {
 
     REQUIRE(!npf_parse_format_spec("%hh", &spec));  // length mod w/o coversion spec.
 
+#if NANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS == 1
     SUBCASE("hh") {
       REQUIRE(npf_parse_format_spec("%hhu", &spec) == 4);
       REQUIRE(spec.length_modifier == NPF_FMT_SPEC_LEN_MOD_CHAR);
@@ -307,6 +308,7 @@ TEST_CASE("npf_parse_format_spec") {
       REQUIRE(npf_parse_format_spec("%hu", &spec) == 3);
       REQUIRE(spec.length_modifier == NPF_FMT_SPEC_LEN_MOD_SHORT);
     }
+#endif
 
     SUBCASE("l") {
       REQUIRE(npf_parse_format_spec("%lu", &spec) == 3);
