@@ -842,7 +842,6 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
         switch (fs.length_modifier) {
           NPF_EXTRACT(NONE, int, int);
           NPF_EXTRACT(SHORT, short, int);
-          NPF_EXTRACT(LONG_DOUBLE, int, int);
           NPF_EXTRACT(CHAR, signed char, int);
           NPF_EXTRACT(LONG, long, long);
 #if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
@@ -887,7 +886,6 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
           switch (fs.length_modifier) {
             NPF_EXTRACT(NONE, unsigned, unsigned);
             NPF_EXTRACT(SHORT, unsigned short, unsigned);
-            NPF_EXTRACT(LONG_DOUBLE, unsigned, unsigned);
             NPF_EXTRACT(CHAR, unsigned char, unsigned);
             NPF_EXTRACT(LONG, unsigned long, unsigned long);
 #if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
@@ -946,7 +944,6 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
           NPF_WRITEBACK(NONE, int);
           NPF_WRITEBACK(SHORT, short);
           NPF_WRITEBACK(LONG, long);
-          NPF_WRITEBACK(LONG_DOUBLE, double);
           NPF_WRITEBACK(CHAR, signed char);
 #if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
           NPF_WRITEBACK(LARGE_LONG_LONG, long long);
