@@ -855,32 +855,26 @@ static int npf_atoa_rev(char *buf, npf_format_spec_t const *spec, double f) {
     exp = (npf_ftoa_exp_t)(exp - NPF_DOUBLE_EXP_BIAS);
 
     const int bin_n_dig = (NPF_DOUBLE_MAN_BITS + 1 + 3) / 4; // tot digits -- must count the implicit 1
-    int n_dig;
-    if (spec->prec < 0) {
-      // default: any precision that is sufficient to print all the significant digits
-      n_dig = bin_n_dig;
-    } else {
-      n_dig = spec->prec + 1;
-      const int n_dig_to_remove = bin_n_dig - NPF_MIN(bin_n_dig, n_dig);
-      if (n_dig_to_remove) {
-        if(1) { // TODO: rounding is IB; choose whether to skip it and save some code (but the behavior becomes "surprising")
-          // Remove the unwanted digits. Shift all of them out, but stop one bit
-          // earlier so that we can get that bit as the carry. The missing shift-by-1
-          // is done later
-          bin = bin >> (4 * n_dig_to_remove - 1);
-          const int carry = (bin & 0x1);
-          // The carry can cause a new high bit to appear. We don't care, since
-          // the high nibble was 0x1 (or 0x0 for subnormal numbers), so now it can't grow
-          // larger than 0x2 (or 0x1), so it can be handled by the normal nibble-to-hexdigit logic.
-          bin >>= 1;
-          bin += carry;
-        } else {
-          // note: shifting by >= the left-hand variable bitsize is UB; but this
-          // shift is well-defined -- we can never never remove the leading
-          // significant digit, so we never shift out all the bits, so
-          // the shift amount is always less than the bitsize of the variable.
-          bin = bin >> (4 * n_dig_to_remove);
-        }
+    int n_dig = n_dig = spec->prec + 1;
+    const int n_dig_to_remove = bin_n_dig - NPF_MIN(bin_n_dig, n_dig);
+    if (n_dig_to_remove) {
+      if(1) { // TODO: rounding is IB; choose whether to skip it and save some code (but the behavior becomes "surprising")
+        // Remove the unwanted digits. Shift all of them out, but stop one bit
+        // earlier so that we can get that bit as the carry. The missing shift-by-1
+        // is done later
+        bin = bin >> (4 * n_dig_to_remove - 1);
+        const int carry = (bin & 0x1);
+        // The carry can cause a new high bit to appear. We don't care, since
+        // the high nibble was 0x1 (or 0x0 for subnormal numbers), so now it can't grow
+        // larger than 0x2 (or 0x1), so it can be handled by the normal nibble-to-hexdigit logic.
+        bin >>= 1;
+        bin += carry;
+      } else {
+        // note: shifting by >= the left-hand variable bitsize is UB; but this
+        // shift is well-defined -- we can never never remove the leading
+        // significant digit, so we never shift out all the bits, so
+        // the shift amount is always less than the bitsize of the variable.
+        bin = bin >> (4 * n_dig_to_remove);
       }
     }
 
