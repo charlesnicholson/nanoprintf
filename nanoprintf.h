@@ -1013,7 +1013,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
     // Compute the field width pad character
     if (fs.field_width_opt != NPF_FMT_SPEC_OPT_NONE) {
-      if (fs.leading_zero_pad) { 
+      if (fs.leading_zero_pad) {
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
         if ((fs.prec_opt != NPF_FMT_SPEC_OPT_NONE) && !fs.prec && zero) {
           pad_c = ' ';
@@ -1113,7 +1113,7 @@ int npf_snprintf(char * NPF_RESTRICT buffer,
   return rv;
 }
 
-int npf_vsnprintf(char * NPF_RESTRICT buffer, 
+int npf_vsnprintf(char * NPF_RESTRICT buffer,
                   size_t bufsz,
                   char const * NPF_RESTRICT format,
                   va_list vlist) {
