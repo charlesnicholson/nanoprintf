@@ -69,7 +69,9 @@ TEST_CASE("conformance to system printf") {
 #endif // NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS
     require_conform("%", "% %");
     require_conform("%", "%+%");
+#if NANOPRINTF_USE_ALT_FORM_FLAG == 1
     require_conform("%", "%#%");
+#endif
     // require_conform("         %", "%10%"); clang adds width, gcc doesn't
     // require_conform("%         ", "%-10%"); clang adds -width, gcc doesn't
     // require_conform("         %", "%10.10%"); clang adds width + precision.
@@ -130,11 +132,14 @@ TEST_CASE("conformance to system printf") {
     require_conform("4294967295", "%u", UINT_MAX);
     require_conform("0", "%+u", 0);
     require_conform("1", "%+u", 1);
+#if NANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS == 1
+    require_conform("0", "%hhu", 256u);
     require_conform("13", "%hu", (1 << 21u) + 13u);  // "short" mod clips
+#endif
+
 #if ULONG_MAX > UINT_MAX
     require_conform("4294967296", "%lu", (unsigned long)UINT_MAX + 1u);
 #endif
-    require_conform("0", "%hhu", 256u);
 
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
     require_conform("   1", "%+4u", 1);  // undefined but usually skips +
@@ -180,7 +185,10 @@ TEST_CASE("conformance to system printf") {
     require_conform("+0", "%+i", 0);
     require_conform("+1", "%+i", 1);
     // require_conform("%.-123i", 400); xcode libc doesn't ignore negative
+
+#if NANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS == 1
     require_conform("-128", "%hhi", 128);
+#endif
 
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
     require_conform("  -1", "% 4i", -1);
@@ -240,17 +248,25 @@ TEST_CASE("conformance to system printf") {
 
   SUBCASE("octal") {
     require_conform("0", "%o", 0);
+#if NANOPRINTF_USE_ALT_FORM_FLAG == 1
     require_conform("0", "%#o", 0);
+#endif
     require_conform("37777777777", "%o", UINT_MAX);
+
+#if NANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS == 1
     require_conform("17", "%ho", (1 << 29u) + 15u);
+    require_conform("2", "%hho", 258u);
+#endif
+
 #if ULONG_MAX > UINT_MAX
     require_conform("40000000000", "%lo", (unsigned long)UINT_MAX + 1u);
 #endif
-    require_conform("2", "%hho", 258u);
 
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
     require_conform("      2322", "%10o", 1234);
+#if NANOPRINTF_USE_ALT_FORM_FLAG == 1
     require_conform("     02322", "%#10o", 1234);
+#endif
     require_conform("0001", "%04o", 1);
     require_conform("0000", "%04o", 0);
     require_conform("0", "%+o", 0);
@@ -261,7 +277,9 @@ TEST_CASE("conformance to system printf") {
 
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
     require_conform("", "%.0o", 0);
+#if NANOPRINTF_USE_ALT_FORM_FLAG == 1
     require_conform("0", "%#.0o", 0);
+#endif
 #endif // NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS
 
 #if (NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1)
@@ -294,18 +312,26 @@ TEST_CASE("conformance to system printf") {
     require_conform("0", "%X", 0);
     require_conform("90ABCDEF", "%X", 0x90ABCDEF);
     require_conform("FFFFFFFF", "%X", UINT_MAX);
+#if NANOPRINTF_USE_ALT_FORM_FLAG == 1
     require_conform("0", "%#x", 0);
+#endif
     require_conform("0", "%+x", 0);
     require_conform("1", "%+x", 1);
+
+#if NANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS == 1
     require_conform("7b", "%hx", (1 << 26u) + 123u);
+    require_conform("b", "%hhx", 256u + 0xb);
+#endif
+
 #if ULONG_MAX > UINT_MAX
     require_conform("100000000", "%lx", (unsigned long)UINT_MAX + 1u);
 #endif
-    require_conform("b", "%hhx", 256u + 0xb);
 
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
     require_conform("      1234", "%10x", 0x1234);
+#if NANOPRINTF_USE_ALT_FORM_FLAG == 1
     require_conform("    0x1234", "%#10x", 0x1234);
+#endif
     require_conform("0001", "%04u", 1);
     require_conform("0000", "%04u", 0);
     require_conform("     0", "% 6x", 0);
@@ -315,7 +341,9 @@ TEST_CASE("conformance to system printf") {
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
     require_conform("", "%.0x", 0);
     require_conform("", "%.0X", 0);
+#if NANOPRINTF_USE_ALT_FORM_FLAG == 1
     require_conform("", "%#.0X", 0);
+#endif
 #endif // NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS
 
 #if (NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1)
@@ -345,16 +373,20 @@ TEST_CASE("conformance to system printf") {
   SUBCASE("pointer") {
     // require_conform("%p", nullptr); implementation defined
     int x, *p = &x;
-    char buf[32];
-    snprintf(buf, sizeof(buf), "%p", (void *)p);
-    require_conform(buf, "%p", p);
+    char snp_buf[32];
+    char npf_buf[32];
+    snprintf(snp_buf, sizeof(snp_buf), "%p", (void *)p);
+    npf_snprintf(npf_buf, sizeof(npf_buf), "0x%p", (void *)p);
+    REQUIRE(std::string{snp_buf} == npf_buf);
     // require_conform("%030p", p); 0 flag + 'p' is undefined
     // require_conform("%.30p", p); precision + 'p' is undefined
 
-#if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
-    snprintf(buf, sizeof(buf), "%30p", (void *)p);
-    require_conform(buf, "%30p", p);
-#endif // NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS
+#if (NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1) && \
+    (NANOPRINTF_USE_ALT_FORM_FLAG == 1)
+    snprintf(snp_buf, sizeof(snp_buf), "%30p", (void *)p);
+    npf_snprintf(npf_buf, sizeof(npf_buf), "%#30p", (void *)p);
+    REQUIRE(std::string{snp_buf} == npf_buf);
+#endif 
   }
 #endif // _MSC_VER
 
@@ -373,21 +405,23 @@ TEST_CASE("conformance to system printf") {
     REQUIRE(writeback == 5);
   }
 
+#if NANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS == 1
   SUBCASE("writeback short") {
     short writeback = -1;
     npf_pprintf(+[](int, void*) {}, nullptr, "1234%hn", &writeback);
     REQUIRE(writeback == 4);
   }
 
-  SUBCASE("writeback long") {
-    long writeback = -1;
-    npf_pprintf(+[](int, void*) {}, nullptr, "1234567%ln", &writeback);
-    REQUIRE(writeback == 7);
-  }
-
   SUBCASE("writeback char") {
     signed char writeback = -1;
     npf_pprintf(+[](int, void*) {}, nullptr, "1234567%hhn", &writeback);
+    REQUIRE(writeback == 7);
+  }
+#endif
+
+  SUBCASE("writeback long") {
+    long writeback = -1;
+    npf_pprintf(+[](int, void*) {}, nullptr, "1234567%ln", &writeback);
     REQUIRE(writeback == 7);
   }
 
@@ -467,6 +501,7 @@ TEST_CASE("conformance to system printf") {
 
   SUBCASE("float") {
     require_conform("inf", "%f", (double)INFINITY);
+    require_conform("-inf", "%f", -(double)INFINITY);
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
     require_conform(" inf", "%4f", (double)INFINITY);
 #endif // NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS
@@ -477,10 +512,15 @@ TEST_CASE("conformance to system printf") {
     require_conform("inf", "%.10a", (double)INFINITY);
     require_conform("INF", "%F", (double)INFINITY);
     require_conform("0.000000", "%f", 0.0);
+    require_conform("-0.000000", "%f", -0.0);
+    require_conform("0.000000", "%f", 1e-20);
+    require_conform("-0.000000", "%f", -1e-20);
     require_conform("0.00", "%.2f", 0.0);
     require_conform("1.0", "%.1f", 1.0);
     require_conform("1", "%.0f", 1.0);
+#if NANOPRINTF_USE_ALT_FORM_FLAG == 1
     require_conform("1.", "%#.0f", 1.0);
+#endif
     require_conform("1.00000000000", "%.11f", 1.0);
     require_conform("1.5", "%.1f", 1.5);
     require_conform("+1.5", "%+.1f", 1.5);

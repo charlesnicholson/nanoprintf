@@ -298,6 +298,7 @@ TEST_CASE("npf_parse_format_spec") {
 
     REQUIRE(!npf_parse_format_spec("%hh", &spec));  // length mod w/o coversion spec.
 
+#if NANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS == 1
     SUBCASE("hh") {
       REQUIRE(npf_parse_format_spec("%hhu", &spec) == 4);
       REQUIRE(spec.length_modifier == NPF_FMT_SPEC_LEN_MOD_CHAR);
@@ -307,6 +308,7 @@ TEST_CASE("npf_parse_format_spec") {
       REQUIRE(npf_parse_format_spec("%hu", &spec) == 3);
       REQUIRE(spec.length_modifier == NPF_FMT_SPEC_LEN_MOD_SHORT);
     }
+#endif
 
     SUBCASE("l") {
       REQUIRE(npf_parse_format_spec("%lu", &spec) == 3);
@@ -369,9 +371,9 @@ TEST_CASE("npf_parse_format_spec") {
       REQUIRE(spec.conv_spec == NPF_FMT_SPEC_CONV_STRING);
     }
 
-    SUBCASE("s clears leading 0") {
+    SUBCASE("s preserves leading 0") {
       REQUIRE(npf_parse_format_spec("%0s", &spec) == 3);
-      REQUIRE(!spec.leading_zero_pad);
+      REQUIRE(spec.leading_zero_pad);
     }
 
     SUBCASE("string negative left-justify field width") {
