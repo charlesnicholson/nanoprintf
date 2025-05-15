@@ -1,0 +1,304 @@
+This file contains more in-depth technical details about the internals of
+nanoprintf, the algorithms it uses, its limitations, non-standard behavior,
+implementation-defined behavior, tradeoffs and the reasoning behind them, etc.
+
+*****************************
+*** Observations about %a ***
+*****************************
+
+The standard says:
+***
+A double argument representing a floating-point number is converted in the style
+[-]0xh.hhhhp±d, where there is one hexadecimal digit (which is nonzero if the argument is a
+normalized floating-point number and is otherwise unspecified) before the decimal-point
+character and the number of hexadecimal digits after it is equal to the precision; if the
+precision is missing and FLT_RADIX is a power of 2, then the precision is sufficient for an
+exact representation of the value […]
+if the precision is zero and the # flag is not specified, no
+decimal-point character appears. The letters abcdef are used for a conversion and the
+letters ABCDEF for A conversion. The A conversion specifier produces a number with X and
+P instead of x and p. The exponent always contains at least one digit, and only as many
+more digits as necessary to represent the decimal exponent of 2. If the value is zero, the
+exponent is zero.
+A double argument representing an infinity or NaN is converted in the style of an f or F
+conversion specifier.
+[…]
+Binary implementations can choose the hexadecimal digit to the left of the decimal-point character so that subsequent
+digits align to nibble (4-bit) boundaries. This implementation choice affects numerical values printed with a precision P
+that is insufficient to represent all values exactly. Implementations with different conventions about the most significant
+hexadecimal digit will round at different places, affecting the numerical value of the hexadecimal result. For example,
+possible printed output for the code
+#include <stdio.h>
+...
+double x = 123.0;
+printf("%.1a", x);
+include "0x1.fp+6 " and "0xf.6p+3 " whose numerical values are 124 and 123, respectively. Portable code seeking identical
+numerical results on different platforms should avoid precisions P that require rounding.
+***
+
+The example in the standard is for a value d=123.0. In binary, this is (exactly)
+1.921875 * 2**6 == 0b1.111011 * 2**6.
+Note that we must print the *binary* mantissa in hex representation, and the
+*binary* exponent in *decimal representation*.
+That is, we print the mantissa "M" (as hex) and the exponent "X2" (as dec) of
+the formula (M * 2**X2); we do not print "M" and "X10" of the formula
+(M * 10**X10).
+[Aside: for any number, the mantissa used with decimal exponents is not
+necessarily equal to the mantissa used with binary exponents. If we want the two
+representations to correspond to the same number, we must have:
+  M2 * 2**X2 == M10 * 10**X10
+which has infinite solutions -- M2 and X2 are set, and we have one equation with
+two unknowns, M10 and X10; or viceversa, if we set M10 and X10.
+However, we also have the constraint that X2 and X10 are (signed) integers, and
+also that we normalize the representations to scientific notation, which means:
+  M2 in [1, 2)
+  M10 in [1, 10)
+With these constraints, we have that
+  M10 = M2 * 2**X2 / 10**X10
+  X10 = floor(X2 * log10(2))
+This is because we ideally want:
+  2**X2 == 10**X10
+  -> X10 = X2 * log10(2)
+but we must round down:
+  X10 = floor(X2 * log10(2))
+so that we ensure:
+  10**X10 <= 2**X2
+which implies:
+  M10 >= M2
+so that M10 is indeed in [1, 10).
+In the whole discussion, we've ignored the sign, which is trivial to handle, and
+is not part of the mantissa even in the binary representation of IEEE 754 floats.
+end of aside]
+Note that converting M to a decimal string (which is necessary for %f and %e) is
+quite hard (see the aside above), while converting it to hex is quite easy.
+Instead, X2 is very easy to convert to decimal, since it is an integer (the
+mantissa is fractional instead).
+
+Exact representations of 123.0 are:
+  0x1.ecp+6
+  0x3.d8p+5
+  0x7.bp+4
+  0xf.6p+3
+They all represent the [1.111011] mantissa with different "shifts":
+  0x1.ecp+6   [0001.1110_1100]
+  0x3.d8p+5   [0011.1101_100]
+  0x7.bp+4    [0111.1011_00]
+  0xf.6p+3    [1111.0110_0]
+which of course is compensated by the different value of the exponent.
+So, every normal float value has 4 possible representations. The standard does
+not mandate any of them.
+This is an example from a real implementation:
+  printf("%a", 123.0);   // "0x1.ecp+6"
+  printf("%.0a", 123.0); // "0x2p+6"
+  printf("%.1a", 123.0); // "0x1.fp+6"
+  printf("%.2a", 123.0); // "0x1.ecp+6"
+  printf("%.3a", 123.0); // "0x1.ec0p+6"
+Which is inconsistent as the precision varies (this is due to the handling of
+carry when rounding, see below), and does not guarantee the best precision. When
+the precision is not specified, we must use a precision that guarantees a
+perfect representation. When it is specified, the larger the first digit of the
+mantissa, the better the actual accuracy (potentially).
+Eg printf("%.1a", 123.0) printing "0x1.fp+6" is not the optimal choice, since
+printing "0xf.6p+3" would have 3 more bits of accuracy (note that "0x1.fp+6"
+did round correctly).
+Also, packing more bits in the first digit can lead to a shorter string, when
+the precision is not specified.
+
+Then, the standard does not specify anything about the first digit of a denormal
+number.
+Example from a real implementation:
+  printf("%a", 0x1p-1074);    // "0x0.0000000000001p-1022"
+  printf("%.0a", 0x1p-1074);  // "0x0p-1022"
+  printf("%.12a", 0x1p-1074); // "0x0.000000000000p-1022"
+  printf("%.13a", 0x1p-1074); // "0x0.0000000000001p-1022"
+(this is the smallest positive denormal number in IEEE 754 float64)
+Here too, the shortest and most accurate result would be obtained by first
+left-shifting the mantissa as much as possible; but this is slower.
+More: shifting the mantissa would be consistent with the behavior of %e, which
+does not allow for any exception for subnormals -- the most significant digit
+must never be 0, if the number is not 0.0).
+
+Back to the standard's "the precision is sufficient for an exact representation".
+This can be fulfilled in various ways. An easy way is to always use the maximum
+precision allowed by the float itself; ie wth float64, with 52 fractional bits
+of mantissa, we need at most 13 fractional digits to represent any number. So,
+we can use 13 as the default precision for *any* number:
+  printf("%a", 0x1p-1074); // "0x0.0000000000001p-1022", or even "0x1.0000000000000p-1074", or ...
+  printf("%a", 0x1.ecp6);  // "0x1.ec00000000000p+6", or "0xf.6000000000000p+3", or ...
+Another possible route is to use the minimum number of digits needed for the
+value at hand:
+  printf("%a", 0x1p-1074); // "0x0.0000000000001p-1022", or "0x1p-1074", or ...
+  printf("%a", 0x1.ecp6);  // "0x1.ecp+6", or "0xf.6p+3", or ...
+GCC/clang seem to use the shortest-string strategy, but still without renormalizing
+subnormals (which might be seen as a different matter, with a different choice),
+and still without going beyond "1" in the integer digit (except for rounding):
+  printf("%a", 0x1p-1074); // "0x0.0000000000001p-1022"
+  printf("%a", 0x1.ecp6);  // "0x1.ecp+6"
+Another valid choice would be to always or sometimes use more digits than ever
+necessary, eg 16 digits instead of the minimum 13 for float64.
+
+The standard talks about "can choose the hexadecimal digit to the left of the
+decimal-point character so that subsequent digits align to nibble (4-bit)
+boundaries". This is the performant (not accurate) choice -- for normal numbers,
+the first digit is at a fixed location (where the implicit 1 is), and then all
+other digits are 4-bit aligned (after one fixed shift; eg for float64 we have 53
+explicit mantissa bits, so we only need to left-shift by 3 to reach the nibble
+alignment, or even by 11, to have the next digit in the 4 upper bits). The fact
+that denormals don't have constraints on their first digit allows us to use the
+same exact code, without a special path to properly shift denormals (which do
+not have the implicit 1).
+The easy strategy can also cope easily with the carry due to rounding. When
+rounding a number up (as a consequence of a precision smaller than the internal
+precision of the float's mantissa), (at most) one new high bit can appear.
+The easy strategy has a 1 in its upper digit/nibble, which now becomes 2, and
+can be handled as any other digit. The accurate strategy might have 0xF in the
+upper digit (indeed, in this strategy we always have a leading digit in [8, f],
+unless the number is 0), which becomes 0x1F, requiring an extra digit to be
+handled (and extra care so that the additional bit does not "fall off the left
+edge" of the variable); or, better, it would need to wight-shift all the bits by
+1, and correspondingly increase the exponent by 1.
+Example from a real implementation:
+  printf("%a", 0x1.f8p0);   // "0x1.f8p+0"
+  printf("%.0a", 0x1.f8p0); // "0x2p+0"
+  printf("%.1a", 0x1.f8p0); // "0x2.0p+0"
+  printf("%.2a", 0x1.f8p0); // "0x1.f8p+0"
+  printf("%.12a", 0x1.ffffffffffff8p0); // "0x2.000000000000p+0"
+[Aside:
+printf("%a", 0x1.fffffffffffff8p0); // "0x1p1"   (mind the 14 -- not 13 -- fractional digits in the input)
+This seeming "accurate" strategy, with rounding, carry, and then renormalization
+-- instead of the naive "0x2p0" -- is in fact not the doing of printf at all.
+The number is too large for (double), so the literal number was already rounded
+by the compiler, and printf actually received as argument the exact number 0x1p1,
+so it obviously printed it like that. It did not receive some 0x1.fff<...>p0
+number that it had to round.
+end of aside]
+
+Note that rounding complicates the "accurate" strategy too.
+Consider 0b1.11111111p0 printed with "%.1a":
+   0b1.11111111p0
+   0b11.1111111p-1
+   0b111.111111p-2
+   0b1111.11111p-3
+now apply precision, and round:
+   0b1111.1111_1p-3
+   0b10000.0000p-3
+but now we need to shift again:
+   0b1000.0000_0p-2
+It is guaranteed that we don't need to repeat the rounding -- the shift can only
+happen if we have all 1s, and at the end we have all trailing 0s.
+Moreover, the standard is not explicit about which rounding must be used for
+(round-to-nearest, round-towards-0, etc.). In a footnote, it says:
+***
+Implementations with different conventions about the most significant
+hexadecimal digit will round at different places, affecting the numerical value of the hexadecimal result. For example,
+possible printed output for the code
+#include <stdio.h>
+...
+double x = 123.0;
+printf("%.1a", x);
+include "0x1.fp+6 " and "0xf.6p+3 " whose numerical values are 124 and 123, respectively. Portable code seeking identical
+numerical results on different platforms should avoid precisions P that require rounding.
+***
+So, it shows an example where round-to-nearest is used (123.0 is 0x1.ecp+6 == 0xf.6p+3),
+but the wording does not mandate such rounding.
+Indeed, there are implementations that just truncate.
+
+Also notice that rounding plus explicit precision plus subnormals can cause some
+surprising results. If the subnormal is so small that it is all-0, then it can
+be printed as an all-0 mantissa. However, the number was not 0.0, so its
+exponent is not necessarily 0 (remember that the standard says nothing about
+subnormals, except that their leading digit need not be non-0).
+The rounding might cause a "1" digit to appear at the end of the emitted
+fractional digits, but it seems that other implementations (that normally do
+round), do not apply rounding here, possibly as a by-product of their internal
+naive/optimized algorithms.
+The removal of the decimal point (unless '#' is specified) is also up for debate,
+though it seems other implementations treat it as in the case of non-subnormals
+with trailing 0s.
+Some examples:
+  printf("%a", 0x1p-1023);      // "0x0.8p-1022"
+  printf("%.0a", 0x0.8p-1022);  // "0x0p-1022"    or "0x1p-1022"
+  printf("%.0a", 0x0.4p-1022);  // "0x0p-1022"
+  printf("%#.0a", 0x0.8p-1022); // "0x0.p-1022"   or "0x1.p-1022"
+  printf("%#.0a", 0x0.4p-1022); // "0x0.p-1022"
+  printf("%.1a", 0x0.8p-1022);  // "0x0.8p-1022"
+  printf("%.1a", 0x0.4p-1022);  // "0x0.4p-1022"
+  printf("%.1a", 0x0.08p-1022); // "0x0.0p-1022"  or "0x0.1p-1022"
+  printf("%.1a", 0x0.04p-1022); // "0x0.0p-1022"
+
+Note that the exponent has the minimum number of digits required (whereas %e
+always has at least 2).
+Also note that the standard is not explicit about the sign of the exponent, if
+the exponent is 0. We assume it is '+' (as does any sane implementation).
+
+To recap, here are the major UB/IB points regarding %a:
++ nan/inf have multiple valid options (just like for %f).
++ rounding is not specified, neither for subnormals nor for non-subnormals.
++ the leading digit of subnormals might be "0" (with various gray areas, and
+  possible weird interplay with precision and rounding)
++ the leading digit of non-subnormals has 4 valid choices, which affects the
+  length and accuracy of the string representation (not just the string appearance)
++ the default precision has multiple valid choices (which affect the length of
+  the string, but not the accuracy of the representation)
++ the sign of the exponent is not explicitly mandated when the exponent is 0
+In particular, it is perfectly legal to:
++ ignore the fact that denormals have leading 0s in their mantissa; ie do not
+  force the leading output char to be non-0
++ ignore the actual number of significant digits when determining the default
+  precision, and always assume the maximum possible number of them
++ ignore the fact that the leading char is most often '1' (if we align the
+  fractional digits to nibbles of the explicit binary mantissa), and that this
+  wastes 3 bits (which means that a fixed-precision representation can needlessly
+  lose 3 bits of accuracy, without actually saving any char)
++ ignore the fact that rounding can introduce a new, higher, significant bit,
+  since it will always fit in the most significant digit
++ ignore the fact that output strings are not canonicalized, in the sense that
+  the leading digit can be '0' or '1' or '2' depending on the value and precision,
+  but for reasons that are not strictly related to the value itself (and instead
+  closely related to the internals of the algorithm)
+
+In the end, there are no cases fully specified by the standard.
+The closest one to being fully specified is when printinf +0.0 or -0.0, and a
+precision is explicitly set.
+Then, the result must be "[-]0x0[.0000]p+0", with the appropriate sign, the
+appropriate number of fractional digits, and decimal point (see the '#' flag);
+there is still the minor issue of the sign of the exponent.
+
+Nanoprintf chooses the "dumbest yet non-surprising" strategy possible,
+which is quite close to what most other implementations mostly do. Also, this is
+probably the one that the standard "encourages" or at least "allows", by choosing
+to be so lax in its requirements for %a, as compared to other formats.
+This is what we do:
++ nan/inf as for %f: short "inf" (not "infinity"); and "nan" (never "nan(n_char_sequence)")
++ round correctly
++ for non-subnormals, the leading digit is always "1", except when rounding
+  cascades all the way to the leading digit, making it "2"
++ subnormals are not canonicalized (ie their leading digit is "0" -- or "1"
+  because of rounding); this also means that they might be printed as an all-0
+  mantissa (even though the exponent won't be 0)
++ non-subnormals are printed with a leading digit of "1", which can only become
+  "2" due to rounding
++ the default precision is always the same (the minimum one: (DBL_MAN_DIG - 1 + 3) / 4)
+  regardless of the value being printed
++ 0 is positive (for the exponent)
+
+Miscellaneous example strings from GCC/clang implementations:
+  printf("%a", 123.0);   // "0x1.ecp+6"
+  printf("%.0a", 123.0); // "0x2p+6"
+  printf("%.1a", 123.0); // "0x1.fp+6"
+  printf("%.2a", 123.0); // "0x1.ecp+6"
+  printf("%.3a", 123.0); // "0x1.ec0p+6"
+  printf("%a", 0x1p-1074);    // "0x0.0000000000001p-1022"
+  printf("%.0a", 0x1p-1074);  // "0x0p-1022"
+  printf("%.12a", 0x1p-1074); // "0x0.000000000000p-1022"
+  printf("%.13a", 0x1p-1074); // "0x0.0000000000001p-1022"
+  printf("%a", 0x1p1);    // "0x1p+1"
+  printf("%a", 0x1p12);   // "0x1p+12"
+  printf("%a", 0x1p123);  // "0x1p+123"
+  printf("%a", 0x1p1023); // "0x1p+1023"
+  printf("%a", 0x2p1);    // "0x1p+2"
+  printf("%a", 0x1.fffffffffffff8p0); // "0x1.p1"
+  printf("%a", 0x1.f8p0);   // "0x1.f8p+0"
+  printf("%.0a", 0x1.f8p0); // "0x2p+0"
+  printf("%.1a", 0x1.f8p0); // "0x2.0p+0"
+  printf("%.2a", 0x1.f8p0); // "0x1.f8p+0"
