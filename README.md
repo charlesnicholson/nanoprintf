@@ -11,7 +11,7 @@ nanoprintf is an unencumbered implementation of snprintf and vsnprintf for embed
 
 Additionally, nanoprintf can be used to parse printf-style format strings to extract the various parameters and conversion specifiers, without doing any actual text formatting.
 
-nanoprintf makes no memory allocations and uses less than 100 bytes of stack. It compiles to between *~740-2640 bytes of object code* on a Cortex-M0 architecture, depending on configuration.
+nanoprintf makes no memory allocations and uses less than 100 bytes of stack. It compiles to between *~580-2800 bytes of object code* on a Cortex-M0 architecture, depending on configuration.
 
 All code is written in a minimal dialect of C99 for maximal compiler compatibility, compiles cleanly at the highest warning levels on clang + gcc + msvc, raises no issues from UBsan or Asan, and is exhaustively tested on 32-bit and 64-bit architectures. nanoprintf does include C standard headers but only uses them for C99 types and argument lists; no calls are made into stdlib / libc, with the exception of any internal large integer arithmetic calls your compiler might emit. As usual, some Windows-specific headers are required if you're compiling natively for msvc.
 
@@ -84,9 +84,11 @@ nanoprintf has the following static configuration flags.
 * `NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS`: Set to `0` or `1`. Enables field width specifiers.
 * `NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS`: Set to `0` or `1`. Enables precision specifiers.
 * `NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS`: Set to `0` or `1`. Enables floating-point specifiers.
+* `NANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS`: Set to `0` or `1`. Enables small modifiers.
 * `NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS`: Set to `0` or `1`. Enables oversized modifiers.
 * `NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS`: Set to `0` or `1`. Enables binary specifiers.
 * `NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS`: Set to `0` or `1`. Enables `%n` for write-back.
+* `NANOPRINTF_USE_ALT_FORM_FLAG`: Set to `0` or `1`. Enables the `#` modifier for alternate print forms.
 * `NANOPRINTF_VISIBILITY_STATIC`: Optional define. Marks prototypes as `static` to sandbox nanoprintf.
 
 If no configuration flags are specified, nanoprintf will default to "reasonable" embedded values in an attempt to be helpful: floats are enabled, but writeback, binary, and large formatters are disabled. If any configuration flags are explicitly specified, nanoprintf requires that all flags are explicitly specified.
@@ -134,10 +136,10 @@ Like `printf`, `nanoprintf` expects a conversion specification string of the fol
 * **Length modifier**
 
 	None or more of the following:
-	* `h`: Use `short` for integral and write-back vararg width.
+	* `h`: Use `short` for integral and write-back vararg width. Requires small modifiers enabled.
 	* `L`: Use `long double` for float vararg width (note: it will then be casted down to `double`)
 	* `l`: Use `long`, `double`, or wide vararg width.
-	* `hh`: Use `char` for integral and write-back vararg width.
+	* `hh`: Use `char` for integral and write-back vararg width. Requires small modifiers enabled.
 	* `ll`: (large specifier) Use `long long` for integral and write-back vararg width.
 	* `j`: (large specifier) Use the `[u]intmax_t` types for integral and write-back vararg width.
 	* `z`: (large specifier) Use the `size_t` types for integral and write-back vararg width.
@@ -152,7 +154,7 @@ Like `printf`, `nanoprintf` expects a conversion specification string of the fol
 	* `u`: Unsigned integers
 	* `o`: Unsigned octal integers
 	* `x` / `X`: Unsigned hexadecimal integers
-	* `p`: Pointers
+	* `p`: Pointers (Use with `#` for the leading `0x`)
 	* `n`: Write the number of bytes written to the pointer vararg
 	* `f`/`F`: Floating-point decimal
 	* `e`/`E`: Floating-point scientific (unimplemented, prints float decimal)
@@ -182,82 +184,81 @@ The following size measurements are taken against the Cortex-M0 build.
 
 ```
 Configuration "Minimal":
-arm-none-eabi-gcc -c -x c -Os -I/__w/nanoprintf/nanoprintf -o npf.o -mcpu=cortex-m0 -DNANOPRINTF_IMPLEMENTATION -DNANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=0 -
+arm-none-eabi-gcc -c -x c -Os -I/__w/nanoprintf/nanoprintf -o npf.o -mcpu=cortex-m0 -DNANOPRINTF_IMPLEMENTATION -DNANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_ALT_FORM_FLAG=0 -
 arm-none-eabi-nm --print-size --size-sort npf.o
 00000046 00000002 t npf_bufputc_nop
-00000048 00000010 t npf_putc_cnt
 00000032 00000014 t npf_bufputc
-00000270 00000016 T npf_pprintf
-000002cc 00000016 T npf_snprintf
+000001ce 00000016 T npf_pprintf
+0000022c 00000016 T npf_snprintf
 00000000 00000032 t npf_utoa_rev
-00000286 00000046 T npf_vsnprintf
-00000058 00000218 T npf_vpprintf
-Total size: 0x2e2 (738) bytes
+000001e4 00000048 T npf_vsnprintf
+00000048 00000186 T npf_vpprintf
+Total size: 0x242 (578) bytes
 
 Configuration "Binary":
-arm-none-eabi-gcc -c -x c -Os -I/__w/nanoprintf/nanoprintf -o npf.o -mcpu=cortex-m0 -DNANOPRINTF_IMPLEMENTATION -DNANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=0 -
+arm-none-eabi-gcc -c -x c -Os -I/__w/nanoprintf/nanoprintf -o npf.o -mcpu=cortex-m0 -DNANOPRINTF_IMPLEMENTATION -DNANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_ALT_FORM_FLAG=0 -
 arm-none-eabi-nm --print-size --size-sort npf.o
 00000046 00000002 t npf_bufputc_nop
 00000048 00000010 t npf_putc_cnt
 00000032 00000014 t npf_bufputc
-000002a8 00000016 T npf_pprintf
-00000304 00000016 T npf_snprintf
+00000228 00000016 T npf_pprintf
+00000288 00000016 T npf_snprintf
 00000000 00000032 t npf_utoa_rev
-000002be 00000046 T npf_vsnprintf
-00000058 00000250 T npf_vpprintf
-Total size: 0x31a (794) bytes
+0000023e 0000004a T npf_vsnprintf
+00000058 000001d0 T npf_vpprintf
+Total size: 0x29e (670) bytes
 
 Configuration "Field Width + Precision":
-arm-none-eabi-gcc -c -x c -Os -I/__w/nanoprintf/nanoprintf -o npf.o -mcpu=cortex-m0 -DNANOPRINTF_IMPLEMENTATION -DNANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=0 -
+arm-none-eabi-gcc -c -x c -Os -I/__w/nanoprintf/nanoprintf -o npf.o -mcpu=cortex-m0 -DNANOPRINTF_IMPLEMENTATION -DNANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_ALT_FORM_FLAG=1 -
 arm-none-eabi-nm --print-size --size-sort npf.o
 00000046 00000002 t npf_bufputc_nop
 00000048 00000010 t npf_putc_cnt
 00000032 00000014 t npf_bufputc
-000004fe 00000016 T npf_pprintf
-0000055c 00000016 T npf_snprintf
+00000532 00000016 T npf_pprintf
+00000590 00000016 T npf_snprintf
 00000000 00000032 t npf_utoa_rev
-00000514 00000048 T npf_vsnprintf
-00000058 000004a6 T npf_vpprintf
-Total size: 0x572 (1394) bytes
+00000548 00000048 T npf_vsnprintf
+00000058 000004da T npf_vpprintf
+Total size: 0x5a6 (1446) bytes
 
 Configuration "Field Width + Precision + Binary":
-arm-none-eabi-gcc -c -x c -Os -I/__w/nanoprintf/nanoprintf -o npf.o -mcpu=cortex-m0 -DNANOPRINTF_IMPLEMENTATION -DNANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=0 -
+arm-none-eabi-gcc -c -x c -Os -I/__w/nanoprintf/nanoprintf -o npf.o -mcpu=cortex-m0 -DNANOPRINTF_IMPLEMENTATION -DNANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_ALT_FORM_FLAG=1 -
 arm-none-eabi-nm --print-size --size-sort npf.o
 00000046 00000002 t npf_bufputc_nop
 00000048 00000010 t npf_putc_cnt
 00000032 00000014 t npf_bufputc
-00000560 00000016 T npf_pprintf
-000005bc 00000016 T npf_snprintf
+000005ba 00000016 T npf_pprintf
+00000618 00000016 T npf_snprintf
 00000000 00000032 t npf_utoa_rev
-00000576 00000046 T npf_vsnprintf
-00000058 00000508 T npf_vpprintf
-Total size: 0x5d2 (1490) bytes
+000005d0 00000048 T npf_vsnprintf
+00000058 00000562 T npf_vpprintf
+Total size: 0x62e (1582) bytes
 
 Configuration "Float":
-arm-none-eabi-gcc -c -x c -Os -I/__w/nanoprintf/nanoprintf -o npf.o -mcpu=cortex-m0 -DNANOPRINTF_IMPLEMENTATION -DNANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=0 -
+arm-none-eabi-gcc -c -x c -Os -I/__w/nanoprintf/nanoprintf -o npf.o -mcpu=cortex-m0 -DNANOPRINTF_IMPLEMENTATION -DNANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=0 -DNANOPRINTF_USE_ALT_FORM_FLAG=1 -
 arm-none-eabi-nm --print-size --size-sort npf.o
 00000046 00000002 t npf_bufputc_nop
 00000048 00000010 t npf_putc_cnt
 00000032 00000014 t npf_bufputc
-00000618 00000016 T npf_pprintf
-00000674 00000016 T npf_snprintf
+00000650 00000016 T npf_pprintf
+000006b0 00000016 T npf_snprintf
 00000000 00000032 t npf_utoa_rev
-0000062e 00000046 T npf_vsnprintf
-00000058 000005c0 T npf_vpprintf
-Total size: 0x68a (1674) bytes
+00000666 0000004a T npf_vsnprintf
+00000058 000005f8 T npf_vpprintf
+Total size: 0x6c6 (1734) bytes
 
 Configuration "Everything":
-arm-none-eabi-gcc -c -x c -Os -I/__w/nanoprintf/nanoprintf -o npf.o -mcpu=cortex-m0 -DNANOPRINTF_IMPLEMENTATION -DNANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=1 -
+arm-none-eabi-gcc -c -x c -Os -I/__w/nanoprintf/nanoprintf -o npf.o -mcpu=cortex-m0 -DNANOPRINTF_IMPLEMENTATION -DNANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=1 -DNANOPRINTF_USE_ALT_FORM_FLAG=1 -
 arm-none-eabi-nm --print-size --size-sort npf.o
 0000005a 00000002 t npf_bufputc_nop
 0000005c 00000010 t npf_putc_cnt
 00000046 00000014 t npf_bufputc
-000009da 00000016 T npf_pprintf
-00000a38 00000016 T npf_snprintf
+00000ab4 00000016 T npf_pprintf
+00000b14 00000016 T npf_snprintf
 00000000 00000046 t npf_utoa_rev
-000009f0 00000048 T npf_vsnprintf
-0000006c 0000096e T npf_vpprintf
-Total size: 0xa4e (2638) bytes
+00000aca 0000004a T npf_vsnprintf
+0000006c 00000a48 T npf_vpprintf
+Total size: 0xb2a (2858) bytes
 ```
 
 ## Development
@@ -265,7 +266,7 @@ Total size: 0xa4e (2638) bytes
 To get the environment and run tests:
 
 1. Clone or fork this repository.
-1. Run `./b` from the root (or `py -3 build.py` from the root, for Windows users)
+1. Run `./b` from the root (or `py -3 build.py` in a Visual Studio Developer Command Prompt, for Windows users)
 
 This will build all of the unit, conformance, and compilation tests for your host environment. Any test failures will return a non-zero exit code.
 

@@ -81,7 +81,8 @@ function(npf_test name files)
   set(timestamp "${CMAKE_CURRENT_BINARY_DIR}/${name}.timestamp")
   add_custom_target(run_${name} ALL DEPENDS ${timestamp})
   add_custom_command(OUTPUT ${timestamp}
-                     COMMAND ${name} -m && ${CMAKE_COMMAND} -E touch ${timestamp}
+                     COMMAND ${name} -m 
+                     COMMAND ${CMAKE_COMMAND} -E touch ${timestamp}
                      DEPENDS ${name}
                      COMMENT "Running ${name}")
 endfunction()
@@ -94,75 +95,90 @@ function(npf_compilation_c_test target)
 endfunction()
 
 # Test every combination of compatible flags.
-foreach(fw 0 1)
-  foreach(precision 0 1)
-    foreach(large 0 1)
-      foreach(float 0 1)
-        foreach(binary 0 1)
-          foreach(wb 0 1)
-            if ((precision EQUAL 0) AND (float EQUAL 1))
-              continue()
-            endif()
+foreach(precision 0 1)
+  foreach(float 0 1)
+  if ((precision EQUAL 0) AND (float EQUAL 1))
+    continue()
+  endif()
+    foreach(fw 0 1)
+      foreach(large 0 1)
+        foreach(small 0 1)
+          foreach(binary 0 1)
+            foreach(wb 0 1)
+              foreach(alt 0 1)
+                set(test_name "")
+                if (fw EQUAL 1)
+                  string(APPEND test_name "_fieldwidth")
+                endif()
+                if (precision EQUAL 1)
+                  string(APPEND test_name "_precision")
+                endif()
+                if (large EQUAL 1)
+                  string(APPEND test_name "_large")
+                endif()
+                if (small EQUAL 1)
+                  string(APPEND test_name "_small")
+                endif()
+                if (float EQUAL 1)
+                  string(APPEND test_name "_float")
+                endif()
+                if (binary EQUAL 1)
+                  string(APPEND test_name "_binary")
+                endif()
+                if (wb EQUAL 1)
+                  string(APPEND test_name "_writeback")
+                endif()
+                if (alt EQUAL 1)
+                  string(APPEND test_name "_altform")
+                endif()
 
-            set(test_name "")
-            if (fw EQUAL 1)
-              string(APPEND test_name "_fieldwidth")
-            endif()
-            if (precision EQUAL 1)
-              string(APPEND test_name "_precision")
-            endif()
-            if (large EQUAL 1)
-              string(APPEND test_name "_large")
-            endif()
-            if (float EQUAL 1)
-              string(APPEND test_name "_float")
-            endif()
-            if (binary EQUAL 1)
-              string(APPEND test_name "_binary")
-            endif()
-            if (wb EQUAL 1)
-              string(APPEND test_name "_writeback")
-            endif()
+                # Run a simple compilation test
+                set(compilation_test_name "npf_compile${test_name}_c")
+                npf_compilation_c_test(${compilation_test_name})
+                  target_compile_definitions(
+                    ${compilation_test_name}
+                    PRIVATE
+                    NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=${fw}
+                    NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=${precision}
+                    NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=${large}
+                    NANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS=${small}
+                    NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=${float}
+                    NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS=${binary}
+                    NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=${wb}
+                    NANOPRINTF_USE_ALT_FORM_FLAG=${alt})
 
-            # Run a simple compilation test
-            set(compilation_test_name "npf_compile${test_name}_c")
-            npf_compilation_c_test(${compilation_test_name})
-              target_compile_definitions(
-                ${compilation_test_name}
-                PRIVATE
-                NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=${fw}
-                NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=${precision}
-                NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=${large}
-                NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=${float}
-                NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS=${binary}
-                NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=${wb})
+                # Run conformance tests (c++)
+                set(conformance_test_name "npf_conform${test_name}")
+                npf_test(${conformance_test_name} tests/conformance.cc)
+                  target_compile_definitions(
+                    ${conformance_test_name}
+                    PRIVATE
+                    NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=${fw}
+                    NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=${precision}
+                    NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=${large}
+                    NANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS=${small}
+                    NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=${float}
+                    NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS=${binary}
+                    NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=${wb}
+                    NANOPRINTF_USE_ALT_FORM_FLAG=${alt})
 
-            # Run conformance tests (c++)
-            set(conformance_test_name "npf_conform${test_name}")
-            npf_test(${conformance_test_name} tests/conformance.cc)
-              target_compile_definitions(
-                ${conformance_test_name}
-                PRIVATE
-                NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=${fw}
-                NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=${precision}
-                NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=${large}
-                NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=${float}
-                NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS=${binary}
-                NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=${wb})
-
-            if (NPF_PALAND)
-              set(paland_test_name "npf_paland${test_name}")
-              npf_test(${paland_test_name} tests/mpaland-conformance/paland.cc)
-                target_compile_definitions(
-                  ${paland_test_name}
-                  PRIVATE
-                  NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=${fw}
-                  NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=${precision}
-                  NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=${large}
-                  NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=${float}
-                  NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS=${binary}
-                  NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=${wb})
-            endif()
+                if (NPF_PALAND)
+                  set(paland_test_name "npf_paland${test_name}")
+                  npf_test(${paland_test_name} tests/mpaland-conformance/paland.cc)
+                    target_compile_definitions(
+                      ${paland_test_name}
+                      PRIVATE
+                      NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=${fw}
+                      NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=${precision}
+                      NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=${large}
+                      NANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS=${small}
+                      NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=${float}
+                      NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS=${binary}
+                      NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=${wb}
+                      NANOPRINTF_USE_ALT_FORM_FLAG=${alt})
+                endif()
+              endforeach()
+            endforeach()
           endforeach()
         endforeach()
       endforeach()
@@ -202,6 +218,7 @@ set(unit_test_files
     tests/unit_parse_format_spec.cc
     tests/unit_binary.cc
     tests/unit_bufputc.cc
+    tests/unit_ftoa_nan.cc
     tests/unit_ftoa_rev.cc
     tests/unit_ftoa_rev_08.cc
     tests/unit_ftoa_rev_16.cc
@@ -215,6 +232,7 @@ set(unit_test_files
 npf_test(unit_tests_normal_sized_formatters "${unit_test_files}")
   target_compile_definitions(unit_tests_normal_sized_formatters
                              PRIVATE
+                             NANOPRINTF_USE_ALT_FORM_FLAG=1
                              NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0)
   if (NPF_32BIT)
   target_compile_definitions(unit_tests_normal_sized_formatters
@@ -225,6 +243,7 @@ npf_test(unit_tests_normal_sized_formatters "${unit_test_files}")
 npf_test(unit_tests_large_sized_formatters "${unit_test_files}")
   target_compile_definitions(unit_tests_large_sized_formatters
                              PRIVATE
+                             NANOPRINTF_USE_ALT_FORM_FLAG=1
                              NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=1)
   if (NPF_32BIT)
   target_compile_definitions(unit_tests_normal_sized_formatters

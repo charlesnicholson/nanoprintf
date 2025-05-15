@@ -171,28 +171,40 @@ TEST_CASE("npf_vpprintf") {
   }
 
   SUBCASE("pointer null") {
-    REQUIRE(npf_pprintf(r.PutC, &r, "%p", nullptr) == 3);
-    REQUIRE(r.String() == std::string{"0x0"});
+    REQUIRE(npf_pprintf(r.PutC, &r, "%p", nullptr) == 1);
+    REQUIRE(r.String() == std::string{"0"});
   }
 
   SUBCASE("pointer") {
     void *p;
     uintptr_t const u = 1234;
     memcpy(&p, &u, sizeof(p));
-    int const n = npf_pprintf(r.PutC, &r, "%p", p);
 
-    std::string const s = r.String();
-    char const *sb = s.c_str();
+#if NANOPRINTF_USE_ALT_FORM_FLAG == 1
+    SUBCASE("alt form has 0x") {
+      int const n = npf_pprintf(r.PutC, &r, "%#p", p);
+      std::string const s = r.String();
+      char const *sb = s.c_str();
+      REQUIRE(n > 2);
+      REQUIRE(*sb == '0');
+      ++sb;
+      REQUIRE(*sb == 'x');
+      ++sb;
+      for (int i = 2; i < n - 1; ++i) {
+        char const c = *sb++;
+        REQUIRE([c]{ return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f'); }());
+      }
+    }
+#endif
 
-    REQUIRE(n > 2);
-    REQUIRE(*sb == '0');
-    ++sb;
-    REQUIRE(*sb == 'x');
-    ++sb;
-
-    for (int i = 2; i < n - 1; ++i) {
-      char const c = *sb++;
-      REQUIRE([c]{ return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f'); }());
+    SUBCASE("without alt form, no 0x") {
+      int const n = npf_pprintf(r.PutC, &r, "%p", p);
+      std::string const s = r.String();
+      char const *sb = s.c_str();
+      for (int i = 0; i < n - 1; ++i) {
+        char const c = *sb++;
+        REQUIRE([c]{ return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f'); }());
+      }
     }
   }
 
@@ -251,14 +263,14 @@ TEST_CASE("npf_vpprintf") {
     REQUIRE(r.String() == std::string{"-1"});
   }
 
-  SUBCASE("leading zero-pad flag does nothing on char (undefined)") {
-    REQUIRE(npf_pprintf(r.PutC, &r, "%010c", 'A') == 1);
-    REQUIRE(r.String() == std::string{"A"});
+  SUBCASE("leading zero-pad flag is honored for char (undefined)") {
+    REQUIRE(npf_pprintf(r.PutC, &r, "%010c", 'A') == 10);
+    REQUIRE(r.String() == std::string{"000000000A"});
   }
 
-  SUBCASE("leading zero-pad flag does nothing on string (undefined)") {
-    REQUIRE(npf_pprintf(r.PutC, &r, "%0s", "ABCD") == 4);
-    REQUIRE(r.String() == std::string{"ABCD"});
+  SUBCASE("leading zero-pad flag is honored for string (undefined)") {
+    REQUIRE(npf_pprintf(r.PutC, &r, "%05s", "ABCD") == 5);
+    REQUIRE(r.String() == std::string{"0ABCD"});
   }
 
   SUBCASE("alternative flag: hex doesn't prepend 0x if value is 0") {

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-PYTHON3=$(command -v python3 || true)
+PYTHON3=$(command -v python3.13 || command -v python3 || true)
 if [[ -x "$PYTHON3" ]]; then
     "$PYTHON3" build.py "$@"
 else
