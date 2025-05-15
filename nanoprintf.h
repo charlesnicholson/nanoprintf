@@ -844,7 +844,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
 
       case NPF_FMT_SPEC_CONV_CHAR:
         *cbuf = (char)va_arg(args, int);
-        cbuf_len = 1;
+        cbuf_len = (*cbuf) ? 1 : 0;
         break;
 
       case NPF_FMT_SPEC_CONV_STRING: {

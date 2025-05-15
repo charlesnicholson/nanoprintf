@@ -79,14 +79,33 @@ TEST_CASE("conformance to system printf") {
   }
 
   SUBCASE("char") {
-    // every char
+    // every char except the NUL char
     for (int i = CHAR_MIN; i < CHAR_MAX; ++i) {
-        char output[2] = {(char)i, 0};
-        require_conform(output, "%c", i);
+        if(i != '\0') {
+          char output[2] = {(char)i, 0};
+          require_conform(output, "%c", i);
+        }
     }
 
     require_conform("A", "%+c", 'A');
-    require_conform("", "%+c", 0);
+
+    // These should be added to non-standard tests (when we add length-checks to the tests)
+    //require_conform("", "%c", '\0'); // ret 0
+    //require_conform("AB", "A%cB", '\0'); // ret 0
+    //require_conform("", "%+c", '\0'); // ret 0
+#if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
+    //require_conform("A          B", "A%10cB", '\0'); // ret 12
+    //require_conform("AB", "A%.5cB", '\0'); // ret 2
+    //require_conform("     ", "%-5c", '\0'); // ret 5
+    //require_conform("    ", "% 4c", '\0'); // ret 4
+#endif
+    //for (int i = CHAR_MIN; i < CHAR_MAX; ++i) {
+    //  if(i != '\0') {
+    //    char output[2] = {(char)i, 0};
+    //    require_conform(output, "%lc", i);
+    //  }
+    //}
+    // end of non-standard tests
 
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
     // right justify field width
