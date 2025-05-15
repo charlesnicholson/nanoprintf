@@ -854,7 +854,7 @@ static int npf_atoa_rev(char *buf, npf_format_spec_t const *spec, double f) {
     exp = (npf_ftoa_exp_t)(exp - NPF_DOUBLE_EXP_BIAS);
 
     const int bin_n_dig = (NPF_DOUBLE_MAN_BITS + 1 + 3) / 4; // tot digits -- must count the implicit 1
-    int n_dig = n_dig = spec->prec + 1;
+    int n_dig = spec->prec + 1;
     const int n_dig_to_remove = bin_n_dig - NPF_MIN(bin_n_dig, n_dig);
     if (n_dig_to_remove) {
       if(1) { // TODO: rounding is IB; choose whether to skip it and save some code (but the behavior becomes "surprising")
