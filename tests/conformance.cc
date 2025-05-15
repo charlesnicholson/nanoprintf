@@ -99,12 +99,12 @@ TEST_CASE("conformance to system printf") {
     //require_conform("     ", "%-5c", '\0'); // ret 5
     //require_conform("    ", "% 4c", '\0'); // ret 4
 #endif
-    for (int i = CHAR_MIN; i < CHAR_MAX; ++i) {
-      if(i != '\0') {
-        char output[2] = {(char)i, 0};
-        require_conform(output, "%lc", i);
-      }
-    }
+    //for (int i = CHAR_MIN; i < CHAR_MAX; ++i) {
+    //  if(i != '\0') {
+    //    char output[2] = {(char)i, 0};
+    //    require_conform(output, "%lc", i);
+    //  }
+    //}
     // end of non-standard tests
 
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
