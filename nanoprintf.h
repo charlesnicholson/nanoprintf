@@ -82,8 +82,8 @@ Requirements for each specifier:
   The precision is user-provided, so there are no bounds on the buffer size.
   However, float64 has 52+1 bits of mantissa, which means 53*log16(2) ~= 13.25
   hex digits of precision (including the most significant digit), which means
-  at most 14 chars.
-  So, any float64 can be accurately represented with 1+1+13+1+1+4 = 21 chars
+  at most 14+1=15 chars needed for round-trip.
+  So, any float64 can be accurately represented with 1+15+1+1+4 = 22 chars
 %b: does not use the buffer, outputs the chars directly
 %c: does not use the buffer
 %d/i: supported integers are at most 64 bits, so <= 20 digits
@@ -94,14 +94,14 @@ Requirements for each specifier:
   The precision is user-provided, so there are no bounds on the buffer size.
   However, float64 has 52+1 bits of mantissa, which means 53*log10(2) ~= 15.95
   decimal digits of precision (including the most significant digit), which
-  means at most 16 chars.
-  So, any float64 can be accurately represented with 1+1+15+1+1+3 = 22 chars
+  means at most 16+1=17 chars for round-trip.
+  So, any float64 can be accurately represented with 1+17+1+1+3 = 23 chars
 %f: "<integer_digits>.<prec_digits>"
   The precision is user-provided, so there are no bounds on the buffer size.
   However, float64 has 52+1 bits of mantissa, which means 53*log10(2) ~= 15.95
   decimal digits of precision (in total, among the integer and fractional parts),
-  which means at most 16 chars.
-  So, any float64 can be accurately represented with 1+16 = 17 chars
+  which means at most 16+1=17 chars for round-trip..
+  So, any float64 can be accurately represented with 1+17 = 18 chars
 %g: not supported. When supported, it will use either %e or %f, with possible
   final tweaks to remove (never add) some digits.
   So, the same limits and considerations as %e and %f apply.
@@ -114,10 +114,9 @@ Requirements for each specifier:
 %x: supported integers are at most 64 bits, so <= 16 digits
 
 In summary: the minimum buffer size is 23, so that we can fit any integer,
-without adding overrun checks. For floats, 23 is also sufficient for perfect
-representations (ie representation that can distinguish any two different float
-values), for exponential formats, and for the %f format if the number is "close
-to 0", ie if no extra space is required for leading/trailing zeros.
+without adding overrun checks. For floats, 23 is also sufficient for round-trip
+representations, for exponential formats, and for the %f format if the number is
+"close to 0", ie if no extra space is required for leading/trailing zeros.
 So, the default value is appropriate for most cases. The user might want to
 increase it to fit more (useless) precision digits for exponential-format floats,
 or to fit very large or very small %f-format floats.
