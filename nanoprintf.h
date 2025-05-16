@@ -92,7 +92,7 @@ NPF_VISIBILITY int npf_vpprintf(
 // A reversed buffer allows for a handful less arithmetic operations. A non-reversed one removes the need for reversal,
 // which is useful when using a buffered callback.
 #define NANOPRINTF_USE_REV_TEMP_BUFFER    1
-#define NPF_CBF_OFFSET    (NANOPRINTF_USE_REV_TEMP_BUFFER ? 0 : NANOPRINTF_CONVERSION_BUFFER_SIZE - 1)
+#define NPF_CBF_OFFSET    (NANOPRINTF_USE_REV_TEMP_BUFFER ? 0 : NANOPRINTF_CONVERSION_BUFFER_SIZE)
 
 // The conversion buffer must fit at least UINT64_MAX in octal format with the leading '0'.
 #ifndef NANOPRINTF_CONVERSION_BUFFER_SIZE
@@ -491,8 +491,12 @@ static NPF_NOINLINE int npf_utoa(
   uint_fast8_t n = 0;
   do {
     int_fast8_t const d = (int_fast8_t)(val % base);
-    *buf = (char)(((d < 10) ? '0' : ('A' - 10 + case_adj)) + d);
-    buf += NANOPRINTF_USE_REV_TEMP_BUFFER ? 1 : -1;
+    char c = (char)(((d < 10) ? '0' : ('A' - 10 + case_adj)) + d);
+    if(NANOPRINTF_USE_REV_TEMP_BUFFER) {
+    	*buf++ = c;
+    } else {
+    	*--buf = c;
+    }
     ++n;
     val /= base;
   } while (val);
@@ -561,11 +565,7 @@ static int npf_ftoa(char *buf, npf_format_spec_t const *spec, double f) {
 
   bin &= ((npf_double_bin_t)0x1 << NPF_DOUBLE_MAN_BITS) - 1;
   if (exp == (npf_ftoa_exp_t)NPF_DOUBLE_EXP_MASK) { // special value
-	if(NANOPRINTF_USE_REV_TEMP_BUFFER) {
-      ret = (bin) ? "NAN" : "FNI";
-	} else {
-	  ret = (bin) ? "NAN" : "INF";
-	}
+	ret = (bin) ? "NAN" : (NANOPRINTF_USE_REV_TEMP_BUFFER ? "FNI" : "INF");
     goto exit;
   }
   if (spec->prec > (NANOPRINTF_CONVERSION_BUFFER_SIZE - 2)) { goto exit; }
@@ -579,7 +579,7 @@ static int npf_ftoa(char *buf, npf_format_spec_t const *spec, double f) {
   uint_fast8_t carry; carry = 0;
   npf_ftoa_dec_t end, dec; dec = (npf_ftoa_dec_t)spec->prec;
   if (dec || spec->alt_form) {
-    buf[NANOPRINTF_USE_REV_TEMP_BUFFER ? dec++ : -(dec++)] = '.';
+    buf[NANOPRINTF_USE_REV_TEMP_BUFFER ? dec++ : -(++dec)] = '.';
   }
 
   { // Integer part
@@ -606,7 +606,7 @@ static int npf_ftoa(char *buf, npf_format_spec_t const *spec, double f) {
           man_i = (npf_ftoa_man_t)(man_i | carry); carry = 0;
         } else {
           if (dec >= NANOPRINTF_CONVERSION_BUFFER_SIZE) { goto exit; }
-          buf[NANOPRINTF_USE_REV_TEMP_BUFFER ? dec++ : -(dec++)] = '0';
+          buf[NANOPRINTF_USE_REV_TEMP_BUFFER ? dec++ : -(++dec)] = '0';
           carry = (((uint_fast8_t)(man_i % 5) + carry) > 2);
           man_i /= 5;
         }
@@ -618,7 +618,7 @@ static int npf_ftoa(char *buf, npf_format_spec_t const *spec, double f) {
 
     do { // Print the integer
       if (end >= NANOPRINTF_CONVERSION_BUFFER_SIZE) { goto exit; }
-      buf[NANOPRINTF_USE_REV_TEMP_BUFFER ? end++ : -(end++)] = (char)('0' + (char)(man_i % 10));
+      buf[NANOPRINTF_USE_REV_TEMP_BUFFER ? end++ : -(++end)] = (char)('0' + (char)(man_i % 10));
       man_i /= 10;
     } while (man_i);
   }
@@ -657,7 +657,7 @@ static int npf_ftoa(char *buf, npf_format_spec_t const *spec, double f) {
           man_f = (npf_ftoa_man_t)(man_f * 5);
           if (carry) { man_f = (npf_ftoa_man_t)(man_f + 3); carry = 0; }
           if (exp_f < 0) {
-            buf[NANOPRINTF_USE_REV_TEMP_BUFFER ? --dec_f : -(--dec_f)] = '0';
+            buf[NANOPRINTF_USE_REV_TEMP_BUFFER ? --dec_f : -(dec_f--)] = '0';
           } else {
             ++digit;
           }
@@ -673,7 +673,7 @@ static int npf_ftoa(char *buf, npf_format_spec_t const *spec, double f) {
     if (dec_f) {
       // Print the fraction
       for (;;) {
-        buf[NANOPRINTF_USE_REV_TEMP_BUFFER ? --dec_f : -(--dec_f)] = (char)('0' + (char)(man_f >> (NPF_FTOA_MAN_BITS - 4)));
+        buf[NANOPRINTF_USE_REV_TEMP_BUFFER ? --dec_f : -(dec_f--)] = (char)('0' + (char)(man_f >> (NPF_FTOA_MAN_BITS - 4)));
         man_f = (npf_ftoa_man_t)(man_f & ~((npf_ftoa_man_t)0xF << (NPF_FTOA_MAN_BITS - 4)));
         if (!dec_f) { break; }
         man_f = (npf_ftoa_man_t)(man_f * 10);
@@ -689,16 +689,16 @@ static int npf_ftoa(char *buf, npf_format_spec_t const *spec, double f) {
   for (; carry; ++dec) {
     if (dec >= NANOPRINTF_CONVERSION_BUFFER_SIZE) { goto exit; }
     if (dec >= end) { buf[end++] = '0'; }
-    if (buf[NANOPRINTF_USE_REV_TEMP_BUFFER ? dec : -dec] == '.') { continue; }
-    carry = (buf[NANOPRINTF_USE_REV_TEMP_BUFFER ? dec : -dec] == '9');
-    buf[NANOPRINTF_USE_REV_TEMP_BUFFER ? dec : -dec] = (char)(carry ? '0' : (buf[NANOPRINTF_USE_REV_TEMP_BUFFER ? dec : -dec] + 1));
+    if (buf[NANOPRINTF_USE_REV_TEMP_BUFFER ? dec : -dec-1] == '.') { continue; }
+    carry = (buf[NANOPRINTF_USE_REV_TEMP_BUFFER ? dec : -dec-1] == '9');
+    buf[NANOPRINTF_USE_REV_TEMP_BUFFER ? dec : -dec-1] = (char)(carry ? '0' : (buf[NANOPRINTF_USE_REV_TEMP_BUFFER ? dec : -dec-1] + 1));
   }
 
   return (int)end;
 exit:
   if (!ret) { ret = NANOPRINTF_USE_REV_TEMP_BUFFER ? "RRE" : "ERR"; }
   uint_fast8_t i;
-  for (i = 0; ret[i]; ++i) { buf[NANOPRINTF_USE_REV_TEMP_BUFFER ? i : -i] = (char)(ret[i] + spec->case_adjust); }
+  for (i = 0; ret[i]; ++i) { buf[NANOPRINTF_USE_REV_TEMP_BUFFER ? i : -i-1] = (char)(ret[i] + spec->case_adjust); }
   return (int)i;
 }
 
@@ -906,7 +906,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
           if (val < 0) { uval = 0 - uval; }
           cbuf_len = npf_utoa(uval, cbuf, 10, fs.case_adjust);
           if(!NANOPRINTF_USE_REV_TEMP_BUFFER) {
-        	  cbuf += 1 - cbuf_len;
+        	  cbuf -= cbuf_len;
           }
         }
       } break;
@@ -960,7 +960,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
           cbuf[NANOPRINTF_USE_REV_TEMP_BUFFER ? cbuf_len++ : -(cbuf_len++)] = '0'; // OK to add leading octal '0' immediately.
         }
         if(!NANOPRINTF_USE_REV_TEMP_BUFFER) {
-      	  cbuf += 1 - cbuf_len;
+      	  cbuf -= cbuf_len;
         }
 
         if (val && fs.alt_form) { // 0x or 0b but can't write it yet.
@@ -976,7 +976,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
         cbuf_len =
           npf_utoa((npf_uint_t)(uintptr_t)va_arg(args, void *), cbuf, 16, 'a' - 'A');
         if(!NANOPRINTF_USE_REV_TEMP_BUFFER) {
-      	  cbuf += 1 - cbuf_len;
+      	  cbuf -= cbuf_len;
         }
         need_0x = 'x';
       } break;
@@ -1017,7 +1017,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
 #endif
         cbuf_len = npf_ftoa(cbuf, &fs, val);
         if(!NANOPRINTF_USE_REV_TEMP_BUFFER) {
-      	  cbuf += 1 - cbuf_len;
+      	  cbuf -= cbuf_len;
         }
       } break;
 #endif
