@@ -1,0 +1,1576 @@
+*******************************************************************************
+*** Introduction to floats (IEEE 754 binary floating-point representations) ***
+*******************************************************************************
+(we discuss f32 for simplicity)
+A float is represented in a sort of base-2 scientific notation:
+  v = sign * mantissa * 2 ^ exp
+The float stores 'sign', 'mantissa' and 'exp' bits, packed in 32 bits.
+What is actually stored for f32 is this:
+  [z|fff|nnnnnn]
+with this bit sizes:
+  [1|8|23]
+The fields are:
+  z: 1 for negative, 0 for positive
+  f: the exponent. This is not stored plainly, but with a bias
+  n: the mantissa, This is not stored plainly, but with an "implicit 1"
+The mantissa, being in scientific notation, is always of the form "1.nnnn".
+This is by definition, otherwise we would scale the mantissa so that it has a
+leading one, and change the exponent accordingly.
+This leading 1 is always there, so we can avoid storing it, and save 1 bit.
+The exponent is not stored as-is. It is stored with an added "bias", so that the
+encoded value is an unsigned number. The exponent e is in the range [-127, 128],
+with a bias of +127, so that the stored biased exponent f is in [0, 255].
+So, the stored value [z|f|n] corresponds to this real value:
+  v = s * (1 + m) * 2**e
+  v = (-1**z) * (1 + n * 2**-23) * 2**(f - 127)
+where:
+  s = +1  if z==0
+  s = -1  if z==1
+  (we could also express this as: s = 1 - 2*z, or: s = -1**z)
+and:
+  m = n * 2**-23
+  that is, m is a fraction in [0, 1)
+and:
+  e = f - 127
+
+Float32 can also store special values:
+  f==0, n==0: represents 0 (+0 or -0, see below)
+  f==0, n!=0: represents denormal numbers (see below)
+  f==255, n==0: represents infinity (+inf or -inf depending on the sign)
+  f==255, n!=0: represents NaN
+NaN is "not a number", and is the result of operations that are "meaningless",
+such as:
+  0.0/0.0
+  INFINITY / INFINITY
+  INFINITY - INFINITY
+  pow(0,0)
+  sqrt(x)   with x < 0
+  log(x)    with x < 0
+"Meaningless" means that it was decided, for the scope of IEEE 754, that no
+real value was appropriate, though some other definitions might have worked as
+well. Eg sqrt of a negative number is well-defined as a complex number, but that
+is not representable in a (single) float value; and 0**0 can be usefully
+defined as 1, in some contexts.
+De-normal numbers are numbers closer to 0 than any non-denormal number, and
+follow a slightly different formula. Rather than:
+  v = s * (1 + m) * 2**e   [normals]
+They use:
+  v = s * (m) * 2**(e+1)   [denormals]
+That is, they do not have an implicit leading 1. This is also the reason for the
+different exponent. Before the number:
+  [0|1|0] -> (1 + 0 * 2**-23) * 2**(1 - 127) = 2**-126
+we have:
+  [0|0|0x7FFFFF] -> (0 + 0x7FFFFF * 2**-23) * 2**(-127+1)
+    = ((2**24-1) * 2**-23) * 2**(-126) = (1 - 2**-23) * 2**-126
+That is, the smallest normal number and the largest denormal number are
+"contiguous".
+The smallest-in-absolute-value non-zero number that float32 can represent is:
+  [0|0|1] -> (0 + 1 * 2**-23) * 2**(-127+1) = 2**-149
+The largest non-infinite number that float32 can represent is:
+  [0|254|0x7FFFFF] -> (1 + (2**24 - 1) * 2**-23) * 2**(254 - 127)
+    = (2 - 2**-23) * 2**127 = (1 - 2**-24) * 2**128
+The number 1.0 is represented as:
+  [0|127|0] -> (1 + 0 * 2**-23) * 2**(127 - 127) = 1
+All representable powers of 2 have n=0:
+  [0|125|0] -> 0.25 = 2**-2
+  [0|126|0] -> 0.5 = 2**-1
+  [0|127|0] -> 1
+  [0|128|0] -> 2
+  [0|129|0] -> 4
+Number that are not sums of powers-of-2 cannot be represented exactly:
+  [0|127|0x400000] = 1 + 0.5 = 1.5   (exact)
+  [0|127|0x600000] = 1 + 0.5 + 0.25 = 1.75   (exact)
+  [0|127|0x700000] = 1 + 0.5 + 0.25 + 0.125 = 1.875   (exact)
+  1.1 ~= 0b[0|01111111|00011001100110011001101] = [0|127|838861]
+    = 1 + 838861 * 2**-23
+    = 1.10000002384185791015625
+  The immediately preceding number is:
+    [0|127|838860] = 1.099999904632568359375
+  The immediately following number is:
+    [0|127|838862] = 1.1000001430511474609375
+  So, the value [0|127|838861] exactly represents 1.10000002384185791015625, but
+  it also represents the interval:
+    [1.10000002384185791015625 - eps_low/2, 1.10000002384185791015625 + eps_high/2]
+  where eps is the half-step between two adjacent numbers.
+  When adjacent numbers have different exponents, the two eps are not equal. For
+  instance, [0|127|0] = 1 represents the interval:
+    [1 - 0.000000000395355224609375 / 2, 1 + 0.00000011920928955078125 / 2]
+  where the two steps are unequal, since a step is actually "1" scaled by the
+  current exponent. This also means that larger float values (with larger
+  exponents) have larger eps, ie they have a smaller resolution.
+
+Storing the exponent as an unsigned integer (and having the fields ordered as
+[z|f|n]) allows for an easier comparison of values: if we just flip the sign bit,
+we can compare two floats by just comparing their bit representations (treating
+them as unsigned numbers). This holds true also for infinities, and NaNs, with
+NaNs comparing larger (if positive) or smaller (if negative) than anything else.
+
+The float32 representation gives us two different zero values: [0|0|0] is a
+positive zero, and [1|0|0] is a negative zero. They are different, but some
+standard operations treat them as equal. For instance:
+  (-0.0 == 0.0) is true
+  (-0.0 < 0.0) is false
+  1.0/-0.0 == -INFINITY
+  1.0/+0.0 == +INFINITY
+
+Other IEEE 754 formats only differ in the bitsize of their fields.
+For [z|fff|nnnnnn], we have:
+  [1|5|10]   f16  -> exp in [    -14,     +15], values in ~[6.0e-8     | 6.1e-5    , 6.6e4    ]
+  [1|8|23]   f32  -> exp in [   -127,    +128], values in ~[1.4e-45    | 1.2e-38   , 3.4e38   ]
+  [1|11|52]  f64  -> exp in [  -1022,   +1023], values in ~[4.9e-324   | 2.2e-308  , 1.8e308  ]
+  [1|15|112] f128 -> exp in [ -16382,  +16383], values in ~[6.5e-4966  | 3.4e-4392 , 1.2e4932 ]
+  [1|19|236] f256 -> exp in [-262142, +262143], values in ~[2.2e-78984 | 2.5e-78913, 1.6e78913]
+
+********************************************
+*** Float in NPF, and significant digits ***
+********************************************
+NPF only supports IEEE 754 binary floating point representations.
+It does not support IEEE 754 decimal floating point representations, nor other
+ones.
+We refer to "IEEE 754 binary32" as "float32" or "f32", to "IEEE 754 binary64" as
+"float64" or "f64", etc. The "IEEE 754" standard is also known as "IEC 60559".
+Usually, but not necessarily, the C/C++ 'float' type corresponds to f32, the
+'double' type corresponds to f64, and the 'long double' type corresponds to f64
+or f128. Also usually, but not necessarily, all three types are at least as
+large as f32.
+We refer to "binary digits" of information as "bits", and to "decimal digits"
+of information as "digits". We also refer to "decimal characters" as "digits".
+
+NPF needs to convert floating-point (binary) values to decimal string
+representations. The conversion can specify a 'precision', which is closely
+related to the number of significant (decimal) digits that appear in the output.
+Since float values have finite precision, each value can also be interpreted as
+representing an interval of values (all the real values that round to it, ie
+that are closer to it than they are to any are representable float value).
+The decimal string representation is considered "round-trip" if it can
+unambiguously identify the original float value, ie if it is possible to
+reconstruct the original float value just by looking at the string.
+If a small precision is specified, this is not possible. Determining which
+precision is required for a round-trip conversion is non-trivial.
+A float value has N (explicit) bits of mantissa, which is the 'intrinsic'
+precision of the float representation. This means that each value contains N
+bits of information ("precision", for the mantissa), ie M = log10(2**N) = N log10(2)
+decimal digits of information.
+For f32: N = 23+1, M ~= 7.225
+For f64: N = 52+1, M ~= 15.955
+However, the number of decimal digits required for round-trip is larger than
+that. It is:
+  M = 1 + ceil(log10(2**N)) = 1 + ceil(N * log10(2))
+For f32: N = 23+1, M = 9
+For f64: N = 52+1, M = 17
+This is due to the fact that our bases (2 for the number, 10 for the string)
+have different prime factors -- instead, converting binary to hex, as is done
+for the %a specifier, is easier and does not require extra digits.
+For a formal proof of the digits needed for round-trip, see various papers by
+David W. Matula:
+  The base conversion theorem
+  A Formalization of Floating-Point Numeric Base Conversion
+  In-and-Out Conversions
+For discussions on this and related topics, see the "Exploring binary" blog by
+Rick Regan; for instance:
+  https://www.exploringbinary.com/how-the-positive-powers-of-ten-and-two-are-interleaved/
+For a hand-wavy justification: the float contains log10(2**N) digits of
+information. We can only have an integer number of digits, in the string, so we
+need ceil(log10(2**N)). However, the original bits of information do not *always*
+cleanly pack into these decimal digits, ie the digits and bits may be
+"misaligned", because the powers of 2 and the powers of 10 are misaligned, and
+this misalignment keeps "wobbling" as the powers grow (in the positive or
+negative direction); they only ever align at 1==2**0==10**0.
+Consider the number 9, which is 0b1001 in binary; the number 10 is 0b1010 -- the
+fourth bit (the leftmost) is "shared" between the base-ten-units and the
+base-ten-tens; with hex, instead, every nibble (group of 4 bits) cleanly
+corresponds to exactly one hex digit. With 10 == 0b1010, the leading digit "1"
+contains only a fraction of a bit of information, even though each digit can
+contain up to log2(10) ~= 3.322 bits.
+This misalignment means that, for some numbers, the leading decimal digit
+"aligns badly" with the bits, so it only contains a fractional-bit amount of
+information. To compensate for this, we need an extra digit. That is, M
+digits may contain as little as (M*log2(10) - 1 + epsilon) bits of information,
+and we need an extra digit to guarantee that we always have (>= M*log2(10)) bits
+of information.
+So, a number (M = ceil(N * log10(2))) of decimal digits is enough to represent
+an N-bits-of-mantissa binary float only in "good" cases; but there are "bad"
+cases in which one more digit is required.
+Also note: the numbers above are for binary->decimal->binary round trip. For
+decimal->binary->decimal (eg you write a decimal literal in code, and then
+inspect the decimal representation of the value in a variable), the same
+reasoning applies, but with exchanged bases -- you need N >= 1 + ceil(M * log2(10))
+bits in the variable to represent the literal accurately.
+
+Here are a few examples of numbers that do require 17 digits for f64 round-trip:
+0x1.9f623d5a8a733p-107, 0x1.9f623d5a8a736p-107 -> "1.000000000000000e-32"
+0x1.6e53ab9a828c5p-78, 0x1.6e53ab9a828c6p-78 -> "4.734663399999998e-24"
+0x1.6d4c11d09ffa0p-3, 0x1.6d4c11d09ffa3p-3 -> "1.783677474777479e-01"
+0x1.0000000000000p+0, 0x1.0000000000002p+0 -> "1.000000000000000e+00"
+0x1.8b802e3c411fap+1, 0x1.8b802e3c411fcp+1 -> "3.089849261685456e+00"
+0x1.4000000000000p+3, 0x1.4000000000002p+3 -> "1.000000000000000e+01"
+0x1.806e5788bbff4p+25, 0x1.806e5788bbff5p+25 -> "5.038814306823723e+07"
+0x1.2aa4f4a405be2p+1003, 0x1.2aa4f4a405be4p+1003 -> "1.000000000000000e+302"
+0x1.ffffffffffffep+1023, 0x1.fffffffffffffp+1023 -> "1.797693134862316e+308"
+
+For f64, it's not unusual to have more than 2 consecutive values with the same
+16-digit decimal representation.
+
+And here a few examples for f32 (requiring 9 digits):
+0x1.54485ap-120, 0x1.54485cp-120 -> "1.0000008e-36"
+0x1.a95a6ep-117, 0x1.a95a70p-117 -> "1.0000002e-35"
+0x1.e34904p-100, 0x1.e34906p-100 -> "1.4892376e-30"
+0x1.99999ep-4 , 0x1.9999a0p-4 -> "1.0000002e-01"
+0x1.400014p+3 , 0x1.400016p+3 -> "1.0000010e+01"
+0x1.813084p+119, 0x1.813086p+119 -> "1.0000092e+36"
+0x1.e17ca2p+122, 0x1.e17ca4p+122 -> "1.0000091e+37"
+
+Note that such numbers are not rare; in f32, ~1.5% of all the finite numbers
+require the maximum number of digits.
+
+Also note that many such numbers are close to (1.xx * 10**n), but they're by no
+means the only ones, especially in f64.
+
+Finally, IEEE 754 works with various rounding modes, and printf should respect the
+current rounding mode setting of the environment. Instead, NPF always uses
+"round to nearest, ties away from zero", disregarding the environment settings.
+
+***************************************
+*** Observations about npf_ftoa_rev ***
+***************************************
+[Abstract: it converts a float number to string. The number can be seen as:
+  xxxxxxxx.yyyyyyyyy
+in binary. We can take x and extract integral decimal digits (from the units up)
+by taking (x%10) and then moving on with (x/=10). We can then take y and extract
+fractional decimal digits (from the tenths down) by preparing a digit with
+(y*10), and extracting it from the newly-created 4 higher bits, and then
+clearing those bits.
+However, the float number may have a very large or very small exponent, and the
+full binary expansion can be too large for usual integer variables to contain:
+  |xxxxxxxxxxxxxxxx|0000000000000000.0
+                                   0.0000000000000000|yyyyyyyyyyyyyyyyyy|
+So, we need to perform the divisons/multiplications above using a limited, fixed
+precision, taking care of "carry" bits that fall outside our variable (outside
+the right bar, in the drawing), and appropriately "sliding" the window (ie
+where, in the full bit expansion, we are "focusing" our variable) so that we
+follow the bits as they move around due to the arithmetic operations, without
+ever dropping any high (left-most) bit:
+  0|xxxxxxxxxxxxxxxx|0000000000000000.0
+  000|xxxxxxxxxxxxxxxx|x0000000000000.0
+  00000|xxxxxxxxxxxxxxxx|xx0000000000.0
+  ...
+  00000000000000000|xxxxxxxxxxxxxxxx|.xxxxxxxxx...
+or:
+  0.0000000000000000|yyyyyyyyyyyyyyyyyy|0
+  0.00000000000000|yyyyyyyyyyyyyyyyyy|yy0
+  0.000000000000|yyyyyyyyyyyyyyyyyy|yyyy0
+  ...
+  0.|yyyyyyyyyyyyyyyyyy|yyyyyyyyyyyyyyyy0
+end of abstract]
+
+npf_ftoa_rev() takes a float number and a precision (number of desired digits
+after the decimal point) and returns the number represented as a decimal string
+of digits.
+The string is composed in reversed order to reduce the code size, but we ignore
+that here. We also ignore the placement of the decimal point, and only talk
+about "emitting" a digit, meaning that we have determined a new decimal digit
+(as a char) to be appended to the partially-composed string (appended at one or
+the other end -- we'll see that for the integral part we proceed from the units
+up, whereas for the fractional part we proceed from the tenths down).
+
+We have a float number (in IEEE 754) format, with 1 sign bit, E exponent bits,
+and 'emb' mantissa bits (explicit mantissa bits); depending on the context, it
+might be easier to think about 'emb1', the explicit mantissa bits plus the
+implicit 1 (restored). emb1==emb+1.
+The algorithm first extracts the exponent and mantissa, and converts them to a
+canonical form -- it restores the implicit leading '1' bit (for non-subnormals)
+and adjusts the exponent (for subnormals). If the number is nan/inf, the
+algorithm terminates earlier with a dedicated output string.
+The sign is not handled by the algorithm, but by the caller. The same is true
+of the leading/trailing padding with '0's or spaces. The algorithm does handle
+the decimal point (though we ignore that here), and the required fractional
+digits (be they 0 or otherwise), and the necessary (if any) trailing zeros in
+the integral part.
+
+The float number, after we normalize the mantissa and exponent, is represented
+as:
+  v = m2 * 2**e2
+The mantissa m2 is the appropriate one for the power-of-2 2**e2. However, we
+need the mantissa m10 that is appropriate for a power of 10:
+  v = m2 * 2**e2 = m10 * 10**e10
+because we want to print the decimal representation.
+If we get m10, we can convert it to a string by the trivial method used for
+unsigned integers too -- (m10 % 10) is the lowest digit, and then (m10 / 10) to
+move on to the new digit. Here we have a mantissa m10 that, in the canonical
+form, is in [1,10), but the process is similar: we print and remove the integral
+digit, and then multiply by 10, to move on to the next digit; in this way we
+proceed from the leading to the trailing digit, which is the opposite direction
+as that used for integers.
+However, we do not have m10, we only have m2.
+We need to process the number (m2 and e2) all the way to a form where the
+conversion of m2 into m10 is trivial. That point is e2==0, ie around the "binary
+point" of the original number.
+When we determine m2' such that:
+  v = m2 * 2**e2 = m2' * 2**0 = m2'
+we also know that:
+  v = m10 * 10**0 = m10
+so we have m10 = m2'
+We do not need any particular e10; we could try and aim for the e10 that has
+m10 in [1,10), or the e10 such that m10 is integral (with our precision); but
+choosing to start with e10=0 lets us use the simple fact that m2'=m10.
+As we'll see, we can get there without any floating point arithmetic, only
+integer arithmetic (which includes shifts).
+Note that m2, m10, e2 are all stored as binary numbers, of course; however, m2
+is binary in the sense that it's the mantissa appropriate for 2**e2, while m10
+is decimal in the sense that it's the mantissa appropriate for 10**e10.
+When we get to (v = m10 * 10**0), we will have an m10 that may have some bits
+representing integers, and some bits representing fractions.
+That is, m10 may be of the form xxx.yyy, in which xxx is integral, and yyy is
+fractional. We will have to keep track of where the "binary point" is in our
+mantissa variable, so that we know how to convert it.
+Actually, we do not need to get to an integral+fractional m10. We can already
+split the bits into integral and fractional in m2, and then convert the two
+separately into m10i (integral) and m10f (fractional). The binary point in m2
+is trivial to determine, since we know e2; v can be represented as:
+  x:xxxx * 2**e2
+  ^ ^-- this digit is associated with 2**(e2-1)
+  '-- the leading digit is associated with 2**e2
+where the first 'x' is the leading bit (the one in the implicit-bit position).
+If (e2==0), then the number is actually:
+  x.xxxx
+  ^ ^-- assoc. with 2**-1
+  '-- assoc. with 2**0
+If (e2>0), then it is:
+  xxx.xx   (e2+1 integral digits)
+If (e2<0), then:
+  0.000xxxxx   (|e2|=-e2 leading 0s in the fractional part)
+
+To see how to split the bits in integral and fractional, we also need to know
+that we allow "dynamic integer scaling". The original float has emb1 mantissa
+bits. We can use an unsigned integer with >= emb1 bits to handle the arithmetic
+involving the mantissa, but we can also use smaller integers, to reduce the code
+size (eg on 32-bit systems, 'double' is usually float64 --with emb1=53-- but
+using a u32 variable for arithmetic is faster than using a u64). This reduced
+size introduces rounding errors (which is not allowed by the standard printf),
+which we'll analyze below.
+For the arithmetic, we use a user-configurable unsigned integer variable with
+'ub' bits, which may be (ub>=emb1) or (ub<emb1).
+Back to splitting m2 into an integral and a fractional part.
+If (e2+1>emb1): all the bits are integral. We only have to shift the bits in
+a canonical position.
+If (ub>=emb1), we can retain all bits, so we leave them where they are:
+   |000000xxxxxxxxxx|  in b (the mantissa after masking the sign and the exponent, and correcting for the implicit 1)
+   |000000xxxxxxxxxx|  in u (the unsigned variable)
+If (ub<emb1), we shift the bits so that the implicit 1 ends up in the leftmost bit
+of u, so that we retain as many bits as possible:
+   |000000xxxxxxxxxx|  in b
+Which we need to shift left if ub>=emb1:
+         |xxxxxxxx|xx  in u  (we drop some bits)
+the needed shift is (>> emb1 - ub), and we lose (emb1 - ub) bits
+Note that when losing bits to the right, we tray and counter the truncation
+error (making it into a rounding error) by keeping a carry variable, which may
+be used to correct the value in u in successive steps of the algorithm. In this
+case, we initialize the carry with the highest of the bits we dropped.
+Note that this bit represents 0.5 of the lowest retained bits, so it represents
+the 0.5 fraction of the unsigned number in u. To round properly, we only need
+to know that this bit is 0 (round down) or 1 (round up), without knowing any
+other successive bit. However, with other arithmetic operations we would ideally
+need more carry bits (infinitely many, at times) to round properly, but we only
+handle one bit, which simplifies the carry arithmetic substantially.
+Back again to splitting m2 into integral/fractional:
+If e2<0: all the bits are fractional. We'll see later how best to shift them.
+If 0<=e2<emb1: some bits are integral, and some fractional.
+(e2+1) are integral, (emb1-e2-1)=(emb-e2) are fractional. For the integral bits,
+we shift them in a similar way as before:
+If ub>=emb1:
+   |000xxxxxxxxxyyyy|  in b
+->
+   |0000000xxxxxxxxx|yyyy  in u
+we shift by (>> emb - e2), which positions the integral bits, and get rid of the
+fractional ones. The carry is 0 -- the dropped bits are not relevant for the
+integral part; we will handle the fraction later, and if a carry is needed
+across the fractional and integral part, it will all be handled at the end, with
+a final rounding pass.
+If ub<emb1 and we have less bits than we can represent in u (e2+1<=ub):
+   |000xxxxxxxyyyyyy|  in b
+->
+     |0xxxxxxx|yyyyyy  in u
+we must shift by (>> emb1 - (e2+1)) == (>> emb - e2)
+The carry is 0.
+If ub<emb1 and we have more bits than we can represent in u (e2+1>ub):
+   |000xxxxxxxxxyyyy|  in b
+->
+      |xxxxxxxx|xyyyy  in u
+we must shift by (>> emb1 - ub) == (>> emb - ub - 1)
+The carry is the first dropped bit: c = (b >> (emb1 - ub - 1)) & 0x1
+
+Now we have the integral bits in the lower part of u. We have:
+  m2 = u
+  v = m2 * 2**e2   (barring the error due to dropped bits)
+This means that the binary point is not necessarily at the bottom of u. That is,
+u is an integer, but does not represent an integral mantissa:
+  |000xxxxxxxyyyyyy|  in b
+      ^-- bit associated with e2
+  |0xxxxxx|  in u
+    ^-- bit associated with e2
+First, we keep track of the exponent e2 associated to the bottom bit of u, so
+that we can reason about it more easily -- when e2 == 0, we know that u contains
+the mantissa for v = m2 * 2**0 = m2.
+  |0xxxxxx|  in u
+    ^-- bit associated with e2
+  |0xxxxxx|  in u
+         ^-- bit associated with e2i
+So, let's see the different cases for the shift again:
+if ub>=emb1:
+  |000xxxxxxxxxyyyy|  in b
+      ^e2
+->
+  |0000000xxxxxxxxx|yyyy  in u
+                  ^e2i
+  shift by (>> emb - e2)
+  e2i = 0
+  c = 0
+If (ub<emb1) && (e2+1<=ub):
+  |000xxxxxxxyyyyyy|  in b
+      ^e2
+->
+  |0xxxxxxx|yyyyyy  in u
+          ^e2i
+  shift by (>> emb - e2)
+  e2i = 0
+  c = 0
+If (ub<emb1) && (e2+1>ub):
+  |000xxxxxxxxxyyyy|  in b
+      ^e2
+->
+  |xxxxxxxx|xyyyy  in u
+          ^e2i
+  shift by (>> emb - ub - 1)
+  e2i = e2 - ub + 1
+  c = (b >> (emb1 - ub - 1)) & 0x1
+
+Now we have the integral bits in position, and their exponent.
+Let's imagine we had an infinite-precision integer; we could represent all the
+bits up to the binary point, somewhere to the right:
+  |xxxxxxxx|x.yyyy
+          ^e2i
+where we have depicted also the bits we already dropped. Also, let's ignore the
+fractional bits y, which we do not handle here. There are exactly e2i bits
+off the right of u, until we meet the point -- some of them may be bits we
+dropped, and some may be 0s (they're even outside the precision of the original
+float):
+  |xxxxxxxx|x000000.0
+          ^e2i
+We now have our m2 associated with e2=0:
+  |xxxxxxxx|x000000.0
+   '------m2------'
+If we just keep extracting digits (with %10) and then moving to the next digit
+(with /10), we can convert the number trivially.
+However, we do not have the large precision required (for float64, e2 can be
+up to +1023, and that's the number of bits we would need at most).
+To overcome our finite precision, we need to keep our variable "windowed" on the
+most significant non-0 bits.
+We must perform the windowed operations until the window reaches the decimal
+point, ie until e2i==0. From then on, we have all the precision we need, and we
+can fall back to the trivial algorithm.
+When we perform the windowed operations, the result of m2%10 is unknown --we do
+not know those low bits, they are outside the window--, so we assume the result
+is '0'. We will only be able to convert digits coming the bits that are inside
+the window. So, we will have a result of the type "dddd000", unless we start
+with e2i==0 already.
+We need to divide by 10, and then "follow" the significant bits to the right;
+the division will cause at least 3 high bits to become 0:
+  |xxxxxxxx|0000000.0
+          ^e2i
+  |000yyyyy|zzzz000.0
+          ^e2i
+Moving the window, we also need to adjust e2i (e2i-- for each right-shift we
+perform; and we can perform the shift just by looking at whether the high bit is
+0):
+  000|yyyyyzzz|z000.0
+             ^e2i
+However, we must first divide, and then shift. So, the z bits are not actually
+there, they were dropped by the division:
+  000|yyyyy000|0000.0
+             ^e2i
+Also, we can do better than losing >=3 bits (log2(10)~=3.322) every time. We can
+divide by 5, and then let the divide-by-2 be handled by a "shift":
+  |xxxxxxxx|0000000.0
+          ^e2i
+  |00yyyyyy|zzz0000.0   (divide by 5)
+          ^e2i
+   |00yyyyyy|zzz000.0   ("shift")
+           ^e2i
+The shift is done virtually on the infinite-precision bit expansion. In reality,
+we keep our variable unchanged, and only adjust: e2i--
+This lets us lose only log2(5)~=2.322 bits of precision.
+Then, we need to handle the carry, to regain some of that precision. The bits
+z can be seen as the fractional part of the rightmost y bit. That is, the
+highest z bit has a weight (0.5 * 2**e2i), the next one has weight (0.25 * 2**e2i),
+and so on. Still disregarding all carry bits except the first one for simplicity,
+we have a carry if 0.zzz >= 0.5. But 0.z is the fractional part of y/5, so we see
+that (0.zzz*5 = y % 5). So, we have a carry if (y % 5 > 2.5), which we implement
+as (y % 5 > 2); this gives better results than comparing for (> 3). Actually,
+we can do slightly better by also using the old carry: carry = ((y % 5) + carry) > 2.
+Now we have at least two high bits cleared, so we must recenter our window:
+  |00yyyyyy|000000.0
+          ^e2i
+  00|yyyyyy00|0000.0
+            ^e2i
+We do this by left-shifting u, and adjusting e2i--. We repeat this one bit a
+time, until the high bit in u is set. We also shift the carry in, and clear it,
+so that we don't shift it in multiple times.
+Since we always shift right at least twice, we always shift in at least two bits
+of carry (the second one is always 0), so we could keep track of more digits of
+carry; but this would complicate the carry arithmetic. We could also perform the
+divide-and-shift-left-twice in a single operation, but we do that as separate
+operations (the shift can be repeated more than twice) to reduce the code size.
+As said, whenever we divide by 5, we also emit a '0' digit.
+Then, we repeat the divide/shift, until we reach e2i=0.
+At this point, we have already emitted all the trailing '0's that were outside
+of the reach of our window, and we have:
+  00|yyyyyy00|.0
+            ^e2i=0
+where we may or may not have trailing 0 bits in our window.
+Now, the number u is in the form v' = u * 2**e2i = u, so we can start the trivial
+digit extraction. It's actually v ~= u * 2**e2i * 10**(k-1), where k is the number
+of trailing 0s we have already emitted, and v is (approximately) the original
+number. Anyway, we continue with the next powers-of-10, starting from k, ie
+starting from our current number u. We keep doing: emit (u%10) as a digit, and
+move to the next one with (u/=10).
+We still have the latest carry c from the windowed operations. We do not
+overwrite it during the digit extraction.
+If we have fractional bits, we never did any windowing here, and the carry will
+be set by the fractional-part algorithm. Otherwise, we need to round digits
+using the integral carry. However, we need to start rounding from the lowest
+digit that we emitted (that's the digit that the carry is associated to), not
+from the very first trailing '0' we emitted.
+This completes the conversion of the integral bits of the original float value.
+
+For the fractional part, we have the following.
+Let's imagine that we have already converted the binary number to a form of
+this type:
+  0.xxx * 2**0
+That is, we have a mantissa that is in [0, 1), and an exponent that is 0.
+This means that the mantissa we have for the binary exponent is also, identically,
+the proper mantissa for the decimal exponent:
+  0.xxx * 2**0 == 0.xxx * 10**0 == 0.xxx
+This means that we now have the decimal mantissa, and just need to print it out.
+To print it: we multiply the mantissa by 10. The resulting number will be in
+[0, 10).
+All the bits that appear to the left of the point are in the integral part, and
+all the bits to the right are still in the fractional part.
+So, we can extract the integral bits, and convert them to decimal (in the obvious
+way used for unsigned integers); since the number is <10, we are guaranteed that
+the extracted bits represent exactly one decimal digit (possibly '0').
+Now, we remove the integral bits; we are left with a new fractional part that is
+again in [0, 1), and represents (m10 * 10) -- without the tenths, which we have
+removed. So, if we multiply it by 10 again, we get a new digit (all the bits
+left of the point). Then we remove them, and continue. We can either stop when
+the mantissa becomes 0 (the fraction will continue with an infinite string of
+'0') or when we have already printed enough digits.
+We'll get back to the details of this algorithm, as well as how to handle the
+rounding.
+
+Now let's see how to get to the (0.xxx * 2**0) form, starting from our
+original number (y.xxx * 2**e).
+We have already seen how to separate the integral part of the original float.
+Separating the fractional part is complementary (in that we must mask out the
+integral bits, and retain the fractional ones); however, the canonical form that
+we need is not with all bits aligned to the right of the variable, but with them
+aligned to the left. Also, we want to keep track of the exponent associated with
+the first bit the the left of the variable (ie outside the window).
+If e2>=emb: there are no fractional bits. We can skip the whole algorithm (and
+not overwrite the carry coming from the integral part). Any digit that we might
+need is a '0' (exactly as the additional digits that we might need after the
+fractional bits are over).
+  |000xxxxxxxxxxxxx|  in b
+      ^e2
+If 0<=e2<emb: there are (emb-e2) fractional bits:
+  |000xxxxxxxxxyyyy|  in b
+      ^e2
+->
+  0xxxxxxxxx|yyyy000000000000|  in b
+           ^e2f
+  shift by (<< bb - (emb - e2))
+  e2f = 0 
+If e2<0: there are (emb+1) fractional bits (all of them):
+  |000yyyyyyyyyyyyy|  in b
+      ^e2
+->
+  |yyyyyyyyyyyyy000|  in b
+ ^e2f
+  shift by (<< bb - (emb + 1))
+  e2f = e2+1 
+The carry starts as 0 in all these cases.
+We perform these shifts in a variable b as large as the original float.
+This allows use to remove the integral bits, and align the fractional bits as we
+want them.
+However, we must then use a potentially smaller variable u, so we first perform
+an appropriate right-shift (in b), and copy it over to u.
+So, for all the cases above, we have the same shift:
+  |yyyyyyyyyyyyyyyy|  in b
+ ^e2f
+          |yyyyyyyy|yyyyyyyy  in u
+         ^e2f
+  shift by (>> bb - ub)
+  c = (b >> bb - ub - 1) & 0x1
+and the carry is the highest dropped bit.
+If ub>=bb, we must shift the number to the left, and we have no carry:
+                  |yyyyyyyyyyyyyyyy|  in b
+                 ^e2f
+  |yyyyyyyyyyyyyyyy0000000000000000|  in u
+ ^e2f
+  shift by (<< ub - bb)
+  c = 0
+
+Now, imagine that we have an infinite-precision representation for the binary
+number:
+  0.00000|xxxxxxxx|00
+        ^e2f
+or possibly:
+  0.|xxxxxxxx|00
+  ^e2f
+Note that, due to the shifting we did earlier, and the removal of integral bits,
+we cannot have e2f>0, ie we cannot have the binary point (and any integral bits)
+inside our window.
+The integral bits were already handled by the integral algorithm, so we can
+assume here that the number has indeed 0 as the integral part.
+If we could work on the infinite-precision representation, we could start the
+digit extraction algorithm immediately: we multiply by 10, and the first digit
+appears to the left of the point:
+  0000.00000xxxxxxxx00
+-> *10
+  0000.0yyyyyyyyyyy000
+  ~~~~ -> the first digit is '0', emit it
+Then we continue this way.
+  0000.0yyyyyyyyyyy000
+-> *10
+  0zzz.zzzzzzzzzzz0000
+  ~~~~ -> extract this digit, emit it, and remove it
+  0000.zzzzzzzzzzz0000
+-> *10
+  wwww.wwwwwwwwww00000
+and so on, until we have emitted all the digits we need. If the number becomes
+0, all future digits will be '0'.
+Note that each time we multiply by 10, at most 4 new bits appear on the left,
+and exactly 1 bit disappears on the right. This means that the number of
+significant bits can grow by 3 at every iteration. We also remove the 4 new
+integer bits, but if our significant bits are still far to the right, this does
+not happen (the integral bits were already 0). So, if our initial number was
+very small (e2f, or e, is "large" in the negative direction), we would need a
+large number of bits in the infinite-precision representation, more than any
+practical fixed-precision integer variable has.
+Also note that at each step, the number to right of the point is a fraction in
+[0, 1), so after multiplying it by 10, we are guaranteed that the number is in
+[0, 10), ie the new integer bits that appear cannot "overflow", ie they cannot
+be larger than 9.
+With our finite-precision variable u, we must "focus" on the significant bits
+that exist at every step, following them as they move to the left, dropping
+excessive bits to the right (and handling the carry appropriately), and always
+avoiding to have some bits fall off the left (since we would be losing the most
+signficant bits). Also, we must keep track of e2f, so that we know when we have
+"reached" the binary point, and we can switch to the trivial digit extraction
+algorithm.
+We start with:
+  0000.00000|xxxxxxxx|00
+           ^e2f
+We must multiply it by 10. To do that, we must ensure that we have 4 bits clear
+on the left end of the variable, so that we have no overflow, and drop no high
+bits. So, we must first make room for that
+  0000.0000|0xxxxxxx|x00
+          ^e2f
+  shift by (>> 1)
+  e2f++
+we repeat it 4 times, and we get:
+  0000.0|0000xxxx|xxxx00
+       ^e2f
+The bits we dropped to the right will need to be account for, in the carry.
+We'll look at that later.
+Now we can multiply by 10:
+  0000.0|0000xxxx|000000
+       ^e2f
+multiply-by-10:
+  0000.0|yyyyyyy0|000000
+       ^e2f
+Of course, the multiplication is on u, it doesn't involve the bits we already
+dropped. So, we also have a 0 bit at the right end.
+When we multiply by 10, we are also extracting a digit. However, the binary
+point is still to the left, outside of our window, so we know that that digit
+is always '0', and we can emit it.
+Multiplying by 10 causes us to drop 4 bits, to have the needed headroom. This
+means 4 less bits of precision for the mulitplication.
+We can do better by multiplying by 5 instead:
+  0000.00000|xxxxxxxx|0
+           ^e2f
+make room:
+  0000.00|000xxxxx|xxx0
+        ^e2f
+multiply:
+  0000.00|zzzzzzzz|0000
+        ^e2f
+now, the missing factor of 2 can be reintroduced just by adjusting the exponent:
+  0000.0|zzzzzzzz|0000
+       ^e2f
+  e2f++
+We have virtually shifted our bits, together with the window, 1 bit to the left,
+in the infinite-precision representation. This is all virtual, and u does not
+change at all. However, e2f must be increased by one, to account for this
+virtual shift.
+Now we lose only 3 bits of precision.
+We can proceed in the same way as before: make headroom (dropping bits to the
+right) then multiply-by-5 and adjust the exponent.
+We can do even better: with 3 bits of headroom, we could multiply by 8, but we
+only need to multiply by 5. So, we can keep making room (with right shifts)
+until we know we will have no overflow, ie until (u <= 0xFF..F/5), where 0xFF..F
+is the all-1s value that can fit in u. This ensures that the multiplication
+(u * 5) won't overflow. At this point, we do multiply, and adjust e2f. In this
+way, when we make room, we will stop either when we have 2 or 3 cleared high
+bits. If 3 are cleared, we are losing 3 bits. If 2 are cleared, it means that
+(u < 0xFF..F/5), ie we lose at least 4/5ths of the range, which is equivalent
+to reducing the range by at least log2(1/5)=-log2(5)~=-2.322 bits.
+So, depending on the value in u, we lose [log2(5), 3] bits of precision. We
+regain part of that by handling the carry. When we multiply by 5, in the
+infinite-precision bit expansion we would also be multiplying the bits to the
+right of the window, which we have actually lost. The first of those bits has
+a weight that is 0.5 of the weight of the rightmost bit in the window. When it
+is multiplied by 5, it has a weight of 2.5. The whole, infinite, bit expansion
+to the right is a "fraction of the rightmost bit", ie in [0, 1), and after the
+multiplication it would be in [0, 5). If we only look at the first bit (we have
+stored it in the carry when we have right-shifted to make headroom), it can
+account for 0.0 (if 0) or 2.5 (if 1) after the multiplication.
+So, when multiplying, we add 3 if the carry was set (and clear the carry). This
+is better than adding 2, as we'll see later.
+Now, we must ensure that the multiply-and-add-carry does not overflow, so the
+actual check is (u <= (0xFF..F - 3) / 5), equivalent to (u <= (unsigned)-4/5).
+We could actually check (u <= (unsigned)(carry ? -4 : -1)/5), but this is more
+complicated and not really worth much.
+The range reduction is now larger by a tiny amount: -(log2(5)+eps), but we can
+basically still consider the precision loss as (log2(5), 3].
+Also, we could add 2 for the carry, and leave the carry set (this accounts for
+2 + 0.5), but the next operation is most certainly a right-shift (unless the
+algorithm terminates right now), so that carry would be overwritten anyway.
+We could also keep more bits of carry, to have a "longer memory" of the bits
+dropped to the right, but this complicates the carry arithmetic. One bit of
+carry is always necessary (even when we have ub>=bb) to properly round at the
+end; but more bits of carry complicate the code, and it's just better to
+increase ub (use a larger unsigned integer for the calculations), if more
+precision is needed.
+Back to the multiplying/shifting: we keep doing that, and emitting '0's, until
+we reach the binary point.
+Whenever the binary point "enters the window", ie when any integer bits enter
+the window, which means (e2f > 0), we must stop the windowed algorithm, and
+start the trivial digit extraction. However, the digit extraction works by
+having the 4 upper bits cleared, so that we can multiply by 10, and extract the
+integral digit from the upper 4 bits. So, the first step is to ensure that we
+have those 4 bits of headroom.
+In the last steps of the windowed algorithm, we may have:
+  0000.0|00xxxxxx|0
+       ^e2f
+multiply-by-5, and adjust e2f:
+  0000.|yyyyyyyy|0
+     ^e2f
+then shift to make room for another multiplication:
+  0000|0.yyyyyyy|y
+     ^e2f
+  000|00.yyyyyy|yy
+    ^e2f
+  00|000.yyyyy|yyy
+   ^e2f
+and multiply again:
+  00|zzz.zzzzz|
+   ^e2f
+Or we may have:
+  0000.|00xxxxxx|0
+     ^e2f
+multiply-by-5, and adjust e2f:
+  0000|y.yyyyyyy|0
+     ^e2f
+then shift to make room for another multiplication:
+  0000|0y.yyyyyy|y
+     ^e2f
+The last multiplication will have placed some bits left of the point, except in
+some rare cases, eg when the original float is of the form 0b1.000000000...1...,
+which are handled correctly anyway (only, their next digit will still be '0').
+We now have a condition in which we have some integral bits, so we cannot emit
+a '0' in any case, as before, and we cannot multiply further. We must shift the
+value so that we have exactly 4 integral bits in the window, and then move to
+the digit extraction algorithm.
+When (e2f > 0), we multiply one last time, and adjust (e2f++).
+Before this, we have shifted at most 3 times to make room for it, so we started
+from at most (e2f == 0+3). So, we cannot possibly go beyond (e2f==4).
+(e2f==4) is exactly the condition we need -- to have 4 integral bits inside the
+window. If we are short of that, we just shift until we reach it. The shift is
+identical to that performed to make room, including the handling of the carry.
+Now we can proceed to the digit extraction algorithm -- it must start with digit
+extraction, not with multiplication-by-10, since we already have the first 4
+integral bits ready.
+
+To handle the carry properly: the final "digit extraction" algorithm starts with
+the carry set by the previous stage of the algorithm. When it multiplies-by-10,
+it should add 5 if the carry is present, and clear the carry (no carry is
+possible after the first iteration).
+However, we can optimize this, to avoid carry operations inside the loop.
+We can add the carry immediately -- which overestimates the carry weight, from
+[0.5, 1) to exactly 1. This will not "overflow" -- it will not ripple through
+and produce a most significant nibble equal to 10 (== 0b1010) -- that's because
+the last step of the algorithm was either a right-shift (so, the leading nibble
+is at most 0b0111), or it was a multiplication (in which case, the carry was
+cleared, after contributing as +3).
+After the immediate addition of the carry, the carry is cleared.
+Also, when extracting digits, we can stop before we exhaust the number (ie it
+becomes 0), because the precision required was low. In this case, we must
+adjust the carry at the end. The carry will be the highest bit in the leftover
+fractional part:
+  |xxxx.yyyyyy|
+   ~~~~ ^      -> the last extracted digit, and the highest leftover bit (the carry)
+Note that the handling is complicated by the early bailout:
+if (e2f < 0), we stopped during the trailing fractional 0s, and the highest
+fractional bit (associated with exponent -1) is still outside the window, so
+it's certainly 0.
+if (e2 >= emb) (where e2 is the *original* exponent of the float value), then we
+never had any fractional digit, so the carry is implicitly 0 (it was never set).
+if (e2f >= 0) && (e2 < emb), then we do get the carry from the highest leftover
+fractional bit (the 5th bit from the left of the window).
+
+The early termination in the emission of fractional digits, may happen during
+the windowed operations, or during the final extraction. In both cases, we
+terminate early, and keep the current carry, which will be used for rounding.
+
+When we have printed all the digits (or all the digits that we need), and have
+computed this final carry, we must apply it. If the carry is set, then the last
+emitted digit (the least significant one) is increased by 1.
+If it was '9', it is turned into '0', and the carry ripples through to the next
+digit. In the worst case, the carry can ripple all the way through, and create
+a new '1' leading digit (so we need to check that we have room for that).
+Note that "last emitted digit" refers to the fractional digits. If there are
+none, then we still have the carry set from the integral part, and we must apply
+it to the proper digit -- the first one we emitted in the digit extraction, ie
+the rightmost decimal digit except for the trailing '0's (emitted earlier); this
+digit was emitted during the windowed operations.
+
+
+** Error analysis **
+
+When we handle the integer part: during extraction, we just divide by ten and
+take the modulus, so we have no error.
+During the earlier stage (scaling), we either:
+* shift the value left, and reintroduce the carry
+* or, divide by 5, and produce the carry as ((man % 5) > 2)
+When shifting multiple times, we have no carry left, so we shift 0 in. This
+causes an error, but the error originates in the divide (that's when we forget
+some of the fractional bits produced), so we analyze that.
+When dividing, we produce a fraction in [0,1). Before the division, this has a
+weight [0,5). If <= 2, we treat it as 0, so we have an error in [-2/5, 0/5] == [-0.4, 0].
+If > 2, we treat it as 2.5, so we have an error (-2.5/5, +0.5/5] == (-0.5, +0.1].
+[Aside: we actually add in the old carry: ((man % 5) + carry > 2), so we actually have:
+M | C | res
+<2| x | 0    -> <=0.4      -> round down   error [-0.4, 0]
+2 | 0 | 0    -> 0.4 + 0    -> round down   error [-0.4, 0]
+2 | 1 | 1    -> 0.4 + 0.25 -> round up     error (0, +0.15]
+>2| x | 1    -> 0.6 + 0.25 -> round up     error (-0.15, 0]
+So, the error is not in (-0,5, +0.1], but in (-0.4, +0.15], a little more balanced.
+end of aside]
+The error is relative to a step in the algorithm when our integer part is 10**K,
+and the fractional part is associated to 2**-N (with N the bitsize of the
+integer variable).
+So, the error accumulates at most as:
+  e <= (-0,5, +0.1] * sum[K = 0 .. X](10**K * 2**-N)
+  e <= (-0,5, +0.1] * sum[K = 0 .. X](10**K) * 2**-N
+  e <= (-0,5, +0.1] * 2**-N * 10**(X + 1)
+  e <= (-0,5, +0.1] * 10**(X + 1 + log10(2**-N))
+  e <= (-0,5, +0.1] * 10**(X - N*log10(2) + 1)
+where X is the actual exponent of the number being converted (X >= 0)
+and log10(2) ~= 0.30102999566
+That is, we have about (N*log10(2) - 1 + 0.5) = (N*log10(2) - 0.5) decimal
+digits of precision. The 0.5 comes from max(abs(-0.5), abs(+0.1)).
+However, to produce a round-trip representation, we need one more decimal digit
+than that, which means we can only realiably handle (N*log10(2) - 1.5) digits
+(in the worst case).
+So, for float32 (which has 24*log10(2) ~= 7.2247 intrinsic decimal digits of
+precision), we can reach full precision with u32 (32*log10(2) - 0.5 ~= 9.1330).
+This also enough for round-trip.
+For M bits of explicit mantissa, we need at least N bits in the integer variable
+to avoid errors:
+  M*log10(2) <= N*log10(2) - 0.5
+  N >= M + 1.5 / log10(2) ~= M + 1.6610
+and Nr bits for round-trip:
+  M*log10(2) <= Nr*log10(2) - 1.5
+  Nr >= M + 1.5 / log10(2) ~= M + 4.983
+That is, we need 2 additional bits to remove errors, and 5 to have round-trip.
+Any integer that is at least as wide as the float will do for the first
+condition (as the float must also pack the sign and some bits of exponent).
+All IEEE 754 floats also meet the second condition, as f16 has 1 sign bit and
+5 bits of exponent (and 1 + 5 - 1 >= 4.983 -- the -1 is for the implicit 1 in
+the mantissa).
+
+When we handle the fractional part: during extraction, we just mutliply by ten
+and extract/mask bits, so we have no error.
+During the earlier stage (scaling), we either:
+* shift the value right, and set the carry (and lose the old carry)
+* or, multiply by 5, and compensate with the carry (+3)
+When shifting multiple times, we have lose the old carry. This causes an error,
+but we ignore that and only consider the error that originates in the multiply
+(that's when we turn a single bit of carry --with the other bits lost-- into a
+correcting factor), so we analyze that.
+When multiplying, we turn a fraction in [0,1) into [0, 5). That fraction is the
+infinite-precision carry, which we don't have. We only have the leading bit, and
+we treat it as:
+if carry == 0 (actual fraction in [0, 0.5) ), add 0, ie round the fraction to 0.0
+if carry == 1 (actual fraction in [0.5, 1) ), add 3, ie round the fraction to 0.6
+So, we have an error in [-0.5, 0] or (-0.4, 0.1].
+This underestimation is convenient, since we can never overdo it, but in
+overestimating the carry, we might produce a number too large, and then
+overestimate the next carry too, with a cascade of errors. This will be smaller
+due to the maximum +0.1 for the overstimation error, which happens at most at
+every new digit (ie at every new power of 10).
+The error is relative to a step in the algorithm when our fractional part is
+10**-K, and the carry is associated to 2**-N (with N the bitsize of the integer
+variable).
+So, the error accumulates at most as:
+  e <= [-0,5, +0.1] * sum[K = 0 .. X](10**-K * 2**-N)
+  e <= [-0,5, +0.1] * sum[K = 0 .. X](10**-K) * 2**-N
+  e <= [-0,5, +0.1] * 2**-N * 10**(X + 1)
+  e <= [-0,5, +0.1] * 10**(X + 1 + log10(2**-N))
+  e <= [-0,5, +0.1] * 10**(X - N*log10(2) + 1)
+where X is the actual exponent of the number being converted (X <= 0)
+and log10(2) ~= 0.30102999566
+That is, we have about (N*log10(2) - 1 + 0.5) = (N*log10(2) - 0.5) decimal
+digits of precision. The 0.5 comes from max(abs(-0.5), abs(+0.1)).
+For round trip, we have (N*log10(2) - 1.5).
+So, for float32 (which has 24*log10(2) ~= 7.2247 intrinsic decimal digits of
+precision), we can reach full precision with u32 (32*log10(2) - 0.5 ~= 9.1330).
+This also enough for round-trip.
+For M bits of explicit mantissa, we need at least N bits in the integer variable
+to avoid errors:
+  M*log10(2) <= N*log10(2) - 0.5
+  N >= M + 0.5 / log10(2) ~= M + 1.6610
+and Nr bits for round-trip:
+  M*log10(2) <= Nr*log10(2) - 1.5
+  Nr >= M + 1.5 / log10(2) ~= M + 4.983
+This leads to the same conclusions as for the integral part
+
+The analysis was almost identical for the integral and the fractional part.
+In the end, we have perfect rounding for integers not smaller than the float
+(ie the 'double' type of C) binary representation, and we have (N*log10(2) - 0.5)
+decimal digits of precision otherwise; (N*log10(2) - 1.5) since we need round-trip.
+
+** Considerations about the rounding and the error **
+
+The carry provides us very little gain: a half-bit of precision.
+However, it does help in particularly annoying cases, as for 0.1, which is
+actually 0.100000001490116119384765625 in double precision, but becomes
+0.0999999940395355224609375 if we remove the very last bit.
+So, when using dynamic scaling, and thus losing that bit, we might convert it to
+"0.09999999", whereas the carry lets us (usually) correct that to "0.10000000".
+Losing that bit is possible also with high precision, since during the
+operations, the number of significant bits tend to grow at first, so some bit
+is bound to be dropped. With sufficient precisiomn (ub), the carry can always
+compensate for this -- we still drop bits, but they are all insignificant ones.
+Also note cases like 0.6, which with the 53 bits of precision of f64 is actually
+0.5999999999999998667732370449812151491641998291015625.
+And note that 0.1 is 0b0.0[0011] (ie [0011] repeat indefinitely).
+0.1 has an infinite binary expansion -- that's because base-10 has a factor 5
+that does not exist in base-2; the reverse is not true, so any finite-bit number
+in base-2 has a finite-digit representation in base-10.
+If we take progressive binary truncations of 0.1 --ie if we consider more and
+more bits--, we see they correspond to:
+0.0625
+0.09375
+0.09765625
+0.099609375
+0.099853515625
+0.0999755859375
+...
+0.099999904632568359375
+...
+In the limit, the binary equivalent of 0.1 is 0.0999... == 0.0[9].
+This is *exactly* the same as 0.1.
+Short proof: x = 0.0[9] -> 10x = 0.[9] -> 10x - x = 0.9 -> 9x = 0.9 -> x = 0.1
+However, even with infinite precision, we still "look at bits" some at a time,
+so we can't but progressively build the string representation of 0.1 as "0.09",
+"0.099", "0.0999", etc. Only at the "end" (when we have the number of digits we
+want), and by looking at the carry, can we determine that it actually is "0.1".
+We could in principle look at the bit expansion of our number, and see that we
+get repeating patterns, and "jump" to right string immediately. However,
+repeating patterns can be arbitrarily complex (any number of digits long), and
+we need "infinite" precision to accurately detect them, and in the end it's just
+too complex to try and detect them in our algorithm, especially since a much
+simpler carry arithmetic can get to the same result.
+
+For this reason, the carry is necessary, even when ub>=bb, to achieve zero error.
+Note that "zero error" does not mean that we can output the shortest nor the
+most accurate string. It means that we can emit all the significant digit
+correctly, where "significant" is relative to the original float. In the
+"significant" digits we include the "extra" one that is sometimes needed for
+round-trip.
+A float value actually corresponds to an interval of real values; the float is
+sort of the middle point of the interval (though not exactly so). Any real value
+inside this interval is represented by that same float value. Any string that
+represents a real value inside the interval is a correct representation of the
+float. Some implementations may choose to output the string representation of
+the "middle point" exactly (which is "more accurate", but potentially longer),
+others may choose to output the string with the fewest digits (ie one that
+outputs enough digits to uniquely identify the original float, and then a
+sequence of '0's).
+We do not guarantee either of these. We just guarantee to print some number
+inside the interval.
+All of this is subject to us using a 'u' variable with enough bits (see the
+dedicated formula in other parts of this discussion -- M decimal digits:
+  M = 1 + ceil(N * log10(2))
+are always enough to represent any N-bit float, with round-trip.
+
+As mentioned above, we cannot possibly keep all the significant bits throughout
+the algorithm, not even when using integers at least the size of the binary float
+representation -- and regardless of the fact that rounding comes out perfect
+anyway, even when using much fewer, though sufficient, bits.
+In the integer part, we need to divide by 5. This guarantees that we clear 2
+upper bits, but may produce an infinite number of new bits. For instance, a
+value of 1 in the units must produce 0.2 in the fraction, which in binary is
+0b0.0011001100110011...
+So, we would need an infinitely-wide window to track all the bits.
+Note that this is not a fraction of the original number; it is a fraction of the
+number in the window (which might corresponds to some power of ten).
+In the fractional part, we need to multiply by 5. This produces at least 2 new
+upper bits. If the number in window is odd, the low bit will still be set, so we
+lose no lower bits. That is, at each multiplication (each decreasing power of
+10 of the original number), we might need an additional 2 bits. This cannot fit
+into any practical fixed-size integer (eg with float64, with powers down to
+10**-324, we might need up to 648 additional bits).
+
+To achieve round-trip precision, we need (ub >= emb1 + 4 + log2(10)). This is
+because we lose:
+* log2(5)~=2.322 bits at each step of the integral windowed operations
+* (log2(5), 3] bits at each step of the fractional windowed operations
+* 4 bits at each step of the fractional extraction operations
+The 4 bits are not needed during the windowed operations, so we do not sum them,
+but consider the maximum of the three conditions, which is 4 bits.
+We also need to print an "extra" decimal digit for round-trip, but we do not
+need any more bits for that -- that digit comes from the same N binary bits, and
+is only needed because of the "misalignment" of the two bases, not because of
+some extra bits required in the float value or in the intermediate values.
+The numbers above are upper bounds -- the carry improves them somewhat.
+So, we need at least 4 spare bits. All IEEE 754 binary floats (ie f16, f32, f64,
+f128, f256) ensure this (they have 1 sign bit, and multiple exponent bits),
+if we use their binary size as the size of our u variable (or better).
+
+**************************
+*** Adjustments for %e ***
+**************************
+%e uses the same basic algorithm as %f, with a number of adjustments.
+First, we always need to print all the integral digits for %f. Instead, for %e
+we need digits of the form x.xxx * 10**e10, and those x digits may or may not be
+in the integral part. So, to avoid overrunning the internal buffer (ie returning
+an error) when emitting lots of '0's that we might not even need in the end, we
+do no emit the integral trailing '0's. We just keep track of how many there are,
+so that we can restore them later if needed.
+Then we emit all the integral digits that are handled by the extraction
+algorithm. We might not need them, but we must emit them anyway, since at this
+time we still don't know how many digits there are in total in the integral part.
+Anyway, these digits are always in limited number (due to the finite precision
+of the original float), and our internal digit buffer has enough room for all
+of them. When we are done with the integral part, we should:
+1) if we already have enough digits, we must round them, and end.
+2) if we are missing some digits, and the fractional part is 0, we must round
+the integral part, and then emit as many trailing '0's as possible, from those
+we have kept track of
+3) if we are missing some digits, and the fractional part is not 0, we must
+emit as many trailing '0's as possible, from those we have kept track of. We
+cannot have a carry in this case, since we had no windowed operations on the
+integral bits. We then move on to the fractional part (and its rounding)
+In all cases of rounding, we must handle the possibility that one new '1' digit
+may appear at the left of the whole string of digits. In this case, we will
+always have a string of the form "100...0".
+In case 1: we may have more digits than needed, so we consider the one-past-the-last
+that we need, and round based on that:
+  "dddddggg"
+       ^last one needed
+If the first 'g' is < '3', the rounding is down; we can just forget the
+additional digits. If it is >= '5', the rounding is up. We perfom it (see later).
+If it is '4', we must continue, to check for cases like "4999+carry", which
+round to "5000", and which cause rounding of the digits 'd' too. So, after an
+initial '4', we round down in all cases, except when we find a sequence of all
+'9's, in which case we round according to the original carry.
+In looking for the '9's, we continue until we exhaust the extra emitted digits.
+If we still haven't terminated (or if there was no extra digit emitted), the
+rounding is determined by the carry (which was set by the windowed operations,
+for the first --ie rightmost-- emitted digit).
+In case 2: we do the same as 1, except that we will have no extra digits, so we
+will immediately check the carry, and round as needed. Then we add the extra
+'0's.
+In case 3: we do no rounding, and emit the extra '0's.
+
+Now, if we still have some implicit 0s not emitted, we can stop, without
+rounding. Either the fractional part is absent, or we need less precision, and
+the carry came from integral digits (possibly the implicit 0s, so no carry at
+all), and was already handled.
+Otherwise, we have emitted all the digits up to the units (e10=0), and we can
+continue with the fractional part.
+The fractional part operates as usual, including the possible early termination
+if we have emitted enough digits, and the final rounding, which can ripple
+through to integral digits as well. However, when the integral part is absent,
+we may have a long trailing string of '0's in the fractional part. We must
+handle them similarly to the implicit integral '0's -- we do not emit any
+leading '0' if the integral part was empty, ie if the we haven't already emitted
+any digit at all.
+We must also keep track of the decimal exponent. With %f, we just emit a dot
+when the integral digits are over (plus handling of '#'-related behavior, ie
+the dot is omitted in some cases).
+With %e, instead, we must always place the dot (again, subject to the '#' flag)
+after the leading decimal digit, but we also need to emit the decimal exponent.
+To do that, we need to:
+A) count how many significant integral digits we have emitted
+B) count how many implicit integral '0's we have
+C) count how many implicit fractional '0's we have
+D) count how many significant fractional digits we have emitted
+For A, we can count how many digits we have in the buffer after the integral
+part. For B, we keep a counter; we adjust it as we emit some of those digits
+(and they are concatenated into the buffer). At this point, if we have at least
+some digit (the buffer is not empty), then the exponent is the sum of the number
+of digits in the buffer and the implicit '0's never emitted. This is true
+regardless of what is in the fractional part.
+If we get to the fractional part and haven't emitted any digit yet, and we emit
+Z leading fractional '0's, then the exponent is (e10 = -Z-1). The number of
+significant fractional digits is actually irrelevant in all cases.
+If the carry causes the appearance of a new digit, in all cases the exponent
+must be increased by 1.
+To print the exponent for %e: it is a signed integer, so we can handle the sign,
+then take the absolute value and convert the number as any unsigned integer.
+All the details of handling the space in the buffer (appending digits in one
+direction or the other, making room for the exponent, moving things around as
+needed) is not described here. See the source code for more details.
+
+**************************
+*** Adjustments for %g ***
+**************************
+The %g specifier prints a number as %f or as %e based on the actual value.
+Also, it removes any trailing '0' (and decimal point), unless '#' is specified.
+For the choice of %f vs %e, consider:
+  Pg is the precision specified for %g (at least 1 -- treated as 1 if provided as 0)
+  X is the exponent that a %e representation would have (ie it is the e10
+    exponent of the scientific notation v = m10 * 10**e10, with the condition
+    that v == 0 corresponds to v = 0 * 10**0)
+We choose %f iff:
+  Pg > X >= -4
+If we choose %f, we print it using precision:
+  Pf = Pg - (X + 1)
+If we choose %e, we print it using precision:
+  Pe = Pg - 1
+So:
+  Pg is the number of significant digits (in the output)
+  Pe is the number of fractional digits (%e always has 1 integral digit)
+  Pf is the number of fractional digits (%f has an arbitrary number of integral digits)
+
+The %e algorithm proceeds as follows:
+* get m2 and e2
+* emit the integral digits; if there is any (e2 >= 0), now we know X
+* emit the fractional digits; now we certainly know X
+* adjust everything for formatting (point, exponent, etc.)
+
+The transformation of the precision (Pg->Pe, Pg->Pf) is such that we get the
+exact same number of significant digits in all cases:
+if %e, (Pe = Pg-1), but Pe is the number of fractional digits, and we always
+have one integer digit.
+If %f and (X < 0), Pf is such that we get some leading fractional '0's, and then
+all the original significant digits.
+If %f and (Pf <= X), Pf is 0, and we get all the original significant digits
+(integral) and then some trailing integral '0's.
+If %f and neither of the conditions above, Pf is such that we have the original
+integral significant digits, and then the original fractional significant digits.
+So, we know from the start how many digits to emit, and we can emit them and
+perform the rounding without any problem.
+Only at the end do we need to look at Pg and X, to choose between %f and %e.
+For %e, we must first remove all the trailing '0's (we only leave the highest
+digit, regardless of its value), unless '#' is specified.
+For %f, we do the same, but we stop when we delete the tenths' digit.
+For %f, we then calculate how many leading fractional '0's we need -- based on
+how many digits we have (left) and the value of X (we only need such digits if
+X < -1). For %e we never need leading fractional '0's (we always have 1 integral
+digit, and all the significant digits are contiguous).
+For %f and %e, if we didn't remove trailing '0's, we calculate how many trailing
+fractional '0's we need: the precision (Pe or Pf) minus the number of digits we
+do have (significant and leading).
+For %f, we calculate how many trailing integral '0's we need (based on X and the
+number of significant digits we have left).
+Knowing all these numbers, we can print the number: the integral significant
+digits, the trailing integral '0's, the dot, the fractional leading '0's, the
+fractional significant digits, the fractional trailing '0's.
+Actually, we compose them backwards, because we keep the buffer reversed, since
+this reduces the code footprint.
+
+Our internal buffer has limited size, and we produce an "err" if the string
+representation cannot fit. Since %g mandates to remove all trailing '0's (up to
+and including the decimal point), unless '#' is specified, we should make sure not
+to fail just because we filled up the buffer with useless '0's.
+When emitting the digits in the buffer, we are guaranteed not to overrun it
+because of '0's, since we have enough space for all the float64 significant
+digits (plus 1, for round-trip), and we stop before emitting any excess '0'.
+Even when emitting "99...9" and then having to round it, we do have many '0's,
+but they can fit in the buffer (the buffer must fit N -- the decimal digits of
+precision of 'double' -- plus 1 for the point, plus 5 for the exponent; so we
+certainly have room for N+1, now that we have nothing but the digits yet).
+However, if the caller requires too many digits of precision, then we do put
+those digits in the buffer, even if they are '0's, and we remove them afterwards
+as needed (for %g without '#'). This can indeed cause an overrun error which
+could have been avoided, since we do not need that much space in the final string.
+We ignore this case, as it complicates the algorithm a little, for a small
+benefit that is only there for "useless" precision, and which can be avoided by
+the user anyway by setting a larger size for the internal buffer.
+Note that the default (and also minimal) buffer size is enough to avoid any such
+errors whenever the precision is not greater than the precision required for
+round-trip of f64.
+
+****************************************************
+*** About the error with dynamic integer scaling ***
+****************************************************
+We have discussed elsewhere the error (and round-trip properties) when using an
+intermediate 'u' variable wide enough to have "full" precision.
+In the worst case, we need M decimal digits to round-trip an N-bit (of mantissa)
+float:
+  M = 1 + ceil(N*log10(2))
+To be able to print those digits accurately, we need an intermediate variable 'u'
+with ub bits:
+  ub >= N + 4 + log2(10)
+If this is not the case, we introduce errors in the rounding of intermediate
+values, so we cannot print all the decimal digits (for round-trip) -- we do
+print the required digits, but they are only correct up to a point:
+  M' <= floor(ub*log10(2))
+Note that NPF's default is to use 'unsigned int' for 'double' values, which on
+common systems means 32-bit for a 53-bit mantissa, so we do have rounding errors,
+although 32 bits are enough for the whole subset of 'float' (f32) values.
+Also note that we always have limited precision (even when it is "enough"), so
+there is always a point after which we emit incorrect digits -- only, for values
+of 'ub' that provide "full" precision, the error is beyond the number M of
+digits that are required for round-trip.
+
+Just to get a feel for it, here is an example of such a rounding error.
+If we have f64 'double', and use u32 intermediate results, and we want to print
+("%.2f", 12.345), we should get "12.35"
+12.345 is equivalent to:
+0b1100.010[11000010100011110101]
+Which in f64 gets rounded (not truncated) to:
+1100.0101100001010001111010111000010100011110101110001
+which means our 'double' variable actually contains the decimal number
+12.3450000000000006394884621840901672840118408203125
+(this is the full expansion)
+Compare it with its "predecessor" (obtained by subtracting 1 LSb with f64 precision):
+12.344999999999998863131622783839702606201171875
+This is farther from "12.345", so our previous number is indeed the "proper"
+one to convert the literal "12.345".
+When we process 12.345 with our algorithm, we go through the following steps.
+We show both what happens with u32 precision, and with "infinite" precision.
+Since we start with a 53-bit mantissa, and we never generate new bits on the right,
+u64 precision is equivalent to infinite precision.
+The steps:
+extract and normalize the mantissa from the f64 binary representation:
+  |0000 0000 0001 100.0 1011 0000 1010 0011  1101 0111 0000 1010 0011 1101 0111 0001|
+remove integral digits and shift:
+  u32                                         (u64)
+  |0101 1000 0101 0001 1110 1011 1000 0101|   |0101 1000 0101 0001 1110 1011 1000 0101  0001 1110 1011 1000 1000 0000 0000 0000| e2f=0
+rescale the exponent (keep multiplying by 5 and shifting -- we do few of these steps, since we find non-0 digits right from the tenths):
+  |0010 1100 0010 1000 1111 0101 1100 0010|1  |0010 1100 0010 1000 1111 0101 1100 0010  1000 1111 0101 1100 0100 0000 0000 0000|0 e2f=1
+  |1101 1100 1100 1100 1100 1100 1100 1010|*  |1101 1100 1100 1100 1100 1100 1100 1100  1100 1100 1100 1101 0100 0000 0000 0000|0 e2f=2
+  |1101 1100 1100 1100 1100 1100 1100 1101|0  |1101 1100 1100 1100 1100 1100 1100 1100  1100 1100 1100 1101 0100 0000 0000 0000|0 e2f=2
+  |0110 1110 0110 0110 0110 0110 0110 0110|1  |0110 1110 0110 0110 0110 0110 0110 0110  0110 0110 0110 0110 1010 0000 0000 0000|0 e2f=3
+  |0110 1110 0110 0110 0110 0110 0110 0110|*  |0110 1110 0110 0110 0110 0110 0110 0110  0110 0110 0110 0110 1010 0000 0000 0000|0 e2f=3
+  |0110 1110 0110 0110 0110 0110 0110 1001|*  |0110 1110 0110 0110 0110 0110 0110 0110  0110 0110 0110 0110 1010 0000 0000 0000|0 e2f=3
+  |0011 0111 0011 0011 0011 0011 0011 0100|1  |0011 0111 0011 0011 0011 0011 0011 0011  0011 0011 0011 0011 0101 0000 0000 0000|0 e2f=4
+end rescale (carry = (e2f >= 0))
+  |0011 0111 0011 0011 0011 0011 0011 0011|1  |0011 0111 0011 0011 0011 0011 0011 0011  0011 0011 0011 0011 0101 0000 0000 0000|1 e2f=4
+extract digits:
+  |0000 0111 0011 0011 0011 0011 0011 0011|1  |0000 0111 0011 0011 0011 0011 0011 0011  0011 0011 0011 0011 0101 0000 0000 0000|1   --> '3' '3'
+  |0100 0111 1111 1111 1111 1111 1111 1110|1  |0100 1000 0000 0000 0000 0000 0000 0000  0000 0000 0000 0001 0010 0000 0000 0000|1
+  |0000 0111 1111 1111 1111 1111 1111 1110|1  |0000 1000 0000 0000 0000 0000 0000 0000  0000 0000 0000 0001 0010 0000 0000 0000|1   --> '4' '4'
+        ^                                           ^
+carry = carry & high_bit
+  0                                            1
+So, we see that u32 reaches a point where a long string of '1's appear: "011..",
+whereas u64 has retained enough precision to round that properly to "100..".
+Ultimately, we are very close to the rounding threshold (0.5 of the LSb), and
+u32 underestimate the number by a tiny amount, but enough to be strictly <0.5,
+thus getting the wrong rounding.
+This is made worse by the low precision specifier for %f, as this rounding error
+ripples all the way through to the last emitted digit. If we were to continue
+emitting digits (if %f had more precision), we would push the error further
+down the line -- ie the rippling would be shorter.
+extract more digits:
+ (|0000 0111 1111 1111 1111 1111 1111 1110|1  |0000 1000 0000 0000 0000 0000 0000 0000  0000 0000 0000 0001 0010 0000 0000 0000|1   --> '4' '4')
+  |0100 1111 1111 1111 1111 1111 1110 1100|1  |0101 0000 0000 0000 0000 0000 0000 0000  0000 0000 0000 1011 0100 0000 0000 0000|1
+  |0000 1111 1111 1111 1111 1111 1110 1100|1  |0000 0000 0000 0000 0000 0000 0000 0000  0000 0000 0000 1011 0100 0000 0000 0000|1   --> '4' '5'
+  |1001 1111 1111 1111 1111 1111 0011 1000|1  |0000 0000 0000 0000 0000 0000 0000 0000  0000 0000 0111 0000 1000 0000 0000 0000|1
+  |0000 1111 1111 1111 1111 1111 0011 1000|1  |0000 0000 0000 0000 0000 0000 0000 0000  0000 0000 0111 0000 1000 0000 0000 0000|1   --> '9' '0'
+(we compress two steps in one from now on)
+  |1001 1111 1111 1111 1111 1000 0011 0000|1  |0000 0000 0000 0000 0000 0000 0000 0000  0000 0100 0110 0101 0000 0000 0000 0000|1   --> '9' '0'
+  |1001 1111 1111 1111 1011 0001 1110 0000|1  |0000 0000 0000 0000 0000 0000 0000 0000  0010 1011 1111 0010 0000 0000 0000 0000|1   --> '9' '0'
+  |1001 1111 1111 1100 1111 0010 1100 0000|1  |0000 0000 0000 0000 0000 0000 0000 0001  1011 0111 0111 0100 0000 0000 0000 0000|1   --> '9' '0'
+  |1001 1111 1110 0001 0111 1011 1000 0000|1  |0000 0000 0000 0000 0000 0000 0001 0001  0010 1010 1000 1000 0000 0000 0000 0000|1   --> '9' '0'
+  |1001 1110 1100 1110 1101 0011 0000 0000|1  |0000 0000 0000 0000 0000 0000 1010 1011  1010 1001 0101 0000 0000 0000 0000 0000|1   --> '9' '0'
+  |1001 0100 0001 0100 0011 1110 0000 0000|1  |0000 0000 0000 0000 0000 0110 1011 0100  1001 1101 0010 0000 0000 0000 0000 0000|1   --> '9' '0'
+  |0010 1000 1100 1010 0110 1100 0000 0000|1  |0000 0000 0000 0000 0100 0011 0000 1110  0010 0011 0100 0000 0000 0000 0000 0000|1   --> '2' '0'
+  |0101 0111 1110 1000 0011 1000 0000 0000|1  |0000 0000 0000 0010 1001 1110 1000 1101  0110 0000 1000 0000 0000 0000 0000 0000|1   --> '5' '0'
+  |0100 1111 0001 0010 0011 0000 0000 0000|1  |0000 0000 0001 1010 0011 0001 1000 0101  1100 0101 0000 0000 0000 0000 0000 0000|1   --> '4' '0'
+  |1001 0110 1011 0101 1110 0000 0000 0000|1  |0000 0001 0000 0101 1110 1111 0011 1001  1011 0010 0000 0000 0000 0000 0000 0000|1   --> '9' '0'
+  |0100 0011 0001 1010 1100 0000 0000 0000|1  |0000 1010 0011 1011 0101 1000 0100 0000  1111 0100 0000 0000 0000 0000 0000 0000|1   --> '4' '0'
+  |0001 1111 0000 1011 1000 0000 0000 0000|1  |0110 0110 0101 0001 0111 0010 1000 1001  1000 1000 0000 0000 0000 0000 0000 0000|1   --> '1' '6'
+  |1001 0110 0111 0011 0000 0000 0000 0000|1  |0011 1111 0010 1110 0111 1001 0101 1111  0101 0000 0000 0000 0000 0000 0000 0000|1   --> '9' '3'
+  |0100 0000 0111 1110 0000 0000 0000 0000|1  |1001 0111 1101 0000 1011 1101 1011 1001  0010 0000 0000 0000 0000 0000 0000 0000|1   --> '4' '9'
+  |0000 0100 1110 1100 0000 0000 0000 0000|1  |0100 1110 0010 0111 0110 1001 0011 1011  0100 0000 0000 0000 0000 0000 0000 0000|1   --> '0' '4'
+  |0011 0001 0011 1000 0000 0000 0000 0000|1  |1000 1101 1000 1010 0001 1100 0101 0000  1000 0000 0000 0000 0000 0000 0000 0000|1   --> '3' '8'
+  |0000 1100 0011 0000 0000 0000 0000 0000|1  |1000 0111 0110 0101 0001 1011 0010 0101  0000 0000 0000 0000 0000 0000 0000 0000|1   --> '0' '8'
+  |0111 1001 1110 0000 0000 0000 0000 0000|1  |0100 1001 1111 0011 0000 1111 0111 0010  0000 0000 0000 0000 0000 0000 0000 0000|1   --> '7' '4'
+  |0110 0010 1100 0000 0000 0000 0000 0000|1  |0110 0011 0111 1110 1001 1010 0111 0100  0000 0000 0000 0000 0000 0000 0000 0000|1   --> '6' '6'
+  |0001 1011 1000 0000 0000 0000 0000 0000|1  |0010 0010 1111 0010 0000 1000 1000 1000  0000 0000 0000 0000 0000 0000 0000 0000|1   --> '1' '2'
+  |0111 0011 0000 0000 0000 0000 0000 0000|1  |0001 1101 0111 0100 0101 0101 0101 0000  0000 0000 0000 0000 0000 0000 0000 0000|1   --> '7' '1'
+  |0001 1110 0000 0000 0000 0000 0000 0000|1  |1000 0110 1000 1011 0101 0101 0010 0000  0000 0000 0000 0000 0000 0000 0000 0000|1   --> '1' '8'
+  |1000 1100 0000 0000 0000 0000 0000 0000|1  |0100 0001 0111 0001 0101 0011 0100 0000  0000 0000 0000 0000 0000 0000 0000 0000|1   --> '8' '4'
+  |0111 1000 0000 0000 0000 0000 0000 0000|1  |0000 1110 0110 1101 0100 0000 1000 0000  0000 0000 0000 0000 0000 0000 0000 0000|1   --> '7' '0'
+  |0101 0000 0000 0000 0000 0000 0000 0000|1  |1001 0000 0100 0100 1000 0101 0000 0000  0000 0000 0000 0000 0000 0000 0000 0000|1   --> '5' '9'
+  |0000 0000 0000 0000 0000 0000 0000 0000|1  |0000 0010 1010 1101 0011 0010 0000 0000  0000 0000 0000 0000 0000 0000 0000 0000|1   --> '0' '0'
+  |0000 0000 0000 0000 0000 0000 0000 0000|1  |0001 1010 1100 0011 1111 0100 0000 0000  0000 0000 0000 0000 0000 0000 0000 0000|1   --> '0' '1'
+  |0000 0000 0000 0000 0000 0000 0000 0000|1  |0110 1011 1010 0111 1000 1000 0000 0000  0000 0000 0000 0000 0000 0000 0000 0000|1   --> '0' '6'
+  |0000 0000 0000 0000 0000 0000 0000 0000|1  |0111 0100 1000 1011 0101 0000 0000 0000  0000 0000 0000 0000 0000 0000 0000 0000|1   --> '0' '7'
+  |0000 0000 0000 0000 0000 0000 0000 0000|1  |0010 1101 0111 0001 0010 0000 0000 0000  0000 0000 0000 0000 0000 0000 0000 0000|1   --> '0' '2'
+  |0000 0000 0000 0000 0000 0000 0000 0000|1  |1000 0110 0110 1011 0100 0000 0000 0000  0000 0000 0000 0000 0000 0000 0000 0000|1   --> '0' '8'
+  |0000 0000 0000 0000 0000 0000 0000 0000|1  |0100 0000 0011 0000 1000 0000 0000 0000  0000 0000 0000 0000 0000 0000 0000 0000|1   --> '0' '4'
+  |0000 0000 0000 0000 0000 0000 0000 0000|1  |0000 0001 1110 0101 0000 0000 0000 0000  0000 0000 0000 0000 0000 0000 0000 0000|1   --> '0' '0'
+  |0000 0000 0000 0000 0000 0000 0000 0000|1  |0001 0010 1111 0010 0000 0000 0000 0000  0000 0000 0000 0000 0000 0000 0000 0000|1   --> '0' '1'
+  |0000 0000 0000 0000 0000 0000 0000 0000|1  |0001 1101 0111 0100 0000 0000 0000 0000  0000 0000 0000 0000 0000 0000 0000 0000|1   --> '0' '1'
+  |0000 0000 0000 0000 0000 0000 0000 0000|1  |1000 0110 1000 1000 0000 0000 0000 0000  0000 0000 0000 0000 0000 0000 0000 0000|1   --> '0' '8'
+  |0000 0000 0000 0000 0000 0000 0000 0000|1  |0100 0001 0101 0000 0000 0000 0000 0000  0000 0000 0000 0000 0000 0000 0000 0000|1   --> '0' '4'
+  |0000 0000 0000 0000 0000 0000 0000 0000|1  |0000 1101 0010 0000 0000 0000 0000 0000  0000 0000 0000 0000 0000 0000 0000 0000|1   --> '0' '0'
+  |0000 0000 0000 0000 0000 0000 0000 0000|1  |1000 0011 0100 0000 0000 0000 0000 0000  0000 0000 0000 0000 0000 0000 0000 0000|1   --> '0' '8'
+  |0000 0000 0000 0000 0000 0000 0000 0000|1  |0010 0000 1000 0000 0000 0000 0000 0000  0000 0000 0000 0000 0000 0000 0000 0000|1   --> '0' '2'
+  |0000 0000 0000 0000 0000 0000 0000 0000|1  |0000 0101 0000 0000 0000 0000 0000 0000  0000 0000 0000 0000 0000 0000 0000 0000|1   --> '0' '0'
+  |0000 0000 0000 0000 0000 0000 0000 0000|1  |0011 0010 0000 0000 0000 0000 0000 0000  0000 0000 0000 0000 0000 0000 0000 0000|1   --> '0' '3'
+  |0000 0000 0000 0000 0000 0000 0000 0000|1  |0001 0100 0000 0000 0000 0000 0000 0000  0000 0000 0000 0000 0000 0000 0000 0000|1   --> '0' '1'
+  |0000 0000 0000 0000 0000 0000 0000 0000|1  |0010 1000 0000 0000 0000 0000 0000 0000  0000 0000 0000 0000 0000 0000 0000 0000|1   --> '0' '2'
+  |0000 0000 0000 0000 0000 0000 0000 0000|1  |0101 0000 0000 0000 0000 0000 0000 0000  0000 0000 0000 0000 0000 0000 0000 0000|1   --> '0' '5'
+  |0000 0000 0000 0000 0000 0000 0000 0000|1  |0000 0000 0000 0000 0000 0000 0000 0000  0000 0000 0000 0000 0000 0000 0000 0000|1   --> '0' '0'
+  |0000 0000 0000 0000 0000 0000 0000 0000|1  |0000 0000 0000 0000 0000 0000 0000 0000  0000 0000 0000 0000 0000 0000 0000 0000|1   --> '0' '0'
+  ...
+We see that even u32 can ultimately be "almost correct", but we would need to
+print enough digits so as to push the error beyond the significant decimal
+digits (which is not always possible; the error might appear before that, with
+other values).
+We also see that we can print at most N-4 digits before the variable becomes
+0 (we introduce a new 0 bit on the right at every extracted decimal digit),
+after which any further digit is '0'. This is way more non-'0' digits than there
+are significant digits, ie the error, if any, usually appears long before that.
+The emitted "unbounded" strings are thus:
+  u32: 1.23449999999254941940307617187500...   (with e10 = 1)
+  u64: 1.2345000000000000639488462184090167284011840820312500... (with e10 = 1)
+We see that u32 is not accurate to 17 (total) digits, but it is indeed accurate
+to 12 (> 9).
+u64 is accurate to infinitely many digits. The non-'0's that appear are indeed
+the accurate representation of the value in our double, which is not exactly
+12.345.
+Also, the final carry that we apply depends on when we stop, and can be seen in
+the 5th-from-left bit at each step of the extraction. u32 would round correctly
+if we were to stop on any of these digits:
+  12.344999999925...
+       ~~~~~~~~
+It just so happens that we do not round correctly if we stop at the first '4'.
+Also note that u32 rounds "correctly" from its point of view, which is that the
+correct number is indeed "12.344999999925..." -- "12.34" is the correct rounding
+with this perspective.
+
+
+*****************************************
+*** About the %g conversion specifier ***
+*****************************************
+
+The standard says:
+***
+A double argument representing a floating-point number is converted in style f or e (or
+in style F or E in the case of a G conversion specifier), depending on the value converted
+and the precision. Let P equal the precision if nonzero, 6 if the precision is omitted, or 1 if
+the precision is zero. Then, if a conversion with style E would have an exponent of X:
+if P > X >= -4, the conversion is with style f (or F) and precision P - (X + 1).
+otherwise, the conversion is with style e (or E) and precision P - 1.
+Finally, unless the # flag is used, any trailing zeros are removed from the fractional portion
+of the result and the decimal-point character is removed if there is no fractional portion
+remaining.
+A double argument representing an infinity or NaN is converted in the style of an f or F
+conversion specifier.
+***
+
+%g results in a %f-like representation or in a %e-like representation, depending
+on the actual value of the float.
+In case of non-finites (nan or infinity), the representation is the obvious one,
+also used by both %f and %e. A value of 0 always results (implicitly, using the
+standard rules) in an %f-like representation.
+For all the discussions that follow, a value of 0 is associated to an exponent
+X = 0 (as also specified in the standard, for %e). This avoids having to
+special-case the float value 0.
+
+One might think that %g always selects the most compact representation.
+This is also suggested by the fact that %g always removes trailing fractional
+0s (up to and including the decimal point), both in the %e-like and in the
+%f-like representation.
+However, that is not the case.
+What the standard specification actually achieves is to select %f iff the number
+has at least one significant digit between 1e0 (the units) and 1e-4 (the
+ten-thousandths), inclusive.
+Let's denote X the exponent which is associated with the first significant
+digit, ie the exponent of the %e representation, ie the exponent of scientific
+notation M * 10**X, with M in [1, 10).
+Let's also consider the number of significant digits in the actual number.
+With a precision P (P >= 1) specified for %g, we only retain the P
+most significant digits (including the most significant one -- this is different
+from the meaning of 'precision' for %e).
+Note that the float has a maximum number of significant digits it can hold,
+depending on the bitsize of the mantissa in its binary representation; but we
+ignore that, and only consider the precision P requested for %g.
+Now, back to "select %f iff the number has at least one significant digit
+between 1e0 and 1e-4".
+If any of the P retained significant digits falls within [1e-4, 1e1), that is,
+if there is at least one significant digit in the decimal positions {0, -1, -2,
+-3, -4}, then we choose a %f-like representation.
+In all other cases, we choose %e.
+This achieves two things:
+1) we never have non-significant trailing 0s in the integer part (where
+"non-significant" means beyond the precision P -- this is unrelated to the
+number of significant digit in the actual float value).
+2) we use a more compact representation (%e) for small numbers, where "small" is
+arbitrarily chosen to mean (< 1e-4).
+So, the formula to choose %f is: P > X >= -4. Otherwise, we choose %e.
+(P > X) ensures that the least significant digit is no higher than the units (no
+more "to the left").
+(X >= -4) ensures that the most significant digit is no lower than 1e-4 (no more
+"to the right" than the ten-thousands).
+
+After choosing %e or %f, we want to represent them with a number of significant
+digits that is equal to the specified P (which was specified for %g, so we
+denote it Pg). %e has one digit before the decimal point, and Pe after (where Pe
+is the precision specified for %e -- eg printf("%.2e", 1.234) -> "1.23").
+So, when %g chooses %e, it must use (Pe = Pg - 1). This is always valid, since
+(Pg >= 1).
+Instead, the %f representation has this number of digits:
+if X >= 0:
+  Nf = X + 1  (integral digits)
+  Pf  (fractional digits)
+  -> Pf + X + 1 = Pg
+  -> Pf = Pg - (X + 1)
+if X < 0:
+  Nf = 1  (integral digits)
+  |X| - 1  (leading fractional 0s)
+  Pg  (significant fractional digits)
+  -> Pf = |X| - 1 + Pg = -X - 1 + Pg
+  -> Pf = Pg -(X + 1)
+So, in all cases, we must use (Pf = Pg -(X + 1)).
+
+***
+
+Digression about the shortest-string strategy, which is not what the standard
+strategy is.
+
+First, the standard choice of %e in the case (P <= X) does not account for the
+additional chars introduced by the exponent.
+(P <= X) implies that all the significant digits are in the integer part (and
+that the units, at least, are not significant).
+The %e representation would be (P + 1 + 4 = P + 5) chars long (significant
+digits, plus decimal point, plus 4 for the exponent -- we ignore the case of
+larger exponents, which happens for (X >= 100), at which point %f has so many
+trailing integer 0 digits, that %e is shorter anyway).
+The %f string would instead be X+1 chars long.
+So, %f is actually shorter-or-equal if (P + 5 >= X + 1), ie if %f only has a few
+trailing 0s.
+Note that this condition (P + 4 >= X), is not incompatible with (P <= X).
+It still holds as: (X - 4 <= P <= X). So, there are indeed cases when the standard
+chooses %e when in fact %f is shorter.
+Example:
+double d = 100; printf("%.0f %.1e %.2g", d, d, d); // X = 2, P = 2
+  produces "100 1.0e+02 1e+02"
+  where %g chooses %e, whereas %f is shorter.
+double d = 1000; printf("%.0f %.1e %.2g", d, d, d); // X = 3, P = 2
+  produces "1000 1.0e+03 1e+03"
+  similarly.
+
+Instead, the choice of %e for X >= -4, also implies choosing the shortest
+representation. X < 0 means that %f must add |X| zeros in front (the units, and
+some leading fractional digits). %e, instead, adds none, but adds at least 4
+chars for "e-**". So, for X < -4, the chars added by %f are surely more than
+those added by %e, and so %e is shorter. The additional chars in %e if the
+exponent is large do not matter -- since we have at least two digits in the
+exponent (mandated by the standard), the first additional digit appears for
+X = -100, at which point %f already has 100 extra digits, so %e is still shorter.
+
+So, the shortest-string strategy would need to choose %f iff (P + 4 >= X >= -4).
+
+Also note the final removal of trailing 0s and decimal point that is performed
+by %g if '#' is not specified, but not by %f or %e. This may remove a different
+number of chars in %f-like and %e-like representations.
+In %f, the maximum number of removed chars is:
+if X >= 0: Nf = Pf + 1 (we cannot remove integer digits)
+  -> Nf = Pg -(X + 1) + 1 = Pg - X
+if X < 0: Nf = Pg - 1  (the most-significant digit is always retained -- it can
+only be 0 if the number is 0.0, which is always trivially printed as %f)
+In %e, the maximum number of removed chars is:
+  Ne = Pg - 1 + 1  (never remove the most significant digit -- not even if the
+    float value is exactly 0 -- and remove the decimal point)
+So, assuming we choose %f or %e based on their non-shortened length, and since
+ties are possible, any case in which the removed digits Nf and Ne are different
+is a case in which the final removal could impose a revisiting of the choice --
+ie, in order to choose perfectly we would have to wait until after we have
+produced all the digits.
+We have:
+if X >= 0:
+  Nf <= Pg - X
+  Ne <= Pg
+if X < 0:
+  Nf <= Pg - 1
+  Ne <= Pg
+However, since digits are always removed from the right, %e will remove at least
+as many digits as %f (%f will remove less, if there is a decimal point within
+the streak of 0s). So, %e has an advantage, and could change a decision that was
+originally in favor of %f (ie done not considering the removal of digits).
+%e actually has an advantage if Ne > Nf. In this case, %e can remove up to X more
+digits (if X >= 0 -- the trailing 0s) or up to 1 more digit (if X < 0 -- the
+trailing dot).
+This case can happen if we chose %f and now change our decision:
+(P + 4 >= X >= -4) && (X >= 0) -> P + 4 >= X > 0
+(P + 4 >= X >= -4) && (X < 0) -> (P + 4 >= X) && (0 > X >= -4) -> (0 > X >= -4)
+Examples:
+double d = 1e6; printf("%.2f %.6e %.7g", d, d, d); // X = 6, P = 7
+  produces "1000000.0 1.000000e+06 1000000"
+  but the shortened versions would be "1000000 1e+06", and %e is shorter.
+double d = 1e5; printf("%.0f %.0e %.1g", d, d, d); // X = 5, P = 1
+  produces "100000 1.0e+05 1e+05"  // %g chosen with the standard strategy
+  where the non-shortened versions are "100000 1.0e+05", in favor of %f,
+  but the shortened versions would be "100000 1e+05", and %e is shorter.
+double d = 1e-4; printf("%.4f %.4e %.5g", d, d, d); // X = -4, P = 5
+  produces "0.0001 1.0000e-04 0.0001"
+  but the shortened versions would be "0.0001 1e-04", and %e is shorter.
+
+On the other hand, in the case in which the units are non-0, and all the
+fractional digits are 0, and there are also the tens (at least) -- all of this
+means that there are at least 2 significant digits, the rightmost of which is the units --, then %f and %e
+remove the same number of digits, but %f also removes the decimal point.
+So, %f has an advantage here, and could change a decision done in favor of %e.
+However, this case implies (X >= 0 && P > X + 1), which in turn implies
+(P + 4 >= X >= -4); that is, we would have already chosen %f in this case.
+Another way to see this impossibility: %f is left with only its integer digits;
+%e and %f have lost the same amount of fractional digits; %e didn't have the
+disadvantage of the decimal point, but did have the disadvantage of 4+ chars of
+exponent. So, %e couldn't have been chosen anyway.
+
+So, as seen above, the final removal of digits can indeed impact on the
+determination of the shortest representation.
+
+Possible rationale for the standard strategy:
++ if the units are not significant, use %e (even if %f might be shorter), so
+  that no "spurious" significant digits appear in the output -- that is, those
+  0s in the units place would be non-significant, but this can't be determined
+  by just looking at the string.
++ otherwise (which only includes cases P > X), choose %f if "natural, readable"
+  -- ie if >= 1e-4 -- and %e otherwise
+The fact that the cutoff point of 1e-4 was chosen to correspond exactly to the
+cutoff for shortest representation might or might not have been a factor in the
+decision.
+The reason for always having at least 2 digits in the exponent is unclear.
+If one digit had been allowed, the cutoff would have been (< 1e-3), which might
+be perceived as a more natural cutoff for "small numbers".
+
+Finally, note that we cannot possibly have a choice (not even with the standard
+strategy) between a "normal" %e representation against a "degenerate" %f
+representation that has removed all the significant digits, like it happens in
+printf("%.3f", 1e-6), which results in "0.000". The rules to determine Pe and Pf
+from Pg make sure that they both contain Pg significant digits, so %f cannot
+have missing digits.
+So, it cannot be that %f has lost so many digits that the number is shorter than
+a "full-digits" %e, or even reduced to simply "0".
