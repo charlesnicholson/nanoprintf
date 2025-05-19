@@ -80,7 +80,62 @@ NPF_VISIBILITY int npf_vpprintf(npf_putc pc,
 #include <limits.h>
 #include <stdint.h>
 
-// The conversion buffer must fit at least UINT64_MAX in octal format with the leading '0'.
+/*
+The conversion buffer must be large enough for the largest intermediate result,
+which depends on the conversion specifier.
+The sign, and space/0 padding are handled outside of this buffer. The precision
+for non-float specifiers (integers, %s, %c) is handled outside as well, whereas
+the precision for float specifiers is handled in the buffer itself.
+The "0x" prefixes are handled outside, with the exception of the octal "0",
+which is placed in the buffer.
+Requirements for each specifier:
+%a: "<digit>.<prec_digits>p<sign><exp_digits>"
+  exp_digits is <= 4 (the exponent is the decimal representation of the binary
+  exponent, which is in [-1077, 1023], for float64 -- [-1023, 1023] for the
+  exponent, [-1074, 1023] considering denormals, [-1077, 1023] considering the
+  freedom in choosing the most significant digit).
+  The precision is user-provided, so there are no bounds on the buffer size.
+  However, float64 has 52+1 bits of mantissa, which means 53*log16(2) ~= 13.25
+  hex digits of precision (including the most significant digit), which means
+  at most 14+1=15 chars needed for round-trip.
+  So, any float64 can be accurately represented with 1+15+1+1+4 = 22 chars
+%b: does not use the buffer, outputs the chars directly
+%c: does not use the buffer
+%d/i: supported integers are at most 64 bits, so <= 20 digits
+%e: not supported. When supported, it will use the buffer for:
+  "<digit>.<prec_digits>e<sign><exp_digits>"
+  exp_digits is <= 3 (the exponent is the decimal representation of the decimal
+  exponent, which is in [-324, 308], for float64)
+  The precision is user-provided, so there are no bounds on the buffer size.
+  However, float64 has 52+1 bits of mantissa, which means 53*log10(2) ~= 15.95
+  decimal digits of precision (including the most significant digit), which
+  means at most 16+1=17 chars for round-trip.
+  So, any float64 can be accurately represented with 1+17+1+1+3 = 23 chars
+%f: "<integer_digits>.<prec_digits>"
+  The precision is user-provided, so there are no bounds on the buffer size.
+  However, float64 has 52+1 bits of mantissa, which means 53*log10(2) ~= 15.95
+  decimal digits of precision (in total, among the integer and fractional parts),
+  which means at most 16+1=17 chars for round-trip..
+  So, any float64 can be accurately represented with 1+17 = 18 chars
+%g: not supported. When supported, it will use either %e or %f, with possible
+  final tweaks to remove (never add) some digits.
+  So, the same limits and considerations as %e and %f apply.
+%n: does not use the buffer
+%o: "0<octal_digits>". supported integers are at most 64 bits, so <= 22 digits
+  Plus the "0" prefix, we need 23 chars.
+%p: equivalent to %x with appropriate flags. The same limits apply
+%s: does not use the buffer, outputs the chars directly
+%u: supported integers are at most 64 bits, so <= 20 digits
+%x: supported integers are at most 64 bits, so <= 16 digits
+
+In summary: the minimum buffer size is 23, so that we can fit any integer,
+without adding overrun checks. For floats, 23 is also sufficient for round-trip
+representations, for exponential formats, and for the %f format if the number is
+"close to 0", ie if no extra space is required for leading/trailing zeros.
+So, the default value is appropriate for most cases. The user might want to
+increase it to fit more (useless) precision digits for exponential-format floats,
+or to fit very large or very small %f-format floats.
+*/
 #ifndef NANOPRINTF_CONVERSION_BUFFER_SIZE
   #define NANOPRINTF_CONVERSION_BUFFER_SIZE    23
 #endif
@@ -129,6 +184,36 @@ NPF_VISIBILITY int npf_vpprintf(npf_putc pc,
 #ifndef NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS
   #error NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS must be #defined to 0 or 1
 #endif
+#ifndef NANOPRINTF_USE_ALT_FORM_FLAG
+  #error NANOPRINTF_USE_ALT_FORM_FLAG must be #defined to 0 or 1
+#endif
+
+#if !defined(NANOPRINTF_USE_FLOAT_HEX_FORMAT_SPECIFIER)
+  #define NANOPRINTF_USE_FLOAT_HEX_FORMAT_SPECIFIER    0
+#endif
+#if !defined(NANOPRINTF_USE_FLOAT_SCI_FORMAT_SPECIFIER)
+  #define NANOPRINTF_USE_FLOAT_SCI_FORMAT_SPECIFIER    0
+#endif
+#if !defined(NANOPRINTF_USE_FLOAT_SHORTEST_FORMAT_SPECIFIER)
+  #define NANOPRINTF_USE_FLOAT_SHORTEST_FORMAT_SPECIFIER    0
+#endif
+#if !defined(NANOPRINTF_USE_FLOAT_DEC_FORMAT_SPECIFIER)
+  #define NANOPRINTF_USE_FLOAT_DEC_FORMAT_SPECIFIER    1
+#endif
+
+#if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS && !( \
+    NANOPRINTF_USE_FLOAT_DEC_FORMAT_SPECIFIER == 1 \
+    || NANOPRINTF_USE_FLOAT_SCI_FORMAT_SPECIFIER == 1 \
+    || NANOPRINTF_USE_FLOAT_SHORTEST_FORMAT_SPECIFIER == 1 \
+    || NANOPRINTF_USE_FLOAT_HEX_FORMAT_SPECIFIER == 1)
+  #error Float support needs at least one float-specifier to be enabled
+#endif
+#if NANOPRINTF_USE_FLOAT_SCI_FORMAT_SPECIFIER == 1
+  #error The %e specifier is not supported yet
+#endif
+#if NANOPRINTF_USE_FLOAT_SHORTEST_FORMAT_SPECIFIER == 1
+  #error The %g specifier is not supported yet
+#endif
 
 // Ensure flags are compatible.
 #if (NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1) && \
@@ -174,6 +259,7 @@ NPF_VISIBILITY int npf_vpprintf(npf_putc pc,
   #pragma GCC diagnostic push
   #pragma GCC diagnostic ignored "-Wunused-function"
   #pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
+  #pragma GCC diagnostic ignored "-Wunused-label"
   #ifdef __cplusplus
     #pragma GCC diagnostic ignored "-Wold-style-cast"
   #endif
@@ -196,6 +282,7 @@ NPF_VISIBILITY int npf_vpprintf(npf_putc pc,
   #pragma warning(push)
   #pragma warning(disable:4619) // there is no warning number 'number'
   // C4619 has to be disabled first!
+  #pragma warning(disable:4102) // unused label
   #pragma warning(disable:4127) // conditional expression is constant
   #pragma warning(disable:4505) // unreferenced local function has been removed
   #pragma warning(disable:4514) // unreferenced inline function has been removed
@@ -263,10 +350,18 @@ enum {
   NPF_FMT_SPEC_CONV_WRITEBACK,    // 'n'
 #endif
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
-  NPF_FMT_SPEC_CONV_FLOAT_DEC,      // 'f', 'F'
-  NPF_FMT_SPEC_CONV_FLOAT_SCI,      // 'e', 'E'
-  NPF_FMT_SPEC_CONV_FLOAT_SHORTEST, // 'g', 'G'
-  NPF_FMT_SPEC_CONV_FLOAT_HEX,      // 'a', 'A'
+  #if NANOPRINTF_USE_FLOAT_DEC_FORMAT_SPECIFIER
+    NPF_FMT_SPEC_CONV_FLOAT_DEC,      // 'f', 'F'
+  #endif
+  #if NANOPRINTF_USE_FLOAT_SCI_FORMAT_SPECIFIER
+    NPF_FMT_SPEC_CONV_FLOAT_SCI,      // 'e', 'E'
+  #endif
+  #if NANOPRINTF_USE_FLOAT_SHORTEST_FORMAT_SPECIFIER
+    NPF_FMT_SPEC_CONV_FLOAT_SHORTEST, // 'g', 'G'
+  #endif
+  #if NANOPRINTF_USE_FLOAT_HEX_FORMAT_SPECIFIER
+    NPF_FMT_SPEC_CONV_FLOAT_HEX,      // 'a', 'A'
+  #endif
 #endif
 };
 
@@ -315,6 +410,8 @@ typedef struct npf_bufputc_ctx {
   #include <intrin.h>
 #endif
 
+#define NPF_MIN(a, b)    ((a) <= (b) ? (a) : (b))
+#define NPF_MAX(a, b)    ((a) >= (b) ? (a) : (b))
 static int npf_max(int x, int y) { return (x > y) ? x : y; }
 
 static int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
@@ -333,8 +430,8 @@ static int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec
   while (*++cur) { // cur points at the leading '%' character
     switch (*cur) { // Optional flags
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
-      case '-': out_spec->left_justified = '-'; out_spec->leading_zero_pad = 0; continue;
-      case '0': out_spec->leading_zero_pad = !out_spec->left_justified; continue;
+      case '-': out_spec->left_justified = '-'; continue;
+      case '0': out_spec->leading_zero_pad = 1; continue;
 #endif
       case '+': out_spec->prepend = '+'; continue;
       case ' ': if (out_spec->prepend == 0) { out_spec->prepend = ' '; } continue;
@@ -448,49 +545,72 @@ static int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
     case 'F': out_spec->case_adjust = 0;
     case 'f':
+    case_f:
+#if NANOPRINTF_USE_FLOAT_DEC_FORMAT_SPECIFIER == 1
       out_spec->conv_spec = NPF_FMT_SPEC_CONV_FLOAT_DEC;
-      if (out_spec->prec_opt == NPF_FMT_SPEC_OPT_NONE) { out_spec->prec = 6; }
+#elif NANOPRINTF_USE_FLOAT_SHORTEST_FORMAT_SPECIFIER == 1
+      goto case_g;
+#elif NANOPRINTF_USE_FLOAT_SCI_FORMAT_SPECIFIER == 1
+      goto case_e;
+#elif NANOPRINTF_USE_FLOAT_HEX_FORMAT_SPECIFIER == 1
+      goto case_a;
+#endif
       break;
 
     case 'E': out_spec->case_adjust = 0;
     case 'e':
+    case_e:
+#if NANOPRINTF_USE_FLOAT_SCI_FORMAT_SPECIFIER == 1
       out_spec->conv_spec = NPF_FMT_SPEC_CONV_FLOAT_SCI;
-      if (out_spec->prec_opt == NPF_FMT_SPEC_OPT_NONE) { out_spec->prec = 6; }
+#elif NANOPRINTF_USE_FLOAT_SHORTEST_FORMAT_SPECIFIER == 1
+      goto case_g;
+#elif NANOPRINTF_USE_FLOAT_DEC_FORMAT_SPECIFIER == 1
+      goto case_f;
+#elif NANOPRINTF_USE_FLOAT_HEX_FORMAT_SPECIFIER == 1
+      goto case_a;
+#endif
       break;
 
     case 'G': out_spec->case_adjust = 0;
     case 'g':
+#if NANOPRINTF_USE_FLOAT_SHORTEST_FORMAT_SPECIFIER == 1
       out_spec->conv_spec = NPF_FMT_SPEC_CONV_FLOAT_SHORTEST;
-      if (out_spec->prec_opt == NPF_FMT_SPEC_OPT_NONE) { out_spec->prec = 6; }
+#elif NANOPRINTF_USE_FLOAT_SCI_FORMAT_SPECIFIER == 1
+      goto case_g;
+#elif NANOPRINTF_USE_FLOAT_DEC_FORMAT_SPECIFIER == 1
+      goto case_f;
+#elif NANOPRINTF_USE_FLOAT_HEX_FORMAT_SPECIFIER == 1
+      goto case_a;
+#endif
       break;
 
     case 'A': out_spec->case_adjust = 0;
     case 'a':
+    case_a:
+#if NANOPRINTF_USE_FLOAT_HEX_FORMAT_SPECIFIER == 1
       out_spec->conv_spec = NPF_FMT_SPEC_CONV_FLOAT_HEX;
-      if (out_spec->prec_opt == NPF_FMT_SPEC_OPT_NONE) { out_spec->prec = 6; }
+#elif NANOPRINTF_USE_FLOAT_SCI_FORMAT_SPECIFIER == 1
+      goto case_e;
+#elif NANOPRINTF_USE_FLOAT_SHORTEST_FORMAT_SPECIFIER == 1
+      goto case_g;
+#elif NANOPRINTF_USE_FLOAT_DEC_FORMAT_SPECIFIER == 1
+      goto case_f;
+#endif
       break;
 #endif
 
 #if NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS == 1
     case 'n':
-      // todo: reject string if flags or width or precision exist
       out_spec->conv_spec = NPF_FMT_SPEC_CONV_WRITEBACK;
-#if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
-      out_spec->prec_opt = NPF_FMT_SPEC_OPT_NONE;
-#endif
       break;
 #endif
 
     case 'p':
       out_spec->conv_spec = NPF_FMT_SPEC_CONV_POINTER;
-#if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
-      out_spec->prec_opt = NPF_FMT_SPEC_OPT_NONE;
-#endif
       break;
 
 #if NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS == 1
-    case 'B':
-      out_spec->case_adjust = 0;
+    case 'B': out_spec->case_adjust = 0;
     case 'b':
       out_spec->conv_spec = NPF_FMT_SPEC_CONV_BINARY;
       break;
@@ -546,7 +666,7 @@ typedef NANOPRINTF_CONVERSION_FLOAT_TYPE npf_ftoa_man_t;
 enum {
   NPF_DOUBLE_EXP_MASK = DBL_MAX_EXP * 2 - 1,
   NPF_DOUBLE_EXP_BIAS = DBL_MAX_EXP - 1,
-  NPF_DOUBLE_MAN_BITS = DBL_MANT_DIG - 1,
+  NPF_DOUBLE_MAN_BITS = DBL_MANT_DIG - 1, // these are the explicitly-stored bits, whereas DBL_MANT_DIG includes the leading implicit 1
   NPF_DOUBLE_BIN_BITS = sizeof(npf_double_bin_t) * CHAR_BIT,
   NPF_DOUBLE_SIGN_POS = sizeof(double) * CHAR_BIT - 1,
   NPF_FTOA_MAN_BITS   = sizeof(npf_ftoa_man_t) * CHAR_BIT,
@@ -723,6 +843,122 @@ exit:
   return -(int)i;
 }
 
+static int npf_atoa_rev(char *buf, npf_format_spec_t const *spec, double f) {
+  // We compose the string backwards.
+  // We determine how many digits we need (we drop unused bits, and round
+  // properly). This may also affect the exponent we use.
+  // We can determine the exponent before printing the digits, so we print
+  // the exponent immediately (it will be at the start of the reversed buffer).
+  // Then we print all the digits (from the units up, as an integer).
+  // We add the decimal point (if needed) just before the most significant digit.
+
+  char const *ret = NULL;
+  npf_double_bin_t bin = npf_double_to_int_rep(f);
+
+  // Quite silly test, but it documents that we need the mantissa bits, plus the
+  // implicit 1, plus at most one bit that might be produced by rounding.
+  //static_assert(NPF_DOUBLE_MAN_BITS + 1 + 1 <= NPF_DOUBLE_BIN_BITS);
+
+  // exp is always the binary exponent to be printed (ie the one associated with the
+  // most significant digit, not with the most significant bit -- ie the one associated
+  // with the leading char of the output string, not with the bit in the "implicit 1" position)
+
+  // Unsigned -> signed int casting is IB and can raise a signal but generally doesn't.
+  npf_ftoa_exp_t exp =
+    (npf_ftoa_exp_t)((npf_ftoa_exp_t)(bin >> NPF_DOUBLE_MAN_BITS) & NPF_DOUBLE_EXP_MASK);
+
+  bin &= ((npf_double_bin_t)0x1 << NPF_DOUBLE_MAN_BITS) - 1;
+  if (exp == (npf_ftoa_exp_t)NPF_DOUBLE_EXP_MASK) { // special value
+    ret = (bin) ? "NAN" : "FNI";
+    goto exit;
+  }
+  {
+    // We need room for at least "p+0" and the leading digit (not part of precision)
+    // TODO: isn't it better to omit this check? it's not the common case, we don't care if "err" takes a long time to be produced
+    if (spec->prec > (NANOPRINTF_CONVERSION_BUFFER_SIZE - 4)) { goto exit; }
+
+    if (exp) { // normal number
+      bin |= (npf_double_bin_t)0x1 << NPF_DOUBLE_MAN_BITS;
+    } else { // subnormal number
+      if(bin != 0) {
+        ++exp;
+      } else {
+        exp = NPF_DOUBLE_EXP_BIAS; // 0.0 must get an exponent of 0 (+bias - bias)
+      }
+    }
+    exp = (npf_ftoa_exp_t)(exp - NPF_DOUBLE_EXP_BIAS);
+
+    const int bin_n_dig = (NPF_DOUBLE_MAN_BITS + 1 + 3) / 4; // tot digits -- must count the implicit 1
+    int n_dig = spec->prec + 1;
+    const int n_dig_to_remove = bin_n_dig - NPF_MIN(bin_n_dig, n_dig);
+    if (n_dig_to_remove) {
+      if(1) { // TODO: rounding is IB; choose whether to skip it and save some code (but the behavior becomes "surprising")
+        // Remove the unwanted digits. Shift all of them out, but stop one bit
+        // earlier so that we can get that bit as the carry. The missing shift-by-1
+        // is done later
+        bin = bin >> (4 * n_dig_to_remove - 1);
+        const int carry = (bin & 0x1);
+        // The carry can cause a new high bit to appear. We don't care, since
+        // the high nibble was 0x1 (or 0x0 for subnormal numbers), so now it can't grow
+        // larger than 0x2 (or 0x1), so it can be handled by the normal nibble-to-hexdigit logic.
+        bin >>= 1;
+        bin += carry;
+      } else {
+        // note: shifting by >= the left-hand variable bitsize is UB; but this
+        // shift is well-defined -- we can never never remove the leading
+        // significant digit, so we never shift out all the bits, so
+        // the shift amount is always less than the bitsize of the variable.
+        bin = bin >> (4 * n_dig_to_remove);
+      }
+    }
+
+    // print the exponent
+    int end = -1;
+    int neg_exp = 0;
+    if (exp < 0) {
+      neg_exp = 1;
+      exp = -exp;
+    }
+    do {
+      buf[++end] = (char)(exp % 10) + (char)'0';
+      exp /= 10;
+    } while(exp);
+    buf[++end] = neg_exp ? '-' : '+';
+    buf[++end] = 'P' + spec->case_adjust;
+    // Check if the string fits in the buffer.
+    // We always count the decimal point: if it's removed, we have no fractional
+    // digits, so the test cannot be wrong just because of this mis-accounting.
+    // count: exponent (end +1) + fractional+integral (n_dig) + dot (1)
+    if (end + 1 + n_dig + 1 > NANOPRINTF_CONVERSION_BUFFER_SIZE) {
+      goto exit;
+    }
+    for(; n_dig > bin_n_dig; --n_dig) { // pad with trailing zeros (for precision)
+      buf[++end] = '0';
+    }
+    for (int i = n_dig - 1; i > 0; --i) { // print fractional digits
+      uint_fast8_t d = bin & 0xF;
+      buf[++end] = (char)(((d < 10) ? '0' : ('A' - 10 + spec->case_adjust)) + d);
+      bin >>= 4;
+    }
+    if (n_dig > 1
+#if NANOPRINTF_USE_ALT_FORM_FLAG == 1
+        || spec->alt_form
+#endif
+        ) {
+      buf[++end] = '.';
+    }
+    buf[++end] = (char)(bin & 0xF) + (char)'0';
+    // the sign and the '0x' prefix are handled outside
+
+    return end + 1;
+  }
+exit:
+  if (!ret) { ret = "RRE"; }
+  uint_fast8_t i;
+  for (i = 0; ret[i]; ++i) { buf[i] = (char)(ret[i] + spec->case_adjust); }
+  return -(int)i;
+}
+
 #endif // NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS
 
 #if NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS == 1
@@ -817,7 +1053,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
     if (fs.prec_opt == NPF_FMT_SPEC_OPT_STAR) {
       fs.prec = va_arg(args, int);
-      if (fs.prec < 0) { fs.prec_opt = NPF_FMT_SPEC_OPT_NONE; }
+      if (fs.prec < 0) { fs.prec = 0; fs.prec_opt = NPF_FMT_SPEC_OPT_NONE; }
     }
 #endif
 
@@ -833,6 +1069,40 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
     int zero = 0;
 #endif
+#endif
+
+#if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
+    // Set default precision (we can do that only now that we have extracted the
+    // argument-provided precision (".*"), and know whether to ignore that or not
+    if (fs.prec_opt == NPF_FMT_SPEC_OPT_NONE) {
+      switch(fs.conv_spec) {
+      #if NANOPRINTF_USE_FLOAT_DEC_FORMAT_SPECIFIER == 1
+        case NPF_FMT_SPEC_CONV_FLOAT_DEC:
+      #endif
+      #if NANOPRINTF_USE_FLOAT_SCI_FORMAT_SPECIFIER == 1
+        case NPF_FMT_SPEC_CONV_FLOAT_SCI:
+      #endif
+      #if NANOPRINTF_USE_FLOAT_SHORTEST_FORMAT_SPECIFIER == 1
+        case NPF_FMT_SPEC_CONV_FLOAT_SHORTEST:
+      #endif
+          fs.prec = 6;
+          break;
+      #if NANOPRINTF_USE_FLOAT_HEX_FORMAT_SPECIFIER == 1
+        case NPF_FMT_SPEC_CONV_FLOAT_HEX:
+          // If the precision is missing, "then the precision is sufficient for an
+          // exact representation of the value". We can just pick the max
+          // precision ever needed for any value.
+          // The format we use for %a is to have the implicit leading 1 in its
+          // own hex digit, and mantissa_bits in the fractional digits.
+          // The precision doesn't count the leading integral digit.
+          // So: prec = ceil(fractional_mantissa_bits / 4.0)
+          fs.prec = (NPF_DOUBLE_MAN_BITS + 3) / 4;
+          break;
+      #endif
+        default: // keep 0 as the default
+          break;
+      }
+    }
 #endif
 
     // Extract and convert the argument to string, point cbuf at the text.
@@ -983,10 +1253,19 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
 #endif
 
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
+  #if NANOPRINTF_USE_FLOAT_DEC_FORMAT_SPECIFIER
       case NPF_FMT_SPEC_CONV_FLOAT_DEC:
+  #endif
+  #if NANOPRINTF_USE_FLOAT_SCI_FORMAT_SPECIFIER
       case NPF_FMT_SPEC_CONV_FLOAT_SCI:
+  #endif
+  #if NANOPRINTF_USE_FLOAT_SHORTEST_FORMAT_SPECIFIER
       case NPF_FMT_SPEC_CONV_FLOAT_SHORTEST:
-      case NPF_FMT_SPEC_CONV_FLOAT_HEX: {
+  #endif
+  #if NANOPRINTF_USE_FLOAT_HEX_FORMAT_SPECIFIER
+      case NPF_FMT_SPEC_CONV_FLOAT_HEX:
+  #endif
+      {
         double val;
         if (fs.length_modifier == NPF_FMT_SPEC_LEN_MOD_LONG_DOUBLE) {
           val = (double)va_arg(args, long double);
@@ -998,7 +1277,22 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
         zero = (val == 0.);
 #endif
-        cbuf_len = npf_ftoa_rev(cbuf, &fs, val);
+#if NANOPRINTF_USE_FLOAT_HEX_FORMAT_SPECIFIER == 1
+        if(fs.conv_spec == NPF_FMT_SPEC_CONV_FLOAT_HEX) {
+          cbuf_len = npf_atoa_rev(cbuf, &fs, val);
+          if(cbuf_len > 0) {
+            need_0x = 'X' + fs.case_adjust;
+          }
+          goto end_float_toa;
+        }
+#endif
+#if NANOPRINTF_USE_FLOAT_DEC_FORMAT_SPECIFIER == 1
+        if(fs.conv_spec == NPF_FMT_SPEC_CONV_FLOAT_DEC) {
+          cbuf_len = npf_ftoa_rev(cbuf, &fs, val);
+          goto end_float_toa;
+        }
+#endif
+      end_float_toa: ;
         if (cbuf_len < 0) { // negative means text (not number), so ignore the '0' flag
            cbuf_len = -cbuf_len;
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
@@ -1013,7 +1307,9 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
     // Compute the field width pad character
     if (fs.field_width_opt != NPF_FMT_SPEC_OPT_NONE) {
-      if (fs.leading_zero_pad) {
+      // '0' flag is only legal with numeric types
+      // '-' flag overrides '0' flag
+      if (fs.leading_zero_pad && !fs.left_justified) {
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
         if ((fs.prec_opt != NPF_FMT_SPEC_OPT_NONE) && !fs.prec && zero) {
           pad_c = ' ';
@@ -1026,15 +1322,21 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
 
     // Compute the number of bytes to truncate or '0'-pad.
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
-    if (fs.conv_spec != NPF_FMT_SPEC_CONV_STRING) {
-#if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
-      // float precision is after the decimal point
-      if ((fs.conv_spec != NPF_FMT_SPEC_CONV_FLOAT_DEC) &&
-          (fs.conv_spec != NPF_FMT_SPEC_CONV_FLOAT_SCI) &&
-          (fs.conv_spec != NPF_FMT_SPEC_CONV_FLOAT_SHORTEST) &&
-          (fs.conv_spec != NPF_FMT_SPEC_CONV_FLOAT_HEX))
+    if (fs.conv_spec != NPF_FMT_SPEC_CONV_STRING
+#if NANOPRINTF_USE_FLOAT_DEC_FORMAT_SPECIFIER == 1
+        && (fs.conv_spec != NPF_FMT_SPEC_CONV_FLOAT_DEC)
 #endif
-      { prec_pad = npf_max(0, fs.prec - cbuf_len); }
+#if NANOPRINTF_USE_FLOAT_SCI_FORMAT_SPECIFIER == 1
+        && (fs.conv_spec != NPF_FMT_SPEC_CONV_FLOAT_SCI)
+#endif
+#if NANOPRINTF_USE_FLOAT_SHORTEST_FORMAT_SPECIFIER == 1
+        && (fs.conv_spec != NPF_FMT_SPEC_CONV_FLOAT_SHORTEST)
+#endif
+#if NANOPRINTF_USE_FLOAT_HEX_FORMAT_SPECIFIER == 1
+        && (fs.conv_spec != NPF_FMT_SPEC_CONV_FLOAT_HEX)
+#endif
+    ) {
+      prec_pad = npf_max(0, fs.prec - cbuf_len);
     }
 #endif
 
@@ -1056,10 +1358,20 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
       }
       while (field_pad-- > 0) { NPF_PUTC(pad_c); }
       // Pad byte is ' ', write '0x' after ' ' pad chars but before number.
-      if ((pad_c != '0') && need_0x) { NPF_PUTC('0'); NPF_PUTC(need_0x); }
+      if ((pad_c != '0') && need_0x) {
+#if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1 && NANOPRINTF_USE_FLOAT_HEX_FORMAT_SPECIFIER == 1
+        if (sign_c) { NPF_PUTC(sign_c); sign_c = 0; }
+#endif
+        NPF_PUTC('0'); NPF_PUTC(need_0x);
+      }
     } else
 #endif
-    { if (need_0x) { NPF_PUTC('0'); NPF_PUTC(need_0x); } } // no pad, '0x' requested.
+    { // no pad, '0x' requested.
+#if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1 && NANOPRINTF_USE_FLOAT_HEX_FORMAT_SPECIFIER == 1
+      if (sign_c) { NPF_PUTC(sign_c); sign_c = 0; }
+#endif
+      if (need_0x) { NPF_PUTC('0'); NPF_PUTC(need_0x); }
+    }
 
     // Write the converted payload
     if (fs.conv_spec == NPF_FMT_SPEC_CONV_STRING) {
