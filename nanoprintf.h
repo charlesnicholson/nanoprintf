@@ -333,8 +333,8 @@ static int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec
   while (*++cur) { // cur points at the leading '%' character
     switch (*cur) { // Optional flags
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
-      case '-': out_spec->left_justified = '-'; out_spec->leading_zero_pad = 0; continue;
-      case '0': out_spec->leading_zero_pad = !out_spec->left_justified; continue;
+      case '-': out_spec->left_justified = '-'; continue;
+      case '0': out_spec->leading_zero_pad = 1; continue;
 #endif
       case '+': out_spec->prepend = '+'; continue;
       case ' ': if (out_spec->prepend == 0) { out_spec->prepend = ' '; } continue;
@@ -439,10 +439,6 @@ static int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec
     case 'x': tmp_conv = NPF_FMT_SPEC_CONV_HEX_INT; goto finish;
     finish:
       out_spec->conv_spec = (uint8_t)tmp_conv;
-#if (NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1) && \
-    (NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1)
-      if (out_spec->prec_opt != NPF_FMT_SPEC_OPT_NONE) { out_spec->leading_zero_pad = 0; }
-#endif
       break;
 
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
@@ -1013,7 +1009,9 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
     // Compute the field width pad character
     if (fs.field_width_opt != NPF_FMT_SPEC_OPT_NONE) {
-      if (fs.leading_zero_pad) {
+      // '0' flag is only legal with numeric types
+      // '-' flag overrides '0' flag
+      if (fs.leading_zero_pad && !fs.left_justified) {
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
         if ((fs.prec_opt != NPF_FMT_SPEC_OPT_NONE) && !fs.prec && zero) {
           pad_c = ' ';
