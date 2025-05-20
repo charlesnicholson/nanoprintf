@@ -823,7 +823,8 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
 
     union { char cbuf_mem[NANOPRINTF_CONVERSION_BUFFER_SIZE]; npf_uint_t binval; } u;
     char *cbuf = u.cbuf_mem, sign_c = 0;
-    int cbuf_len = 0, need_0x = 0;
+    int cbuf_len = 0;
+    uint_fast8_t need_0x = 0;
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
     int field_pad = 0;
     char pad_c = 0;
@@ -831,7 +832,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
     int prec_pad = 0;
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
-    int zero = 0;
+    uint_fast8_t zero = 0;
 #endif
 #endif
 
