@@ -816,6 +816,20 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
     }
 #endif
 
+#if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
+    // For d i o u x X, the '0' flag must be ignored if a precision is provided
+    if (fs.prec_opt != NPF_FMT_SPEC_OPT_NONE) {
+      switch(fs.conv_spec) {
+      case NPF_FMT_SPEC_CONV_SIGNED_INT:
+      case NPF_FMT_SPEC_CONV_OCTAL:
+      case NPF_FMT_SPEC_CONV_HEX_INT:
+      case NPF_FMT_SPEC_CONV_UNSIGNED_INT:
+          fs.leading_zero_pad = 0;
+          break;
+      }
+    }
+#endif
+
     union { char cbuf_mem[NANOPRINTF_CONVERSION_BUFFER_SIZE]; npf_uint_t binval; } u;
     char *cbuf = u.cbuf_mem, sign_c = 0;
     int cbuf_len = 0, need_0x = 0;
