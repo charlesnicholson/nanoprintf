@@ -287,7 +287,7 @@ typedef struct npf_format_spec {
 #if NANOPRINTF_USE_ALT_FORM_FLAG == 1
   char alt_form;         // '#'
 #endif
-  char case_adjust;      // 'a' - 'A'
+  char case_adjust;      // 'a' - 'A' , or 0 (must be non-negative to work)
   uint8_t length_modifier;
   uint8_t conv_spec;
 } npf_format_spec_t;
@@ -824,7 +824,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
     union { char cbuf_mem[NANOPRINTF_CONVERSION_BUFFER_SIZE]; npf_uint_t binval; } u;
     char *cbuf = u.cbuf_mem, sign_c = 0;
     int cbuf_len = 0;
-    uint_fast8_t need_0x = 0;
+    char need_0x = 0;
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
     int field_pad = 0;
     char pad_c = 0;
@@ -959,7 +959,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
 #if NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS == 1
           else if (fs.conv_spec == NPF_FMT_SPEC_CONV_BINARY) { need_0x = 'B'; }
 #endif
-          if (need_0x) { need_0x += fs.case_adjust; }
+          if (need_0x) { need_0x = (char)(need_0x + fs.case_adjust); }
         }
 #endif
       } break;
