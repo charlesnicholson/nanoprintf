@@ -315,6 +315,7 @@ typedef struct npf_bufputc_ctx {
   #include <intrin.h>
 #endif
 
+#define NPF_MIN(a, b)    ((a) <= (b) ? (a) : (b))
 static int npf_max(int x, int y) { return (x > y) ? x : y; }
 
 static int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
@@ -1124,13 +1125,12 @@ int npf_vsnprintf(char * NPF_RESTRICT buffer,
 
   npf_putc const pc = buffer ? npf_bufputc : npf_bufputc_nop;
   int const n = npf_vpprintf(pc, &bufputc_ctx, format, vlist);
-  pc('\0', &bufputc_ctx);
 
   if (buffer && bufsz) {
 #ifdef NANOPRINTF_SNPRINTF_SAFE_EMPTY_STRING_ON_OVERFLOW
-    if (n >= (int)bufsz) { buffer[0] = '\0'; }
+    buffer[(n < 0 || (unsigned)n >= bufsz) ? 0 : n] = '\0';
 #else
-    buffer[bufsz - 1] = '\0';
+    buffer[n < 0 ? 0 : NPF_MIN((unsigned)n, bufsz - 1)] = '\0';
 #endif
   }
 
