@@ -812,9 +812,6 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
           fs.prec = 6;
           break;
 #endif
-        case NPF_FMT_SPEC_CONV_POINTER:
-          fs.prec = sizeof(ptrdiff_t) * 2;
-          break;
         default: // keep 0 as the default
           break;
       }
