@@ -800,9 +800,9 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
 #endif
 
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
+  // Set default precision (we can do that only now that we have extracted the
+  // argument-provided precision (".*"), and know whether to ignore that or not
   #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
-    // Set default precision (we can do that only now that we have extracted the
-    // argument-provided precision (".*"), and know whether to ignore that or not
     if (fs.prec_opt == NPF_FMT_SPEC_OPT_NONE) {
       switch(fs.conv_spec) {
         case NPF_FMT_SPEC_CONV_FLOAT_DEC:
@@ -811,11 +811,20 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
         case NPF_FMT_SPEC_CONV_FLOAT_HEX:
           fs.prec = 6;
           break;
-        default: // keep 0 as the default
+        default:
           break;
       }
     }
   #endif
+  if (fs.prec_opt == NPF_FMT_SPEC_OPT_NONE) {
+    switch(fs.conv_spec) {
+      case NPF_FMT_SPEC_CONV_POINTER:
+        fs.prec = (sizeof(void *) * CHAR_BIT + 3) / 4;
+        break;
+      default:
+        break;
+    }
+  }
 #endif
 
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1 && NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
