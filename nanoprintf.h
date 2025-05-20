@@ -415,17 +415,9 @@ static int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec
 
   switch (*cur++) { // Conversion specifier
     case '%': out_spec->conv_spec = NPF_FMT_SPEC_CONV_PERCENT;
-#if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
-      out_spec->prec_opt = NPF_FMT_SPEC_OPT_NONE;
-      out_spec->prec = 0;
-#endif
       break;
 
     case 'c': out_spec->conv_spec = NPF_FMT_SPEC_CONV_CHAR;
-#if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
-      out_spec->prec_opt = NPF_FMT_SPEC_OPT_NONE;
-      out_spec->prec = 0;
-#endif
       break;
 
     case 's': out_spec->conv_spec = NPF_FMT_SPEC_CONV_STRING;
@@ -445,25 +437,21 @@ static int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec
     case 'F': out_spec->case_adjust = 0;
     case 'f':
       out_spec->conv_spec = NPF_FMT_SPEC_CONV_FLOAT_DEC;
-      if (out_spec->prec_opt == NPF_FMT_SPEC_OPT_NONE) { out_spec->prec = 6; }
       break;
 
     case 'E': out_spec->case_adjust = 0;
     case 'e':
       out_spec->conv_spec = NPF_FMT_SPEC_CONV_FLOAT_SCI;
-      if (out_spec->prec_opt == NPF_FMT_SPEC_OPT_NONE) { out_spec->prec = 6; }
       break;
 
     case 'G': out_spec->case_adjust = 0;
     case 'g':
       out_spec->conv_spec = NPF_FMT_SPEC_CONV_FLOAT_SHORTEST;
-      if (out_spec->prec_opt == NPF_FMT_SPEC_OPT_NONE) { out_spec->prec = 6; }
       break;
 
     case 'A': out_spec->case_adjust = 0;
     case 'a':
       out_spec->conv_spec = NPF_FMT_SPEC_CONV_FLOAT_HEX;
-      if (out_spec->prec_opt == NPF_FMT_SPEC_OPT_NONE) { out_spec->prec = 6; }
       break;
 #endif
 
@@ -471,17 +459,11 @@ static int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec
     case 'n':
       // todo: reject string if flags or width or precision exist
       out_spec->conv_spec = NPF_FMT_SPEC_CONV_WRITEBACK;
-#if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
-      out_spec->prec_opt = NPF_FMT_SPEC_OPT_NONE;
-#endif
       break;
 #endif
 
     case 'p':
       out_spec->conv_spec = NPF_FMT_SPEC_CONV_POINTER;
-#if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
-      out_spec->prec_opt = NPF_FMT_SPEC_OPT_NONE;
-#endif
       break;
 
 #if NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS == 1
@@ -813,7 +795,24 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
     if (fs.prec_opt == NPF_FMT_SPEC_OPT_STAR) {
       fs.prec = va_arg(args, int);
-      if (fs.prec < 0) { fs.prec_opt = NPF_FMT_SPEC_OPT_NONE; }
+      if (fs.prec < 0) { fs.prec = 0; fs.prec_opt = NPF_FMT_SPEC_OPT_NONE; }
+    }
+#endif
+
+#if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
+    // Set default precision (we can do that only now that we have extracted the
+    // argument-provided precision (".*"), and know whether to ignore that or not
+    if (fs.prec_opt == NPF_FMT_SPEC_OPT_NONE) {
+      switch(fs.conv_spec) {
+        case NPF_FMT_SPEC_CONV_FLOAT_DEC:
+        case NPF_FMT_SPEC_CONV_FLOAT_SCI:
+        case NPF_FMT_SPEC_CONV_FLOAT_SHORTEST:
+        case NPF_FMT_SPEC_CONV_FLOAT_HEX:
+          fs.prec = 6;
+          break;
+        default: // keep 0 as the default
+          break;
+      }
     }
 #endif
 
