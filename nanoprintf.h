@@ -804,28 +804,31 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
     // argument-provided precision (".*"), and know whether to ignore that or not
     if (fs.prec_opt == NPF_FMT_SPEC_OPT_NONE) {
       switch(fs.conv_spec) {
+#if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
         case NPF_FMT_SPEC_CONV_FLOAT_DEC:
         case NPF_FMT_SPEC_CONV_FLOAT_SCI:
         case NPF_FMT_SPEC_CONV_FLOAT_SHORTEST:
         case NPF_FMT_SPEC_CONV_FLOAT_HEX:
           fs.prec = 6;
           break;
+#endif
         case NPF_FMT_SPEC_CONV_POINTER:
           fs.prec = sizeof(ptrdiff_t) * 2;
+          break;
         default: // keep 0 as the default
           break;
       }
     }
 #endif
 
-#if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
+#if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1 && NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
     // For d i o u x X, the '0' flag must be ignored if a precision is provided
     if (fs.prec_opt != NPF_FMT_SPEC_OPT_NONE) {
       switch(fs.conv_spec) {
-      case NPF_FMT_SPEC_CONV_SIGNED_INT:
-      case NPF_FMT_SPEC_CONV_OCTAL:
-      case NPF_FMT_SPEC_CONV_HEX_INT:
-      case NPF_FMT_SPEC_CONV_UNSIGNED_INT:
+        case NPF_FMT_SPEC_CONV_SIGNED_INT:
+        case NPF_FMT_SPEC_CONV_OCTAL:
+        case NPF_FMT_SPEC_CONV_HEX_INT:
+        case NPF_FMT_SPEC_CONV_UNSIGNED_INT:
           fs.leading_zero_pad = 0;
           break;
       }
