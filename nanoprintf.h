@@ -315,8 +315,8 @@ typedef struct npf_bufputc_ctx {
   #include <intrin.h>
 #endif
 
-#define NPF_MIN(a, b)    ((a) <= (b) ? (a) : (b))
-static int npf_max(int x, int y) { return (x > y) ? x : y; }
+#define NPF_MIN(x, y)    ((x) <= (y) ? (x) : (y))
+#define NPF_MAX(x, y)    ((x) >= (y) ? (x) : (y))
 
 static int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
   char const *cur = format;
@@ -1035,7 +1035,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
           (fs.conv_spec != NPF_FMT_SPEC_CONV_FLOAT_SHORTEST) &&
           (fs.conv_spec != NPF_FMT_SPEC_CONV_FLOAT_HEX))
 #endif
-      { prec_pad = npf_max(0, fs.prec - cbuf_len); }
+      { prec_pad = NPF_MAX(0, fs.prec - cbuf_len); }
     }
 #endif
 
@@ -1046,7 +1046,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
     field_pad -= prec_pad;
 #endif
-    field_pad = npf_max(0, field_pad);
+    field_pad = NPF_MAX(0, field_pad);
 
     // Apply right-justified field width if requested
     if (!fs.left_justified && pad_c) { // If leading zeros pad, sign goes first.
