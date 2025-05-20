@@ -831,6 +831,8 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
         case NPF_FMT_SPEC_CONV_UNSIGNED_INT:
           fs.leading_zero_pad = 0;
           break;
+        default:
+          break;
       }
     }
 #endif
