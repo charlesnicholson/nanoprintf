@@ -208,11 +208,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: AVR
+      - name: AVR2
         shell: bash
         run: |
           . /work/venv/bin/activate
-          python3 tests/size_report.py -p avr
+          python3 tests/size_report.py -p avr2
+
+      - name: AVR5
+        shell: bash
+        run: |
+          . /work/venv/bin/activate
+          python3 tests/size_report.py -p avr5
 
       - name: Cortex-M0
         shell: bash
