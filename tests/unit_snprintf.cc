@@ -9,6 +9,7 @@
     #pragma GCC diagnostic ignored "-Wformat-pedantic"
   #else
     #pragma GCC diagnostic ignored "-Wformat-overflow"
+    #pragma GCC diagnostic ignored "-Wformat"
   #endif
   #pragma GCC diagnostic ignored "-Wformat-zero-length"
 #endif
