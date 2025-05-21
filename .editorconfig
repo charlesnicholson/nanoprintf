@@ -4,3 +4,7 @@ root = true
 indent_type = space
 indent_size = 2
 trim_trailing_whitespace = true
+
+[*.py]
+indent_size = 4
+
