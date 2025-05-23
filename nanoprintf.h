@@ -3,8 +3,8 @@
    charles.nicholson+nanoprintf@gmail.com
    dual-licensed under 0bsd and unlicense, take your pick. see eof for details. */
 
-#ifndef NANOPRINTF_H_INCLUDED
-#define NANOPRINTF_H_INCLUDED
+#ifndef NPF_H_INCLUDED
+#define NPF_H_INCLUDED
 
 #include <stdarg.h>
 #include <stddef.h>
@@ -66,7 +66,7 @@ NPF_VISIBILITY int npf_vpprintf(npf_putc pc,
 }
 #endif
 
-#endif // NANOPRINTF_H_INCLUDED
+#endif // NPF_H_INCLUDED
 
 /* The implementation of nanoprintf begins here, to be compiled only if
    NANOPRINTF_IMPLEMENTATION is defined. In a multi-file library what follows would
@@ -74,8 +74,8 @@ NPF_VISIBILITY int npf_vpprintf(npf_putc pc,
 
 #ifdef NANOPRINTF_IMPLEMENTATION
 
-#ifndef NANOPRINTF_IMPLEMENTATION_INCLUDED
-#define NANOPRINTF_IMPLEMENTATION_INCLUDED
+#ifndef NPF_IMPLEMENTATION_INCLUDED
+#define NPF_IMPLEMENTATION_INCLUDED
 
 #include <limits.h>
 #include <stdint.h>
@@ -153,24 +153,24 @@ NPF_VISIBILITY int npf_vpprintf(npf_putc pc,
 
 // Figure out if we can disable warnings with pragmas.
 #ifdef __clang__
-  #define NANOPRINTF_CLANG 1
-  #define NANOPRINTF_GCC_PAST_4_6 0
+  #define NPF_CLANG 1
+  #define NPF_GCC_PAST_4_6 0
 #else
-  #define NANOPRINTF_CLANG 0
+  #define NPF_CLANG 0
   #if defined(__GNUC__) && ((__GNUC__ > 4) || ((__GNUC__ == 4) && (__GNUC_MINOR__ > 6)))
-    #define NANOPRINTF_GCC_PAST_4_6 1
+    #define NPF_GCC_PAST_4_6 1
   #else
-    #define NANOPRINTF_GCC_PAST_4_6 0
+    #define NPF_GCC_PAST_4_6 0
   #endif
 #endif
 
-#if NANOPRINTF_CLANG || NANOPRINTF_GCC_PAST_4_6
-  #define NANOPRINTF_HAVE_GCC_WARNING_PRAGMAS 1
+#if NPF_CLANG || NPF_GCC_PAST_4_6
+  #define NPF_HAVE_GCC_WARNING_PRAGMAS 1
 #else
-  #define NANOPRINTF_HAVE_GCC_WARNING_PRAGMAS 0
+  #define NPF_HAVE_GCC_WARNING_PRAGMAS 0
 #endif
 
-#if NANOPRINTF_HAVE_GCC_WARNING_PRAGMAS
+#if NPF_HAVE_GCC_WARNING_PRAGMAS
   #pragma GCC diagnostic push
   #pragma GCC diagnostic ignored "-Wunused-function"
   #pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
@@ -179,7 +179,7 @@ NPF_VISIBILITY int npf_vpprintf(npf_putc pc,
   #endif
   #pragma GCC diagnostic ignored "-Wpadded"
   #pragma GCC diagnostic ignored "-Wfloat-equal"
-  #if NANOPRINTF_CLANG
+  #if NPF_CLANG
     #pragma GCC diagnostic ignored "-Wc++98-compat-pedantic"
     #pragma GCC diagnostic ignored "-Wcovered-switch-default"
     #pragma GCC diagnostic ignored "-Wdeclaration-after-statement"
@@ -187,7 +187,7 @@ NPF_VISIBILITY int npf_vpprintf(npf_putc pc,
     #ifndef __APPLE__
       #pragma GCC diagnostic ignored "-Wunsafe-buffer-usage"
     #endif
-  #elif NANOPRINTF_GCC_PAST_4_6
+  #elif NPF_GCC_PAST_4_6
     #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
   #endif
 #endif
@@ -745,7 +745,7 @@ static int npf_bin_len(npf_uint_t u) {
     NPF_CLZ(&idx, u);
     return (int)(idx + 1);
   #endif
-#elif NANOPRINTF_CLANG || NANOPRINTF_GCC_PAST_4_6
+#elif NPF_CLANG || NPF_GCC_PAST_4_6
   #define NPF_HAVE_BUILTIN_CLZ
   #if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
     #define NPF_CLZ(X) ((sizeof(long long) * CHAR_BIT) - (size_t)__builtin_clzll(X))
@@ -1139,7 +1139,7 @@ int npf_vsnprintf(char * NPF_RESTRICT buffer,
   return n;
 }
 
-#if NANOPRINTF_HAVE_GCC_WARNING_PRAGMAS
+#if NPF_HAVE_GCC_WARNING_PRAGMAS
   #pragma GCC diagnostic pop
 #endif
 
@@ -1147,7 +1147,7 @@ int npf_vsnprintf(char * NPF_RESTRICT buffer,
   #pragma warning(pop)
 #endif
 
-#endif // NANOPRINTF_IMPLEMENTATION_INCLUDED
+#endif // NPF_IMPLEMENTATION_INCLUDED
 #endif // NANOPRINTF_IMPLEMENTATION
 
 /*
