@@ -5,9 +5,9 @@
 #include <string>
 #include <vector>
 
-#if NANOPRINTF_HAVE_GCC_WARNING_PRAGMAS
+#if NPF_HAVE_GCC_WARNING_PRAGMAS
   #pragma GCC diagnostic push
-  #if NANOPRINTF_CLANG
+  #if NPF_CLANG
     #pragma GCC diagnostic ignored "-Wformat-pedantic"
     #pragma GCC diagnostic ignored "-Wold-style-cast"
   #else
