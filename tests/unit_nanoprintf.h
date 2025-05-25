@@ -20,9 +20,9 @@
 
 #include "../nanoprintf.h"
 
-#if NANOPRINTF_HAVE_GCC_WARNING_PRAGMAS
+#if NPF_HAVE_GCC_WARNING_PRAGMAS
   #pragma GCC diagnostic push
-  #if NANOPRINTF_CLANG
+  #if NPF_CLANG
     #pragma GCC diagnostic ignored "-Wc++98-compat-pedantic"
     #ifndef __APPLE__
       #pragma GCC diagnostic ignored "-Wreserved-identifier"

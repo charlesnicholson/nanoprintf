@@ -4,10 +4,10 @@
 #include <cstring>
 #include <string>
 
-#if NANOPRINTF_HAVE_GCC_WARNING_PRAGMAS
+#if NPF_HAVE_GCC_WARNING_PRAGMAS
   #pragma GCC diagnostic push
   #pragma GCC diagnostic ignored "-Wunused-function"
-  #if NANOPRINTF_CLANG
+  #if NPF_CLANG
     #pragma GCC diagnostic ignored "-Wformat-pedantic"
     #pragma GCC diagnostic ignored "-Wmissing-prototypes"
     #pragma GCC diagnostic ignored "-Wold-style-cast"
