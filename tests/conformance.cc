@@ -17,9 +17,9 @@
 #include <limits.h>
 #include <cmath>
 
-#if NANOPRINTF_HAVE_GCC_WARNING_PRAGMAS
+#if NPF_HAVE_GCC_WARNING_PRAGMAS
   #pragma GCC diagnostic push
-  #if NANOPRINTF_CLANG
+  #if NPF_CLANG
     #pragma GCC diagnostic ignored "-Wc++98-compat-pedantic"
     #pragma GCC diagnostic ignored "-Wformat-pedantic"
     #pragma GCC diagnostic ignored "-Wformat-nonliteral"
@@ -405,7 +405,7 @@ TEST_CASE("conformance to system printf") {
     snprintf(snp_buf, sizeof(snp_buf), "%30p", (void *)p);
     npf_snprintf(npf_buf, sizeof(npf_buf), "%#30p", (void *)p);
     REQUIRE(std::string{snp_buf} == npf_buf);
-#endif 
+#endif
   }
 #endif // _MSC_VER
 

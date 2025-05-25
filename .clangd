@@ -9,4 +9,4 @@ CompileFlags:
         -DNANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=1,
         -DNANOPRINTF_USE_ALT_FORM_FLAG=1,
         -x,c,
-        --std=c20 ]
+        --std=c17 ]
