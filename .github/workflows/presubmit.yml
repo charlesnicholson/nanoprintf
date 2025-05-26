@@ -229,7 +229,7 @@ jobs:
         run: python tests/size_report.py -p host
 
   all-checks-pass:
-    needs: [pylint, download-linux, download-mac, download-win, sanitizers, linux-x64, linux-arm64, macos, win, size-reports]
+    needs: [lint, download-linux, download-mac, download-win, sanitizers, linux-x64, linux-arm64, macos, win, size-reports]
     runs-on: ubuntu-latest
     steps:
     - run: echo Done
