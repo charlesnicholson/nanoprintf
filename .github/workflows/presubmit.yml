@@ -11,7 +11,7 @@ permissions:
   packages: read
 
 jobs:
-  pylint:
+  lint:
     runs-on: ubuntu-latest
 
     container:
@@ -23,7 +23,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Pylint build.py
-        run: python -m pylint build.py tests/size_report.py
+        run: python -m pyright build.py tests/size_report.py
 
   download-linux:
     runs-on: ubuntu-latest
