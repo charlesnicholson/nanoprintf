@@ -94,14 +94,16 @@ NPF_VISIBILITY int npf_vpprintf(npf_putc pc,
     !defined(NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS) && \
     !defined(NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS) && \
     !defined(NANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS) && \
+    !defined(NANOPRINTF_USE_FIXED_WIDTH_FORMAT_SPECIFIERS) && \
     !defined(NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS) && \
     !defined(NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS) && \
     !defined(NANOPRINTF_USE_ALT_FORM_FLAG)
   #define NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS 1
   #define NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS 1
   #define NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS 1
-  #define NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS 0
-  #define NANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS 1
+  #define NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS 0 // this should really be called "NANOPRINTF_USE_LARGE_LENGTH_MODIFIERS"
+  #define NANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS 1 // this should really be called "NANOPRINTF_USE_SMALL_LENGTH_MODIFIERS"
+  #define NANOPRINTF_USE_FIXED_WIDTH_FORMAT_SPECIFIERS 0 // this should really be called "NANOPRINTF_USE_FIXED_WIDTH_LENGTH_MODIFIERS"
   #define NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS 0
   #define NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS 0
   #define NANOPRINTF_USE_ALT_FORM_FLAG 1
@@ -122,6 +124,9 @@ NPF_VISIBILITY int npf_vpprintf(npf_putc pc,
 #endif
 #ifndef NANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS
   #error NANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS must be #defined to 0 or 1
+#endif
+#ifndef NANOPRINTF_USE_FIXED_WIDTH_FORMAT_SPECIFIERS
+  #error NANOPRINTF_USE_FIXED_WIDTH_FORMAT_SPECIFIERS must be #defined to 0 or 1
 #endif
 #ifndef NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS
   #error NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS must be #defined to 0 or 1
@@ -244,6 +249,10 @@ enum {
   NPF_FMT_SPEC_LEN_MOD_LARGE_SIZET,     // 'z'
   NPF_FMT_SPEC_LEN_MOD_LARGE_PTRDIFFT,  // 't'
 #endif
+#if NANOPRINTF_USE_FIXED_WIDTH_FORMAT_SPECIFIERS == 1
+  NPF_FMT_SPEC_LEN_MOD_FIXED_WIDTH,  // 'w<N>'
+  NPF_FMT_SPEC_LEN_MOD_FAST,  // 'wf<N>'
+#endif
 };
 
 enum {
@@ -290,6 +299,9 @@ typedef struct npf_format_spec {
   char case_adjust;      // 'a' - 'A' , or 0 (must be non-negative to work)
   uint8_t length_modifier;
   uint8_t conv_spec;
+#if NANOPRINTF_USE_FIXED_WIDTH_FORMAT_SPECIFIERS == 1
+  uint8_t fixed_width_bits; // the N in 'w<N>' or 'wf<N>'
+#endif
 } npf_format_spec_t;
 
 #if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 0
@@ -411,6 +423,33 @@ static int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec
     case 'j': out_spec->length_modifier = NPF_FMT_SPEC_LEN_MOD_LARGE_INTMAX; break;
     case 'z': out_spec->length_modifier = NPF_FMT_SPEC_LEN_MOD_LARGE_SIZET; break;
     case 't': out_spec->length_modifier = NPF_FMT_SPEC_LEN_MOD_LARGE_PTRDIFFT; break;
+#endif
+#if NANOPRINTF_USE_FIXED_WIDTH_FORMAT_SPECIFIERS == 1
+    case 'w': {
+      if (*cur == 'f') {
+        out_spec->length_modifier = NPF_FMT_SPEC_LEN_MOD_FAST;
+        ++cur;
+      } else {
+        out_spec->length_modifier = NPF_FMT_SPEC_LEN_MOD_FIXED_WIDTH;
+      }
+      // Not finding any digit is an error (UB); also finding 0 is an error (UB);
+      // so we do not check whether we have any digits -- if none, the error is
+      // raised anyway since the value will still be 0.
+      // Since we only need to support [u]int_fast<N>_t and [u]int_least<N>_t,
+      // and we assume they only exist for N in [8, 16, 32, 64], we parse those
+      // numbers directly, instead of parsing a generic number; we don't need
+      // to check for overflow
+      out_spec->fixed_width_bits = 0;
+      if (*cur == '8') { out_spec->fixed_width_bits = 8; ++cur; }
+      else if (cur[0] == '1' && cur[1] == '6') { out_spec->fixed_width_bits = 16; cur += 2; }
+      else if (cur[0] == '3' && cur[1] == '2') { out_spec->fixed_width_bits = 32; cur += 2; }
+      else if (cur[0] == '6' && cur[1] == '4') { out_spec->fixed_width_bits = 64; cur += 2; }
+
+      if (out_spec->fixed_width_bits == 0) {
+        return 0;
+      }
+      break;
+    }
 #endif
     default: --cur; break;
   }
@@ -793,6 +832,148 @@ static void npf_putc_cnt(int c, void *ctx) {
 #define NPF_WRITEBACK(MOD, TYPE) \
   case NPF_FMT_SPEC_LEN_MOD_##MOD: *(va_arg(args, TYPE *)) = (TYPE)pc_cnt.n; break
 
+
+#if NANOPRINTF_USE_FIXED_WIDTH_FORMAT_SPECIFIERS == 1
+static
+npf_uint_t npf_extract_fixed_width_arg(npf_format_spec_t *fs, int is_signed, va_list *args)
+{
+  // We should really have two functions, one for signed, and one for unsigned;
+  // Otherwise, va_arg with the wrong signedness, for values that are not
+  // identical in both signed/unsigned representations (ie with the high bit set)
+  // is UB.
+  // This would result in large code, and it is "reasonable" to assume that any
+  // sane implementation will not cause any problems with our accesses using
+  // fixed-width integers, and with our signed/unsigned casts.
+  //
+  // Also, we always extract the arguments using uint<N>_t, after we have
+  // determined the actual bit size, instead of differentiating uint_fast<N>_t
+  // and uint_least<N>_t. This might be yet more UB, but the types are certainly
+  // bitwise compatible, and maybe even technically "compatible" by the standard
+  // wording?
+  //
+  // Finally, if [u]int_least<N>_t must be >=N bits wide. But if [u]int<N>_t is
+  // also defined (it's optional, but we assume it always is, because that's
+  // true in practice), then they must be equal, so [u]int_least<N>_t is not
+  // actually 'least' but 'exactly'.
+  //
+  // We always return an unsigned value, which can be cast to (npf_int_t) by
+  // the caller as needed. We do sign-extend appropriately, so that the
+  // caller can indeed find the high bit set for signed values (ie it can
+  // forget about the actual type, and only act on npf_int_t).
+
+  npf_uint_t val;
+
+  // we assume that:
+  // if (fs->length_modifier == NPF_FMT_SPEC_LEN_MOD_FIXED_WIDTH || fs->length_modifier == NPF_FMT_SPEC_LEN_MOD_FAST)
+  // but do not check it
+
+  uint_fast8_t actual_width = fs->fixed_width_bits;
+
+  if (fs->length_modifier == NPF_FMT_SPEC_LEN_MOD_FAST) {
+    if(0) {}
+    else if(actual_width == 8 ) { actual_width = sizeof(int_fast8_t ) * CHAR_BIT; }
+    else if(actual_width == 16) { actual_width = sizeof(int_fast16_t) * CHAR_BIT; }
+    else if(actual_width == 32) { actual_width = sizeof(int_fast32_t) * CHAR_BIT; }
+    else /* must be 64 */       { actual_width = sizeof(int_fast64_t) * CHAR_BIT; }
+  } else {
+    if(0) {}
+    else if(actual_width == 8 ) { actual_width = sizeof(int_least8_t ) * CHAR_BIT; }
+    else if(actual_width == 16) { actual_width = sizeof(int_least16_t) * CHAR_BIT; }
+    else if(actual_width == 32) { actual_width = sizeof(int_least32_t) * CHAR_BIT; }
+    else /* must be 64 */       { actual_width = sizeof(int_least64_t) * CHAR_BIT; }
+  }
+
+  // Values passed as variable arguments undergo integer promotion.
+  // int is guaranteed to be such that sizeof(int) >= 2
+  // It is also guaranteed that CHAR_BIT >= 8
+  // So, uint8_t and uint16_t are certainly promoted.
+  // For larger types, we need to check.
+  //
+  // We do not support widths that are not powers of 2 or are larger than 64.
+  // So, all the cases simplify to "< 32", "== 32 with 64-bit int", "else".
+  const uint_fast8_t int_bw = sizeof(int) * CHAR_BIT;
+  if (0) {}
+  else if(actual_width <= 16               ) { val = (npf_uint_t)va_arg(*args, unsigned); }
+  else if(actual_width == 32 && int_bw > 32) { val = (npf_uint_t)va_arg(*args, uint32_t); }
+  //else if(actual_width == 32               ) { val = (npf_uint_t)va_arg(*args, unsigned); }
+  //else if(actual_width == 64 && int_bw > 64) { val = (npf_uint_t)va_arg(*args, uint64_t); }
+  //else if(actual_width == 64               ) { val = (npf_uint_t)va_arg(*args, unsigned); }
+  else                                       { val = (npf_uint_t)va_arg(*args, unsigned); }
+
+  // mask excess bits
+  const unsigned m = sizeof(npf_uint_t) * CHAR_BIT;
+  npf_uint_t mask = ((npf_uint_t)-1 >> (m - actual_width));
+  val &= mask;
+
+  if (is_signed) {
+    // sign extend.
+    // From: https://graphics.stanford.edu/~seander/bithacks.html#VariableSignExtend
+    //
+    // We have already masked the high bits in val, above.
+    // We compute a new mask the only selects the sign bit (in the reduced-width
+    // variable).
+    // We flip that bit, and then subtract it (ie subtract the mask).
+    // If the sign bit was 0: we flip to 1 and then subtract -> the original value is restored
+    // If the sign bit was 1: we flip it to 0 (we subtract the mask) and then we subtract the mask (again).
+    // This double subtraction is equivalent to subtracting 2**b (with b the original number of bits),
+    // which will set all the higher bits to 1.
+    // Eg (for negative)
+    //   0001xxxx
+    // ^ 00010000
+    //-> 0000xxxx
+    // - 00010000
+    //   1111xxxx
+    // We can see the same also as:
+    // - 00010000  -> equivalent to + (100000000-00010000)  mod 2**n -> + (11110000)
+    // So:
+    //   0000xxxx
+    // + 11110000
+    //-> 1111xxxx
+    mask = (npf_uint_t)1 << (actual_width - 1);
+    val = (val ^ mask) - mask;
+
+    // Note that this is faster, for non-constant 'actual_width':
+    //   n = (m - actual_width)
+    //   val = (val << n) >> n;
+    // But this requires the right shift to be arithmetical (ie sign-preserving),
+    // which is the case on many hardware platforms, but is implementation-defined in C.
+  }
+
+  return val;
+}
+
+static
+void npf_writeback_fixed_width_arg(npf_format_spec_t *fs, int val, va_list *args)
+{
+  // See npf_extract_fixed_width_arg() for considerations about UB.
+  // Here, too, we simply use fixed-width integers.
+
+  uint_fast8_t actual_width = fs->fixed_width_bits;
+
+  if (fs->length_modifier == NPF_FMT_SPEC_LEN_MOD_FAST) {
+    if(0) {}
+    else if(actual_width <= 8 ) { actual_width = sizeof(int_fast8_t ) * CHAR_BIT; }
+    else if(actual_width <= 16) { actual_width = sizeof(int_fast16_t) * CHAR_BIT; }
+    else if(actual_width <= 32) { actual_width = sizeof(int_fast32_t) * CHAR_BIT; }
+    else                        { actual_width = sizeof(int_fast64_t) * CHAR_BIT; }
+    // we ignore (here) widths > 64 -- we either caught the error before, or we leave it as UB
+  }
+
+  npf_int_t v = val;
+  const unsigned m = sizeof(npf_uint_t) * CHAR_BIT;
+  const npf_uint_t mask = ((npf_uint_t)-1 >> (m - actual_width));
+  val &= mask;
+
+  if(0) {}
+  else if(actual_width <= 8 ) { *va_arg(*args, int8_t  *) = v; }
+  else if(actual_width <= 16) { *va_arg(*args, int16_t *) = v; }
+  else if(actual_width <= 32) { *va_arg(*args, int32_t *) = v; }
+  else                        { *va_arg(*args, int64_t *) = v; }
+  // we ignore (here) widths > 64 -- we either caught the error before, or we leave it as UB
+
+}
+#endif
+
 int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
   npf_format_spec_t fs;
   char const *cur = format;
@@ -876,6 +1057,12 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
           NPF_EXTRACT(LARGE_SIZET, npf_ssize_t, npf_ssize_t);
           NPF_EXTRACT(LARGE_PTRDIFFT, ptrdiff_t, ptrdiff_t);
 #endif
+#if NANOPRINTF_USE_FIXED_WIDTH_FORMAT_SPECIFIERS == 1
+          case NPF_FMT_SPEC_LEN_MOD_FIXED_WIDTH:
+          case NPF_FMT_SPEC_LEN_MOD_FAST:
+            val = (npf_int_t)npf_extract_fixed_width_arg(&fs, 1, &args);
+            break;
+#endif
           default: break;
         }
 
@@ -921,6 +1108,12 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
             NPF_EXTRACT(LARGE_INTMAX, uintmax_t, uintmax_t);
             NPF_EXTRACT(LARGE_SIZET, size_t, size_t);
             NPF_EXTRACT(LARGE_PTRDIFFT, npf_uptrdiff_t, npf_uptrdiff_t);
+#endif
+#if NANOPRINTF_USE_FIXED_WIDTH_FORMAT_SPECIFIERS == 1
+            case NPF_FMT_SPEC_LEN_MOD_FIXED_WIDTH:
+            case NPF_FMT_SPEC_LEN_MOD_FAST:
+              val = npf_extract_fixed_width_arg(&fs, 0, &args);
+              break;
 #endif
             default: break;
           }
@@ -980,6 +1173,12 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
           NPF_WRITEBACK(LARGE_INTMAX, intmax_t);
           NPF_WRITEBACK(LARGE_SIZET, npf_ssize_t);
           NPF_WRITEBACK(LARGE_PTRDIFFT, ptrdiff_t);
+#endif
+#if NANOPRINTF_USE_FIXED_WIDTH_FORMAT_SPECIFIERS == 1
+          case NPF_FMT_SPEC_LEN_MOD_FIXED_WIDTH:
+          case NPF_FMT_SPEC_LEN_MOD_FAST:
+            npf_writeback_fixed_width_arg(&fs, pc_cnt.n, &args);
+            break;
 #endif
           default: break;
         } break;
