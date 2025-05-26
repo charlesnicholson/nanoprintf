@@ -26,8 +26,8 @@ endif()
 
 ################ Common compile flags
 
-set(CMAKE_C_STANDARD 99)
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_C_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 
 if (MSVC)
   set(nanoprintf_common_flags /Wall /WX)
@@ -81,7 +81,7 @@ function(npf_test name files)
   set(timestamp "${CMAKE_CURRENT_BINARY_DIR}/${name}.timestamp")
   add_custom_target(run_${name} ALL DEPENDS ${timestamp})
   add_custom_command(OUTPUT ${timestamp}
-                     COMMAND ${name} -m 
+                     COMMAND ${name} -m
                      COMMAND ${CMAKE_COMMAND} -E touch ${timestamp}
                      DEPENDS ${name}
                      COMMENT "Running ${name}")
