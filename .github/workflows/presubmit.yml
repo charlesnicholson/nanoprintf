@@ -11,7 +11,7 @@ permissions:
   packages: read
 
 jobs:
-  pylint:
+  lint:
     runs-on: ubuntu-latest
 
     container:
@@ -22,8 +22,10 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-      - name: Pylint build.py
-        run: . /work/venv/bin/activate && python -m pylint build.py tests/size_report.py
+      - name: Pyright
+        run: python -m pyright --warnings --pythonversion 3.13 build.py tests/size_report.py
+      - name: Ruff
+        run: python -m ruff check build.py tests/size_report.py
 
   download-linux:
     runs-on: ubuntu-latest
@@ -210,36 +212,26 @@ jobs:
 
       - name: AVR2
         shell: bash
-        run: |
-          . /work/venv/bin/activate
-          python3 tests/size_report.py -p avr2
+        run: python tests/size_report.py -p avr2
 
       - name: AVR5
         shell: bash
-        run: |
-          . /work/venv/bin/activate
-          python3 tests/size_report.py -p avr5
+        run: python tests/size_report.py -p avr5
 
       - name: Cortex-M0
         shell: bash
-        run: |
-          . /work/venv/bin/activate
-          python3 tests/size_report.py -p cm0
+        run: python tests/size_report.py -p cm0
 
       - name: Cortex-M4
         shell: bash
-        run: |
-          . /work/venv/bin/activate
-          python3 tests/size_report.py -p cm4
+        run: python tests/size_report.py -p cm4
 
       - name: Linux x64
         shell: bash
-        run: |
-          . /work/venv/bin/activate
-          python3 tests/size_report.py -p host
+        run: python tests/size_report.py -p host
 
   all-checks-pass:
-    needs: [pylint, download-linux, download-mac, download-win, sanitizers, linux-x64, linux-arm64, macos, win, size-reports]
+    needs: [lint, download-linux, download-mac, download-win, sanitizers, linux-x64, linux-arm64, macos, win, size-reports]
     runs-on: ubuntu-latest
     steps:
     - run: echo Done

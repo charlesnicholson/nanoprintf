@@ -1,11 +1,10 @@
 """Build script for nanoprintf. Configures and runs CMake to build tests."""
 
 import argparse
-import os
 import pathlib
 import shutil
-import subprocess
 import stat
+import subprocess
 import sys
 import tarfile
 import urllib.request
@@ -16,7 +15,8 @@ _NINJA_URL = "https://github.com/ninja-build/ninja/releases/download/v1.12.1/{}"
 _CMAKE_VERSION = "4.0.1"
 _CMAKE_URL = (
     "https://github.com/Kitware/CMake/releases/download/"
-    f"v{_CMAKE_VERSION}/cmake-{_CMAKE_VERSION}" + "-{}.{}"
+    f"v{_CMAKE_VERSION}/cmake-{_CMAKE_VERSION}-"
+    "{}.{}"
 )
 
 
@@ -60,7 +60,8 @@ def download_file(url: str, local_path: pathlib.Path, verbose: bool) -> None:
     """Download a file from url to local_path."""
     if verbose:
         print(f"Downloading:\n  Remote: {url}\n  Local: {local_path}")
-    with urllib.request.urlopen(url) as rsp, open(local_path, "wb") as file:
+
+    with urllib.request.urlopen(url) as rsp, local_path.open("wb") as file:
         shutil.copyfileobj(rsp, file)
 
 
@@ -99,13 +100,10 @@ def _get_cmake(download: bool, verbose: bool) -> pathlib.Path:
             case "tar.gz":
                 with tarfile.open(cmake_local_archive, "r") as tar:
                     for member in tar.getmembers():
-                        member_path = pathlib.Path(
-                            cmake_local_dir / member.name
-                        ).resolve()
+                        member_path = pathlib.Path(cmake_local_dir / member.name).resolve()
                         if cmake_local_dir not in member_path.parents:
-                            raise ValueError(
-                                "Tar file contents move upwards past sandbox root"
-                            )
+                            msg = "Tar file contents move upwards past sandbox root"
+                            raise ValueError(msg)
 
                     tar.extractall(path=cmake_local_dir)
 
@@ -137,7 +135,7 @@ def _get_ninja(download: bool, verbose: bool) -> pathlib.Path:
         with zipfile.ZipFile(ninja_local_zip, "r") as zip_file:
             zip_file.extractall(ninja_local_dir)
 
-        os.chmod(ninja_local_exe, os.stat(ninja_local_exe).st_mode | stat.S_IEXEC)
+        ninja_local_exe.chmod(ninja_local_exe.stat().st_mode | stat.S_IEXEC)
 
     return ninja_local_exe
 
@@ -177,9 +175,7 @@ def _build_cmake(cmake_exe: pathlib.Path, args: argparse.Namespace) -> bool:
     """Run CMake in build mode to compile and run the nanoprintf test suite."""
     sys.stdout.flush()
     build_path = _SCRIPT_PATH / "build/ninja" / args.cfg
-    cmake_args = [cmake_exe, "--build", build_path] + (
-        ["--", "-v"] if args.verbose else []
-    )
+    cmake_args = [cmake_exe, "--build", build_path, *(["--", "-v"] if args.verbose else [])]
 
     try:
         return subprocess.run(cmake_args, check=True).returncode == 0

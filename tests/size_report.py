@@ -1,4 +1,4 @@
-"""Compile and analyze nanoprintf for different architectures."""
+"""Compile and analyze nanoprintf for different architectures."""  # noqa: INP001
 
 import argparse
 import pathlib
@@ -28,7 +28,8 @@ def _git_root() -> pathlib.Path:
             return cur
         cur = cur.parent
 
-    raise ValueError(f"{__file__} not in git repo")
+    msg = f"{__file__} not in git repo"
+    raise ValueError(msg)
 
 
 def _build(platform: str, flags: list[str]) -> str:
