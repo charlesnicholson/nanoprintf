@@ -100,9 +100,7 @@ def _get_cmake(download: bool, verbose: bool) -> pathlib.Path:
             case "tar.gz":
                 with tarfile.open(cmake_local_archive, "r") as tar:
                     for member in tar.getmembers():
-                        member_path = pathlib.Path(
-                            cmake_local_dir / member.name
-                        ).resolve()
+                        member_path = pathlib.Path(cmake_local_dir / member.name).resolve()
                         if cmake_local_dir not in member_path.parents:
                             msg = "Tar file contents move upwards past sandbox root"
                             raise ValueError(msg)
@@ -177,9 +175,7 @@ def _build_cmake(cmake_exe: pathlib.Path, args: argparse.Namespace) -> bool:
     """Run CMake in build mode to compile and run the nanoprintf test suite."""
     sys.stdout.flush()
     build_path = _SCRIPT_PATH / "build/ninja" / args.cfg
-    cmake_args = [cmake_exe, "--build", build_path] + (
-        ["--", "-v"] if args.verbose else []
-    )
+    cmake_args = [cmake_exe, "--build", build_path, *(["--", "-v"] if args.verbose else [])]
 
     try:
         return subprocess.run(cmake_args, check=True).returncode == 0

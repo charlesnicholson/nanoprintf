@@ -1,4 +1,5 @@
 target-version = "py313"
+line-length = 92
 
 # Categories are at https://beta.ruff.rs/docs/rules/
 [lint]
