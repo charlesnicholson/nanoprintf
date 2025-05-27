@@ -502,7 +502,7 @@ static int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec
       break;
 #endif
 
-    default: goto parse_error_or_literal;
+    default: --cur; goto parse_error_or_literal;
   }
 
   return (int)(cur - format);
