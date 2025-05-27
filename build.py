@@ -1,11 +1,10 @@
 """Build script for nanoprintf. Configures and runs CMake to build tests."""
 
 import argparse
-import os
 import pathlib
 import shutil
-import subprocess
 import stat
+import subprocess
 import sys
 import tarfile
 import urllib.request
@@ -15,8 +14,9 @@ _SCRIPT_PATH = pathlib.Path(__file__).resolve().parent
 _NINJA_URL = "https://github.com/ninja-build/ninja/releases/download/v1.12.1/{}"
 _CMAKE_VERSION = "4.0.1"
 _CMAKE_URL = (
-    "https://github.com/Kitware/CMake/releases/download/"
-    f"v{_CMAKE_VERSION}/cmake-{_CMAKE_VERSION}" + "-{}.{}"
+    "https://github.com/Kitware/CMake/releases/download/v{_CMAKE_VERSION}"
+    f"/cmake-{_CMAKE_VERSION}-"
+    "{}.{}"
 )
 
 
@@ -60,7 +60,8 @@ def download_file(url: str, local_path: pathlib.Path, verbose: bool) -> None:
     """Download a file from url to local_path."""
     if verbose:
         print(f"Downloading:\n  Remote: {url}\n  Local: {local_path}")
-    with urllib.request.urlopen(url) as rsp, open(local_path, "wb") as file:
+
+    with urllib.request.urlopen(url) as rsp, local_path.open("wb") as file:  # noqa: S310
         shutil.copyfileobj(rsp, file)
 
 
@@ -103,15 +104,14 @@ def _get_cmake(download: bool, verbose: bool) -> pathlib.Path:
                             cmake_local_dir / member.name
                         ).resolve()
                         if cmake_local_dir not in member_path.parents:
-                            raise ValueError(
-                                "Tar file contents move upwards past sandbox root"
-                            )
+                            msg = "Tar file contents move upwards past sandbox root"
+                            raise ValueError(msg)
 
-                    tar.extractall(path=cmake_local_dir)
+                    tar.extractall(path=cmake_local_dir)  # noqa: S202
 
             case "zip":
                 with zipfile.ZipFile(cmake_local_archive, "r") as zip_file:
-                    zip_file.extractall(cmake_local_dir)
+                    zip_file.extractall(cmake_local_dir)  # noqa: S202
 
     return cmake_local_exe
 
@@ -135,9 +135,9 @@ def _get_ninja(download: bool, verbose: bool) -> pathlib.Path:
             download_file(_NINJA_URL.format(ninja_file), ninja_local_zip, verbose)
 
         with zipfile.ZipFile(ninja_local_zip, "r") as zip_file:
-            zip_file.extractall(ninja_local_dir)
+            zip_file.extractall(ninja_local_dir)  # noqa: S202
 
-        os.chmod(ninja_local_exe, os.stat(ninja_local_exe).st_mode | stat.S_IEXEC)
+        ninja_local_exe.chmod(ninja_local_exe.stat().st_mode | stat.S_IEXEC)
 
     return ninja_local_exe
 
@@ -168,7 +168,7 @@ def _configure_cmake(
     ]
 
     try:
-        return subprocess.run(cmake_args, cwd=build_path, check=True).returncode == 0
+        return subprocess.run(cmake_args, cwd=build_path, check=True).returncode == 0  # noqa: S603
     except subprocess.CalledProcessError as cpe:
         return cpe.returncode == 0
 
@@ -182,7 +182,7 @@ def _build_cmake(cmake_exe: pathlib.Path, args: argparse.Namespace) -> bool:
     )
 
     try:
-        return subprocess.run(cmake_args, check=True).returncode == 0
+        return subprocess.run(cmake_args, check=True).returncode == 0  # noqa: S603
     except subprocess.CalledProcessError as cpe:
         return cpe.returncode == 0
 

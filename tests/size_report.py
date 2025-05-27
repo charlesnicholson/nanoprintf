@@ -1,4 +1,4 @@
-"""Compile and analyze nanoprintf for different architectures."""
+"""Compile and analyze nanoprintf for different architectures."""  # noqa: INP001
 
 import argparse
 import pathlib
@@ -28,7 +28,8 @@ def _git_root() -> pathlib.Path:
             return cur
         cur = cur.parent
 
-    raise ValueError(f"{__file__} not in git repo")
+    msg = f"{__file__} not in git repo"
+    raise ValueError(msg)
 
 
 def _build(platform: str, flags: list[str]) -> str:
@@ -79,10 +80,10 @@ def _build(platform: str, flags: list[str]) -> str:
     print(" ".join(nm_cmd), flush=True)
 
     with tempfile.TemporaryDirectory() as temp_dir:
-        subprocess.run(
+        subprocess.run(  # noqa: S603
             cc_cmd, check=True, cwd=temp_dir, input=rb'#include "nanoprintf.h"'
         )
-        return subprocess.run(
+        return subprocess.run(  # noqa: S603
             nm_cmd, check=True, cwd=temp_dir, stdout=subprocess.PIPE
         ).stdout.decode()
 
