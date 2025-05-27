@@ -14,8 +14,8 @@ _SCRIPT_PATH = pathlib.Path(__file__).resolve().parent
 _NINJA_URL = "https://github.com/ninja-build/ninja/releases/download/v1.12.1/{}"
 _CMAKE_VERSION = "4.0.1"
 _CMAKE_URL = (
-    "https://github.com/Kitware/CMake/releases/download/v{_CMAKE_VERSION}"
-    f"/cmake-{_CMAKE_VERSION}-"
+    "https://github.com/Kitware/CMake/releases/download/"
+    f"v{_CMAKE_VERSION}/cmake-{_CMAKE_VERSION}-"
     "{}.{}"
 )
 
