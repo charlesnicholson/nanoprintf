@@ -322,15 +322,18 @@ typedef struct npf_bufputc_ctx {
 static int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
   char const *cur = format;
 
-#if defined(__cplusplus)
-    *out_spec = npf_format_spec_t();
-#else
-    *out_spec = (npf_format_spec_t){0};
-#endif
-  out_spec->case_adjust = 'a' - 'A'; // lowercase
+  #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
+    out_spec->left_justified = 0;
+    out_spec->leading_zero_pad = 0;
+  #endif
+    out_spec->case_adjust = 'a' - 'A'; // lowercase
+    out_spec->prepend = 0;
+  #if NANOPRINTF_USE_ALT_FORM_FLAG == 1
+    out_spec->alt_form = 0;
+  #endif
 
   if (*cur != '%') {
-	  goto parse_error_or_literal;
+    goto parse_error_or_literal;
   }
 
   while (*++cur) { // cur points at the leading '%' character
@@ -505,14 +508,8 @@ static int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec
   return (int)(cur - format);
 
 parse_error_or_literal:
-  // On error/literal, only conv_spec is meaningful; however, given the initial
-  // zero-init that we do (except for case-adjust), the caller might also check
-  // which options were parsed before the error. In this case, the caller should
-  // first check if indeed a conversion specification was encountered, ie if
-  // *cur == '%'.
-  // More commonly, the caller just ignores it all, and outputs the literal or
-  // the malformed specification verbatim, as soon as it determines that
-  // conv_spec == NONE.
+  // On error/literal, only conv_spec is meaningful; other fields may be
+  // uninitialized.
   out_spec->conv_spec = NPF_FMT_SPEC_CONV_NONE;
   // Here, we have either found no '%', or already consumed it. So we can
   // consume more chars up to the next '%' or end-of-string.
@@ -524,7 +521,7 @@ parse_error_or_literal:
   // "end of parsing" signal for the caller, which can never happen in any other
   // case.
   while (*cur != '%' && *cur != '\0') {
-	  ++cur;
+    ++cur;
   }
   return (int)(cur - format);
 }
@@ -830,11 +827,11 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
     int fs_len = npf_parse_format_spec(cur, &fs);
     if (!fs_len) { break; }
     if (fs.conv_spec == NPF_FMT_SPEC_CONV_NONE) {
-    	// wrong spec, or literal span: output everything verbatim
-    	while (fs_len--) {
-    		NPF_PUTC(*cur++);
-    	}
-    	continue;
+      // wrong spec, or literal span: output everything verbatim
+      while (fs_len--) {
+        NPF_PUTC(*cur++);
+      }
+      continue;
     }
     cur += fs_len;
 
