@@ -384,7 +384,7 @@ static int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec
   }
 #endif
 
-  uint_fast8_t tmp_conv = NPF_FMT_SPEC_CONV_NONE;
+  uint_fast8_t tmp_conv; tmp_conv = NPF_FMT_SPEC_CONV_NONE;
   out_spec->length_modifier = NPF_FMT_SPEC_LEN_MOD_NONE;
   switch (*cur++) { // Length modifier
 #if NANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS == 1
