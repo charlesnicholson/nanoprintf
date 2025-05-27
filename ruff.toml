@@ -17,6 +17,7 @@ ignore = [
   "FIX", # flake8-fixme (no FIXME comments)
   "PL",  # pylint
   "PT",  # flake8-pytest-style (can't use unittest API)
+  "S",   # flake8-bandit (no security checks)
   "TD",  # flake8-todos (no TODO comments)
   "T10", # flake8-debugger (no trace)
   "T20", # flake8-print (no print functions, only logging)

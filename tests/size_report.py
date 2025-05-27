@@ -80,10 +80,10 @@ def _build(platform: str, flags: list[str]) -> str:
     print(" ".join(nm_cmd), flush=True)
 
     with tempfile.TemporaryDirectory() as temp_dir:
-        subprocess.run(  # noqa: S603
+        subprocess.run(
             cc_cmd, check=True, cwd=temp_dir, input=rb'#include "nanoprintf.h"'
         )
-        return subprocess.run(  # noqa: S603
+        return subprocess.run(
             nm_cmd, check=True, cwd=temp_dir, stdout=subprocess.PIPE
         ).stdout.decode()
 

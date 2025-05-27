@@ -61,7 +61,7 @@ def download_file(url: str, local_path: pathlib.Path, verbose: bool) -> None:
     if verbose:
         print(f"Downloading:\n  Remote: {url}\n  Local: {local_path}")
 
-    with urllib.request.urlopen(url) as rsp, local_path.open("wb") as file:  # noqa: S310
+    with urllib.request.urlopen(url) as rsp, local_path.open("wb") as file:
         shutil.copyfileobj(rsp, file)
 
 
@@ -107,11 +107,11 @@ def _get_cmake(download: bool, verbose: bool) -> pathlib.Path:
                             msg = "Tar file contents move upwards past sandbox root"
                             raise ValueError(msg)
 
-                    tar.extractall(path=cmake_local_dir)  # noqa: S202
+                    tar.extractall(path=cmake_local_dir)
 
             case "zip":
                 with zipfile.ZipFile(cmake_local_archive, "r") as zip_file:
-                    zip_file.extractall(cmake_local_dir)  # noqa: S202
+                    zip_file.extractall(cmake_local_dir)
 
     return cmake_local_exe
 
@@ -135,7 +135,7 @@ def _get_ninja(download: bool, verbose: bool) -> pathlib.Path:
             download_file(_NINJA_URL.format(ninja_file), ninja_local_zip, verbose)
 
         with zipfile.ZipFile(ninja_local_zip, "r") as zip_file:
-            zip_file.extractall(ninja_local_dir)  # noqa: S202
+            zip_file.extractall(ninja_local_dir)
 
         ninja_local_exe.chmod(ninja_local_exe.stat().st_mode | stat.S_IEXEC)
 
@@ -168,7 +168,7 @@ def _configure_cmake(
     ]
 
     try:
-        return subprocess.run(cmake_args, cwd=build_path, check=True).returncode == 0  # noqa: S603
+        return subprocess.run(cmake_args, cwd=build_path, check=True).returncode == 0
     except subprocess.CalledProcessError as cpe:
         return cpe.returncode == 0
 
@@ -182,7 +182,7 @@ def _build_cmake(cmake_exe: pathlib.Path, args: argparse.Namespace) -> bool:
     )
 
     try:
-        return subprocess.run(cmake_args, check=True).returncode == 0  # noqa: S603
+        return subprocess.run(cmake_args, check=True).returncode == 0
     except subprocess.CalledProcessError as cpe:
         return cpe.returncode == 0
 
