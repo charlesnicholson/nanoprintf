@@ -1,64 +1,33 @@
-# CLion junk
 cmake-build*
 .idea
-
-# vim backup files
 *~
-
-# preprocessed / asm files
 *.i
 *.ii
 *.s
-
-# Object files
 *.o
 *.ko
 *.obj
 *.elf
 *.pyc
-
-# Precompiled Headers
 *.gch
 *.pch
-
-# Libraries
 *.lib
 *.a
 *.la
 *.lo
-
-# Shared objects (inc. Windows DLLs)
 *.dll
 *.so
 *.so.*
 *.dylib
-
-# Executables
 *.exe
 *.out
 *.app
 *.i*86
 *.x86_64
 *.hex
-
-# Debug files
 *.dSYM/
-
-# temp / external directories
 build
 external
-
-# latex intermediates / unused artifacts
-doc/*.aux
-doc/*.log
-doc/*.mp
-doc/*.out
-doc/*.1
-doc/*.mps
-doc/*.toc
-
-# hooray for osx
 .DS_Store
-
-# hooray for windows
 *.TMP
+.ruff_cache

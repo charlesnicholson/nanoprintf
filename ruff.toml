@@ -1,0 +1,41 @@
+target-version = "py313"
+line-length = 92
+
+# Categories are at https://beta.ruff.rs/docs/rules/
+[lint]
+select = ["ALL"]
+ignore = [
+  "E501",   # line-too-long
+  "G004",   # logging-f-string (we don't want multiple string formatters)
+  "COM812", # missing-trailing-comma (it's never obvious where to put them)
+
+  ####### these feel too hostile / opinionated
+  "ANN", # flake8-annotations (requires 100% strong typing)
+  "D",   # pydocstyle (every function needs a docstring)
+  "C90", # mccabe
+  "ERA", # eradicate (no commented-out code)
+  "FBT", # flake8-boolean-trap (no booleans as function parameters)
+  "FIX", # flake8-fixme (no FIXME comments)
+  "PL",  # pylint
+  "PT",  # flake8-pytest-style (can't use unittest API)
+  "S",   # flake8-bandit (no security checks)
+  "TD",  # flake8-todos (no TODO comments)
+  "T10", # flake8-debugger (no trace)
+  "T20", # flake8-print (no print functions, only logging)
+
+  ####### ruff formatter recommends disabling these
+  "W191",   # tab-indentation
+  "E111",   # indentation-with-invalid-multiple
+  "E114",   # indentation-with-invalid-multiple-comment
+  "E117",   # over-indented
+  "D206",   # indent-with-spaces
+  "D300",   # triple-single-quotes
+  "Q000",   # bad-quotes-inline-string
+  "Q001",   # bad-quotes-multiline-string
+  "Q002",   # bad-quotes-docstring
+  "Q003",   # avoidable-escaped-quote
+  "COM812", # missing-trailing-comma
+  "COM819", # prohibited-trailing-comma
+  "ISC001", # single-line-implicit-string-concatenation
+  "ISC002", # multi-line-implicit-string-concatenation
+]
