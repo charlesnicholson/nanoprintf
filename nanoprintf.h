@@ -172,12 +172,12 @@ NPF_VISIBILITY int npf_vpprintf(npf_putc pc,
 
 #if NPF_HAVE_GCC_WARNING_PRAGMAS
   #pragma GCC diagnostic push
+  #pragma GCC diagnostic ignored "-Wpragmas"
   #pragma GCC diagnostic ignored "-Wfloat-equal"
   #pragma GCC diagnostic ignored "-Wgnu-statement-expression-from-macro-expansion"
   #pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
   #pragma GCC diagnostic ignored "-Wpadded"
   #pragma GCC diagnostic ignored "-Wpedantic"
-  #pragma GCC diagnostic ignored "-Wpragmas"
   #pragma GCC diagnostic ignored "-Wunused-function"
 
   #ifdef __cplusplus
