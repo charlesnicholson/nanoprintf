@@ -211,10 +211,10 @@ TEST_CASE("npf_parse_format_spec") {
        the behavior is undefined.
     */
 
-    SUBCASE("precision default is 6 for float types") {
-      // REQUIRE(npf_parse_format_spec("%f", &spec) == 2);
-      // REQUIRE(spec.prec_opt == NPF_FMT_SPEC_OPT_NONE);
-      // REQUIRE(spec.prec == 6);
+    SUBCASE("precision default is 0 before star-args are read") {
+      REQUIRE(npf_parse_format_spec("%f", &spec) == 2);
+      REQUIRE(spec.prec_opt == NPF_FMT_SPEC_OPT_NONE);
+      REQUIRE(spec.prec == 0);
 
         /*
             Not supported yet
