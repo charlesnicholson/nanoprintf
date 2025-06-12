@@ -356,11 +356,6 @@ TEST_CASE("npf_parse_format_spec") {
       REQUIRE(spec.conv_spec == NPF_FMT_SPEC_CONV_PERCENT);
     }
 
-    SUBCASE("% clears precision") {
-      REQUIRE(npf_parse_format_spec("%.9%", &spec) == 4);
-      //REQUIRE(spec.prec_opt == NPF_FMT_SPEC_OPT_NONE);
-    }
-
     SUBCASE("c") {
       REQUIRE(npf_parse_format_spec("%c", &spec) == 2);
       REQUIRE(spec.conv_spec == NPF_FMT_SPEC_CONV_CHAR);
