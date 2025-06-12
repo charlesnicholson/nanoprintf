@@ -147,23 +147,27 @@ TEST_CASE("npf_parse_format_spec") {
       REQUIRE(spec.leading_zero_pad == 1);
     }
 
-    SUBCASE("leading zero ignored when also left-justified") {
-      //REQUIRE(npf_parse_format_spec("%0-u", &spec) == 4);
-      //REQUIRE(spec.left_justified);
-      //REQUIRE(!spec.leading_zero_pad);
+    SUBCASE("leading zero with left justification is accepted") {
+      REQUIRE(npf_parse_format_spec("%0-u", &spec) == 4);
+      REQUIRE(spec.left_justified);
+      REQUIRE(spec.leading_zero_pad);
 
-      //REQUIRE(npf_parse_format_spec("%-0u", &spec) == 4);
-      //REQUIRE(spec.left_justified);
-      //REQUIRE(!spec.leading_zero_pad);
+      REQUIRE(npf_parse_format_spec("%0-u", &spec) == 4);
+      REQUIRE(spec.left_justified);
+      REQUIRE(spec.leading_zero_pad);
 
-      //REQUIRE(npf_parse_format_spec("%0-0-0-u", &spec) == 8);
-      //REQUIRE(spec.left_justified);
-      //REQUIRE(!spec.leading_zero_pad);
+      REQUIRE(npf_parse_format_spec("%-0u", &spec) == 4);
+      REQUIRE(spec.left_justified);
+      REQUIRE(spec.leading_zero_pad);
+
+      REQUIRE(npf_parse_format_spec("%0-0-0-u", &spec) == 8);
+      REQUIRE(spec.left_justified);
+      REQUIRE(spec.leading_zero_pad);
     }
 
-    SUBCASE("0 flag is ignored when precision is specified") {
-      //REQUIRE(npf_parse_format_spec("%0.1u", &spec) == 5);
-      //REQUIRE(!spec.leading_zero_pad);
+    SUBCASE("0 flag is parsed when precision is specified") {
+      REQUIRE(npf_parse_format_spec("%0.1u", &spec) == 5);
+      REQUIRE(spec.leading_zero_pad);
     }
   }
 
@@ -423,7 +427,9 @@ TEST_CASE("npf_parse_format_spec") {
 
     SUBCASE("n clears precision") {
       REQUIRE(npf_parse_format_spec("%.4n", &spec) == 4);
-      //REQUIRE(spec.prec_opt == NPF_FMT_SPEC_OPT_NONE);
+      REQUIRE(spec.conv_spec == NPF_FMT_SPEC_CONV_WRITEBACK);
+      REQUIRE(spec.prec_opt == NPF_FMT_SPEC_OPT_LITERAL);
+      REQUIRE(spec.prec == 4);
     }
 
     SUBCASE("p") {
