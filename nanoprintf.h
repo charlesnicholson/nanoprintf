@@ -220,9 +220,9 @@ NPF_VISIBILITY int npf_vpprintf(npf_putc pc,
   #define NPF_FORCE_INLINE inline __attribute__((always_inline))
 
   #define NPF_MIN(X, Y) ({ \
-    __typeof__(X) const x = (X); __typeof__(Y) const y = (Y);  x <= y ? x : y; })
+    __typeof__(X) const x = (X); __typeof__(Y) const y = (Y); x <= y ? x : y; })
   #define NPF_MAX(X, Y) ({ \
-    __typeof__(X) const x = (X); __typeof__(Y) const y = (Y);  x >= y ? x : y; })
+    __typeof__(X) const x = (X); __typeof__(Y) const y = (Y); x >= y ? x : y; })
 #else
   #if defined(_MSC_VER)
     #define NPF_NOINLINE __declspec(noinline)
