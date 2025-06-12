@@ -174,11 +174,14 @@ NPF_VISIBILITY int npf_vpprintf(npf_putc pc,
   #pragma GCC diagnostic push
   #pragma GCC diagnostic ignored "-Wunused-function"
   #pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
+  #pragma GCC diagnostic ignored "-Wgnu-statement-expression-from-macro-expansion"
+  #pragma GCC diagnostic ignored "-Wpadded"
+  #pragma GCC diagnostic ignored "-Wfloat-equal"
+
   #ifdef __cplusplus
     #pragma GCC diagnostic ignored "-Wold-style-cast"
   #endif
-  #pragma GCC diagnostic ignored "-Wpadded"
-  #pragma GCC diagnostic ignored "-Wfloat-equal"
+
   #if NPF_CLANG
     #pragma GCC diagnostic ignored "-Wc++98-compat-pedantic"
     #pragma GCC diagnostic ignored "-Wcovered-switch-default"
@@ -213,12 +216,22 @@ NPF_VISIBILITY int npf_vpprintf(npf_putc pc,
 #if defined(__clang__) || defined(__GNUC__) || defined(__GNUG__)
   #define NPF_NOINLINE __attribute__((noinline))
   #define NPF_FORCE_INLINE inline __attribute__((always_inline))
-#elif defined(_MSC_VER)
-  #define NPF_NOINLINE __declspec(noinline)
-  #define NPF_FORCE_INLINE inline __forceinline
+
+  #define NPF_MIN(X, Y) ({ \
+    __typeof__(X) const x = (X); __typeof__(Y) const y = (Y);  x <= y ? x : y; })
+  #define NPF_MAX(X, Y) ({ \
+    __typeof__(X) const x = (X); __typeof__(Y) const y = (Y);  x >= y ? x : y; })
 #else
-  #define NPF_NOINLINE
-  #define NPF_FORCE_INLINE
+  #if defined(_MSC_VER)
+    #define NPF_NOINLINE __declspec(noinline)
+    #define NPF_FORCE_INLINE inline __forceinline
+  #else
+    #define NPF_NOINLINE
+    #define NPF_FORCE_INLINE
+  #endif
+
+  #define NPF_MIN(X, Y) ((X) <= (Y) ? (X) : (Y))
+  #define NPF_MAX(X, Y) ((X) >= (Y) ? (X) : (Y))
 #endif
 
 #if (NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1) || \
@@ -315,9 +328,6 @@ typedef struct npf_bufputc_ctx {
 #ifdef _MSC_VER
   #include <intrin.h>
 #endif
-
-#define NPF_MIN(x, y) ((x) <= (y) ? (x) : (y))
-#define NPF_MAX(x, y) ((x) >= (y) ? (x) : (y))
 
 static int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
   char const *cur = format;
