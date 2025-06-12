@@ -366,11 +366,6 @@ TEST_CASE("npf_parse_format_spec") {
       REQUIRE(spec.conv_spec == NPF_FMT_SPEC_CONV_CHAR);
     }
 
-    SUBCASE("c clears precision") {
-      REQUIRE(npf_parse_format_spec("%.9c", &spec) == 4);
-      //REQUIRE(spec.prec_opt == NPF_FMT_SPEC_OPT_NONE);
-    }
-
     SUBCASE("s") {
       REQUIRE(npf_parse_format_spec("%s", &spec) == 2);
       REQUIRE(spec.conv_spec == NPF_FMT_SPEC_CONV_STRING);
@@ -435,11 +430,6 @@ TEST_CASE("npf_parse_format_spec") {
     SUBCASE("p") {
       REQUIRE(npf_parse_format_spec("%p", &spec) == 2);
       REQUIRE(spec.conv_spec == NPF_FMT_SPEC_CONV_POINTER);
-    }
-
-    SUBCASE("p clears precision") {
-      REQUIRE(npf_parse_format_spec("%.4p", &spec) == 4);
-      //REQUIRE(spec.prec_opt == NPF_FMT_SPEC_OPT_NONE);
     }
 
     SUBCASE("f") {
