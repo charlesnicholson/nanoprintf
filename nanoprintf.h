@@ -819,14 +819,9 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
     }
   #endif
 
-  if (fs.prec_opt == NPF_FMT_SPEC_OPT_NONE) {
-    switch (fs.conv_spec) {
-      case NPF_FMT_SPEC_CONV_POINTER:
+  if ((fs.prec_opt == NPF_FMT_SPEC_OPT_NONE) &&
+      (fs.conv_spec == NPF_FMT_SPEC_CONV_POINTER)) {
         fs.prec = (sizeof(void *) * CHAR_BIT + 3) / 4;
-        break;
-      default:
-        break;
-    }
   }
 #endif
 
