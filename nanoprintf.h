@@ -178,6 +178,7 @@ NPF_VISIBILITY int npf_vpprintf(npf_putc pc,
   #pragma GCC diagnostic ignored "-Wpadded"
   #pragma GCC diagnostic ignored "-Wfloat-equal"
   #pragma GCC diagnostic ignored "-Wpedantic"
+  #pragma GCC diagnostic ignored "-Wpragmas"
 
   #ifdef __cplusplus
     #pragma GCC diagnostic ignored "-Wold-style-cast"
