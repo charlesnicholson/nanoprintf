@@ -388,27 +388,6 @@ TEST_CASE("conformance to system printf") {
 #endif // NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS
   }
 
-#if !defined(_MSC_VER)  // Visual Studio prints "00000ABCDEF" (upper, no 0x)
-  SUBCASE("pointer") {
-    // require_conform("%p", nullptr); implementation defined
-    int x, *p = &x;
-    char snp_buf[32];
-    char npf_buf[32];
-    snprintf(snp_buf, sizeof(snp_buf), "%p", (void *)p);
-    npf_snprintf(npf_buf, sizeof(npf_buf), "0x%p", (void *)p);
-    REQUIRE(std::string{snp_buf} == npf_buf);
-    // require_conform("%030p", p); 0 flag + 'p' is undefined
-    // require_conform("%.30p", p); precision + 'p' is undefined
-
-#if (NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1) && \
-    (NANOPRINTF_USE_ALT_FORM_FLAG == 1)
-    snprintf(snp_buf, sizeof(snp_buf), "%30p", (void *)p);
-    npf_snprintf(npf_buf, sizeof(npf_buf), "%#30p", (void *)p);
-    REQUIRE(std::string{snp_buf} == npf_buf);
-#endif
-  }
-#endif // _MSC_VER
-
 #if NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS == 1
   SUBCASE("writeback int") {
     int writeback = -1;

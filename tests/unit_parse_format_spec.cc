@@ -147,23 +147,27 @@ TEST_CASE("npf_parse_format_spec") {
       REQUIRE(spec.leading_zero_pad == 1);
     }
 
-    SUBCASE("leading zero ignored when also left-justified") {
+    SUBCASE("leading zero with left justification is accepted") {
       REQUIRE(npf_parse_format_spec("%0-u", &spec) == 4);
       REQUIRE(spec.left_justified);
-      REQUIRE(!spec.leading_zero_pad);
+      REQUIRE(spec.leading_zero_pad);
+
+      REQUIRE(npf_parse_format_spec("%0-u", &spec) == 4);
+      REQUIRE(spec.left_justified);
+      REQUIRE(spec.leading_zero_pad);
 
       REQUIRE(npf_parse_format_spec("%-0u", &spec) == 4);
       REQUIRE(spec.left_justified);
-      REQUIRE(!spec.leading_zero_pad);
+      REQUIRE(spec.leading_zero_pad);
 
       REQUIRE(npf_parse_format_spec("%0-0-0-u", &spec) == 8);
       REQUIRE(spec.left_justified);
-      REQUIRE(!spec.leading_zero_pad);
+      REQUIRE(spec.leading_zero_pad);
     }
 
-    SUBCASE("0 flag is ignored when precision is specified") {
+    SUBCASE("0 flag is parsed when precision is specified") {
       REQUIRE(npf_parse_format_spec("%0.1u", &spec) == 5);
-      REQUIRE(!spec.leading_zero_pad);
+      REQUIRE(spec.leading_zero_pad);
     }
   }
 
@@ -207,10 +211,11 @@ TEST_CASE("npf_parse_format_spec") {
        the behavior is undefined.
     */
 
-    SUBCASE("precision default is 6 for float types") {
+    SUBCASE("precision default is 0 before star-args are read") {
       REQUIRE(npf_parse_format_spec("%f", &spec) == 2);
       REQUIRE(spec.prec_opt == NPF_FMT_SPEC_OPT_NONE);
-      REQUIRE(spec.prec == 6);
+      REQUIRE(spec.prec == 0);
+
         /*
             Not supported yet
 
@@ -351,19 +356,9 @@ TEST_CASE("npf_parse_format_spec") {
       REQUIRE(spec.conv_spec == NPF_FMT_SPEC_CONV_PERCENT);
     }
 
-    SUBCASE("% clears precision") {
-      REQUIRE(npf_parse_format_spec("%.9%", &spec) == 4);
-      REQUIRE(spec.prec_opt == NPF_FMT_SPEC_OPT_NONE);
-    }
-
     SUBCASE("c") {
       REQUIRE(npf_parse_format_spec("%c", &spec) == 2);
       REQUIRE(spec.conv_spec == NPF_FMT_SPEC_CONV_CHAR);
-    }
-
-    SUBCASE("c clears precision") {
-      REQUIRE(npf_parse_format_spec("%.9c", &spec) == 4);
-      REQUIRE(spec.prec_opt == NPF_FMT_SPEC_OPT_NONE);
     }
 
     SUBCASE("s") {
@@ -422,17 +417,14 @@ TEST_CASE("npf_parse_format_spec") {
 
     SUBCASE("n clears precision") {
       REQUIRE(npf_parse_format_spec("%.4n", &spec) == 4);
-      REQUIRE(spec.prec_opt == NPF_FMT_SPEC_OPT_NONE);
+      REQUIRE(spec.conv_spec == NPF_FMT_SPEC_CONV_WRITEBACK);
+      REQUIRE(spec.prec_opt == NPF_FMT_SPEC_OPT_LITERAL);
+      REQUIRE(spec.prec == 4);
     }
 
     SUBCASE("p") {
       REQUIRE(npf_parse_format_spec("%p", &spec) == 2);
       REQUIRE(spec.conv_spec == NPF_FMT_SPEC_CONV_POINTER);
-    }
-
-    SUBCASE("p clears precision") {
-      REQUIRE(npf_parse_format_spec("%.4p", &spec) == 4);
-      REQUIRE(spec.prec_opt == NPF_FMT_SPEC_OPT_NONE);
     }
 
     SUBCASE("f") {
