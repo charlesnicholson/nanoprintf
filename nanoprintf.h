@@ -310,38 +310,12 @@ typedef struct npf_format_spec {
 #if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
   typedef intmax_t npf_int_t;
   typedef uintmax_t npf_uint_t;
-#else
-// On some platforms, sizeof(long) > sizeof(void*). npf_[u]int_t must be large enough
-// to hold the larger of the two, so do comparisons here and define npf_int_t and
-// npf_uint_t based on the max values of the various types.
-#if UINTPTR_MAX == UINT64_MAX
-  #define NPF_POINTER_SIZE 8
-#elif UINTPTR_MAX == UINT32_MAX
-  #define NPF_POINTER_SIZE 4
-#elif UINTPTR_MAX == UINT16_MAX
-  #define NPF_POINTER_SIZE 2
-#else
-  #error Unknown architecture!
-#endif
-
-#if LONG_MAX == 9223372036854775807LL
-  #define NPF_LONG_SIZE 8
-#elif LONG_MAX == 2147483647
-  #define NPF_LONG_SIZE 4
-#else
-  #error Unknown architecture!
-#endif
-
-#if NPF_POINTER_SIZE >= NPF_LONG_SIZE
-  typedef intptr_t npf_int_t;
-  typedef uintptr_t npf_uint_t;
-#else
+#elif ULONG_MAX > UINTPTR_MAX
   typedef long npf_int_t;
   typedef unsigned long npf_uint_t;
-#endif
-
-#undef NPF_LONG_SIZE
-#undef NPF_POINTER_SIZE
+#else
+  typedef intptr_t npf_int_t;
+  typedef uintptr_t npf_uint_t;
 #endif
 
 typedef struct npf_bufputc_ctx {
