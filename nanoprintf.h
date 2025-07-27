@@ -314,6 +314,11 @@ typedef struct npf_format_spec {
 #elif UINTPTR_MAX == UINT32_MAX
   typedef int32_t npf_int_t;
   typedef uint32_t npf_uint_t;
+#elif UINTPTR_MAX == UINT16_MAX
+  typedef int16_t npf_int_t;
+  typedef uint16_t npf_uint_t;
+#else
+#error Unknown architecture!
 #endif
 #else
   typedef intmax_t npf_int_t;
