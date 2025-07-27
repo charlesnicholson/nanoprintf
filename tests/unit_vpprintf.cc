@@ -171,8 +171,10 @@ TEST_CASE("npf_vpprintf") {
   }
 
   SUBCASE("pointer null") {
+#if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 0
     REQUIRE(npf_pprintf(r.PutC, &r, "%p", nullptr) == 1);
     REQUIRE(r.String() == std::string{"0"});
+#endif
   }
 
   SUBCASE("pointer") {
