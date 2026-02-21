@@ -1,15 +1,6 @@
 // CMake drives the conformance test with a large flag matrix.
 // All of the nanoprintf configuration preprocessor symbols are injected.
 
-#ifdef _MSC_VER
-  #pragma warning(disable:4464) // relative include uses ..
-  #pragma warning(disable:4514) // unreferenced inline function removed
-  #pragma warning(disable:5039) // extern "c" throw
-  #pragma warning(disable:4710) // function not inlined
-  #pragma warning(disable:4711) // selected for inline
-  #pragma warning(disable:5264) // const variable not used (shut up doctest)
-#endif
-
 #define NANOPRINTF_IMPLEMENTATION
 #include "../nanoprintf.h"
 
@@ -17,22 +8,7 @@
 #include <limits.h>
 #include <cmath>
 
-#if NPF_HAVE_GCC_WARNING_PRAGMAS
-  #pragma GCC diagnostic push
-  #if NPF_CLANG
-    #pragma GCC diagnostic ignored "-Wc++98-compat-pedantic"
-    #pragma GCC diagnostic ignored "-Wformat-pedantic"
-    #pragma GCC diagnostic ignored "-Wformat-nonliteral"
-    #pragma GCC diagnostic ignored "-Wold-style-cast"
-    #ifndef __APPLE__
-      #pragma GCC diagnostic ignored "-Wreserved-identifier"
-      #pragma GCC diagnostic ignored "-Wunsafe-buffer-usage"
-    #endif
-  #endif
-  #pragma GCC diagnostic ignored "-Wformat"
-#endif
-
-#include "doctest.h"
+#include "npf_doctest.h"
 
 namespace {
 void require_conform(const std::string& expected, char const *fmt, ...) {

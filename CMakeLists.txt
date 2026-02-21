@@ -30,7 +30,12 @@ set(CMAKE_C_STANDARD 17)
 set(CMAKE_CXX_STANDARD 20)
 
 if (MSVC)
-  set(nanoprintf_common_flags /Wall /WX)
+  set(nanoprintf_common_flags /Wall /WX
+      /wd4464  # relative include uses ..
+      /wd4514  # unreferenced inline function removed
+      /wd4710  # function not inlined
+      /wd4711  # selected for inline
+  )
 else()
   set(CMAKE_C_FLAGS_DEBUG "-O0 -g3")
   set(CMAKE_C_FLAGS_RELWITHDEBINFO "-Os -g3")
@@ -65,15 +70,51 @@ else()
   endif()
 endif()
 
+################ Test-specific warning suppressions
+
+if (MSVC)
+  set(nanoprintf_test_flags
+      /wd4619  # there is no warning number
+      /wd4820  # padding after data member
+      /wd5039  # potentially throwing function passed to extern C
+      /wd5262  # implicit switch fall-through
+      /wd5264  # const variable not used
+  )
+else()
+  set(nanoprintf_test_flags "")
+  if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    list(APPEND nanoprintf_test_flags
+         -Wno-c++98-compat-pedantic
+         -Wno-format
+         -Wno-format-nonliteral
+         -Wno-format-pedantic
+         -Wno-format-security
+         -Wno-format-zero-length
+         -Wno-missing-prototypes
+         -Wno-old-style-cast
+         -Wno-padded
+         -Wno-unsafe-buffer-usage-in-libc-call
+         -Wno-unused-function)
+  else()
+    list(APPEND nanoprintf_test_flags
+         -Wno-format
+         -Wno-format-overflow
+         -Wno-format-security
+         -Wno-format-zero-length
+         -Wno-old-style-cast
+         -Wno-unused-function)
+  endif()
+endif()
+
 ################ Doctest
 
 add_library(libdoctest_main OBJECT tests/doctest_main.cc)
-target_compile_options(libdoctest_main PRIVATE ${nanoprintf_common_flags})
+target_compile_options(libdoctest_main PRIVATE ${nanoprintf_common_flags} ${nanoprintf_test_flags})
 
 function(npf_test name files)
   add_executable(${name} ${files})
     target_compile_definitions(${name} PRIVATE DOCTEST_CONFIG_SUPER_FAST_ASSERTS)
-    target_compile_options(${name} PRIVATE ${nanoprintf_common_flags})
+    target_compile_options(${name} PRIVATE ${nanoprintf_common_flags} ${nanoprintf_test_flags})
     target_link_options(${name} PRIVATE ${nanoprintf_link_flags})
     target_link_libraries(${name} libdoctest_main) # Doctest is slow, only build once.
 
