@@ -1,9 +1,8 @@
 #pragma once
 
-// Wrapper around the third-party doctest.h that suppresses warnings it triggers.
+// Suppress warnings from doctest.h and test code for the rest of the translation unit.
 
 #ifdef _MSC_VER
-  #pragma warning(push)
   #pragma warning(disable:4619)  // there is no warning number 'number'
   #pragma warning(disable:4365)  // signed/unsigned mismatch
   #pragma warning(disable:4505)  // unreferenced local function removed
@@ -14,25 +13,14 @@
   #pragma warning(disable:26451) // casting operator result to wider type
 #endif
 
-#if defined(__clang__) || (defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ > 6)))
-  #pragma GCC diagnostic push
-  #ifdef __clang__
-    #pragma GCC diagnostic ignored "-Wc++98-compat-pedantic"
-    #pragma GCC diagnostic ignored "-Wold-style-cast"
-    #ifndef __APPLE__
-      #pragma GCC diagnostic ignored "-Wreserved-identifier"
-      #pragma GCC diagnostic ignored "-Wunsafe-buffer-usage"
-      #pragma GCC diagnostic ignored "-W#warnings"
-    #endif
+#ifdef __clang__
+  #pragma GCC diagnostic ignored "-Wc++98-compat-pedantic"
+  #pragma GCC diagnostic ignored "-Wold-style-cast"
+  #ifndef __APPLE__
+    #pragma GCC diagnostic ignored "-Wreserved-identifier"
+    #pragma GCC diagnostic ignored "-Wunsafe-buffer-usage"
+    #pragma GCC diagnostic ignored "-W#warnings"
   #endif
 #endif
 
 #include "doctest.h"
-
-#if defined(__clang__) || (defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ > 6)))
-  #pragma GCC diagnostic pop
-#endif
-
-#ifdef _MSC_VER
-  #pragma warning(pop)
-#endif
