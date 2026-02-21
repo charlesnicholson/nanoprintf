@@ -4,14 +4,6 @@
 #include <limits>
 #include <string>
 
-#if NPF_HAVE_GCC_WARNING_PRAGMAS
-  #pragma GCC diagnostic push
-  #if NPF_CLANG
-    #pragma GCC diagnostic ignored "-Wformat-pedantic"
-    #pragma GCC diagnostic ignored "-Wformat-nonliteral"
-  #endif
-#endif
-
 TEST_CASE("npf_bin_len") {
   CHECK(npf_bin_len(0) == 1);
   CHECK(npf_bin_len(1) == 1);

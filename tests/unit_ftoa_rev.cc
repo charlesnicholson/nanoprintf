@@ -4,16 +4,6 @@
 #include <cstring>
 #include <string>
 
-#if NPF_HAVE_GCC_WARNING_PRAGMAS
-  #pragma GCC diagnostic push
-  #pragma GCC diagnostic ignored "-Wunused-function"
-  #if NPF_CLANG
-    #pragma GCC diagnostic ignored "-Wformat-pedantic"
-    #pragma GCC diagnostic ignored "-Wmissing-prototypes"
-    #pragma GCC diagnostic ignored "-Wold-style-cast"
-  #endif
-#endif
-
 static npf_format_spec_t spec;
 
 static void memrev(char *lhs, char *rhs) {

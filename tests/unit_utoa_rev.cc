@@ -3,15 +3,6 @@
 #include <climits>
 #include <string>
 
-#if NPF_HAVE_GCC_WARNING_PRAGMAS
-  #pragma GCC diagnostic push
-  #if NPF_CLANG
-    #pragma GCC diagnostic ignored "-Wformat-pedantic"
-    #pragma GCC diagnostic ignored "-Wold-style-cast"
-    #pragma GCC diagnostic ignored "-Wmissing-prototypes"
-  #endif
-#endif
-
 void require_npf_utoa(
     std::string const &expected,
     npf_uint_t val,

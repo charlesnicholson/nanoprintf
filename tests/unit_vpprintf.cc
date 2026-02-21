@@ -5,19 +5,6 @@
 #include <string>
 #include <vector>
 
-#if NPF_HAVE_GCC_WARNING_PRAGMAS
-  #pragma GCC diagnostic push
-  #if NPF_CLANG
-    #pragma GCC diagnostic ignored "-Wformat-pedantic"
-    #pragma GCC diagnostic ignored "-Wold-style-cast"
-  #else
-    #pragma GCC diagnostic ignored "-Wformat-overflow"
-  #endif
-  #pragma GCC diagnostic ignored "-Wformat"
-  #pragma GCC diagnostic ignored "-Wformat-zero-length"
-  #pragma GCC diagnostic ignored "-Wformat-security"
-#endif
-
 struct Recorder {
   static void PutC(int c, void *ctx) {
     static_cast<Recorder*>(ctx)->calls.push_back((char)c);

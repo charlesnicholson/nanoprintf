@@ -3,16 +3,6 @@
 #include <cstring>
 #include <string>
 
-#if NPF_HAVE_GCC_WARNING_PRAGMAS
-  #pragma GCC diagnostic push
-  #if NPF_CLANG
-    #pragma GCC diagnostic ignored "-Wformat-pedantic"
-  #else
-    #pragma GCC diagnostic ignored "-Wformat-overflow"
-  #endif
-  #pragma GCC diagnostic ignored "-Wformat-zero-length"
-#endif
-
 TEST_CASE("npf_snprintf") {
   char buf[128];
   buf[0] = '$';
