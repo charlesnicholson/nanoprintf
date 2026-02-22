@@ -99,8 +99,8 @@ UNIT_SRCS := tests/unit_parse_format_spec.cc \
              tests/unit_snprintf_safe_empty.cc \
              tests/unit_vpprintf.cc
 
-UNIT_NORMAL_OBJS := $(patsubst tests/%.cc,$(BUILD)/unit_normal/%.o,$(UNIT_SRCS))
-UNIT_LARGE_OBJS  := $(patsubst tests/%.cc,$(BUILD)/unit_large/%.o,$(UNIT_SRCS))
+UNIT_OBJS       := $(patsubst tests/%.cc,$(BUILD)/unit/%.o,$(UNIT_SRCS))
+UNIT_LARGE_OBJS := $(patsubst tests/%.cc,$(BUILD)/unit_large/%.o,$(UNIT_SRCS))
 
 # --- Header dependencies ---
 NPF_H     := nanoprintf.h
@@ -135,17 +135,17 @@ $(BUILD)/doctest_main.o: tests/doctest_main.cc $(TEST_HDRS) $(BUILD)/config.stam
 	$(MSG) CXX $<
 	$(QUIET)$(CXX) $(CXXFLAGS) $(TEST_WARN) -c -o $@ $<
 
-# --- Unit tests: normal variant (LARGE=0) ---
-$(BUILD)/unit_normal/%.o: tests/%.cc $(NPF_H) $(TEST_HDRS) $(BUILD)/config.stamp
-	@mkdir -p $(BUILD)/unit_normal
+# --- Unit tests (LARGE=0) ---
+$(BUILD)/unit/%.o: tests/%.cc $(NPF_H) $(TEST_HDRS) $(BUILD)/config.stamp
+	@mkdir -p $(BUILD)/unit
 	$(MSG) CXX $<
 	$(QUIET)$(CXX) $(CXXFLAGS) $(TEST_WARN) $(UNIT_DEFS) -DNANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0 -c -o $@ $<
 
-$(BUILD)/unit_tests_normal: $(UNIT_NORMAL_OBJS) $(BUILD)/doctest_main.o
+$(BUILD)/unit_tests: $(UNIT_OBJS) $(BUILD)/doctest_main.o
 	$(MSG) LINK $@
 	$(QUIET)$(CXX) $(LDFLAGS) -o $@ $^
 
-$(BUILD)/unit_tests_normal.timestamp: $(BUILD)/unit_tests_normal
+$(BUILD)/unit_tests.timestamp: $(BUILD)/unit_tests
 	$(MSG) RUN $<
 	$(QUIET)./$< -m && touch $@
 
@@ -163,7 +163,7 @@ $(BUILD)/unit_tests_large.timestamp: $(BUILD)/unit_tests_large
 	$(MSG) RUN $<
 	$(QUIET)./$< -m && touch $@
 
-unit: $(BUILD)/unit_tests_normal.timestamp $(BUILD)/unit_tests_large.timestamp
+unit: $(BUILD)/unit_tests.timestamp $(BUILD)/unit_tests_large.timestamp
 
 # --- Compile-only targets ---
 compile-only: $(BUILD)/npf_static $(BUILD)/npf_include_multiple \

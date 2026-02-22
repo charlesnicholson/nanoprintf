@@ -65,7 +65,12 @@ def _run(
 
 def _compile_one(cmd: list[str], cwd: pathlib.Path) -> subprocess.CompletedProcess[bytes]:
     """Compile a single translation unit."""
-    return subprocess.run(cmd, check=True, cwd=cwd)
+    result = subprocess.run(cmd, cwd=cwd, capture_output=True)
+    if result.returncode != 0:
+        sys.stdout.buffer.write(result.stdout)
+        sys.stderr.buffer.write(result.stderr)
+        result.check_returncode()
+    return result
 
 
 def _build_conformance(args: argparse.Namespace) -> bool:
@@ -163,8 +168,8 @@ def _build_unit_tests(args: argparse.Namespace) -> bool:
     except subprocess.CalledProcessError:
         return False
 
-    for variant, large_val in [("normal", "0"), ("large", "1")]:
-        var_dir = build_dir / f"unit_{variant}"
+    for suffix, large_val in [("", "0"), ("_large", "1")]:
+        var_dir = build_dir / f"unit{suffix}"
         var_dir.mkdir(parents=True, exist_ok=True)
 
         objs: list[pathlib.Path] = []
@@ -193,7 +198,7 @@ def _build_unit_tests(args: argparse.Namespace) -> bool:
             except subprocess.CalledProcessError:
                 return False
 
-        exe = build_dir / f"unit_tests_{variant}.exe"
+        exe = build_dir / f"unit_tests{suffix}.exe"
         try:
             _run(
                 [
