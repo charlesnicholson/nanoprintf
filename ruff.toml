@@ -8,6 +8,7 @@ ignore = [
   "E501",   # line-too-long
   "G004",   # logging-f-string (we don't want multiple string formatters)
   "COM812", # missing-trailing-comma (it's never obvious where to put them)
+  "INP001", # implicit-namespace-package (standalone scripts, not a package)
 
   ####### these feel too hostile / opinionated
   "ANN", # flake8-annotations (requires 100% strong typing)

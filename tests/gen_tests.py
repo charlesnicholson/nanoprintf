@@ -37,7 +37,7 @@ def valid_combos() -> list[dict[str, int]]:
     """Return every valid flag combination (skip float=1 when precision=0)."""
     combos = []
     for bits in itertools.product((0, 1), repeat=len(FLAGS)):
-        combo = dict(zip(FLAGS, bits))
+        combo = dict(zip(FLAGS, bits, strict=True))
         if combo["NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS"] == 1 and \
            combo["NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS"] == 0:
             continue
@@ -87,9 +87,9 @@ def write_main_c(combos: list[dict[str, int]], out: pathlib.Path) -> bool:
         lang = "C" if i < n else "C++"
         label = combo_label(combo, lang)
         lines.append(f'    combo_fail = npf_test_combo_{i}();')
-        lines.append(f'    if (combo_fail != 0)')
+        lines.append('    if (combo_fail != 0)')
         lines.append(f'        fprintf(stderr, "FAILED combo {i}/{total}: {label}\\n");')
-        lines.append(f'    total_fail += combo_fail;')
+        lines.append('    total_fail += combo_fail;')
         lines.append(f'    total_pass += npf_test_combo_{i}_pass_count;')
         lines.append('')
     lines += [
@@ -178,7 +178,7 @@ def write_makefile(
         "CONFORMANCE_CXX = conformance.cc",
         f"HARNESS = {os.path.relpath(test_dir / 'test_harness.h', out)}",
         f"NANOPRINTF = {os.path.relpath(repo_root / 'nanoprintf.h', out)}",
-        f"DEPS = $(CONFORMANCE_C) $(HARNESS) $(NANOPRINTF)",
+        "DEPS = $(CONFORMANCE_C) $(HARNESS) $(NANOPRINTF)",
         "",
         "all: npf_conformance.timestamp",
         "",
@@ -235,7 +235,7 @@ def write_compile_commands(
     test_rel = os.path.relpath(test_dir, out)
 
     common = ["/nologo", "/Os", "/W4", "/WX",
-              "/wd4474", "/wd4476", "/wd4477", "/wd4778",
+              "/wd4474", "/wd4476", "/wd4477", "/wd4505", "/wd4778",
               f"/I{include_rel}", f"/I{test_rel}"]
     cxx_extra = ["/TP", "/std:c++20", "/EHsc"]
 
@@ -259,7 +259,7 @@ def write_compile_commands(
     )
 
     # Linker response file
-    rsp_lines = ["main.obj"] + obj_names
+    rsp_lines = ["main.obj", *obj_names]
     changed |= _write_if_changed(out / "link.rsp", "\n".join(rsp_lines) + "\n")
     return changed
 
@@ -280,7 +280,7 @@ def main() -> int:
     args = parser.parse_args()
 
     script_dir = pathlib.Path(__file__).resolve().parent
-    out = args.output if args.output else script_dir / "generated"
+    out = args.output or script_dir / "generated"
     out = out.resolve()
     out.mkdir(parents=True, exist_ok=True)
 

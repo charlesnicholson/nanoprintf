@@ -90,7 +90,7 @@ def _build_conformance(args: argparse.Namespace) -> bool:
         return False
 
     # Read compile commands and run in parallel
-    with open(gen_dir / "compile_commands.json") as f:
+    with (gen_dir / "compile_commands.json").open() as f:
         commands: list[list[str]] = json.load(f)
 
     workers = os.cpu_count() or 1
@@ -176,8 +176,8 @@ def _build_unit_tests(args: argparse.Namespace) -> bool:
                     [
                         "cl.exe",
                         *cxx_flags,
-                        f"/DNANOPRINTF_USE_ALT_FORM_FLAG=1",
-                        f"/DDOCTEST_CONFIG_SUPER_FAST_ASSERTS",
+                        "/DNANOPRINTF_USE_ALT_FORM_FLAG=1",
+                        "/DDOCTEST_CONFIG_SUPER_FAST_ASSERTS",
                         f"/DNANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS={large_val}",
                         *(
                             ["/DNANOPRINTF_32_BIT_TESTS"]
