@@ -1,6 +1,8 @@
 """Windows build script for nanoprintf. Invokes cl.exe / link.exe directly."""
 
 import argparse
+import concurrent.futures
+import json
 import os
 import pathlib
 import subprocess
@@ -61,6 +63,11 @@ def _run(
     subprocess.run(args, check=True, cwd=cwd)
 
 
+def _compile_one(cmd: list[str], cwd: pathlib.Path) -> subprocess.CompletedProcess[bytes]:
+    """Compile a single translation unit."""
+    return subprocess.run(cmd, check=True, cwd=cwd)
+
+
 def _build_conformance(args: argparse.Namespace) -> bool:
     """Generate, build, and run the conformance test suite."""
     gen_script = _SCRIPT_PATH / "tests" / "gen_tests.py"
@@ -82,15 +89,40 @@ def _build_conformance(args: argparse.Namespace) -> bool:
     except subprocess.CalledProcessError:
         return False
 
-    # Build with batch file, then run separately
+    # Read compile commands and run in parallel
+    with open(gen_dir / "compile_commands.json") as f:
+        commands: list[list[str]] = json.load(f)
+
+    workers = os.cpu_count() or 1
+    if args.verbose:
+        print(f"  Compiling {len(commands)} files with {workers} workers")
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as pool:
+        futures = {
+            pool.submit(_compile_one, cmd, gen_dir): cmd for cmd in commands
+        }
+        for future in concurrent.futures.as_completed(futures):
+            try:
+                future.result()
+            except subprocess.CalledProcessError:
+                # Cancel remaining futures on first failure
+                for f in futures:
+                    f.cancel()
+                return False
+
+    # Link
     try:
-        _run([str(gen_dir / "build.bat")], verbose=args.verbose, cwd=gen_dir)
+        _run(
+            ["link.exe", "/nologo", "/out:npf_conformance.exe", "@link.rsp"],
+            verbose=args.verbose,
+            cwd=gen_dir,
+        )
     except subprocess.CalledProcessError:
         return False
 
-    exe = gen_dir / "npf_conformance.exe"
+    # Run
     try:
-        _run([str(exe)], verbose=args.verbose)
+        _run([str(gen_dir / "npf_conformance.exe")], verbose=args.verbose)
     except subprocess.CalledProcessError:
         return False
 

@@ -218,11 +218,13 @@ def write_makefile(
     return _write_if_changed(out / "Makefile", "\n".join(lines))
 
 
-def write_build_bat(
+def write_compile_commands(
     combos: list[dict[str, int]],
     out: pathlib.Path,
 ) -> bool:
-    """Write a Windows batch file that compiles all combos with cl.exe."""
+    """Write compile_commands.json and link.rsp for Windows parallel builds."""
+    import json
+
     n = len(combos)
     total = n * 2
     test_dir = out.parent
@@ -232,45 +234,31 @@ def write_build_bat(
     include_rel = os.path.relpath(repo_root, out)
     test_rel = os.path.relpath(test_dir, out)
 
-    lines = [
-        "@echo off",
-        "setlocal enabledelayedexpansion",
-        "",
-        f'set CFLAGS=/nologo /Os /W4 /WX /wd4474 /wd4476 /wd4477 /wd4778 /I"{include_rel}" /I"{test_rel}"',
-        f'set CXXFLAGS=/nologo /Os /W4 /WX /wd4474 /wd4476 /wd4477 /wd4778 /TP /std:c++20 /EHsc /I"{include_rel}" /I"{test_rel}"',
-        f'set CONFORMANCE={conformance_rel}',
-        "",
-        'echo Compiling main.c',
-        'cl %CFLAGS% /c /Fomain.obj main.c',
-        'if errorlevel 1 exit /b 1',
-        "",
-    ]
+    common = ["/nologo", "/Os", "/W4", "/WX",
+              "/wd4474", "/wd4476", "/wd4477", "/wd4778",
+              f"/I{include_rel}", f"/I{test_rel}"]
+    cxx_extra = ["/TP", "/std:c++20", "/EHsc"]
 
-    obj_names = []
+    commands: list[list[str]] = []
+
+    # main.c
+    commands.append(["cl.exe", *common, "/c", "/Fomain.obj", "main.c"])
+
+    obj_names: list[str] = []
     for i in range(total):
         combo = combos[i % n]
         is_cxx = i >= n
-        lang = "C++" if is_cxx else "C"
-        flags_var = "%CXXFLAGS%" if is_cxx else "%CFLAGS%"
-        dflags = define_flags(combo, i, msvc=True)
+        dflags = define_flags(combo, i, msvc=True).split()
         obj_name = f"combo_{i}.obj"
         obj_names.append(obj_name)
-        lines.append(f'echo Compiling combo {i}/{total} ({lang})')
-        lines.append(f'cl {flags_var} {dflags} /c /Fo{obj_name} %CONFORMANCE%')
-        lines.append('if errorlevel 1 exit /b 1')
-        lines.append('')
+        flags = common + (cxx_extra if is_cxx else [])
+        commands.append(["cl.exe", *flags, *dflags, "/c", f"/Fo{obj_name}", conformance_rel])
 
-    lines += [
-        'echo Linking',
-        'link /nologo /out:npf_conformance.exe @link.rsp',
-        'if errorlevel 1 exit /b 1',
-        'echo Build succeeded',
-        '',
-    ]
+    changed = _write_if_changed(
+        out / "compile_commands.json", json.dumps(commands, indent=1) + "\n"
+    )
 
-    changed = _write_if_changed(out / "build.bat", "\n".join(lines))
-
-    # Write linker response file (avoids Windows command-line length limit)
+    # Linker response file
     rsp_lines = ["main.obj"] + obj_names
     changed |= _write_if_changed(out / "link.rsp", "\n".join(rsp_lines) + "\n")
     return changed
@@ -301,7 +289,7 @@ def main() -> int:
 
     changed = write_main_c(combos, out)
     if sys.platform == "win32":
-        changed |= write_build_bat(combos, out)
+        changed |= write_compile_commands(combos, out)
         if args.verbose or changed:
             print(f"Generated build for {total} combos ({len(combos)} flags x 2 langs) in {out}")
     else:
