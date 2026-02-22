@@ -1,4 +1,4 @@
-"""Compile and analyze nanoprintf for different architectures."""  # noqa: INP001
+"""Compile and analyze nanoprintf for different architectures."""
 
 import argparse
 import pathlib
