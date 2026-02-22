@@ -30,6 +30,7 @@ int NPF_TEST_FUNC(void) {
 
     /* ===== percent ===== */
     NPF_TEST("%", "%%");
+    NPF_TEST("%%", "%%%%");
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
     NPF_TEST("%", "%-%");
 #endif
@@ -38,6 +39,32 @@ int NPF_TEST_FUNC(void) {
 #if NANOPRINTF_USE_ALT_FORM_FLAG == 1
     NPF_TEST("%", "%#%");
 #endif
+
+    /* ===== snprintf return value ===== */
+    NPF_TEST_RET(0, "");
+    NPF_TEST_RET(5, "hello");
+    NPF_TEST_RET(1, "%%");
+    NPF_TEST_RET(2, "%%%%");
+    NPF_TEST_RET(5, "%s", "hello");
+    NPF_TEST_RET(0, "%s", "");
+    NPF_TEST_RET(3, "%d", 100);
+    NPF_TEST_RET(4, "%d", -100);
+    NPF_TEST_RET(1, "%c", 'A');
+    /* truncation: return value is would-be length, not bytes written */
+    { char buf[4];
+      NPF_TEST_WB(5, npf_snprintf(buf, sizeof(buf), "hello")); }
+    { char buf[4];
+      NPF_TEST_WB(5, npf_snprintf(buf, sizeof(buf), "%s", "hello")); }
+    { char buf[1];
+      NPF_TEST_WB(5, npf_snprintf(buf, sizeof(buf), "hello")); }
+    /* size 0: returns would-be length, writes nothing */
+    { char buf[1]; buf[0] = 'X';
+      NPF_TEST_WB(5, npf_snprintf(buf, 0, "hello"));
+      NPF_TEST_WB('X', buf[0]); }
+    /* NULL buf with size 0: length-only calculation */
+    NPF_TEST_WB(5, npf_snprintf((char *)0, 0, "hello"));
+    NPF_TEST_WB(0, npf_snprintf((char *)0, 0, ""));
+    NPF_TEST_WB(3, npf_snprintf((char *)0, 0, "%d", 100));
 
     /* ===== char ===== */
     /* every char except the NUL char */
@@ -72,6 +99,7 @@ int NPF_TEST_FUNC(void) {
 
     /* ===== string ===== */
     NPF_TEST("Hello testing", "Hello testing");
+    NPF_TEST("", "%s", "");
     NPF_TEST("one", "%s", "one");
     NPF_TEST("onetwothree", "%s%s%s", "one", "two", "three");
     NPF_TEST("Hello testing", "%s", "Hello testing");
@@ -138,6 +166,8 @@ int NPF_TEST_FUNC(void) {
     NPF_TEST("-1024", "% d", -1024);
     NPF_TEST(" 1024", "% i", 1024);
     NPF_TEST("-1024", "% i", -1024);
+    NPF_TEST(" 0", "% d", 0);
+    NPF_TEST(" 0", "% i", 0);
 
     /* + flag on signed */
     NPF_TEST("+42", "%+d", 42);
@@ -147,10 +177,21 @@ int NPF_TEST_FUNC(void) {
     NPF_TEST("+1024", "%+i", 1024);
     NPF_TEST("-1024", "%+i", -1024);
 
+    /* + overrides space (C standard) */
+    NPF_TEST("+42", "%+ d", 42);
+    NPF_TEST("+42", "% +d", 42);
+    NPF_TEST("-42", "%+ d", -42);
+    NPF_TEST("+0", "%+ d", 0);
+
 #if NANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS == 1
     NPF_TEST("-128", "%hhi", 128);
+    NPF_TEST("0", "%hhd", 256);
+    NPF_TEST("-1", "%hhd", 255);
+    NPF_TEST("127", "%hhd", 127);
     NPF_TEST_SYS("%hhd", CHAR_MAX);
+    NPF_TEST_SYS("%hhd", CHAR_MIN);
     NPF_TEST_SYS("%hd", SHRT_MAX);
+    NPF_TEST_SYS("%hd", SHRT_MIN);
 #endif
 
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
@@ -279,12 +320,25 @@ int NPF_TEST_FUNC(void) {
     NPF_TEST("+", "%+.0i", 0);
     NPF_TEST("+01", "%+.2i", 1);
     NPF_TEST("+", "%+.0d", 0);
+    NPF_TEST("", "%.d", 0);
+    NPF_TEST("", "%.i", 0);
+    NPF_TEST("1", "%.d", 1);
+    NPF_TEST("00042", "%.5d", 42);
+    NPF_TEST("-00042", "%.5d", -42);
+    NPF_TEST("00042", "%.5i", 42);
+    NPF_TEST("-00042", "%.5i", -42);
 #endif
 
 #if (NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1) && \
     (NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1)
     NPF_TEST(" +01", "%+4.2i", 1);
     NPF_TEST(" 0", "%02.1d", 0);
+
+    /* precision overrides 0 flag for integers */
+    NPF_TEST("  042", "%05.3d", 42);
+    NPF_TEST(" -042", "%05.3d", -42);
+    NPF_TEST("  042", "%05.3i", 42);
+    NPF_TEST(" -042", "%05.3i", -42);
 
     /* padding 20.5 */
     NPF_TEST("               01024", "%20.5d", 1024);
@@ -374,6 +428,7 @@ int NPF_TEST_FUNC(void) {
     NPF_TEST("1", "%+u", 1);
     NPF_TEST("1024", "%u", 1024);
     NPF_TEST("4294966272", "%u", 4294966272U);
+    NPF_TEST("0", "%lu", 0UL);
     NPF_TEST("100000", "%lu", 100000L);
     NPF_TEST("4294967295", "%lu", 0xFFFFFFFFL);
 
@@ -434,7 +489,9 @@ int NPF_TEST_FUNC(void) {
 
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
     NPF_TEST("", "%.0u", 0);
+    NPF_TEST("", "%.u", 0);
     NPF_TEST("01", "%.2u", 1);
+    NPF_TEST("00042", "%.5u", 42);
 
     /* padding .20 */
     NPF_TEST("00000000000000001024", "%.20u", 1024);
@@ -444,6 +501,8 @@ int NPF_TEST_FUNC(void) {
 #if (NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1) && \
     (NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1)
     NPF_TEST("    0123", "%8.4u", 123);
+    /* precision overrides 0 flag for unsigned */
+    NPF_TEST("  00042", "%07.5u", 42);
 
     /* padding 20.5 */
     NPF_TEST("               01024", "%20.5u", 1024);
@@ -510,6 +569,9 @@ int NPF_TEST_FUNC(void) {
 #if NANOPRINTF_USE_ALT_FORM_FLAG == 1
     NPF_TEST("0", "%#o", 0);
     NPF_TEST("01", "%#o", 1);
+    NPF_TEST("010", "%#o", 8);
+    NPF_TEST("0377", "%#o", 255);
+    NPF_TEST("0777", "%#o", 511);
 #endif
 
 #if NANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS == 1
@@ -577,6 +639,9 @@ int NPF_TEST_FUNC(void) {
 
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
     NPF_TEST("", "%.0o", 0);
+    NPF_TEST("", "%.o", 0);
+    NPF_TEST("00777", "%.5o", 511);
+    NPF_TEST("00001", "%.5o", 1);
 #if NANOPRINTF_USE_ALT_FORM_FLAG == 1
     NPF_TEST("0", "%#.0o", 0);
     NPF_TEST("0", "%#.1o", 0);
@@ -674,6 +739,13 @@ int NPF_TEST_FUNC(void) {
 
 #if NANOPRINTF_USE_ALT_FORM_FLAG == 1
     NPF_TEST("0", "%#x", 0);
+    NPF_TEST("0", "%#X", 0);
+    NPF_TEST("0x1", "%#x", 1);
+    NPF_TEST("0xff", "%#x", 255);
+    NPF_TEST("0X1", "%#X", 1);
+    NPF_TEST("0XFF", "%#X", 255);
+    NPF_TEST("0xffffffff", "%#x", UINT_MAX);
+    NPF_TEST("0XFFFFFFFF", "%#X", UINT_MAX);
 #endif
 
 #if NANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS == 1
@@ -756,6 +828,12 @@ int NPF_TEST_FUNC(void) {
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
     NPF_TEST("", "%.0x", 0);
     NPF_TEST("", "%.0X", 0);
+    NPF_TEST("", "%.x", 0);
+    NPF_TEST("", "%.X", 0);
+    NPF_TEST("000ff", "%.5x", 255);
+    NPF_TEST("000FF", "%.5X", 255);
+    NPF_TEST("00001", "%.5x", 1);
+    NPF_TEST("00001", "%.5X", 1);
 #if NANOPRINTF_USE_ALT_FORM_FLAG == 1
     NPF_TEST("", "%#.0X", 0);
     NPF_TEST("", "%#.0x", 0);
@@ -824,13 +902,61 @@ int NPF_TEST_FUNC(void) {
 
     /* ===== binary ===== */
 #if NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS == 1
+    NPF_TEST("0", "%b", 0);
+    NPF_TEST("1", "%b", 1);
+    NPF_TEST("101", "%b", 5);
+    NPF_TEST("11111111", "%b", 255);
     NPF_TEST("1110101001100000", "%b", 60000);
     NPF_TEST("101111000110000101001110", "%lb", 12345678L);
+    NPF_TEST("11111111111111111111111111111111", "%b", UINT_MAX);
+
 #if NANOPRINTF_USE_ALT_FORM_FLAG == 1
+    NPF_TEST("0", "%#b", 0);
+    NPF_TEST("0b1", "%#b", 1);
+    NPF_TEST("0b101", "%#b", 5);
     NPF_TEST("0b110", "%#b", 6);
+    NPF_TEST("0b11111111", "%#b", 255);
 #if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
     NPF_TEST("0b110", "%#llb", (long long)6);
 #endif
+#endif
+
+#if NANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS == 1
+    NPF_TEST("11111111", "%hhb", 0xFFu);
+    NPF_TEST("0", "%hhb", 256u);
+    NPF_TEST("1111111111111111", "%hb", 0xFFFFu);
+#endif
+
+#if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
+    NPF_TEST("       101", "%10b", 5);
+    NPF_TEST("101       ", "%-10b", 5);
+    NPF_TEST("0000000101", "%010b", 5);
+#if NANOPRINTF_USE_ALT_FORM_FLAG == 1
+    NPF_TEST("     0b101", "%#10b", 5);
+    NPF_TEST("0b101     ", "%#-10b", 5);
+    NPF_TEST("0b00000101", "%#010b", 5);
+#endif
+#endif
+
+#if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
+    NPF_TEST("", "%.0b", 0);
+    NPF_TEST("1", "%.0b", 1);
+    NPF_TEST("00000101", "%.8b", 5);
+    NPF_TEST("00000001", "%.8b", 1);
+#if NANOPRINTF_USE_ALT_FORM_FLAG == 1
+    NPF_TEST("", "%#.0b", 0);
+    NPF_TEST("0b00000101", "%#.8b", 5);
+#endif
+#endif
+
+#if (NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1) && \
+    (NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1)
+    NPF_TEST("  00000101", "%10.8b", 5);
+    NPF_TEST("00000101  ", "%-10.8b", 5);
+#endif
+
+#if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
+    NPF_TEST("101", "%llb", 5ULL);
 #endif
 #endif
 
@@ -842,12 +968,14 @@ int NPF_TEST_FUNC(void) {
     NPF_TEST("0000000012345678-000000007edcba98", "%p-%p",
         (void *)0x12345678u, (void *)0x7edcba98u);
     NPF_TEST("00000000ffffffff", "%p", (void *)(uintptr_t)0xffffffffu);
+    NPF_TEST("0000000000000000", "%p", (void *)0);
   #else
     NPF_TEST("00001234", "%p", (void *)0x1234u);
     NPF_TEST("12345678", "%p", (void *)0x12345678u);
     NPF_TEST("12345678-7edcba98", "%p-%p",
         (void *)0x12345678u, (void *)0x7edcba98u);
     NPF_TEST("ffffffff", "%p", (void *)(uintptr_t)0xffffffffu);
+    NPF_TEST("00000000", "%p", (void *)0);
   #endif
 #else
     NPF_TEST("1234", "%p", (void *)0x1234u);
@@ -855,6 +983,7 @@ int NPF_TEST_FUNC(void) {
     NPF_TEST("12345678-7edcba98", "%p-%p",
         (void *)0x12345678u, (void *)0x7edcba98u);
     NPF_TEST("ffffffff", "%p", (void *)(uintptr_t)0xffffffffu);
+    NPF_TEST("0", "%p", (void *)0);
 #endif
 
     /* ===== writeback ===== */
@@ -927,12 +1056,22 @@ int NPF_TEST_FUNC(void) {
     NPF_TEST("hi x", "%*sx", -3, "hi");
     NPF_TEST("               Hello", "%*s", 20, "Hello");
     NPF_TEST("                   x", "%*c", 20, 'x');
+    /* negative star width = left-justify with abs(width) */
+    NPF_TEST("42        ", "%*d", -10, 42);
+    NPF_TEST("-42       ", "%*d", -10, -42);
+    NPF_TEST("x         ", "%*c", -10, 'x');
+    NPF_TEST("hello     ", "%*s", -10, "hello");
 #endif
 
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
     NPF_TEST("01", "%.*i", 2, 1);
     NPF_TEST("h", "%.*s", 1, "hello world");
     NPF_TEST("1", "%.*u", -123, 1);
+    /* negative star precision = precision omitted (use default) */
+    NPF_TEST("42", "%.*d", -1, 42);
+    NPF_TEST("0", "%.*d", -1, 0);
+    NPF_TEST("hello", "%.*s", -1, "hello");
+    NPF_TEST("hello world", "%.*s", -1, "hello world");
 #endif
 
 #if (NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1) && \
@@ -972,6 +1111,14 @@ int NPF_TEST_FUNC(void) {
     NPF_TEST("inf", "%.10g", (double)INFINITY);
     NPF_TEST("inf", "%.10a", (double)INFINITY);
     NPF_TEST("INF", "%F", (double)INFINITY);
+    NPF_TEST("+inf", "%+f", (double)INFINITY);
+    NPF_TEST("-inf", "%+f", -(double)INFINITY);
+    NPF_TEST(" inf", "% f", (double)INFINITY);
+    NPF_TEST("-inf", "% f", -(double)INFINITY);
+    NPF_TEST(" 0.000000", "% f", 0.0);
+    NPF_TEST("-0.000000", "% f", -0.0);
+    NPF_TEST(" 1.500000", "% f", 1.5);
+    NPF_TEST("-1.500000", "% f", -1.5);
 
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
     NPF_TEST(" inf", "%4f", (double)INFINITY);
@@ -1005,7 +1152,10 @@ int NPF_TEST_FUNC(void) {
     NPF_TEST("42167.000000", "%f", 42167.0);
 
 #if NANOPRINTF_USE_ALT_FORM_FLAG == 1
+    NPF_TEST("0.", "%#.0f", 0.0);
     NPF_TEST("1.", "%#.0f", 1.0);
+    NPF_TEST("42.", "%#.0f", 42.0);
+    NPF_TEST("-1.", "%#.0f", -1.0);
 #endif
 
     /* paland float tests */
@@ -1080,10 +1230,29 @@ int NPF_TEST_FUNC(void) {
     /* unknown flag (non-standard) */
     NPF_TEST("%kmarco", "%kmarco");
 
+    /* ===== field width never truncates ===== */
+#if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
+    NPF_TEST("12345", "%3d", 12345);
+    NPF_TEST("-12345", "%3d", -12345);
+    NPF_TEST("12345", "%3u", 12345);
+    NPF_TEST("hello world", "%5s", "hello world");
+    NPF_TEST("ffffffff", "%4x", UINT_MAX);
+    NPF_TEST("FFFFFFFF", "%4X", UINT_MAX);
+    NPF_TEST("37777777777", "%4o", UINT_MAX);
+#if NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS == 1
+    NPF_TEST("11111111", "%4b", 255);
+#endif
+#endif
+
     /* ===== misc ===== */
+    NPF_TEST("", "");
     NPF_TEST("53000atest-20 bit", "%u%u%ctest%d %s", 5, 3000, 'a', -20, "bit");
     NPF_TEST("v", "%c", 'v');
     NPF_TEST("wv", "%cv", 'w');
+    NPF_TEST("100%", "%d%%", 100);
+    NPF_TEST("%42%", "%%%d%%", 42);
+    NPF_TEST("abc", "a%sc", "b");
+    NPF_TEST("hello 42 world", "hello %d world", 42);
 
 #if NANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS == 1
     NPF_TEST("Test100 65535", "%s%hhi %hu", "Test", (char)100, (unsigned short)0xFFFF);
