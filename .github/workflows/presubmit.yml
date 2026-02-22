@@ -23,53 +23,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Pyright
-        run: python -m pyright --warnings --pythonversion 3.13 build.py tests/size_report.py
+        run: python -m pyright --warnings --pythonversion 3.13 build.py tests/gen_tests.py tests/size_report.py
       - name: Ruff
-        run: python -m ruff check build.py tests/size_report.py
-
-  download-linux:
-    runs-on: ubuntu-latest
-
-    container:
-      image: ghcr.io/charlesnicholson/docker-image:latest
-      credentials:
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
-
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
-      - name: Build
-        run: ./b --download --paland -v
-
-  download-mac:
-    runs-on: macos-latest
-
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
-      - name: Build
-        run: ./b --download --paland -v
-
-  download-win:
-    runs-on: windows-latest
-
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
-      - name: Set up Python 3.x
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.x'
-      - name: Build
-        shell: cmd
-        run: |
-          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars32.bat"
-          python.exe build.py --download --paland -v
-
+        run: python -m ruff check build.py tests/gen_tests.py tests/size_report.py
 
   sanitizers:
     runs-on: ubuntu-latest
@@ -87,13 +43,11 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-        with:
-          submodules: recursive
       - name: Build
         env:
           CC: /usr/bin/clang
           CXX: /usr/bin/clang++
-        run: ./b --arch ${{ matrix.architecture }} --${{ matrix.sanitizer }} --paland -v
+        run: make -j ARCH=${{ matrix.architecture }} SAN=${{ matrix.sanitizer }} VERBOSE=1
 
   linux-x64:
     runs-on: ubuntu-latest
@@ -119,13 +73,11 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-        with:
-          submodules: recursive
       - name: Build
         env:
           CC: ${{ matrix.cc }}
           CXX: ${{ matrix.cxx }}
-        run: ./b --cfg ${{ matrix.configuration }} --arch ${{ matrix.architecture }} --paland -v
+        run: make -j CFG=${{ matrix.configuration }} ARCH=${{ matrix.architecture }} VERBOSE=1
 
   linux-arm64:
     runs-on: ubuntu-24.04-arm
@@ -150,13 +102,11 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-        with:
-          submodules: recursive
       - name: Build
         env:
           CC: ${{ matrix.cc }}
           CXX: ${{ matrix.cxx }}
-        run: ./b --cfg ${{ matrix.configuration }} --arch 64 --paland -v
+        run: make -j CFG=${{ matrix.configuration }} ARCH=64 VERBOSE=1
 
   macos:
     runs-on: macos-latest
@@ -167,14 +117,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-        with:
-          submodules: recursive
-      - name: Set up Python 3.x
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.x'
       - name: Build
-        run: ./b --cfg ${{ matrix.configuration }} --paland -v
+        run: make -j CFG=${{ matrix.configuration }} VERBOSE=1
 
   win:
     runs-on: windows-latest
@@ -186,8 +130,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-        with:
-          submodules: recursive
       - name: Set up Python 3.x
         uses: actions/setup-python@v5
         with:
@@ -196,7 +138,7 @@ jobs:
         shell: cmd
         run: |
           call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars${{ matrix.architecture }}.bat"
-          python.exe build.py --cfg ${{ matrix.configuration }} --paland -v --arch ${{ matrix.architecture }}
+          python.exe build.py --cfg ${{ matrix.configuration }} -v --arch ${{ matrix.architecture }}
 
   size-reports:
     runs-on: ubuntu-latest
@@ -231,8 +173,7 @@ jobs:
         run: python tests/size_report.py -p host
 
   all-checks-pass:
-    needs: [lint, download-linux, download-mac, download-win, sanitizers, linux-x64, linux-arm64, macos, win, size-reports]
+    needs: [lint, sanitizers, linux-x64, linux-arm64, macos, win, size-reports]
     runs-on: ubuntu-latest
     steps:
     - run: echo Done
-
