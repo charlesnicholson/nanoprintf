@@ -50,6 +50,9 @@ int NPF_TEST_FUNC(void) {
       }
     }
 
+    /* NUL char: %c with '\0' must return 1, not 0 */
+    NPF_TEST_RET(1, "%c", 0);
+
     NPF_TEST("A", "%+c", 'A');
 
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1

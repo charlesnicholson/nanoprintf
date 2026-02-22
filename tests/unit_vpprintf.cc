@@ -47,6 +47,10 @@ TEST_CASE("npf_vpprintf") {
     REQUIRE(r.String() == std::string{"A"});
   }
 
+  SUBCASE("character nul") {
+    REQUIRE(npf_pprintf(r.PutC, &r, "%c", 0) == 1);
+  }
+
   SUBCASE("character multiple") {
     REQUIRE(npf_pprintf(r.PutC, &r, "%c%c%c%c", 'A', 'B', 'C', 'D') == 4);
     REQUIRE(r.String() == std::string{"ABCD"});
