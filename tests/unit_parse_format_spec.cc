@@ -16,7 +16,8 @@ TEST_CASE("npf_parse_format_spec") {
        (It is right-justified if this flag is not specified.)
     */
 
-    REQUIRE(!npf_parse_format_spec("%-", &spec)); // left-justify alone
+    REQUIRE(npf_parse_format_spec("%-", &spec)); // left-justify alone
+    REQUIRE(spec.conv_spec == NPF_FMT_SPEC_CONV_NONE);
 
     SUBCASE("left-justify off by default") {
       REQUIRE(npf_parse_format_spec("%u", &spec) == 2);
@@ -40,7 +41,8 @@ TEST_CASE("npf_parse_format_spec") {
        zero, and of negative values that round to zero, include a minus sign.
     */
 
-    REQUIRE(!npf_parse_format_spec("%+", &spec)); // prepend sign alone
+    REQUIRE(npf_parse_format_spec("%+", &spec) == 2); // prepend sign alone
+    REQUIRE(spec.conv_spec == NPF_FMT_SPEC_CONV_NONE);
 
     SUBCASE("prepend sign off by default") {
       REQUIRE(npf_parse_format_spec("%u", &spec) == 2);
@@ -63,7 +65,8 @@ TEST_CASE("npf_parse_format_spec") {
        result. If the space and + flags both appear, the space flag is ignored.
     */
 
-    REQUIRE(!npf_parse_format_spec("% ", &spec));  // space flag alone
+    REQUIRE(npf_parse_format_spec("% ", &spec) == 2);  // space flag alone
+    REQUIRE(spec.conv_spec == NPF_FMT_SPEC_CONV_NONE);
 
     SUBCASE("prepend space off by default") {
       REQUIRE(npf_parse_format_spec("%u", &spec) == 2);
@@ -104,7 +107,8 @@ TEST_CASE("npf_parse_format_spec") {
        conversions, the behavior is undefined.
     */
 
-    REQUIRE(!npf_parse_format_spec("%#", &spec)); // alternative form alone
+    REQUIRE(npf_parse_format_spec("%#", &spec) == 2); // alternative form alone
+    REQUIRE(spec.conv_spec == NPF_FMT_SPEC_CONV_NONE);
 
     SUBCASE("alternative form off by default") {
       REQUIRE(npf_parse_format_spec("%u", &spec) == 2);
@@ -130,7 +134,8 @@ TEST_CASE("npf_parse_format_spec") {
        ignored. For other conversions, the behavior is undefined.
     */
 
-    REQUIRE(!npf_parse_format_spec("%0", &spec)); // leading zero alone
+    REQUIRE(npf_parse_format_spec("%0", &spec) == 2); // leading zero alone
+    REQUIRE(spec.conv_spec == NPF_FMT_SPEC_CONV_NONE);
 
     SUBCASE("leading zero off by default") {
       REQUIRE(npf_parse_format_spec("%u", &spec) == 2);
@@ -301,7 +306,8 @@ TEST_CASE("npf_parse_format_spec") {
        applies to a long double argument.
     */
 
-    REQUIRE(!npf_parse_format_spec("%hh", &spec));  // length mod w/o coversion spec.
+    REQUIRE(npf_parse_format_spec("%hh", &spec) == 3);  // length mod w/o coversion spec.
+    REQUIRE(spec.conv_spec == NPF_FMT_SPEC_CONV_NONE);
 
 #if NANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS == 1
     SUBCASE("hh") {
@@ -481,6 +487,42 @@ TEST_CASE("npf_parse_format_spec") {
       REQUIRE(spec.conv_spec == NPF_FMT_SPEC_CONV_BINARY);
     }
 #endif
+
+    SUBCASE("parse errors") {
+      REQUIRE(npf_parse_format_spec("%k", &spec) == 2);
+      REQUIRE(spec.conv_spec == NPF_FMT_SPEC_CONV_NONE);
+
+      // No need to check for NPF options, the parsing must fail anyway.
+      REQUIRE(npf_parse_format_spec("%-+#0 34.12hhk", &spec) == 14);
+      REQUIRE(spec.conv_spec == NPF_FMT_SPEC_CONV_NONE);
+    }
+
+    SUBCASE("literals") {
+      REQUIRE(npf_parse_format_spec("abcd", &spec) == 4);
+      REQUIRE(spec.conv_spec == NPF_FMT_SPEC_CONV_NONE);
+
+      REQUIRE(npf_parse_format_spec("+-#0.*i", &spec) == 7);
+      REQUIRE(spec.conv_spec == NPF_FMT_SPEC_CONV_NONE);
+    }
+
+    SUBCASE("end of string") {
+      REQUIRE(npf_parse_format_spec("", &spec) == 0);
+      REQUIRE(spec.conv_spec == NPF_FMT_SPEC_CONV_NONE);
+    }
+
+    SUBCASE("multiple specifiers") {
+      REQUIRE(npf_parse_format_spec("%%" "%%", &spec) == 2);
+      REQUIRE(spec.conv_spec == NPF_FMT_SPEC_CONV_PERCENT);
+
+      REQUIRE(npf_parse_format_spec("%i" "abc", &spec) == 2);
+      REQUIRE(spec.conv_spec == NPF_FMT_SPEC_CONV_SIGNED_INT);
+
+      REQUIRE(npf_parse_format_spec("%-lu" "XYZ", &spec) == 4);
+      REQUIRE(spec.conv_spec == NPF_FMT_SPEC_CONV_UNSIGNED_INT);
+
+      REQUIRE(npf_parse_format_spec("xyzw" "%i", &spec) == 4);
+      REQUIRE(spec.conv_spec == NPF_FMT_SPEC_CONV_NONE);
+    }
   }
 }
 

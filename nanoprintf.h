@@ -337,15 +337,19 @@ typedef struct npf_bufputc_ctx {
 static int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec) {
   char const *cur = format;
 
-#if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
-  out_spec->left_justified = 0;
-  out_spec->leading_zero_pad = 0;
-#endif
-  out_spec->case_adjust = 'a' - 'A'; // lowercase
-  out_spec->prepend = 0;
-#if NANOPRINTF_USE_ALT_FORM_FLAG == 1
-  out_spec->alt_form = 0;
-#endif
+  #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
+    out_spec->left_justified = 0;
+    out_spec->leading_zero_pad = 0;
+  #endif
+    out_spec->case_adjust = 'a' - 'A'; // lowercase
+    out_spec->prepend = 0;
+  #if NANOPRINTF_USE_ALT_FORM_FLAG == 1
+    out_spec->alt_form = 0;
+  #endif
+
+  if (*cur != '%') {
+    goto parse_error_or_literal;
+  }
 
   while (*++cur) { // cur points at the leading '%' character
     switch (*cur) { // Optional flags
@@ -398,7 +402,7 @@ static int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec
   }
 #endif
 
-  uint_fast8_t tmp_conv = NPF_FMT_SPEC_CONV_NONE;
+  uint_fast8_t tmp_conv; tmp_conv = NPF_FMT_SPEC_CONV_NONE;
   out_spec->length_modifier = NPF_FMT_SPEC_LEN_MOD_NONE;
   switch (*cur++) { // Length modifier
 #if NANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS == 1
@@ -491,9 +495,27 @@ static int npf_parse_format_spec(char const *format, npf_format_spec_t *out_spec
       break;
 #endif
 
-    default: return 0;
+    default: --cur; goto parse_error_or_literal;
   }
 
+  return (int)(cur - format);
+
+parse_error_or_literal:
+  // On error/literal, only conv_spec is meaningful; other fields may be
+  // uninitialized.
+  out_spec->conv_spec = NPF_FMT_SPEC_CONV_NONE;
+  // Here, we have either found no '%', or already consumed it. So we can
+  // consume more chars up to the next '%' or end-of-string.
+  // Note that it is safe, and expected, to call this function with an empty
+  // string (this happens with every string, as it is being consumed -- the last
+  // call is for the residual empty string). With an empty string, we haven't
+  // consumed anything above, so we still find '\0' here, and we terminate
+  // without consuming anything and by returning 0, which is exactly the
+  // "end of parsing" signal for the caller, which can never happen in any other
+  // case.
+  while (*cur != '%' && *cur != '\0') {
+    ++cur;
+  }
   return (int)(cur - format);
 }
 
@@ -794,9 +816,16 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
   pc_cnt.ctx = pc_ctx;
   pc_cnt.n = 0;
 
-  while (*cur) {
-    int const fs_len = (*cur != '%') ? 0 : npf_parse_format_spec(cur, &fs);
-    if (!fs_len) { NPF_PUTC(*cur++); continue; }
+  for (;;) {
+    int fs_len = npf_parse_format_spec(cur, &fs);
+    if (!fs_len) { break; }
+    if (fs.conv_spec == NPF_FMT_SPEC_CONV_NONE) {
+      // wrong spec, or literal span: output everything verbatim
+      while (fs_len--) {
+        NPF_PUTC(*cur++);
+      }
+      continue;
+    }
     cur += fs_len;
 
     // Extract star-args immediately
