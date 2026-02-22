@@ -2,9 +2,9 @@
 
 Enumerates all valid flag combinations (192), then for each generates
 both a C and C++ compilation, for a total of 384 test objects:
-  - main.c        : declares + calls all per-combo test functions
-  - Makefile       : POSIX make rules (cc + c++)
-  - build.bat      : Windows batch file (cl.exe / link.exe)
+  - main.c                : declares + calls all per-combo test functions
+  - Makefile               : POSIX make rules (cc + c++)
+  - compile_commands.json  : Windows parallel builds (cl.exe)
 """
 
 import argparse
@@ -12,6 +12,7 @@ import itertools
 import os
 import pathlib
 import sys
+import textwrap
 
 
 def _write_if_changed(path: pathlib.Path, content: str) -> bool:
@@ -20,6 +21,7 @@ def _write_if_changed(path: pathlib.Path, content: str) -> bool:
         return False
     path.write_text(content)
     return True
+
 
 FLAGS = [
     "NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS",
@@ -38,8 +40,10 @@ def valid_combos() -> list[dict[str, int]]:
     combos = []
     for bits in itertools.product((0, 1), repeat=len(FLAGS)):
         combo = dict(zip(FLAGS, bits, strict=True))
-        if combo["NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS"] == 1 and \
-           combo["NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS"] == 0:
+        if (
+            combo["NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS"] == 1
+            and combo["NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS"] == 0
+        ):
             continue
         combos.append(combo)
     return combos
@@ -66,43 +70,43 @@ def write_main_c(combos: list[dict[str, int]], out: pathlib.Path) -> bool:
     n = len(combos)
     total = n * 2
 
-    lines = [
-        '#include <stdio.h>',
-        '#include <stdlib.h>',
-        '',
-    ]
-    for i in range(total):
-        lines.append(f'int npf_test_combo_{i}(void);')
-        lines.append(f'extern int npf_test_combo_{i}_pass_count;')
-    lines += [
-        '',
-        'int main(void) {',
-        '    int total_fail = 0;',
-        '    int total_pass = 0;',
-        '    int combo_fail;',
-        '',
-    ]
-    for i in range(total):
-        combo = combos[i % n]
-        lang = "C" if i < n else "C++"
-        label = combo_label(combo, lang)
-        lines.append(f'    combo_fail = npf_test_combo_{i}();')
-        lines.append('    if (combo_fail != 0)')
-        lines.append(f'        fprintf(stderr, "FAILED combo {i}/{total}: {label}\\n");')
-        lines.append('    total_fail += combo_fail;')
-        lines.append(f'    total_pass += npf_test_combo_{i}_pass_count;')
-        lines.append('')
-    lines += [
-        '    if (total_fail != 0) {',
-        f'        fprintf(stderr, "FAILED: %d assertion(s) across {total} combos\\n", total_fail);',
-        '    } else {',
-        f'        fprintf(stderr, "PASSED: %d assertions across {total} combos ({n} flags x 2 langs)\\n", total_pass);',
-        '    }',
-        '    return total_fail != 0 ? EXIT_FAILURE : EXIT_SUCCESS;',
-        '}',
-        '',
-    ]
-    return _write_if_changed(out / "main.c", "\n".join(lines))
+    declarations = "\n".join(
+        f"int npf_test_combo_{i}(void);\nextern int npf_test_combo_{i}_pass_count;"
+        for i in range(total)
+    )
+
+    calls = "\n\n".join(
+        f"    combo_fail = npf_test_combo_{i}();\n"
+        f"    if (combo_fail != 0)\n"
+        f'        fprintf(stderr, "FAILED combo {i}/{total}: {label}\\n");\n'
+        f"    total_fail += combo_fail;\n"
+        f"    total_pass += npf_test_combo_{i}_pass_count;"
+        for i in range(total)
+        for label in [combo_label(combos[i % n], "C" if i < n else "C++")]
+    )
+
+    content = f"""\
+#include <stdio.h>
+#include <stdlib.h>
+
+{declarations}
+
+int main(void) {{
+    int total_fail = 0;
+    int total_pass = 0;
+    int combo_fail;
+
+{calls}
+
+    if (total_fail != 0) {{
+        fprintf(stderr, "FAILED: %d assertion(s) across {total} combos\\n", total_fail);
+    }} else {{
+        fprintf(stderr, "PASSED: %d assertions across {total} combos ({n} flags x 2 langs)\\n", total_pass);
+    }}
+    return total_fail != 0 ? EXIT_FAILURE : EXIT_SUCCESS;
+}}
+"""
+    return _write_if_changed(out / "main.c", content)
 
 
 def define_flags(combo: dict[str, int], idx: int, *, msvc: bool = False) -> str:
@@ -168,54 +172,53 @@ def write_makefile(
         f"{arch_flag} {san_flags} {extra_cflags}".rstrip()
     )
 
-    lines = [
-        f"CC = {cc}",
-        f"CXX = {cxx}",
-        f"CFLAGS = {c_cflags}",
-        f"CXXFLAGS = {cxx_cflags}",
-        f"LDFLAGS = {arch_flag} {san_flags} -lm".strip(),
-        f"CONFORMANCE_C = {conformance_rel}",
-        "CONFORMANCE_CXX = conformance.cc",
-        f"HARNESS = {os.path.relpath(test_dir / 'test_harness.h', out)}",
-        f"NANOPRINTF = {os.path.relpath(repo_root / 'nanoprintf.h', out)}",
-        "DEPS = $(CONFORMANCE_C) $(HARNESS) $(NANOPRINTF)",
-        "",
-        "all: npf_conformance.timestamp",
-        "",
-        "# Copy .c to .cc so the C++ compiler sees a C++ extension",
-        "$(CONFORMANCE_CXX): $(CONFORMANCE_C)",
-        "\tcp $< $@",
-        "",
-        "npf_conformance.timestamp: npf_conformance",
-        "\t./npf_conformance && touch $@",
-        "",
-        f"npf_conformance: main.o {' '.join(obj_names)}",
-        "\t$(CXX) $(LDFLAGS) -o $@ $^",
-        "",
-        "main.o: main.c",
-        "\t$(CC) $(CFLAGS) -c -o $@ main.c",
-        "",
-    ]
+    harness_rel = os.path.relpath(test_dir / "test_harness.h", out)
+    nanoprintf_rel = os.path.relpath(repo_root / "nanoprintf.h", out)
 
-    for i in range(total):
-        combo = combos[i % n]
-        dflags = define_flags(combo, i)
-        is_cxx = i >= n
-        if is_cxx:
-            lines.append(f"combo_{i}.o: $(DEPS) $(CONFORMANCE_CXX)")
-            lines.append(f"\t$(CXX) $(CXXFLAGS) {dflags} -c -o $@ $(CONFORMANCE_CXX)")
-        else:
-            lines.append(f"combo_{i}.o: $(DEPS)")
-            lines.append(f"\t$(CC) $(CFLAGS) {dflags} -c -o $@ $(CONFORMANCE_C)")
-        lines.append("")
+    header = f"""\
+CC = {cc}
+CXX = {cxx}
+CFLAGS = {c_cflags}
+CXXFLAGS = {cxx_cflags}
+LDFLAGS = {arch_flag} {san_flags} -lm
+CONFORMANCE_C = {conformance_rel}
+CONFORMANCE_CXX = conformance.cc
+HARNESS = {harness_rel}
+NANOPRINTF = {nanoprintf_rel}
+DEPS = $(CONFORMANCE_C) $(HARNESS) $(NANOPRINTF)
 
-    lines += [
-        "clean:",
-        "\trm -f *.o *.cc npf_conformance npf_conformance.timestamp",
-        "",
-    ]
+all: npf_conformance.timestamp
 
-    return _write_if_changed(out / "Makefile", "\n".join(lines))
+# Copy .c to .cc so the C++ compiler sees a C++ extension
+$(CONFORMANCE_CXX): $(CONFORMANCE_C)
+\tcp $< $@
+
+npf_conformance.timestamp: npf_conformance
+\t./npf_conformance && touch $@
+
+npf_conformance: main.o {" ".join(obj_names)}
+\t$(CXX) $(LDFLAGS) -o $@ $^
+
+main.o: main.c
+\t$(CC) $(CFLAGS) -c -o $@ main.c
+"""
+
+    combo_rules = "\n\n".join(
+        f"combo_{i}.o: $(DEPS) $(CONFORMANCE_CXX)\n"
+        f"\t$(CXX) $(CXXFLAGS) {dflags} -c -o $@ $(CONFORMANCE_CXX)"
+        if i >= n
+        else f"combo_{i}.o: $(DEPS)\n\t$(CC) $(CFLAGS) {dflags} -c -o $@ $(CONFORMANCE_C)"
+        for i in range(total)
+        for dflags in [define_flags(combos[i % n], i)]
+    )
+
+    footer = textwrap.dedent("""\
+        clean:
+        \trm -f *.o *.cc npf_conformance npf_conformance.timestamp
+    """)
+
+    content = f"{header}\n{combo_rules}\n\n{footer}"
+    return _write_if_changed(out / "Makefile", content)
 
 
 def write_compile_commands(
@@ -234,9 +237,19 @@ def write_compile_commands(
     include_rel = os.path.relpath(repo_root, out)
     test_rel = os.path.relpath(test_dir, out)
 
-    common = ["/nologo", "/Os", "/W4", "/WX",
-              "/wd4474", "/wd4476", "/wd4477", "/wd4505", "/wd4778",
-              f"/I{include_rel}", f"/I{test_rel}"]
+    common = [
+        "/nologo",
+        "/Os",
+        "/W4",
+        "/WX",
+        "/wd4474",
+        "/wd4476",
+        "/wd4477",
+        "/wd4505",
+        "/wd4778",
+        f"/I{include_rel}",
+        f"/I{test_rel}",
+    ]
     cxx_extra = ["/TP", "/std:c++20", "/EHsc"]
 
     commands: list[list[str]] = []
@@ -252,7 +265,9 @@ def write_compile_commands(
         obj_name = f"combo_{i}.obj"
         obj_names.append(obj_name)
         flags = common + (cxx_extra if is_cxx else [])
-        commands.append(["cl.exe", *flags, *dflags, "/c", f"/Fo{obj_name}", conformance_rel])
+        commands.append(
+            ["cl.exe", *flags, *dflags, "/c", f"/Fo{obj_name}", conformance_rel]
+        )
 
     changed = _write_if_changed(
         out / "compile_commands.json", json.dumps(commands, indent=1) + "\n"
@@ -266,15 +281,30 @@ def write_compile_commands(
 
 def main() -> int:
     """Parse args and generate build artifacts."""
-    parser = argparse.ArgumentParser(description="Generate nanoprintf conformance test build")
-    parser.add_argument("--output", type=pathlib.Path, default=None,
-                        help="Output directory (default: tests/generated/)")
+    parser = argparse.ArgumentParser(
+        description="Generate nanoprintf conformance test build"
+    )
+    parser.add_argument(
+        "--output",
+        type=pathlib.Path,
+        default=None,
+        help="Output directory (default: tests/generated/)",
+    )
     parser.add_argument("--cc", default="cc", help="C compiler (default: cc)")
     parser.add_argument("--cxx", default="c++", help="C++ compiler (default: c++)")
-    parser.add_argument("--arch", type=int, choices=(32, 64), default=64,
-                        help="Target architecture (default: 64)")
-    parser.add_argument("--sanitizer", choices=("none", "asan", "ubsan"), default="none",
-                        help="Sanitizer to enable")
+    parser.add_argument(
+        "--arch",
+        type=int,
+        choices=(32, 64),
+        default=64,
+        help="Target architecture (default: 64)",
+    )
+    parser.add_argument(
+        "--sanitizer",
+        choices=("none", "asan", "ubsan"),
+        default="none",
+        help="Sanitizer to enable",
+    )
     parser.add_argument("--extra-cflags", default="", help="Extra CFLAGS")
     parser.add_argument("--verbose", action="store_true", help="Verbose output")
     args = parser.parse_args()
@@ -291,12 +321,23 @@ def main() -> int:
     if sys.platform == "win32":
         changed |= write_compile_commands(combos, out)
         if args.verbose or changed:
-            print(f"Generated build for {total} combos ({len(combos)} flags x 2 langs) in {out}")
+            print(
+                f"Generated build for {total} combos ({len(combos)} flags x 2 langs) in {out}"
+            )
     else:
-        changed |= write_makefile(combos, out, cc=args.cc, cxx=args.cxx, arch=args.arch,
-                                  sanitizer=args.sanitizer, extra_cflags=args.extra_cflags)
+        changed |= write_makefile(
+            combos,
+            out,
+            cc=args.cc,
+            cxx=args.cxx,
+            arch=args.arch,
+            sanitizer=args.sanitizer,
+            extra_cflags=args.extra_cflags,
+        )
         if args.verbose or changed:
-            print(f"Generated build for {total} combos ({len(combos)} flags x 2 langs) in {out}")
+            print(
+                f"Generated build for {total} combos ({len(combos)} flags x 2 langs) in {out}"
+            )
     return 0
 
 
