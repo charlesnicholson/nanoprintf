@@ -44,6 +44,15 @@ static void npf_test_null_putc(int c, void *ctx) { (void)c; (void)ctx; }
     } else { ++npf_test_pass_count; } \
 } while(0)
 
+#define NPF_TEST_RET(expected_ret, fmt, ...) do { \
+    int npf_test_ret_ = npf_snprintf(npf_test_buf, sizeof(npf_test_buf), fmt, ##__VA_ARGS__); \
+    if (npf_test_ret_ != (expected_ret)) { \
+        fprintf(stderr, "FAIL [%s:%d]: fmt=\"%s\" expected_ret=%d got_ret=%d\n", \
+                __FILE__, __LINE__, fmt, (expected_ret), npf_test_ret_); \
+        ++npf_test_fail_count; \
+    } else { ++npf_test_pass_count; } \
+} while(0)
+
 #define NPF_TEST_WB(expected_val, actual_val) do { \
     if ((expected_val) != (actual_val)) { \
         fprintf(stderr, "FAIL [%s:%d]: writeback expected=%d got=%d\n", \
