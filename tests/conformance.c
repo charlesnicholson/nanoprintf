@@ -1217,6 +1217,95 @@ int NPF_TEST_FUNC(void) {
     /* misc float */
     NPF_TEST("-67224.54687500000000000", "%.17f", -67224.546875);
     NPF_TEST("0.33", "%.*f", 2, 0.33333333);
+
+    /* ===== hex float (%a / %A) ===== */
+#if NANOPRINTF_USE_FLOAT_HEX_FORMAT_SPECIFIER == 1
+    /* basic zero */
+    NPF_TEST("0x0p+0", "%.0a", 0.0);
+    NPF_TEST("-0x0p+0", "%.0a", -0.0);
+    NPF_TEST("0x0.0p+0", "%.1a", 0.0);
+    NPF_TEST("0x0.00p+0", "%.2a", 0.0);
+
+    /* case: %A vs %a */
+    NPF_TEST("0X0P+0", "%.0A", 0.0);
+    NPF_TEST("0X1P+0", "%.0A", 1.0);
+    NPF_TEST("0x1p+0", "%.0a", 1.0);
+
+    /* special values */
+    NPF_TEST("inf", "%a", (double)INFINITY);
+    NPF_TEST("-inf", "%a", -(double)INFINITY);
+    NPF_TEST("INF", "%A", (double)INFINITY);
+    NPF_TEST("+inf", "%+a", (double)INFINITY);
+    NPF_TEST(" inf", "% a", (double)INFINITY);
+
+    /* basic normals */
+    NPF_TEST("0x1p+0", "%.0a", 1.0);
+    NPF_TEST("0x1.8p+0", "%.1a", 1.5);
+    NPF_TEST("0x1.0p+1", "%.1a", 2.0);
+    NPF_TEST("0x1.4p+1", "%.1a", 2.5);
+    NPF_TEST("0x1.8p+1", "%.1a", 3.0);
+    NPF_TEST("0x1.0p+2", "%.1a", 4.0);
+    NPF_TEST("-0x1.8p+0", "%.1a", -1.5);
+
+    /* default precision: 13 hex digits for float64 */
+    NPF_TEST("0x0.0000000000000p+0", "%a", 0.0);
+    NPF_TEST("0x1.0000000000000p+0", "%a", 1.0);
+    NPF_TEST("0x1.8000000000000p+0", "%a", 1.5);
+
+    /* explicit precision */
+    NPF_TEST("0x1.921fb54442d18p+2", "%a", 6.283185307179586);
+    NPF_TEST("0x1.9p+2", "%.1a", 6.283185307179586);
+
+    /* rounding */
+    NPF_TEST("0x1p+0", "%.0a", 1.0);
+    NPF_TEST("0x1.cp+0", "%.1a", 1.75);
+    NPF_TEST("0x1.0000000000000p+0", "%.13a", 1.0);
+
+    /* sign flags */
+    NPF_TEST("+0x1p+0", "%+.0a", 1.0);
+    NPF_TEST("-0x1p+0", "%+.0a", -1.0);
+    NPF_TEST(" 0x1p+0", "% .0a", 1.0);
+    NPF_TEST("-0x1p+0", "% .0a", -1.0);
+
+#if NANOPRINTF_USE_ALT_FORM_FLAG == 1
+    /* # flag: always show decimal point */
+    NPF_TEST("0x1.p+0", "%#.0a", 1.0);
+    NPF_TEST("0x0.p+0", "%#.0a", 0.0);
+#endif
+
+#if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
+    /* field width, right-justified */
+    NPF_TEST("    0x1p+0", "%10.0a", 1.0);
+    NPF_TEST("   -0x1p+0", "%10.0a", -1.0);
+
+    /* field width, left-justified */
+    NPF_TEST("0x1p+0    ", "%-10.0a", 1.0);
+    NPF_TEST("-0x1p+0   ", "%-10.0a", -1.0);
+
+    /* zero-padded: sign -> 0x -> zeros -> digits */
+    NPF_TEST("0x001p+0", "%08.0a", 1.0);
+    NPF_TEST("-0x01p+0", "%08.0a", -1.0);
+    NPF_TEST("+0x01p+0", "%+08.0a", 1.0);
+
+    /* space flag with width */
+    NPF_TEST(" 0x1p+0   ", "% -10.0a", 1.0);
+    NPF_TEST("-0x1p+0   ", "% -10.0a", -1.0);
+#endif
+
+    /* long double */
+    NPF_TEST("0x1.8000000000000p+0", "%La", (long double)1.5);
+
+    /* precision 0 with no alt: no decimal point */
+    NPF_TEST("0x1p+0", "%.0a", 1.0);
+
+    /* large exponent */
+    NPF_TEST("0x1.fffffffffffffp+1023", "%a", 1.7976931348623157e+308);
+
+    /* subnormal: smallest subnormal */
+    NPF_TEST("0x0.0000000000001p-1022", "%a", 5e-324);
+    NPF_TEST("0x0p-1022", "%.0a", 5e-324);
+#endif /* NANOPRINTF_USE_FLOAT_HEX_FORMAT_SPECIFIER */
+
 #endif /* NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS */
 
     /* ===== non-standard specifiers ===== */
