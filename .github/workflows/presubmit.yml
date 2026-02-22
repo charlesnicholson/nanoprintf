@@ -47,7 +47,7 @@ jobs:
         env:
           CC: /usr/bin/clang
           CXX: /usr/bin/clang++
-        run: make -j ARCH=${{ matrix.architecture }} SAN=${{ matrix.sanitizer }} VERBOSE=1
+        run: make -j$(nproc) ARCH=${{ matrix.architecture }} SAN=${{ matrix.sanitizer }} VERBOSE=1
 
   linux-x64:
     runs-on: ubuntu-latest
@@ -77,7 +77,7 @@ jobs:
         env:
           CC: ${{ matrix.cc }}
           CXX: ${{ matrix.cxx }}
-        run: make -j CFG=${{ matrix.configuration }} ARCH=${{ matrix.architecture }} VERBOSE=1
+        run: make -j$(nproc) CFG=${{ matrix.configuration }} ARCH=${{ matrix.architecture }} VERBOSE=1
 
   linux-arm64:
     runs-on: ubuntu-24.04-arm
@@ -106,7 +106,7 @@ jobs:
         env:
           CC: ${{ matrix.cc }}
           CXX: ${{ matrix.cxx }}
-        run: make -j CFG=${{ matrix.configuration }} ARCH=64 VERBOSE=1
+        run: make -j$(nproc) CFG=${{ matrix.configuration }} ARCH=64 VERBOSE=1
 
   macos:
     runs-on: macos-latest
@@ -118,7 +118,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Build
-        run: make -j CFG=${{ matrix.configuration }} VERBOSE=1
+        run: make -j$(sysctl -n hw.ncpu) CFG=${{ matrix.configuration }} VERBOSE=1
 
   win:
     runs-on: windows-latest
