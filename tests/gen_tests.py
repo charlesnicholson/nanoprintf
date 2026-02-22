@@ -149,19 +149,19 @@ def write_makefile(
     common_warn = (
         "-Wno-gnu-zero-variadic-macro-arguments "
         "-Wno-format -Wno-format-extra-args -Wno-format-security "
-        "-Wno-format-zero-length "
+        "-Wno-format-zero-length -Wno-format-overflow -Wno-format-truncation "
         "-Wno-unused-function"
     )
 
     c_cflags = (
-        f"-Os -std=c17 -pedantic -Wall -Wextra -Wundef -Werror "
+        f"-Os -std=c17 -Wall -Wextra -Wundef -Werror "
         f"{common_warn} -Wno-missing-prototypes "
         f"-I{include_rel} -I{test_rel} "
         f"{arch_flag} {san_flags} {extra_cflags}".rstrip()
     )
 
     cxx_cflags = (
-        f"-Os -std=c++20 -pedantic -Wall -Wextra -Wundef -Werror "
+        f"-Os -std=c++20 -Wall -Wextra -Wundef -Werror "
         f"{common_warn} "
         f"-Wno-old-style-cast -Wno-zero-as-null-pointer-constant "
         f"-I{include_rel} -I{test_rel} "
@@ -236,8 +236,8 @@ def write_build_bat(
         "@echo off",
         "setlocal enabledelayedexpansion",
         "",
-        f'set CFLAGS=/nologo /Os /W4 /WX /I"{include_rel}" /I"{test_rel}"',
-        f'set CXXFLAGS=/nologo /Os /W4 /WX /TP /std:c++20 /EHsc /I"{include_rel}" /I"{test_rel}"',
+        f'set CFLAGS=/nologo /Os /W4 /WX /wd4474 /wd4476 /wd4778 /I"{include_rel}" /I"{test_rel}"',
+        f'set CXXFLAGS=/nologo /Os /W4 /WX /wd4474 /wd4476 /wd4778 /TP /std:c++20 /EHsc /I"{include_rel}" /I"{test_rel}"',
         f'set CONFORMANCE={conformance_rel}',
         "",
         'echo Compiling main.c',

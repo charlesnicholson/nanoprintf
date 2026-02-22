@@ -333,8 +333,15 @@ int NPF_TEST_FUNC(void) {
     NPF_TEST("2147483647", "%ji", INTMAX_MAX);
 #endif
 
-#ifdef _MSC_VER
-#define SSIZE_MAX LONG_MAX
+/* SSIZE_MAX is POSIX, not C standard. Provide a fallback. */
+#ifndef SSIZE_MAX
+  #ifdef _MSC_VER
+    #define SSIZE_MAX LONG_MAX
+  #elif SIZE_MAX == 0xffffffffu
+    #define SSIZE_MAX 2147483647
+  #else
+    #define SSIZE_MAX 9223372036854775807ll
+  #endif
 #endif
 
 #if SSIZE_MAX == 2147483647

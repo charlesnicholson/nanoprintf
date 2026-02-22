@@ -53,7 +53,7 @@ def _run(args: list[str | pathlib.Path], *, verbose: bool, **kwargs: object) -> 
     """Run a subprocess, printing the command if verbose."""
     if verbose:
         print(f"  {' '.join(str(a) for a in args)}")
-    subprocess.run(args, check=True, **kwargs)  # pyright: ignore[reportArgumentType]
+    subprocess.run(args, check=True, **kwargs)  # pyright: ignore[reportCallIssue]
 
 
 def _build_conformance(args: argparse.Namespace) -> bool:
