@@ -1,8 +1,11 @@
-name: Presubmit Checks
+name: CI
 
 on:
   pull_request:
     branches: [ main ]
+  push:
+    tags:
+      - 'v*'
   schedule:
     - cron: '0 2 * * 0'  # Weekly
   workflow_dispatch:
@@ -177,3 +180,46 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - run: echo Done
+
+  release:
+    needs: [all-checks-pass]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+
+          # Find the previous version tag
+          PREV_TAG=$(git tag --sort=-v:refname | grep -E '^v[0-9]' | grep -v "^${TAG}$" | head -1)
+
+          if [ -z "$PREV_TAG" ]; then
+            echo "nanoprintf ${TAG}:" > release_notes.txt
+          else
+            {
+              echo "nanoprintf ${TAG}:"
+              echo ""
+
+              # Extract unique PR numbers from commit messages between tags
+              git log "${PREV_TAG}..${TAG}" --oneline \
+                | grep -oE '\(#[0-9]+\)' | grep -oE '[0-9]+' | sort -un \
+                | while read -r PR; do
+                    TITLE=$(gh pr view "$PR" --json title --jq '.title' 2>/dev/null || true)
+                    if [ -n "$TITLE" ]; then
+                      echo "${TITLE} https://github.com/${GITHUB_REPOSITORY}/pull/${PR}"
+                    fi
+                  done
+            } > release_notes.txt
+          fi
+
+          gh release create "${TAG}" \
+            --title "${TAG}" \
+            --notes-file release_notes.txt
