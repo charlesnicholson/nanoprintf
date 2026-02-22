@@ -1,23 +1,30 @@
-"""Build script for nanoprintf. Configures and runs CMake to build tests."""
+"""Windows build script for nanoprintf. Invokes cl.exe / link.exe directly."""
 
 import argparse
+import concurrent.futures
+import json
+import os
 import pathlib
-import shutil
-import stat
 import subprocess
 import sys
-import tarfile
-import urllib.request
-import zipfile
 
 _SCRIPT_PATH = pathlib.Path(__file__).resolve().parent
-_NINJA_URL = "https://github.com/ninja-build/ninja/releases/download/v1.12.1/{}"
-_CMAKE_VERSION = "4.0.1"
-_CMAKE_URL = (
-    "https://github.com/Kitware/CMake/releases/download/"
-    f"v{_CMAKE_VERSION}/cmake-{_CMAKE_VERSION}-"
-    "{}.{}"
-)
+
+_UNIT_SRCS = [
+    "tests/unit_parse_format_spec.cc",
+    "tests/unit_binary.cc",
+    "tests/unit_bufputc.cc",
+    "tests/unit_ftoa_nan.cc",
+    "tests/unit_ftoa_rev.cc",
+    "tests/unit_ftoa_rev_08.cc",
+    "tests/unit_ftoa_rev_16.cc",
+    "tests/unit_ftoa_rev_32.cc",
+    "tests/unit_ftoa_rev_64.cc",
+    "tests/unit_utoa_rev.cc",
+    "tests/unit_snprintf.cc",
+    "tests/unit_snprintf_safe_empty.cc",
+    "tests/unit_vpprintf.cc",
+]
 
 
 def _parse_args() -> argparse.Namespace:
@@ -29,7 +36,7 @@ def _parse_args() -> argparse.Namespace:
         default="Release",
         const="Release",
         nargs="?",
-        help="CMake configuration",
+        help="Build configuration",
     )
     parser.add_argument(
         "--arch",
@@ -40,163 +47,251 @@ def _parse_args() -> argparse.Namespace:
         nargs="?",
         help="Target architecture",
     )
-    parser.add_argument(
-        "--paland",
-        help="Compile with Paland's printf conformance suite",
-        action="store_true",
-    )
-    parser.add_argument(
-        "--download",
-        help="Download CMake and Ninja, don't use local copies",
-        action="store_true",
-    )
-    parser.add_argument("--ubsan", action="store_true", help="Clang UB sanitizer")
-    parser.add_argument("--asan", action="store_true", help="Clang addr sanitizer")
     parser.add_argument("-v", "--verbose", action="store_true", help="verbose")
     return parser.parse_args()
 
 
-def download_file(url: str, local_path: pathlib.Path, verbose: bool) -> None:
-    """Download a file from url to local_path."""
+def _run(
+    args: list[str | pathlib.Path],
+    *,
+    verbose: bool,
+    cwd: pathlib.Path | None = None,
+) -> None:
+    """Run a subprocess, printing the command if verbose."""
     if verbose:
-        print(f"Downloading:\n  Remote: {url}\n  Local: {local_path}")
-
-    with urllib.request.urlopen(url) as rsp, local_path.open("wb") as file:
-        shutil.copyfileobj(rsp, file)
+        print(f"  {' '.join(str(a) for a in args)}")
+    subprocess.run(args, check=True, cwd=cwd)
 
 
-def _get_cmake(download: bool, verbose: bool) -> pathlib.Path:
-    """Return the path to system CMake, or download and unpack a local copy."""
-    if not download:
-        cmake = shutil.which("cmake")
-        if cmake:
-            return pathlib.Path(cmake)
-
-    plat = {
-        "darwin": "macos-universal",
-        "linux": "linux-x86_64",
-        "win32": "windows-x86_64",
-    }[sys.platform]
-
-    suffix = "zip" if sys.platform == "win32" else "tar.gz"
-
-    cmake_prefix = f"cmake-{_CMAKE_VERSION}-{plat}"
-    cmake_local_dir = _SCRIPT_PATH / "external/cmake"
-    cmake_file = f"{cmake_prefix}.{suffix}"
-    cmake_local_archive = cmake_local_dir / cmake_file
-    cmake_local_exe = (
-        cmake_local_dir
-        / cmake_prefix
-        / ("CMake.app/Contents" if sys.platform == "darwin" else "")
-        / "bin/cmake"
-    )
-
-    if not cmake_local_exe.exists():
-        if not cmake_local_archive.exists():
-            cmake_local_dir.mkdir(parents=True, exist_ok=True)
-            download_file(_CMAKE_URL.format(plat, suffix), cmake_local_archive, verbose)
-
-        match suffix:
-            case "tar.gz":
-                with tarfile.open(cmake_local_archive, "r") as tar:
-                    for member in tar.getmembers():
-                        member_path = pathlib.Path(cmake_local_dir / member.name).resolve()
-                        if cmake_local_dir not in member_path.parents:
-                            msg = "Tar file contents move upwards past sandbox root"
-                            raise ValueError(msg)
-
-                    tar.extractall(path=cmake_local_dir)
-
-            case "zip":
-                with zipfile.ZipFile(cmake_local_archive, "r") as zip_file:
-                    zip_file.extractall(cmake_local_dir)
-
-    return cmake_local_exe
+def _compile_one(cmd: list[str], cwd: pathlib.Path) -> subprocess.CompletedProcess[bytes]:
+    """Compile a single translation unit."""
+    result = subprocess.run(cmd, cwd=cwd, capture_output=True)
+    if result.returncode != 0:
+        sys.stdout.buffer.write(result.stdout)
+        sys.stderr.buffer.write(result.stderr)
+        result.check_returncode()
+    return result
 
 
-def _get_ninja(download: bool, verbose: bool) -> pathlib.Path:
-    """Return the path to system Ninja, or download and unpack a local copy."""
-    if not download:
-        ninja = shutil.which("ninja")
-        if ninja:
-            return pathlib.Path(ninja)
+def _build_conformance(args: argparse.Namespace) -> bool:
+    """Generate, build, and run the conformance test suite."""
+    gen_script = _SCRIPT_PATH / "tests" / "gen_tests.py"
+    gen_dir = _SCRIPT_PATH / "tests" / "generated"
 
-    ninja_local_dir = _SCRIPT_PATH / "external/ninja"
-    plat = {"darwin": "mac", "linux": "linux", "win32": "win"}[sys.platform]
-    ninja_file = f"ninja-{plat}.zip"
-    ninja_local_zip = ninja_local_dir / ninja_file
-    ninja_local_exe = ninja_local_dir / f"ninja{'.exe' if plat == 'win' else ''}"
+    gen_args: list[str | pathlib.Path] = [
+        sys.executable,
+        str(gen_script),
+        "--output",
+        str(gen_dir),
+        "--arch",
+        str(args.arch),
+    ]
+    if args.verbose:
+        gen_args.append("--verbose")
 
-    if not ninja_local_exe.exists():
-        if not ninja_local_zip.exists():
-            ninja_local_dir.mkdir(parents=True, exist_ok=True)
-            download_file(_NINJA_URL.format(ninja_file), ninja_local_zip, verbose)
+    try:
+        _run(gen_args, verbose=args.verbose)
+    except subprocess.CalledProcessError:
+        return False
 
-        with zipfile.ZipFile(ninja_local_zip, "r") as zip_file:
-            zip_file.extractall(ninja_local_dir)
+    # Read compile commands and run in parallel
+    with (gen_dir / "compile_commands.json").open() as f:
+        commands: list[list[str]] = json.load(f)
 
-        ninja_local_exe.chmod(ninja_local_exe.stat().st_mode | stat.S_IEXEC)
+    workers = os.cpu_count() or 1
+    if args.verbose:
+        print(f"  Compiling {len(commands)} files with {workers} workers")
 
-    return ninja_local_exe
+    with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as pool:
+        futures = {
+            pool.submit(_compile_one, cmd, gen_dir): cmd for cmd in commands
+        }
+        for future in concurrent.futures.as_completed(futures):
+            try:
+                future.result()
+            except subprocess.CalledProcessError:
+                # Cancel remaining futures on first failure
+                for f in futures:
+                    f.cancel()
+                return False
+
+    # Link
+    try:
+        _run(
+            ["link.exe", "/nologo", "/out:npf_conformance.exe", "@link.rsp"],
+            verbose=args.verbose,
+            cwd=gen_dir,
+        )
+    except subprocess.CalledProcessError:
+        return False
+
+    # Run
+    try:
+        _run([str(gen_dir / "npf_conformance.exe")], verbose=args.verbose)
+    except subprocess.CalledProcessError:
+        return False
+
+    return True
 
 
-def _configure_cmake(
-    cmake_exe: pathlib.Path, ninja: pathlib.Path, args: argparse.Namespace
-) -> bool:
-    """Prepare CMake for building nanoprintf tests under 'build/ninja/<cfg>'."""
-    build_path = _SCRIPT_PATH / "build/ninja" / args.cfg
-    if (build_path / "CMakeFiles").exists():
-        return True
+def _build_unit_tests(args: argparse.Namespace) -> bool:
+    """Build and run both unit test variants with cl.exe."""
+    build_dir = _SCRIPT_PATH / "build"
+    build_dir.mkdir(parents=True, exist_ok=True)
 
-    sys.stdout.flush()
-    build_path.mkdir(parents=True)
-
-    cmake_args = [
-        cmake_exe,
-        _SCRIPT_PATH,
-        "-G",
-        "Ninja",
-        "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
-        f"-DCMAKE_MAKE_PROGRAM={ninja}",
-        f"-DCMAKE_BUILD_TYPE={args.cfg}",
-        f"-DNPF_PALAND={'ON' if args.paland else 'OFF'}",
-        f"-DNPF_32BIT={'ON' if args.arch == 32 else 'OFF'}",
-        f"-DNPF_CLANG_ASAN={'ON' if args.asan else 'OFF'}",
-        f"-DNPF_CLANG_UBSAN={'ON' if args.ubsan else 'OFF'}",
+    opt_flag = "/Od" if args.cfg == "Debug" else "/Os"
+    cxx_flags = [
+        "/nologo",
+        opt_flag,
+        "/std:c++20",
+        "/EHsc",
+        "/W4",
+        "/WX",
+        "/wd4464",
+        "/wd4514",
+        "/wd4710",
+        "/wd4711",
+        "/wd4619",
+        "/wd4820",
+        "/wd5039",
+        "/wd5262",
+        "/wd5264",
     ]
 
+    # Compile doctest_main.cc once
+    doctest_obj = build_dir / "doctest_main.obj"
     try:
-        return subprocess.run(cmake_args, cwd=build_path, check=True).returncode == 0
-    except subprocess.CalledProcessError as cpe:
-        return cpe.returncode == 0
+        _run(
+            ["cl.exe", *cxx_flags, "/c", f"/Fo{doctest_obj}", "tests/doctest_main.cc"],
+            verbose=args.verbose,
+        )
+    except subprocess.CalledProcessError:
+        return False
+
+    for suffix, large_val in [("", "0"), ("_large", "1")]:
+        var_dir = build_dir / f"unit{suffix}"
+        var_dir.mkdir(parents=True, exist_ok=True)
+
+        objs: list[pathlib.Path] = []
+        for src in _UNIT_SRCS:
+            obj = var_dir / (pathlib.Path(src).stem + ".obj")
+            objs.append(obj)
+            try:
+                _run(
+                    [
+                        "cl.exe",
+                        *cxx_flags,
+                        "/DNANOPRINTF_USE_ALT_FORM_FLAG=1",
+                        "/DDOCTEST_CONFIG_SUPER_FAST_ASSERTS",
+                        f"/DNANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS={large_val}",
+                        *(
+                            ["/DNANOPRINTF_32_BIT_TESTS"]
+                            if args.arch == 32
+                            else []
+                        ),
+                        "/c",
+                        f"/Fo{obj}",
+                        src,
+                    ],
+                    verbose=args.verbose,
+                )
+            except subprocess.CalledProcessError:
+                return False
+
+        exe = build_dir / f"unit_tests{suffix}.exe"
+        try:
+            _run(
+                [
+                    "link.exe",
+                    "/nologo",
+                    f"/out:{exe}",
+                    str(doctest_obj),
+                    *(str(o) for o in objs),
+                ],
+                verbose=args.verbose,
+            )
+        except subprocess.CalledProcessError:
+            return False
+
+        try:
+            _run([str(exe), "-m"], verbose=args.verbose)
+        except subprocess.CalledProcessError:
+            return False
+
+    return True
 
 
-def _build_cmake(cmake_exe: pathlib.Path, args: argparse.Namespace) -> bool:
-    """Run CMake in build mode to compile and run the nanoprintf test suite."""
-    sys.stdout.flush()
-    build_path = _SCRIPT_PATH / "build/ninja" / args.cfg
-    cmake_args = [cmake_exe, "--build", build_path, *(["--", "-v"] if args.verbose else [])]
+def _build_compile_only(args: argparse.Namespace) -> bool:
+    """Build compile-only targets (verify compilation, not run)."""
+    build_dir = _SCRIPT_PATH / "build"
+    build_dir.mkdir(parents=True, exist_ok=True)
 
-    try:
-        return subprocess.run(cmake_args, check=True).returncode == 0
-    except subprocess.CalledProcessError as cpe:
-        return cpe.returncode == 0
+    opt_flag = "/Od" if args.cfg == "Debug" else "/Os"
+
+    targets: list[tuple[str, list[str], list[str]]] = [
+        # (name, extra_cl_flags, source_files)
+        (
+            "npf_static",
+            ["/nologo", opt_flag],
+            ["tests/static_nanoprintf.c", "tests/static_main.c"],
+        ),
+        (
+            "npf_include_multiple",
+            ["/nologo", opt_flag, "/W4", "/WX", "/wd4464", "/wd4514", "/wd4710", "/wd4711"],
+            ["tests/include_multiple.c"],
+        ),
+        (
+            "use_npf_directly",
+            ["/nologo", opt_flag, "/std:c++20", "/EHsc"],
+            [
+                "examples/use_npf_directly/your_project_nanoprintf.cc",
+                "examples/use_npf_directly/main.cc",
+            ],
+        ),
+        (
+            "wrap_npf",
+            ["/nologo", opt_flag, "/std:c++20", "/EHsc"],
+            [
+                "examples/wrap_npf/your_project_printf.cc",
+                "examples/wrap_npf/main.cc",
+            ],
+        ),
+    ]
+
+    for name, flags, srcs in targets:
+        exe = build_dir / f"{name}.exe"
+        try:
+            _run(
+                ["cl.exe", *flags, f"/Fe{exe}", *srcs, "/link", "/nologo"],
+                verbose=args.verbose,
+            )
+        except subprocess.CalledProcessError:
+            return False
+
+    return True
 
 
 def main() -> int:
-    """Parse args, find or get tools, configure CMake, build and run tests."""
+    """Parse args, build conformance + unit tests + compile-only targets."""
+    os.chdir(_SCRIPT_PATH)
     args = _parse_args()
 
-    cmake = _get_cmake(args.download, args.verbose)
-    if args.verbose:
-        print(f"Found CMake at {cmake}")
+    print("=== Building conformance tests ===")
+    if not _build_conformance(args):
+        print("Conformance tests FAILED")
+        return 1
 
-    ninja = _get_ninja(args.download, args.verbose)
-    if args.verbose:
-        print(f"Found ninja at {ninja}")
+    print("=== Building unit tests ===")
+    if not _build_unit_tests(args):
+        print("Unit tests FAILED")
+        return 1
 
-    built_ok = _configure_cmake(cmake, ninja, args) and _build_cmake(cmake, args)
-    return int(not built_ok)  # 0 is success
+    print("=== Building compile-only targets ===")
+    if not _build_compile_only(args):
+        print("Compile-only targets FAILED")
+        return 1
+
+    return 0
 
 
 if __name__ == "__main__":

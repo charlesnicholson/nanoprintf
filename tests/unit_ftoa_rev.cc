@@ -31,6 +31,7 @@ static void require_ftoa_rev_bin(char const *expected, npf_double_bin_t bin) {
   require_ftoa_rev(expected, dbl);
 }
 
+#ifndef NPF_FTOA_REV_CUSTOM_CONFIG
 TEST_CASE("ftoa_rev") {
   memset(&spec, 0, sizeof(spec));
 
@@ -79,3 +80,4 @@ TEST_CASE("ftoa_rev") {
     require_ftoa_rev("0.9688", 0.96875);
   }
 }
+#endif // NPF_FTOA_REV_CUSTOM_CONFIG

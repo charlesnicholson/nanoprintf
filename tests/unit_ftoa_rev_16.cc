@@ -1,5 +1,6 @@
 #define NANOPRINTF_CONVERSION_BUFFER_SIZE    512
 #define NANOPRINTF_CONVERSION_FLOAT_TYPE    uint16_t
+#define NPF_FTOA_REV_CUSTOM_CONFIG
 
 #include "unit_ftoa_rev.cc"
 

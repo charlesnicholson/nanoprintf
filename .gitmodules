@@ -1,3 +1,0 @@
-[submodule "tests/mpaland-conformance"]
-	path = tests/mpaland-conformance
-	url = https://github.com/charlesnicholson/nanoprintf-paland-conformance.git
