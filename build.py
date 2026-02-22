@@ -49,11 +49,16 @@ def _parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def _run(args: list[str | pathlib.Path], *, verbose: bool, **kwargs: object) -> None:
+def _run(
+    args: list[str | pathlib.Path],
+    *,
+    verbose: bool,
+    cwd: pathlib.Path | None = None,
+) -> None:
     """Run a subprocess, printing the command if verbose."""
     if verbose:
         print(f"  {' '.join(str(a) for a in args)}")
-    subprocess.run(args, check=True, **kwargs)  # pyright: ignore[reportCallIssue]
+    subprocess.run(args, check=True, cwd=cwd)
 
 
 def _build_conformance(args: argparse.Namespace) -> bool:
