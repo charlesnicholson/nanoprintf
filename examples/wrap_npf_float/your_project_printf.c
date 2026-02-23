@@ -4,7 +4,7 @@
 #define NANOPRINTF_IMPLEMENTATION
 #include "../../nanoprintf.h"
 
-int your_project_snprintf_impl(char *buffer, size_t bufsz, char const *fmt, ...) {
+int your_project_snprintf_(char *buffer, size_t bufsz, char const *fmt, ...) {
     va_list val;
     va_start(val, fmt);
     // npf_vsnprintf works here because float args in the va_list are already

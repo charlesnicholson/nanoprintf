@@ -185,12 +185,13 @@ npf_snprintf(buf, sizeof(buf), "%d %.2f", 42, 3.14f);  // just works
 **Writing variadic wrappers:** If you write your own variadic wrapper around nanoprintf, you must use `NPF_MAP_ARGS` in a macro at the outermost call site so that float arguments are wrapped before they cross the variadic boundary. The `npf_vsnprintf` and `npf_vpprintf` functions cannot undo the `float`-to-`double` promotion that happens at `va_start`, so wrapping must happen before the arguments enter any variadic function. The pattern is:
 ```c
 // your_printf.h — the macro wraps args, then calls the real variadic function.
-#define my_printf(buf, sz, format, ...) \
-  my_printf_impl((buf), (sz), NPF_MAP_ARGS((format), ##__VA_ARGS__))
-int my_printf_impl(char *buf, size_t sz, const char *fmt, ...);
+// fmt is captured inside __VA_ARGS__ so no compiler-specific extensions are needed.
+#define my_printf(buf, sz, ...) \
+  my_printf_((buf), (sz), NPF_MAP_ARGS(__VA_ARGS__))
+int my_printf_(char *buf, size_t sz, const char *fmt, ...);
 
 // your_printf.c — the real function receives pre-wrapped args via va_list.
-int my_printf_impl(char *buf, size_t sz, const char *fmt, ...) {
+int my_printf_(char *buf, size_t sz, const char *fmt, ...) {
     va_list val;
     va_start(val, fmt);
     int rv = npf_vsnprintf(buf, sz, fmt, val);

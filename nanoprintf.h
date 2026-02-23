@@ -36,6 +36,12 @@ extern "C" {
 #endif
 #endif
 
+#if defined(NANOPRINTF_FLOAT_SINGLE_PRECISION) && NANOPRINTF_FLOAT_SINGLE_PRECISION == 1
+#define NPF_MAP_ARGS(...) NPF__MAP(NPF__WRAP, __VA_ARGS__)
+#else
+#define NPF_MAP_ARGS(...) __VA_ARGS__
+#endif
+
 // The npf_ functions all return the number of bytes required to express the
 // fully-formatted string, not including the null terminator character.
 // The npf_ functions do not return negative values, since the lack of 'l' length
@@ -43,30 +49,8 @@ extern "C" {
 
 typedef void (*npf_putc)(int c, void *ctx);
 
-#if defined(__clang__)
-_Pragma("clang diagnostic push")
-_Pragma("clang diagnostic ignored \"-Wgnu-zero-variadic-macro-arguments\"")
-#endif
-
-#if defined(NANOPRINTF_FLOAT_SINGLE_PRECISION) && NANOPRINTF_FLOAT_SINGLE_PRECISION == 1
-#define NPF_MAP_ARGS(...) NPF__MAP(NPF__WRAP, __VA_ARGS__)
-#else
-#define NPF_MAP_ARGS(...) __VA_ARGS__
-#endif
-
-#if defined(NANOPRINTF_FLOAT_SINGLE_PRECISION) && NANOPRINTF_FLOAT_SINGLE_PRECISION == 1
-#define NPF_PRINTF_SP_ATTR NPF_PRINTF_ATTR(3, 0)
-#else
-#define NPF_PRINTF_SP_ATTR NPF_PRINTF_ATTR(3, 4)
-#endif
-
-// ---- public api
-
-#define npf_snprintf(buf, sz, format, ...) \
-  npf_snprintf_impl((buf), (sz), NPF_MAP_ARGS((format), ##__VA_ARGS__))
-
-#define npf_pprintf(pc, ctx, format, ...) \
-  npf_pprintf_impl((pc), (ctx), NPF_MAP_ARGS((format), ##__VA_ARGS__))
+#define npf_snprintf(buf, sz, ...) npf_snprintf_((buf), (sz), NPF_MAP_ARGS(__VA_ARGS__))
+#define npf_pprintf(pc, ctx, ...) npf_pprintf_((pc), (ctx), NPF_MAP_ARGS(__VA_ARGS__))
 
 NPF_VISIBILITY int npf_vsnprintf(char * NPF_RESTRICT buffer,
                                  size_t bufsz,
@@ -78,21 +62,21 @@ NPF_VISIBILITY int npf_vpprintf(npf_putc pc,
                                 char const * NPF_RESTRICT format,
                                 va_list vlist) NPF_PRINTF_ATTR(3, 0);
 
-// ---- publicly visible helper functions (called by macro entry points)
+#if defined(NANOPRINTF_FLOAT_SINGLE_PRECISION) && NANOPRINTF_FLOAT_SINGLE_PRECISION == 1
+#define NPF_PRINTF_SP_ATTR NPF_PRINTF_ATTR(3, 0)
+#else
+#define NPF_PRINTF_SP_ATTR NPF_PRINTF_ATTR(3, 4)
+#endif
 
-NPF_VISIBILITY int npf_snprintf_impl(char * NPF_RESTRICT buffer,
+NPF_VISIBILITY int npf_snprintf_(char * NPF_RESTRICT buffer,
                                       size_t bufsz,
                                       const char * NPF_RESTRICT format, ...)
                                       NPF_PRINTF_SP_ATTR;
 
-NPF_VISIBILITY int npf_pprintf_impl(npf_putc pc,
+NPF_VISIBILITY int npf_pprintf_(npf_putc pc,
                                     void * NPF_RESTRICT pc_ctx,
                                     char const * NPF_RESTRICT format, ...)
                                     NPF_PRINTF_SP_ATTR;
-
-#if defined(__clang__)
-_Pragma("clang diagnostic pop")
-#endif
 
 #ifdef __cplusplus
 }
@@ -635,7 +619,7 @@ enum {
 
 static NPF_FORCE_INLINE npf_real_bin_t npf_real_to_int_rep(npf_real_t f) {
   // Union-cast is UB pre-C11 and in all C++; the compiler optimizes the code below.
-  npf_real_bin_t bin;
+  npf_real_bin_t bin = 0;
   char const *src = (char const *)&f;
   char *dst = (char *)&bin;
   for (uint_fast8_t i = 0; i < sizeof(f); ++i) { dst[i] = src[i]; }
@@ -1231,7 +1215,7 @@ int npf_vsnprintf(char * NPF_RESTRICT buffer,
   return n;
 }
 
-int npf_pprintf_impl(npf_putc pc,
+int npf_pprintf_(npf_putc pc,
                      void * NPF_RESTRICT pc_ctx,
                      char const * NPF_RESTRICT format,
                      ...) {
@@ -1242,7 +1226,7 @@ int npf_pprintf_impl(npf_putc pc,
   return rv;
 }
 
-int npf_snprintf_impl(char * NPF_RESTRICT buffer,
+int npf_snprintf_(char * NPF_RESTRICT buffer,
                       size_t bufsz,
                       const char * NPF_RESTRICT format,
                       ...) {

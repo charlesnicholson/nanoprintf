@@ -26,9 +26,10 @@
 
 #include "../../nanoprintf.h"
 
-/* The macro wraps float/double args before they cross the variadic boundary. */
-#define your_project_snprintf(buf, sz, format, ...) \
-  your_project_snprintf_impl((buf), (sz), NPF_MAP_ARGS((format), ##__VA_ARGS__))
+/* The macro wraps float/double args before they cross the variadic boundary.
+   fmt is captured inside __VA_ARGS__ so no ##__VA_ARGS__ GNU extension is needed. */
+#define your_project_snprintf(buf, sz, ...) \
+  your_project_snprintf_((buf), (sz), NPF_MAP_ARGS(__VA_ARGS__))
 
 /* The real function receives already-wrapped args and forwards via va_list. */
-int your_project_snprintf_impl(char *buffer, size_t bufsz, const char *fmt, ...);
+int your_project_snprintf_(char *buffer, size_t bufsz, const char *fmt, ...);
