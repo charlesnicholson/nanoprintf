@@ -113,6 +113,9 @@ def define_flags(combo: dict[str, int], idx: int, *, msvc: bool = False) -> str:
     """Return the -D flags string for a single combo."""
     pfx = "/D" if msvc else "-D"
     parts = [f"{pfx}{k}={v}" for k, v in combo.items()]
+    # Enable hex float whenever float is enabled
+    hex_val = combo.get("NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS", 0)
+    parts.append(f"{pfx}NANOPRINTF_USE_FLOAT_HEX_FORMAT_SPECIFIER={hex_val}")
     parts.append(f"{pfx}NPF_TEST_FUNC=npf_test_combo_{idx}")
     parts.append(f"{pfx}NPF_TEST_PASS_COUNT=npf_test_combo_{idx}_pass_count")
     return " ".join(parts)
