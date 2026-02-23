@@ -735,7 +735,8 @@ exit:
 #if NANOPRINTF_USE_FLOAT_HEX_FORMAT_SPECIFIER == 1
 
 static NPF_NOINLINE int npf_atoa_rev(
-    char *buf, npf_format_spec_t const *spec, npf_double_bin_t bin) {
+    char *buf, npf_format_spec_t const *spec, double f) {
+  npf_double_bin_t bin = npf_double_to_int_rep(f);
   npf_ftoa_exp_t exp =
     (npf_ftoa_exp_t)((npf_ftoa_exp_t)(bin >> NPF_DOUBLE_MAN_BITS) & NPF_DOUBLE_EXP_MASK);
   bin &= ((npf_double_bin_t)0x1 << NPF_DOUBLE_MAN_BITS) - 1;
@@ -1108,17 +1109,17 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
         }
 
 #if NANOPRINTF_USE_FLOAT_HEX_FORMAT_SPECIFIER == 1
-        { npf_double_bin_t const bin_rep = npf_double_to_int_rep(val);
-          sign_c = (bin_rep >> NPF_DOUBLE_SIGN_POS) ? '-' : fs.prepend;
+        { npf_double_bin_t const b = npf_double_to_int_rep(val);
+          sign_c = (b >> NPF_DOUBLE_SIGN_POS) ? '-' : fs.prepend;
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
-          zero = (val == 0.);
+          zero = !(b & ~((npf_double_bin_t)1 << NPF_DOUBLE_SIGN_POS));
 #endif
-          if ((fs.conv_spec == NPF_FMT_SPEC_CONV_FLOAT_HEX) &&
-              ((cbuf_len = npf_atoa_rev(cbuf, &fs, bin_rep)) > 0)) {
-            need_0x = (char)('X' + fs.case_adjust);
-          } else
-          { cbuf_len = npf_ftoa_rev(cbuf, &fs, val); }
         }
+        if ((fs.conv_spec == NPF_FMT_SPEC_CONV_FLOAT_HEX) &&
+            ((cbuf_len = npf_atoa_rev(cbuf, &fs, val)) > 0)) {
+          need_0x = (char)('X' + fs.case_adjust);
+        } else
+        { cbuf_len = npf_ftoa_rev(cbuf, &fs, val); }
 #else
         sign_c = (npf_double_to_int_rep(val) >> NPF_DOUBLE_SIGN_POS) ? '-' : fs.prepend;
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
