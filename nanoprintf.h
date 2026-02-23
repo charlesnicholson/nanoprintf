@@ -1274,8 +1274,14 @@ int npf_snprintf_(char * NPF_RESTRICT buffer,
        _npf_r.val = (float)__builtin_choose_expr(NPF__IS_REAL(x), (x), 0); \
        _npf_r; }), \
     (x))
+#elif defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 201112L)
+  // C11 _Generic: wraps float/double, passes everything else through unchanged.
+  #define NPF__WRAP(x) _Generic((x), \
+    float:  ((npf_float_t){(float)(x)}), \
+    double: ((npf_float_t){(float)(x)}), \
+    default: (x))
 #else
-  #error Single-precision float wrapping requires GCC, Clang, or C++.
+  #error Single-precision float wrapping requires C11, GCC/Clang, or C++.
 #endif
 
 // Argument counting (up to 64 variadic args)

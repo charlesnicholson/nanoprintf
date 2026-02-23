@@ -262,6 +262,7 @@ def write_compile_commands(
         f"/I{include_rel}",
         f"/I{test_rel}",
     ]
+    c_extra = ["/std:c11"]
     cxx_extra = ["/TP", "/std:c++20", "/EHsc"]
 
     commands: list[list[str]] = []
@@ -276,7 +277,7 @@ def write_compile_commands(
         dflags = define_flags(combo, i, msvc=True).split()
         obj_name = f"combo_{i}.obj"
         obj_names.append(obj_name)
-        flags = common + (cxx_extra if is_cxx else [])
+        flags = common + (cxx_extra if is_cxx else c_extra)
         commands.append(
             ["cl.exe", *flags, *dflags, "/c", f"/Fo{obj_name}", conformance_rel]
         )
