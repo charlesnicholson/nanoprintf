@@ -263,7 +263,7 @@ def write_compile_commands(
         f"/I{test_rel}",
     ]
     c_extra = ["/std:c11"]
-    cxx_extra = ["/TP", "/std:c++20", "/EHsc"]
+    cxx_extra = ["/TP", "/std:c++20", "/EHsc", "/Zc:__cplusplus"]
 
     commands: list[list[str]] = []
 

@@ -173,7 +173,7 @@ typedef struct { float val; } npf_float_t;
 
 #if NANOPRINTF_FLOAT_SINGLE_PRECISION == 1
   #ifdef __cplusplus
-    #if __cplusplus < 201103L
+    #if __cplusplus < 201103L && !defined(_MSC_VER)
       #error Single-precision float wrapping requires C++11 or later.
     #endif
   #else
