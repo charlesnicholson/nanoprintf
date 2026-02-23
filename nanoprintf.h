@@ -23,6 +23,15 @@
   #define NPF_PRINTF_ATTR(FORMAT_INDEX, VARGS_INDEX)
 #endif
 
+#if defined(NANOPRINTF_FLOAT_SINGLE_PRECISION) && NANOPRINTF_FLOAT_SINGLE_PRECISION == 1
+#define NPF_PRINTF_SP_ATTR NPF_PRINTF_ATTR(3, 0)
+#define NPF_MAP_ARGS(...) NPF__MAP(NPF__WRAP, __VA_ARGS__)
+typedef struct { float val; } npf_float_t;
+#else
+#define NPF_PRINTF_SP_ATTR NPF_PRINTF_ATTR(3, 4)
+#define NPF_MAP_ARGS(...) __VA_ARGS__
+#endif
+
 // Public API
 
 #ifdef __cplusplus
@@ -34,12 +43,6 @@ extern "C" {
 #else
 #define NPF_RESTRICT
 #endif
-#endif
-
-#if defined(NANOPRINTF_FLOAT_SINGLE_PRECISION) && NANOPRINTF_FLOAT_SINGLE_PRECISION == 1
-#define NPF_MAP_ARGS(...) NPF__MAP(NPF__WRAP, __VA_ARGS__)
-#else
-#define NPF_MAP_ARGS(...) __VA_ARGS__
 #endif
 
 // The npf_ functions all return the number of bytes required to express the
@@ -62,12 +65,6 @@ NPF_VISIBILITY int npf_vpprintf(npf_putc pc,
                                 char const * NPF_RESTRICT format,
                                 va_list vlist) NPF_PRINTF_ATTR(3, 0);
 
-#if defined(NANOPRINTF_FLOAT_SINGLE_PRECISION) && NANOPRINTF_FLOAT_SINGLE_PRECISION == 1
-#define NPF_PRINTF_SP_ATTR NPF_PRINTF_ATTR(3, 0)
-#else
-#define NPF_PRINTF_SP_ATTR NPF_PRINTF_ATTR(3, 4)
-#endif
-
 NPF_VISIBILITY int npf_snprintf_(char * NPF_RESTRICT buffer,
                                       size_t bufsz,
                                       const char * NPF_RESTRICT format, ...)
@@ -83,13 +80,6 @@ NPF_VISIBILITY int npf_pprintf_(npf_putc pc,
 #endif
 
 #endif // NPF_H_INCLUDED
-
-#if defined(NANOPRINTF_FLOAT_SINGLE_PRECISION) && NANOPRINTF_FLOAT_SINGLE_PRECISION == 1
-#ifndef NPF_FLOAT_T_INCLUDED
-#define NPF_FLOAT_T_INCLUDED
-typedef struct { float val; } npf_float_t;
-#endif
-#endif
 
 /* The implementation of nanoprintf begins here, to be compiled only if
    NANOPRINTF_IMPLEMENTATION is defined. In a multi-file library what follows would
@@ -1282,9 +1272,7 @@ int npf_snprintf_(char * NPF_RESTRICT buffer,
 #elif defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 201112L)
   static inline npf_float_t npf__wf(float f) { npf_float_t r; r.val = f; return r; }
   static inline npf_float_t npf__wd(double d) { npf_float_t r; r.val = (float)d; return r; }
-  static inline npf_float_t npf__wld(long double d) {
-    npf_float_t r; r.val = (float)d; return r;
-  }
+  static inline npf_float_t npf__wld(long double d) { npf_float_t r; r.val = (float)d; return r; }
   static inline int npf__id_i(int v) { return v; }
   static inline unsigned npf__id_u(unsigned v) { return v; }
   static inline long npf__id_l(long v) { return v; }
