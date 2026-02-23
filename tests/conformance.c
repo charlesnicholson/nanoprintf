@@ -1144,9 +1144,11 @@ int NPF_TEST_FUNC(void) {
     NPF_TEST("0.003906", "%f", 0.00390625);
     NPF_TEST("0.0039", "%.4f", 0.00390625);
     NPF_TEST("0.00390625", "%.8f", 0.00390625);
-    NPF_TEST("0.00390625", "%.8Lf", (long double)0.00390625);
     NPF_TEST("-0.00390625", "%.8f", -0.00390625);
+#if NANOPRINTF_FLOAT_SINGLE_PRECISION != 1
+    NPF_TEST("0.00390625", "%.8Lf", (long double)0.00390625);
     NPF_TEST("-0.00390625", "%.8Lf", (long double)-0.00390625);
+#endif
     NPF_TEST("42.500000", "%f", 42.5);
     NPF_TEST("42.5", "%.1f", 42.5);
     NPF_TEST("42167.000000", "%f", 42167.0);
@@ -1160,22 +1162,24 @@ int NPF_TEST_FUNC(void) {
 
     /* paland float tests */
     NPF_TEST("3.1415", "%.4f", 3.1415354);
-    NPF_TEST("30343.142", "%.3f", 30343.1415354);
     NPF_TEST("34", "%.0f", 34.1415354);
     NPF_TEST("1", "%.0f", 1.3);
     NPF_TEST("2", "%.0f", 1.55);
     NPF_TEST("1.6", "%.1f", 1.64);
     NPF_TEST("42.90", "%.2f", 42.8952);
-    NPF_TEST("42.895199999", "%.9f", 42.8952);
-    NPF_TEST("42.8952229992", "%.10f", 42.895223);
-    NPF_TEST("42.895223123208", "%.12f", 42.89522312345678);
-    NPF_TEST("42.895223876461", "%.12f", 42.89522387654321);
-    NPF_TEST("-12345.987654321", "%.9f", -12345.987654321);
     NPF_TEST("4.0", "%.1f", 3.999);
     NPF_TEST("4", "%.0f", 3.5);
     NPF_TEST("5", "%.0f", 4.5);
     NPF_TEST("3", "%.0f", 3.49);
     NPF_TEST("3.5", "%.1f", 3.49);
+#if NANOPRINTF_FLOAT_SINGLE_PRECISION != 1
+    NPF_TEST("30343.142", "%.3f", 30343.1415354);
+    NPF_TEST("42.895199999", "%.9f", 42.8952);
+    NPF_TEST("42.8952229992", "%.10f", 42.895223);
+    NPF_TEST("42.895223123208", "%.12f", 42.89522312345678);
+    NPF_TEST("42.895223876461", "%.12f", 42.89522387654321);
+    NPF_TEST("-12345.987654321", "%.9f", -12345.987654321);
+#endif
 
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
     NPF_TEST(" 1.0", "%4.1f", 1.0);
@@ -1217,6 +1221,16 @@ int NPF_TEST_FUNC(void) {
     /* misc float */
     NPF_TEST("-67224.54687500000000000", "%.17f", -67224.546875);
     NPF_TEST("0.33", "%.*f", 2, 0.33333333);
+
+#if NANOPRINTF_FLOAT_SINGLE_PRECISION == 1
+    /* single-precision: mixed args (int/string + float) */
+    NPF_TEST("42 1.5", "%d %.1f", 42, 1.5f);
+    NPF_TEST("hello 3.14", "%s %.2f", "hello", 3.14f);
+
+    /* single-precision: double literals auto-narrowed via NPF_MAP_ARGS */
+    NPF_TEST("3.14", "%.2f", 3.14);
+    NPF_TEST("42.500000", "%f", 42.5);
+#endif
 #endif /* NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS */
 
     /* ===== non-standard specifiers ===== */

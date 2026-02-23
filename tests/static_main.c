@@ -1,6 +1,6 @@
 #include "../nanoprintf.h"
 
-int npf_snprintf(char *buffer, size_t bufsz, const char *format, ...) {
+int npf_snprintf_impl(char *buffer, size_t bufsz, const char *format, ...) {
     (void)buffer;
     (void)bufsz;
     (void)format;
@@ -16,7 +16,7 @@ int npf_vsnprintf(char *buffer, size_t bufsz, char const *format,
     return 0;
 }
 
-int npf_pprintf(npf_putc pc, void *pc_ctx, char const *format, ...) {
+int npf_pprintf_impl(npf_putc pc, void *pc_ctx, char const *format, ...) {
     (void)pc;
     (void)pc_ctx;
     (void)format;
