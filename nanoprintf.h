@@ -577,7 +577,7 @@ static NPF_NOINLINE int npf_utoa_rev(
   typedef int_fast8_t npf_ftoa_exp_t;
 #elif (NPF_REAL_MANT_DIG <= 24) && (NPF_REAL_MAX_EXP <= 128)
   typedef uint_fast32_t npf_real_bin_t;
-  typedef int_fast8_t npf_ftoa_exp_t;
+  typedef int_fast16_t npf_ftoa_exp_t;
 #elif (NPF_REAL_MANT_DIG <= 53) && (NPF_REAL_MAX_EXP <= 1024)
   typedef uint_fast64_t npf_real_bin_t;
   typedef int_fast16_t npf_ftoa_exp_t;
@@ -1259,14 +1259,16 @@ int npf_snprintf_(char * NPF_RESTRICT buffer,
 #if defined(NANOPRINTF_FLOAT_SINGLE_PRECISION) && NANOPRINTF_FLOAT_SINGLE_PRECISION == 1
 
 // NPF__WRAP: wrap float/double args into npf_float_t, pass other types through.
+// C++ uses function overloading; C uses _Generic with function-pointer selection.
+// _Generic picks a function, then (x) calls it. Non-selected branches are bare
+// function names (always valid), sidestepping _Generic's type-check-all-branches
+// behavior that would reject (float)(string_ptr) in non-selected branches.
 #if defined(__cplusplus)
   static inline npf_float_t npf__wrap_impl(float f) { npf_float_t r; r.val = f; return r; }
   static inline npf_float_t npf__wrap_impl(double d) { npf_float_t r; r.val = (float)d; return r; }
   template<typename T> static inline T npf__wrap_impl(T v) { return v; }
   #define NPF__WRAP(x) npf__wrap_impl(x)
 #elif defined(__GNUC__) || defined(__clang__)
-  // The inner __builtin_choose_expr uses 0 as a safe fallback so (float)(x) is
-  // never instantiated for non-numeric types (avoiding pointer-to-float cast errors).
   #define NPF__IS_REAL(x) (__builtin_types_compatible_p(__typeof__(x), float) || \
                             __builtin_types_compatible_p(__typeof__(x), double))
   #define NPF__WRAP(x) __builtin_choose_expr(NPF__IS_REAL(x), \
@@ -1275,11 +1277,55 @@ int npf_snprintf_(char * NPF_RESTRICT buffer,
        _npf_r; }), \
     (x))
 #elif defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 201112L)
-  // C11 _Generic: wraps float/double, passes everything else through unchanged.
+  static inline npf_float_t npf__wf(float f) { npf_float_t r; r.val = f; return r; }
+  static inline npf_float_t npf__wd(double d) { npf_float_t r; r.val = (float)d; return r; }
+  static inline npf_float_t npf__wld(long double d) {
+    npf_float_t r; r.val = (float)d; return r;
+  }
+  static inline int npf__id_i(int v) { return v; }
+  static inline unsigned npf__id_u(unsigned v) { return v; }
+  static inline long npf__id_l(long v) { return v; }
+  static inline unsigned long npf__id_ul(unsigned long v) { return v; }
+  static inline long long npf__id_ll(long long v) { return v; }
+  static inline unsigned long long npf__id_ull(unsigned long long v) { return v; }
+  static inline char npf__id_c(char v) { return v; }
+  static inline signed char npf__id_sc(signed char v) { return v; }
+  static inline unsigned char npf__id_uc(unsigned char v) { return v; }
+  static inline short npf__id_s(short v) { return v; }
+  static inline unsigned short npf__id_us(unsigned short v) { return v; }
+  static inline char *npf__id_cp(char *v) { return v; }
+  static inline char const *npf__id_ccp(char const *v) { return v; }
+  static inline void *npf__id_vp(void *v) { return v; }
+  static inline void const *npf__id_cvp(void const *v) { return v; }
+  static inline int *npf__id_ip(int *v) { return v; }
+  static inline short *npf__id_sp(short *v) { return v; }
+  static inline long *npf__id_lp(long *v) { return v; }
+  static inline long long *npf__id_llp(long long *v) { return v; }
+  static inline signed char *npf__id_scp(signed char *v) { return v; }
   #define NPF__WRAP(x) _Generic((x), \
-    float:  ((npf_float_t){(float)(x)}), \
-    double: ((npf_float_t){(float)(x)}), \
-    default: (x))
+    float:              npf__wf, \
+    double:             npf__wd, \
+    long double:        npf__wld, \
+    int:                npf__id_i, \
+    unsigned:           npf__id_u, \
+    long:               npf__id_l, \
+    unsigned long:      npf__id_ul, \
+    long long:          npf__id_ll, \
+    unsigned long long: npf__id_ull, \
+    char:               npf__id_c, \
+    signed char:        npf__id_sc, \
+    unsigned char:      npf__id_uc, \
+    short:              npf__id_s, \
+    unsigned short:     npf__id_us, \
+    char *:             npf__id_cp, \
+    char const *:       npf__id_ccp, \
+    void *:             npf__id_vp, \
+    void const *:       npf__id_cvp, \
+    int *:              npf__id_ip, \
+    short *:            npf__id_sp, \
+    long *:             npf__id_lp, \
+    long long *:        npf__id_llp, \
+    signed char *:      npf__id_scp)(x)
 #else
   #error Single-precision float wrapping requires C11, GCC/Clang, or C++.
 #endif
