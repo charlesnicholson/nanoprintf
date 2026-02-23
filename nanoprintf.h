@@ -172,6 +172,9 @@ typedef struct { float val; } npf_float_t;
 #endif
 
 #if NANOPRINTF_FLOAT_SINGLE_PRECISION == 1
+  #if defined(_MSVC_TRADITIONAL) && _MSVC_TRADITIONAL
+    #error Single-precision float mode requires /Zc:preprocessor on MSVC.
+  #endif
   #ifdef __cplusplus
     #if __cplusplus < 201103L && !defined(_MSC_VER)
       #error Single-precision float wrapping requires C++11 or later.

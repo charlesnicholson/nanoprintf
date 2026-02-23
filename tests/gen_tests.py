@@ -254,6 +254,7 @@ def write_compile_commands(
         "/Os",
         "/W4",
         "/WX",
+        "/Zc:preprocessor",
         "/wd4474",
         "/wd4476",
         "/wd4477",
