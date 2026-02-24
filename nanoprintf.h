@@ -93,14 +93,6 @@ NPF_VISIBILITY int npf_vpprintf(npf_putc pc,
 #include <limits.h>
 #include <stdint.h>
 
-// The conversion buffer must fit at least UINT64_MAX in octal format with the leading '0'.
-#ifndef NANOPRINTF_CONVERSION_BUFFER_SIZE
-  #define NANOPRINTF_CONVERSION_BUFFER_SIZE    23
-#endif
-#if NANOPRINTF_CONVERSION_BUFFER_SIZE < 23
-  #error The size of the conversion buffer must be at least 23 bytes.
-#endif
-
 // Pick reasonable defaults if nothing's been configured.
 #if !defined(NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS) && \
     !defined(NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS) && \
@@ -176,6 +168,19 @@ NPF_VISIBILITY int npf_vpprintf(npf_putc pc,
       #endif
     #endif
   #endif
+#endif
+
+// The conversion buffer must fit at least UINT64_MAX in octal format with the leading '0'.
+// When floats are enabled, a larger buffer is needed for values like FLT_MAX / DBL_MAX.
+#ifndef NANOPRINTF_CONVERSION_BUFFER_SIZE
+  #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
+    #define NANOPRINTF_CONVERSION_BUFFER_SIZE  64
+  #else
+    #define NANOPRINTF_CONVERSION_BUFFER_SIZE  23
+  #endif
+#endif
+#if NANOPRINTF_CONVERSION_BUFFER_SIZE < 23
+  #error The size of the conversion buffer must be at least 23 bytes.
 #endif
 
 // intmax_t / uintmax_t require stdint from c99 / c++11
@@ -1325,9 +1330,9 @@ int npf_snprintf_(char * NPF_RESTRICT buffer,
 #define NPF__NARG(...)  NPF__NARG_(__VA_ARGS__, NPF__RSEQ())
 #define NPF__NARG_(...) NPF__ARG_N(__VA_ARGS__)
 #define NPF__ARG_N( \
-   _1, _2, _3, _4, _5, _6, _7, _8, _9,_10, _11,_12,_13,_14,_15,_16,_17,_18,_19,_20, \
-  _21,_22,_23,_24,_25,_26,_27,_28,_29,_30, _31,_32,_33,_34,_35,_36,_37,_38,_39,_40, \
-  _41,_42,_43,_44,_45,_46,_47,_48,_49,_50, _51,_52,_53,_54,_55,_56,_57,_58,_59,_60, \
+   _1, _2, _3, _4, _5, _6, _7, _8, _9,_10,_11,_12,_13,_14,_15,_16,_17,_18,_19,_20, \
+  _21,_22,_23,_24,_25,_26,_27,_28,_29,_30,_31,_32,_33,_34,_35,_36,_37,_38,_39,_40, \
+  _41,_42,_43,_44,_45,_46,_47,_48,_49,_50,_51,_52,_53,_54,_55,_56,_57,_58,_59,_60, \
   _61,_62,_63,_64,N,...) N
 #define NPF__RSEQ() \
   64,63,62,61,60,59,58,57,56,55,54,53,52,51,50,49,48,47,46,45,44,43,42,41,40,39,38, \
