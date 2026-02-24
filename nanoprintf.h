@@ -9,6 +9,8 @@
 #include <stdarg.h>
 #include <stddef.h>
 
+typedef void (*npf_putc)(int c, void *ctx);
+
 // Define this to fully sandbox nanoprintf inside of a translation unit.
 #ifdef NANOPRINTF_VISIBILITY_STATIC
   #define NPF_VISIBILITY static
@@ -32,8 +34,6 @@ typedef struct { float val; } npf_float_t;
 #define NPF_MAP_ARGS(...) __VA_ARGS__
 #endif
 
-// Public API
-
 #ifdef __cplusplus
 #define NPF_RESTRICT
 extern "C" {
@@ -45,12 +45,22 @@ extern "C" {
 #endif
 #endif
 
+NPF_VISIBILITY int npf_snprintf_(char * NPF_RESTRICT buffer,
+                                 size_t bufsz,
+                                 const char * NPF_RESTRICT format, ...)
+                                 NPF_PRINTF_SP_ATTR;
+
+NPF_VISIBILITY int npf_pprintf_(npf_putc pc,
+                                void * NPF_RESTRICT pc_ctx,
+                                char const * NPF_RESTRICT format, ...)
+                                NPF_PRINTF_SP_ATTR;
+
+// Public API
+
 // The npf_ functions all return the number of bytes required to express the
 // fully-formatted string, not including the null terminator character.
 // The npf_ functions do not return negative values, since the lack of 'l' length
 // modifier support makes encoding errors impossible.
-
-typedef void (*npf_putc)(int c, void *ctx);
 
 #define npf_snprintf(buf, sz, ...) npf_snprintf_((buf), (sz), NPF_MAP_ARGS(__VA_ARGS__))
 #define npf_pprintf(pc, ctx, ...) npf_pprintf_((pc), (ctx), NPF_MAP_ARGS(__VA_ARGS__))
@@ -64,16 +74,6 @@ NPF_VISIBILITY int npf_vpprintf(npf_putc pc,
                                 void * NPF_RESTRICT pc_ctx,
                                 char const * NPF_RESTRICT format,
                                 va_list vlist) NPF_PRINTF_ATTR(3, 0);
-
-NPF_VISIBILITY int npf_snprintf_(char * NPF_RESTRICT buffer,
-                                      size_t bufsz,
-                                      const char * NPF_RESTRICT format, ...)
-                                      NPF_PRINTF_SP_ATTR;
-
-NPF_VISIBILITY int npf_pprintf_(npf_putc pc,
-                                    void * NPF_RESTRICT pc_ctx,
-                                    char const * NPF_RESTRICT format, ...)
-                                    NPF_PRINTF_SP_ATTR;
 
 #ifdef __cplusplus
 }
