@@ -177,12 +177,54 @@ When `NANOPRINTF_FLOAT_SINGLE_PRECISION` is set to `1`, nanoprintf uses `float` 
 
 C's variadic calling convention promotes `float` arguments to `double` when they cross a function boundary. To prevent this, single-precision mode wraps `float` and `double` arguments in a small struct (`npf_float_t`) at the call site, before they reach `va_start`. This wrapping is automatic: `npf_snprintf` and `npf_pprintf` are macros that apply `NPF_MAP_ARGS` to all arguments, which wraps any `float` or `double` values while passing all other types through unchanged.
 
-For direct calls, this is transparent:
+#### Mandatory wrapper header
+
+**When using single-precision mode, you must create your own wrapper header that defines the configuration macros before including `nanoprintf.h`.** All source files in your project must include this wrapper header instead of `nanoprintf.h` directly. This is required because the `NPF_MAP_ARGS` macro and `npf_float_t` type are only defined when the configuration flags are visible, and they must be visible at every call site.
+
+If any source file includes `nanoprintf.h` without the configuration flags, `NPF_MAP_ARGS` silently falls back to a pass-through that does not wrap floats. The float arguments will be promoted to `double` by the compiler, and `va_arg` will read the wrong type, producing garbage output with no compiler warning.
+
+The pattern is:
+
 ```c
-npf_snprintf(buf, sizeof(buf), "%d %.2f", 42, 3.14f);  // just works
+// npf_config.h — your project's wrapper header. Every source file includes this.
+#ifndef NPF_CONFIG_H
+#define NPF_CONFIG_H
+
+#define NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS 1
+#define NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS 1
+#define NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS 1
+#define NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS 0
+#define NANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS 0
+#define NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS 0
+#define NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS 0
+#define NANOPRINTF_USE_ALT_FORM_FLAG 1
+#define NANOPRINTF_FLOAT_SINGLE_PRECISION 1
+
+#include "nanoprintf.h"
+#endif
 ```
 
-**Writing variadic wrappers:** If you write your own variadic wrapper around nanoprintf, you must use `NPF_MAP_ARGS` in a macro at the outermost call site so that float arguments are wrapped before they cross the variadic boundary. The `npf_vsnprintf` and `npf_vpprintf` functions cannot undo the `float`-to-`double` promotion that happens at `va_start`, so wrapping must happen before the arguments enter any variadic function. The pattern is:
+```c
+// npf_config.c — one source file compiles the implementation.
+#define NANOPRINTF_IMPLEMENTATION
+#include "npf_config.h"
+```
+
+```c
+// any_other_file.c — all other files just include the wrapper header.
+#include "npf_config.h"
+
+void example(void) {
+    char buf[64];
+    npf_snprintf(buf, sizeof(buf), "%d %.2f", 42, 3.14f);  // just works
+}
+```
+
+This wrapper-header pattern is the same approach used by libraries like FreeRTOS and lwIP. It ensures the configuration is consistent across your entire build without requiring compiler `-D` flags on every translation unit.
+
+#### Writing variadic wrappers
+
+If you write your own variadic wrapper around nanoprintf, you must use `NPF_MAP_ARGS` in a macro at the outermost call site so that float arguments are wrapped before they cross the variadic boundary. The `npf_vsnprintf` and `npf_vpprintf` functions cannot undo the `float`-to-`double` promotion that happens at `va_start`, so wrapping must happen before the arguments enter any variadic function. The pattern is:
 ```c
 // your_printf.h — the macro wraps args, then calls the real variadic function.
 // fmt is captured inside __VA_ARGS__ so no compiler-specific extensions are needed.
