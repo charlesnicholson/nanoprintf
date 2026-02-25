@@ -1262,9 +1262,11 @@ int npf_snprintf_(char * NPF_RESTRICT buffer,
 // function names (always valid), sidestepping _Generic's type-check-all-branches
 // behavior that would reject (float)(string_ptr) in non-selected branches.
 #if defined(__cplusplus)
+  extern "C++" {
   static inline npf_float_t npf__wrap_impl(float f) { npf_float_t r; r.val = f; return r; }
   static inline npf_float_t npf__wrap_impl(double d) { npf_float_t r; r.val = (float)d; return r; }
   template<typename T> static inline T npf__wrap_impl(T v) { return v; }
+  }
   #define NPF__WRAP(x) npf__wrap_impl(x)
 #elif defined(__GNUC__) || defined(__clang__)
   #define NPF__IS_REAL(x) (__builtin_types_compatible_p(__typeof__(x), float) || \
