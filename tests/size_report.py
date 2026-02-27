@@ -80,9 +80,7 @@ def _build(platform: str, flags: list[str]) -> str:
     print(" ".join(nm_cmd), flush=True)
 
     with tempfile.TemporaryDirectory() as temp_dir:
-        subprocess.run(
-            cc_cmd, check=True, cwd=temp_dir, input=rb'#include "nanoprintf.h"'
-        )
+        subprocess.run(cc_cmd, check=True, cwd=temp_dir, input=rb'#include "nanoprintf.h"')
         return subprocess.run(
             nm_cmd, check=True, cwd=temp_dir, stdout=subprocess.PIPE
         ).stdout.decode()
@@ -167,6 +165,20 @@ _CONFIGS = [
             "-DNANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=0",
             "-DNANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=1",
             "-DNANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=1",
+            "-DNANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS=0",
+            "-DNANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0",
+            "-DNANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS=0",
+            "-DNANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=0",
+            "-DNANOPRINTF_USE_ALT_FORM_FLAG=1",
+        ],
+    },
+    {
+        "name": "Float (single-precision)",
+        "flags": [
+            "-DNANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=0",
+            "-DNANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=1",
+            "-DNANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=1",
+            "-DNANOPRINTF_FLOAT_SINGLE_PRECISION=1",
             "-DNANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS=0",
             "-DNANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0",
             "-DNANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS=0",

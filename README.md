@@ -89,7 +89,9 @@ nanoprintf has the following static configuration flags.
 * `NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS`: Set to `0` or `1`. Enables binary specifiers.
 * `NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS`: Set to `0` or `1`. Enables `%n` for write-back.
 * `NANOPRINTF_USE_ALT_FORM_FLAG`: Set to `0` or `1`. Enables the `#` modifier for alternate print forms.
+* `NANOPRINTF_FLOAT_SINGLE_PRECISION`: Set to `0` or `1`. Uses `float` instead of `double` for all float math. Requires `NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=1` and `NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=1`.
 * `NANOPRINTF_VISIBILITY_STATIC`: Optional define. Marks prototypes as `static` to sandbox nanoprintf.
+* `NANOPRINTF_CONFIG_FILE`: Optional define. When set (e.g. `-DNANOPRINTF_CONFIG_FILE="\"my_npf_config.h\""` or `-DNANOPRINTF_CONFIG_FILE="<my_npf_config.h>"`), nanoprintf will `#include` the specified file at the top of `nanoprintf.h`, before any configuration-dependent code. This provides a FreeRTOS-style mechanism to ensure every translation unit sees the same configuration without requiring a wrapper header.
 
 If no configuration flags are specified, nanoprintf will default to "reasonable" embedded values in an attempt to be helpful: floats are enabled, but writeback, binary, and large formatters are disabled. If any configuration flags are explicitly specified, nanoprintf requires that all flags are explicitly specified.
 
@@ -169,6 +171,83 @@ Floating-point conversion is performed by extracting the integer and fraction pa
 Because the float -> fixed code operates on the raw float value bits, no floating-point operations are performed. This allows nanoprintf to efficiently format floats on soft-float architectures like Cortex-M0, to function identically with or without optimizations like "fast math", and to minimize the code footprint.
 
 The `%e`/`%E`, `%a`/`%A`, and `%g`/`%G` specifiers are parsed but not formatted. If used, the output will be identical to if `%f`/`%F` was used. Pull requests welcome! :)
+
+### Single-Precision Float Mode
+
+When `NANOPRINTF_FLOAT_SINGLE_PRECISION` is set to `1`, nanoprintf uses `float` instead of `double` for all internal floating-point math. This is useful on MCUs with single-precision FPUs (e.g. Cortex-M4) where enabling double-precision float formatting would otherwise pull in expensive soft-float library routines.
+
+C's variadic calling convention promotes `float` arguments to `double` when they cross a function boundary. To prevent this, single-precision mode wraps `float` and `double` arguments in a small struct (`npf_float_t`) at the call site, before they reach `va_start`. This wrapping is automatic: `npf_snprintf` and `npf_pprintf` are macros that apply `NPF_MAP_ARGS` to all arguments, which wraps any `float` or `double` values while passing all other types through unchanged.
+
+#### Link-time ABI safety
+
+When single-precision mode is enabled, nanoprintf automatically remaps its function names (e.g. `npf_vsnprintf` becomes `npf_vsnprintf_sp`) via preprocessor macros. If the implementation is compiled with `NANOPRINTF_FLOAT_SINGLE_PRECISION=1` but a caller includes `nanoprintf.h` without that flag (or vice versa), the mismatched names will produce a linker error instead of silent undefined behavior. This safety net works automatically and requires no user action.
+
+#### Wrapper header (recommended)
+
+**When using single-precision mode, the recommended practice is to create your own wrapper header that defines the configuration macros before including `nanoprintf.h`**, or to use `NANOPRINTF_CONFIG_FILE` (see [Configuration](#configuration)). All source files in your project should include the wrapper header (or use the config file mechanism) instead of including `nanoprintf.h` directly with ad-hoc defines. This ensures the `NPF_MAP_ARGS` macro and `npf_float_t` type are visible at every call site.
+
+If any source file includes `nanoprintf.h` without the configuration flags, `NPF_MAP_ARGS` falls back to a pass-through that does not wrap floats. The float arguments will be promoted to `double` by the compiler, and `va_arg` will read the wrong type. The link-time ABI safety mechanism described above will catch this as a linker error.
+
+The pattern is:
+
+```c
+// npf_config.h — your project's wrapper header. Every source file includes this.
+#ifndef NPF_CONFIG_H
+#define NPF_CONFIG_H
+
+#define NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS 1
+#define NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS 1
+#define NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS 1
+#define NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS 0
+#define NANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS 0
+#define NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS 0
+#define NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS 0
+#define NANOPRINTF_USE_ALT_FORM_FLAG 1
+#define NANOPRINTF_FLOAT_SINGLE_PRECISION 1
+
+#include "nanoprintf.h"
+#endif
+```
+
+```c
+// npf_config.c — one source file compiles the implementation.
+#define NANOPRINTF_IMPLEMENTATION
+#include "npf_config.h"
+```
+
+```c
+// any_other_file.c — all other files just include the wrapper header.
+#include "npf_config.h"
+
+void example(void) {
+    char buf[64];
+    npf_snprintf(buf, sizeof(buf), "%d %.2f", 42, 3.14f);  // just works
+}
+```
+
+This wrapper-header pattern is the same approach used by libraries like FreeRTOS and lwIP. It ensures the configuration is consistent across your entire build without requiring compiler `-D` flags on every translation unit.
+
+#### Writing variadic wrappers
+
+If you write your own variadic wrapper around nanoprintf, you must use `NPF_MAP_ARGS` in a macro at the outermost call site so that float arguments are wrapped before they cross the variadic boundary. The `npf_vsnprintf` and `npf_vpprintf` functions cannot undo the `float`-to-`double` promotion that happens at `va_start`, so wrapping must happen before the arguments enter any variadic function. The pattern is:
+```c
+// your_printf.h — the macro wraps args, then calls the real variadic function.
+// fmt is captured inside __VA_ARGS__ so no compiler-specific extensions are needed.
+#define my_printf(buf, sz, ...) \
+  my_printf_((buf), (sz), NPF_MAP_ARGS(__VA_ARGS__))
+int my_printf_(char *buf, size_t sz, const char *fmt, ...);
+
+// your_printf.c — the real function receives pre-wrapped args via va_list.
+int my_printf_(char *buf, size_t sz, const char *fmt, ...) {
+    va_list val;
+    va_start(val, fmt);
+    int rv = npf_vsnprintf(buf, sz, fmt, val);
+    va_end(val);
+    return rv;
+}
+```
+
+See the [wrap_npf_float](https://github.com/charlesnicholson/nanoprintf/blob/master/examples/wrap_npf_float) example for a complete working project.
 
 ## Limitations
 

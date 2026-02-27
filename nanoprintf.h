@@ -6,8 +6,14 @@
 #ifndef NPF_H_INCLUDED
 #define NPF_H_INCLUDED
 
+#ifdef NANOPRINTF_CONFIG_FILE
+#include NANOPRINTF_CONFIG_FILE
+#endif
+
 #include <stdarg.h>
 #include <stddef.h>
+
+typedef void (*npf_putc)(int c, void *ctx);
 
 // Define this to fully sandbox nanoprintf inside of a translation unit.
 #ifdef NANOPRINTF_VISIBILITY_STATIC
@@ -23,7 +29,18 @@
   #define NPF_PRINTF_ATTR(FORMAT_INDEX, VARGS_INDEX)
 #endif
 
-// Public API
+#if defined(NANOPRINTF_FLOAT_SINGLE_PRECISION) && NANOPRINTF_FLOAT_SINGLE_PRECISION == 1
+#define NPF_PRINTF_SP_ATTR NPF_PRINTF_ATTR(3, 0)
+#define NPF_MAP_ARGS(...) NPF__MAP(NPF__WRAP, __VA_ARGS__)
+typedef struct { float val; } npf_float_t;
+#define npf_snprintf_  npf_snprintf_sp_
+#define npf_pprintf_   npf_pprintf_sp_
+#define npf_vsnprintf  npf_vsnprintf_sp
+#define npf_vpprintf   npf_vpprintf_sp
+#else
+#define NPF_PRINTF_SP_ATTR NPF_PRINTF_ATTR(3, 4)
+#define NPF_MAP_ARGS(...) __VA_ARGS__
+#endif
 
 #ifdef __cplusplus
 #define NPF_RESTRICT
@@ -36,26 +53,30 @@ extern "C" {
 #endif
 #endif
 
+NPF_VISIBILITY int npf_snprintf_(char * NPF_RESTRICT buffer,
+                                 size_t bufsz,
+                                 const char * NPF_RESTRICT format, ...)
+                                 NPF_PRINTF_SP_ATTR;
+
+NPF_VISIBILITY int npf_pprintf_(npf_putc pc,
+                                void * NPF_RESTRICT pc_ctx,
+                                char const * NPF_RESTRICT format, ...)
+                                NPF_PRINTF_SP_ATTR;
+
+// Public API
+
 // The npf_ functions all return the number of bytes required to express the
 // fully-formatted string, not including the null terminator character.
 // The npf_ functions do not return negative values, since the lack of 'l' length
 // modifier support makes encoding errors impossible.
 
-NPF_VISIBILITY int npf_snprintf(char * NPF_RESTRICT buffer,
-                                size_t bufsz,
-                                const char * NPF_RESTRICT format,
-                                ...) NPF_PRINTF_ATTR(3, 4);
+#define npf_snprintf(buf, sz, ...) npf_snprintf_((buf), (sz), NPF_MAP_ARGS(__VA_ARGS__))
+#define npf_pprintf(pc, ctx, ...) npf_pprintf_((pc), (ctx), NPF_MAP_ARGS(__VA_ARGS__))
 
 NPF_VISIBILITY int npf_vsnprintf(char * NPF_RESTRICT buffer,
                                  size_t bufsz,
                                  char const * NPF_RESTRICT format,
-                                 va_list vlist)   NPF_PRINTF_ATTR(3, 0);
-
-typedef void (*npf_putc)(int c, void *ctx);
-NPF_VISIBILITY int npf_pprintf(npf_putc pc,
-                               void * NPF_RESTRICT pc_ctx,
-                               char const * NPF_RESTRICT format,
-                               ...) NPF_PRINTF_ATTR(3, 4);
+                                 va_list vlist) NPF_PRINTF_ATTR(3, 0);
 
 NPF_VISIBILITY int npf_vpprintf(npf_putc pc,
                                 void * NPF_RESTRICT pc_ctx,
@@ -80,14 +101,6 @@ NPF_VISIBILITY int npf_vpprintf(npf_putc pc,
 #include <limits.h>
 #include <stdint.h>
 
-// The conversion buffer must fit at least UINT64_MAX in octal format with the leading '0'.
-#ifndef NANOPRINTF_CONVERSION_BUFFER_SIZE
-  #define NANOPRINTF_CONVERSION_BUFFER_SIZE    23
-#endif
-#if NANOPRINTF_CONVERSION_BUFFER_SIZE < 23
-  #error The size of the conversion buffer must be at least 23 bytes.
-#endif
-
 // Pick reasonable defaults if nothing's been configured.
 #if !defined(NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS) && \
     !defined(NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS) && \
@@ -96,7 +109,8 @@ NPF_VISIBILITY int npf_vpprintf(npf_putc pc,
     !defined(NANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS) && \
     !defined(NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS) && \
     !defined(NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS) && \
-    !defined(NANOPRINTF_USE_ALT_FORM_FLAG)
+    !defined(NANOPRINTF_USE_ALT_FORM_FLAG) && \
+    !defined(NANOPRINTF_FLOAT_SINGLE_PRECISION)
   #define NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS 1
   #define NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS 1
   #define NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS 1
@@ -105,6 +119,12 @@ NPF_VISIBILITY int npf_vpprintf(npf_putc pc,
   #define NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS 0
   #define NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS 0
   #define NANOPRINTF_USE_ALT_FORM_FLAG 1
+  #define NANOPRINTF_FLOAT_SINGLE_PRECISION 0
+#endif
+
+// Single-precision mode defaults to off unless explicitly enabled.
+#ifndef NANOPRINTF_FLOAT_SINGLE_PRECISION
+  #define NANOPRINTF_FLOAT_SINGLE_PRECISION 0
 #endif
 
 // If anything's been configured, everything must be configured.
@@ -134,6 +154,41 @@ NPF_VISIBILITY int npf_vpprintf(npf_putc pc,
 #if (NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1) && \
     (NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 0)
   #error Precision format specifiers must be enabled if float support is enabled.
+#endif
+
+#if (NANOPRINTF_FLOAT_SINGLE_PRECISION == 1) && \
+    (NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 0)
+  #error Single precision requires float format specifiers to be enabled.
+#endif
+
+#if NANOPRINTF_FLOAT_SINGLE_PRECISION == 1
+  #if defined(_MSVC_TRADITIONAL) && _MSVC_TRADITIONAL
+    #error Single-precision float mode requires /Zc:preprocessor on MSVC.
+  #endif
+  #ifdef __cplusplus
+    #if __cplusplus < 201103L && !defined(_MSC_VER)
+      #error Single-precision float wrapping requires C++11 or later.
+    #endif
+  #else
+    #if !(defined(__GNUC__) || defined(__clang__))
+      #if !defined(__STDC_VERSION__) || (__STDC_VERSION__ < 201112L)
+        #error Single-precision float wrapping requires C11 or later (or GCC/Clang).
+      #endif
+    #endif
+  #endif
+#endif
+
+// The conversion buffer must fit at least UINT64_MAX in octal format with the leading '0'.
+// When floats are enabled, a larger buffer is needed for values like FLT_MAX / DBL_MAX.
+#ifndef NANOPRINTF_CONVERSION_BUFFER_SIZE
+  #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
+    #define NANOPRINTF_CONVERSION_BUFFER_SIZE  64
+  #else
+    #define NANOPRINTF_CONVERSION_BUFFER_SIZE  23
+  #endif
+#endif
+#if NANOPRINTF_CONVERSION_BUFFER_SIZE < 23
+  #error The size of the conversion buffer must be at least 23 bytes.
 #endif
 
 // intmax_t / uintmax_t require stdint from c99 / c++11
@@ -513,17 +568,27 @@ static NPF_NOINLINE int npf_utoa_rev(
 
 #include <float.h>
 
-#if (DBL_MANT_DIG <= 11) && (DBL_MAX_EXP <= 16)
-  typedef uint_fast16_t npf_double_bin_t;
+#if NANOPRINTF_FLOAT_SINGLE_PRECISION == 1
+  typedef float npf_real_t;
+  #define NPF_REAL_MANT_DIG FLT_MANT_DIG
+  #define NPF_REAL_MAX_EXP  FLT_MAX_EXP
+#else
+  typedef double npf_real_t;
+  #define NPF_REAL_MANT_DIG DBL_MANT_DIG
+  #define NPF_REAL_MAX_EXP  DBL_MAX_EXP
+#endif
+
+#if (NPF_REAL_MANT_DIG <= 11) && (NPF_REAL_MAX_EXP <= 16)
+  typedef uint_fast16_t npf_real_bin_t;
   typedef int_fast8_t npf_ftoa_exp_t;
-#elif (DBL_MANT_DIG <= 24) && (DBL_MAX_EXP <= 128)
-  typedef uint_fast32_t npf_double_bin_t;
-  typedef int_fast8_t npf_ftoa_exp_t;
-#elif (DBL_MANT_DIG <= 53) && (DBL_MAX_EXP <= 1024)
-  typedef uint_fast64_t npf_double_bin_t;
+#elif (NPF_REAL_MANT_DIG <= 24) && (NPF_REAL_MAX_EXP <= 128)
+  typedef uint_fast32_t npf_real_bin_t;
+  typedef int_fast16_t npf_ftoa_exp_t;
+#elif (NPF_REAL_MANT_DIG <= 53) && (NPF_REAL_MAX_EXP <= 1024)
+  typedef uint_fast64_t npf_real_bin_t;
   typedef int_fast16_t npf_ftoa_exp_t;
 #else
-  #error Unsupported width of the double type.
+  #error Unsupported width of the real type.
 #endif
 
 // The floating point conversion code works with an unsigned integer type of any size.
@@ -539,14 +604,14 @@ typedef NANOPRINTF_CONVERSION_FLOAT_TYPE npf_ftoa_man_t;
 #endif
 
 enum {
-  NPF_DOUBLE_EXP_MASK = DBL_MAX_EXP * 2 - 1,
-  NPF_DOUBLE_EXP_BIAS = DBL_MAX_EXP - 1,
-  NPF_DOUBLE_MAN_BITS = DBL_MANT_DIG - 1,
-  NPF_DOUBLE_BIN_BITS = sizeof(npf_double_bin_t) * CHAR_BIT,
-  NPF_DOUBLE_SIGN_POS = sizeof(double) * CHAR_BIT - 1,
+  NPF_REAL_EXP_MASK = NPF_REAL_MAX_EXP * 2 - 1,
+  NPF_REAL_EXP_BIAS = NPF_REAL_MAX_EXP - 1,
+  NPF_REAL_MAN_BITS = NPF_REAL_MANT_DIG - 1,
+  NPF_REAL_BIN_BITS = sizeof(npf_real_bin_t) * CHAR_BIT,
+  NPF_REAL_SIGN_POS = sizeof(npf_real_t) * CHAR_BIT - 1,
   NPF_FTOA_MAN_BITS   = sizeof(npf_ftoa_man_t) * CHAR_BIT,
   NPF_FTOA_SHIFT_BITS =
-    ((NPF_FTOA_MAN_BITS < DBL_MANT_DIG) ? NPF_FTOA_MAN_BITS : DBL_MANT_DIG) - 1
+    ((NPF_FTOA_MAN_BITS < NPF_REAL_MANT_DIG) ? NPF_FTOA_MAN_BITS : NPF_REAL_MANT_DIG) - 1
 };
 
 /* Generally, floating-point conversion implementations use
@@ -558,35 +623,35 @@ enum {
    extended further by adding dynamic scaling and configurable integer width by
    Oskars Rubenis (https://github.com/Okarss). */
 
-static NPF_FORCE_INLINE npf_double_bin_t npf_double_to_int_rep(double f) {
+static NPF_FORCE_INLINE npf_real_bin_t npf_real_to_int_rep(npf_real_t f) {
   // Union-cast is UB pre-C11 and in all C++; the compiler optimizes the code below.
-  npf_double_bin_t bin;
+  npf_real_bin_t bin = 0;
   char const *src = (char const *)&f;
   char *dst = (char *)&bin;
   for (uint_fast8_t i = 0; i < sizeof(f); ++i) { dst[i] = src[i]; }
   return bin;
 }
 
-static int npf_ftoa_rev(char *buf, npf_format_spec_t const *spec, double f) {
+static int npf_ftoa_rev(char *buf, npf_format_spec_t const *spec, npf_real_t f) {
   char const *ret = NULL;
-  npf_double_bin_t bin = npf_double_to_int_rep(f);
+  npf_real_bin_t bin = npf_real_to_int_rep(f);
 
   // Unsigned -> signed int casting is IB and can raise a signal but generally doesn't.
   npf_ftoa_exp_t exp =
-    (npf_ftoa_exp_t)((npf_ftoa_exp_t)(bin >> NPF_DOUBLE_MAN_BITS) & NPF_DOUBLE_EXP_MASK);
+    (npf_ftoa_exp_t)((npf_ftoa_exp_t)(bin >> NPF_REAL_MAN_BITS) & NPF_REAL_EXP_MASK);
 
-  bin &= ((npf_double_bin_t)0x1 << NPF_DOUBLE_MAN_BITS) - 1;
-  if (exp == (npf_ftoa_exp_t)NPF_DOUBLE_EXP_MASK) { // special value
+  bin &= ((npf_real_bin_t)0x1 << NPF_REAL_MAN_BITS) - 1;
+  if (exp == (npf_ftoa_exp_t)NPF_REAL_EXP_MASK) { // special value
     ret = (bin) ? "NAN" : "FNI";
     goto exit;
   }
   if (spec->prec > (NANOPRINTF_CONVERSION_BUFFER_SIZE - 2)) { goto exit; }
   if (exp) { // normal number
-    bin |= (npf_double_bin_t)0x1 << NPF_DOUBLE_MAN_BITS;
+    bin |= (npf_real_bin_t)0x1 << NPF_REAL_MAN_BITS;
   } else { // subnormal number
     ++exp;
   }
-  exp = (npf_ftoa_exp_t)(exp - NPF_DOUBLE_EXP_BIAS);
+  exp = (npf_ftoa_exp_t)(exp - NPF_REAL_EXP_BIAS);
 
   uint_fast8_t carry; carry = 0;
   npf_ftoa_dec_t end, dec; dec = (npf_ftoa_dec_t)spec->prec;
@@ -605,14 +670,14 @@ static int npf_ftoa_rev(char *buf, npf_format_spec_t const *spec, double f) {
       int_fast8_t shift_i =
         (int_fast8_t)((exp > NPF_FTOA_SHIFT_BITS) ? (int)NPF_FTOA_SHIFT_BITS : exp);
       npf_ftoa_exp_t exp_i = (npf_ftoa_exp_t)(exp - shift_i);
-      shift_i = (int_fast8_t)(NPF_DOUBLE_MAN_BITS - shift_i);
+      shift_i = (int_fast8_t)(NPF_REAL_MAN_BITS - shift_i);
       man_i = (npf_ftoa_man_t)(bin >> shift_i);
 
       if (exp_i) {
         if (shift_i) {
           carry = (bin >> (shift_i - 1)) & 0x1;
         }
-        exp = NPF_DOUBLE_MAN_BITS; // invalidate the fraction part
+        exp = NPF_REAL_MAN_BITS; // invalidate the fraction part
       }
 
       // Scale the exponent from base-2 to base-10.
@@ -643,24 +708,24 @@ static int npf_ftoa_rev(char *buf, npf_format_spec_t const *spec, double f) {
     npf_ftoa_man_t man_f;
     npf_ftoa_dec_t dec_f = (npf_ftoa_dec_t)spec->prec;
 
-    if (exp < NPF_DOUBLE_MAN_BITS) {
+    if (exp < NPF_REAL_MAN_BITS) {
       int_fast8_t shift_f = (int_fast8_t)((exp < 0) ? -1 : exp);
       npf_ftoa_exp_t exp_f = (npf_ftoa_exp_t)(exp - shift_f);
-      npf_double_bin_t bin_f =
-        bin << ((NPF_DOUBLE_BIN_BITS - NPF_DOUBLE_MAN_BITS) + shift_f);
+      npf_real_bin_t bin_f =
+        bin << ((NPF_REAL_BIN_BITS - NPF_REAL_MAN_BITS) + shift_f);
 
       // This if-else statement can be completely optimized at compile time.
-      if (NPF_DOUBLE_BIN_BITS > NPF_FTOA_MAN_BITS) {
-        man_f = (npf_ftoa_man_t)(bin_f >> ((unsigned)(NPF_DOUBLE_BIN_BITS -
+      if (NPF_REAL_BIN_BITS > NPF_FTOA_MAN_BITS) {
+        man_f = (npf_ftoa_man_t)(bin_f >> ((unsigned)(NPF_REAL_BIN_BITS -
                                                       NPF_FTOA_MAN_BITS) %
-                                           NPF_DOUBLE_BIN_BITS));
-        carry = (uint_fast8_t)((bin_f >> ((unsigned)(NPF_DOUBLE_BIN_BITS -
+                                           NPF_REAL_BIN_BITS));
+        carry = (uint_fast8_t)((bin_f >> ((unsigned)(NPF_REAL_BIN_BITS -
                                                      NPF_FTOA_MAN_BITS - 1) %
-                                          NPF_DOUBLE_BIN_BITS)) & 0x1);
+                                          NPF_REAL_BIN_BITS)) & 0x1);
       } else {
         man_f = (npf_ftoa_man_t)((npf_ftoa_man_t)bin_f
                                  << ((unsigned)(NPF_FTOA_MAN_BITS -
-                                                NPF_DOUBLE_BIN_BITS) % NPF_FTOA_MAN_BITS));
+                                                NPF_REAL_BIN_BITS) % NPF_FTOA_MAN_BITS));
         carry = 0;
       }
 
@@ -696,7 +761,7 @@ static int npf_ftoa_rev(char *buf, npf_format_spec_t const *spec, double f) {
       }
       man_f = (npf_ftoa_man_t)(man_f << 4);
     }
-    if (exp < NPF_DOUBLE_MAN_BITS) {
+    if (exp < NPF_REAL_MAN_BITS) {
       carry &= (uint_fast8_t)(man_f >> (NPF_FTOA_MAN_BITS - 1));
     }
   }
@@ -1024,16 +1089,20 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
       case NPF_FMT_SPEC_CONV_FLOAT_SCI:
       case NPF_FMT_SPEC_CONV_FLOAT_SHORTEST:
       case NPF_FMT_SPEC_CONV_FLOAT_HEX: {
-        double val;
+        npf_real_t val;
+#if NANOPRINTF_FLOAT_SINGLE_PRECISION == 1
+        val = va_arg(args, npf_float_t).val;
+#else
         if (fs.length_modifier == NPF_FMT_SPEC_LEN_MOD_LONG_DOUBLE) {
-          val = (double)va_arg(args, long double);
+          val = (npf_real_t)va_arg(args, long double);
         } else {
           val = va_arg(args, double);
         }
+#endif
 
-        sign_c = (npf_double_to_int_rep(val) >> NPF_DOUBLE_SIGN_POS) ? '-' : fs.prepend;
+        sign_c = (npf_real_to_int_rep(val) >> NPF_REAL_SIGN_POS) ? '-' : fs.prepend;
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
-        zero = (val == 0.);
+        zero = (val == 0);
 #endif
         cbuf_len = npf_ftoa_rev(cbuf, &fs, val);
         if (cbuf_len < 0) { // negative means text (not number), so ignore the '0' flag
@@ -1129,28 +1198,6 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
 #undef NPF_EXTRACT
 #undef NPF_WRITEBACK
 
-int npf_pprintf(npf_putc pc,
-                void * NPF_RESTRICT pc_ctx,
-                char const * NPF_RESTRICT format,
-                ...) {
-  va_list val;
-  va_start(val, format);
-  int const rv = npf_vpprintf(pc, pc_ctx, format, val);
-  va_end(val);
-  return rv;
-}
-
-int npf_snprintf(char * NPF_RESTRICT buffer,
-                 size_t bufsz,
-                 const char * NPF_RESTRICT format,
-                 ...) {
-  va_list val;
-  va_start(val, format);
-  int const rv = npf_vsnprintf(buffer, bufsz, format, val);
-  va_end(val);
-  return rv;
-}
-
 int npf_vsnprintf(char * NPF_RESTRICT buffer,
                   size_t bufsz,
                   char const * NPF_RESTRICT format,
@@ -1174,6 +1221,28 @@ int npf_vsnprintf(char * NPF_RESTRICT buffer,
   return n;
 }
 
+int npf_pprintf_(npf_putc pc,
+                     void * NPF_RESTRICT pc_ctx,
+                     char const * NPF_RESTRICT format,
+                     ...) {
+  va_list val;
+  va_start(val, format);
+  int const rv = npf_vpprintf(pc, pc_ctx, format, val);
+  va_end(val);
+  return rv;
+}
+
+int npf_snprintf_(char * NPF_RESTRICT buffer,
+                      size_t bufsz,
+                      const char * NPF_RESTRICT format,
+                      ...) {
+  va_list val;
+  va_start(val, format);
+  int const rv = npf_vsnprintf(buffer, bufsz, format, val);
+  va_end(val);
+  return rv;
+}
+
 #if NPF_HAVE_GCC_WARNING_PRAGMAS
   #pragma GCC diagnostic pop
 #endif
@@ -1184,6 +1253,176 @@ int npf_vsnprintf(char * NPF_RESTRICT buffer,
 
 #endif // NPF_IMPLEMENTATION_INCLUDED
 #endif // NANOPRINTF_IMPLEMENTATION
+
+// Single-precision argument wrapping and MAP macro expansion machinery.
+// The npf_snprintf / npf_pprintf / NPF_MAP_ARGS macros defined above reference
+// these, but that's fine: macro bodies are only expanded at the point of
+// invocation, not at the point of definition.
+
+#ifndef NPF_MAP_INCLUDED
+#define NPF_MAP_INCLUDED
+
+#if defined(NANOPRINTF_FLOAT_SINGLE_PRECISION) && NANOPRINTF_FLOAT_SINGLE_PRECISION == 1
+
+// NPF__WRAP: wrap float/double args into npf_float_t, pass other types through.
+// C++ uses function overloading; C uses _Generic with function-pointer selection.
+// _Generic picks a function, then (x) calls it. Non-selected branches are bare
+// function names (always valid), sidestepping _Generic's type-check-all-branches
+// behavior that would reject (float)(string_ptr) in non-selected branches.
+#if defined(__cplusplus)
+  extern "C++" {
+  static inline npf_float_t npf__wrap_impl(float f) { npf_float_t r; r.val = f; return r; }
+  static inline npf_float_t npf__wrap_impl(double d) { npf_float_t r; r.val = (float)d; return r; }
+  template<typename T> static inline T npf__wrap_impl(T v) { return v; }
+  }
+  #define NPF__WRAP(x) npf__wrap_impl(x)
+#elif defined(__GNUC__) || defined(__clang__)
+  #define NPF__IS_REAL(x) (__builtin_types_compatible_p(__typeof__(x), float) || \
+                            __builtin_types_compatible_p(__typeof__(x), double))
+  #define NPF__WRAP(x) __builtin_choose_expr(NPF__IS_REAL(x), \
+    ({ npf_float_t _npf_r; \
+       _npf_r.val = (float)__builtin_choose_expr(NPF__IS_REAL(x), (x), 0); \
+       _npf_r; }), \
+    (x))
+#elif defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 201112L)
+  static inline npf_float_t npf__wf(float f) { npf_float_t r; r.val = f; return r; }
+  static inline npf_float_t npf__wd(double d) { npf_float_t r; r.val = (float)d; return r; }
+  static inline npf_float_t npf__wld(long double d) { npf_float_t r; r.val = (float)d; return r; }
+  static inline int npf__id_i(int v) { return v; }
+  static inline unsigned npf__id_u(unsigned v) { return v; }
+  static inline long npf__id_l(long v) { return v; }
+  static inline unsigned long npf__id_ul(unsigned long v) { return v; }
+  static inline long long npf__id_ll(long long v) { return v; }
+  static inline unsigned long long npf__id_ull(unsigned long long v) { return v; }
+  static inline char npf__id_c(char v) { return v; }
+  static inline signed char npf__id_sc(signed char v) { return v; }
+  static inline unsigned char npf__id_uc(unsigned char v) { return v; }
+  static inline short npf__id_s(short v) { return v; }
+  static inline unsigned short npf__id_us(unsigned short v) { return v; }
+  static inline char *npf__id_cp(char *v) { return v; }
+  static inline char const *npf__id_ccp(char const *v) { return v; }
+  static inline void *npf__id_vp(void *v) { return v; }
+  static inline void const *npf__id_cvp(void const *v) { return v; }
+  static inline int *npf__id_ip(int *v) { return v; }
+  static inline short *npf__id_sp(short *v) { return v; }
+  static inline long *npf__id_lp(long *v) { return v; }
+  static inline long long *npf__id_llp(long long *v) { return v; }
+  static inline signed char *npf__id_scp(signed char *v) { return v; }
+  #define NPF__WRAP(x) _Generic((x), \
+    float:              npf__wf, \
+    double:             npf__wd, \
+    long double:        npf__wld, \
+    int:                npf__id_i, \
+    unsigned:           npf__id_u, \
+    long:               npf__id_l, \
+    unsigned long:      npf__id_ul, \
+    long long:          npf__id_ll, \
+    unsigned long long: npf__id_ull, \
+    char:               npf__id_c, \
+    signed char:        npf__id_sc, \
+    unsigned char:      npf__id_uc, \
+    short:              npf__id_s, \
+    unsigned short:     npf__id_us, \
+    char *:             npf__id_cp, \
+    char const *:       npf__id_ccp, \
+    void *:             npf__id_vp, \
+    void const *:       npf__id_cvp, \
+    int *:              npf__id_ip, \
+    short *:            npf__id_sp, \
+    long *:             npf__id_lp, \
+    long long *:        npf__id_llp, \
+    signed char *:      npf__id_scp)(x)
+#else
+  #error Single-precision float wrapping requires C11, GCC/Clang, or C++.
+#endif
+
+// Argument counting (up to 64 variadic args)
+#define NPF__NARG(...)  NPF__NARG_(__VA_ARGS__, NPF__RSEQ())
+#define NPF__NARG_(...) NPF__ARG_N(__VA_ARGS__)
+#define NPF__ARG_N( \
+   _1, _2, _3, _4, _5, _6, _7, _8, _9,_10,_11,_12,_13,_14,_15,_16,_17,_18,_19,_20, \
+  _21,_22,_23,_24,_25,_26,_27,_28,_29,_30,_31,_32,_33,_34,_35,_36,_37,_38,_39,_40, \
+  _41,_42,_43,_44,_45,_46,_47,_48,_49,_50,_51,_52,_53,_54,_55,_56,_57,_58,_59,_60, \
+  _61,_62,_63,_64,N,...) N
+#define NPF__RSEQ() \
+  64,63,62,61,60,59,58,57,56,55,54,53,52,51,50,49,48,47,46,45,44,43,42,41,40,39,38, \
+  37,36,35,34,33,32,31,30,29,28,27,26,25,24,23,22,21,20,19,18,17,16,15,14,13,12,11, \
+  10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0
+
+// Token pasting
+#define NPF__CAT(a,b)  NPF__CAT_(a,b)
+#define NPF__CAT_(a,b) a##b
+
+// MAP: apply f to each argument
+#define NPF__MAP(f,...) NPF__CAT(NPF__MAP_,NPF__NARG(__VA_ARGS__))(f,__VA_ARGS__)
+#define NPF__MAP_1(f,a)      f(a)
+#define NPF__MAP_2(f,a,...)  f(a), NPF__MAP_1(f,__VA_ARGS__)
+#define NPF__MAP_3(f,a,...)  f(a), NPF__MAP_2(f,__VA_ARGS__)
+#define NPF__MAP_4(f,a,...)  f(a), NPF__MAP_3(f,__VA_ARGS__)
+#define NPF__MAP_5(f,a,...)  f(a), NPF__MAP_4(f,__VA_ARGS__)
+#define NPF__MAP_6(f,a,...)  f(a), NPF__MAP_5(f,__VA_ARGS__)
+#define NPF__MAP_7(f,a,...)  f(a), NPF__MAP_6(f,__VA_ARGS__)
+#define NPF__MAP_8(f,a,...)  f(a), NPF__MAP_7(f,__VA_ARGS__)
+#define NPF__MAP_9(f,a,...)  f(a), NPF__MAP_8(f,__VA_ARGS__)
+#define NPF__MAP_10(f,a,...) f(a), NPF__MAP_9(f,__VA_ARGS__)
+#define NPF__MAP_11(f,a,...) f(a), NPF__MAP_10(f,__VA_ARGS__)
+#define NPF__MAP_12(f,a,...) f(a), NPF__MAP_11(f,__VA_ARGS__)
+#define NPF__MAP_13(f,a,...) f(a), NPF__MAP_12(f,__VA_ARGS__)
+#define NPF__MAP_14(f,a,...) f(a), NPF__MAP_13(f,__VA_ARGS__)
+#define NPF__MAP_15(f,a,...) f(a), NPF__MAP_14(f,__VA_ARGS__)
+#define NPF__MAP_16(f,a,...) f(a), NPF__MAP_15(f,__VA_ARGS__)
+#define NPF__MAP_17(f,a,...) f(a), NPF__MAP_16(f,__VA_ARGS__)
+#define NPF__MAP_18(f,a,...) f(a), NPF__MAP_17(f,__VA_ARGS__)
+#define NPF__MAP_19(f,a,...) f(a), NPF__MAP_18(f,__VA_ARGS__)
+#define NPF__MAP_20(f,a,...) f(a), NPF__MAP_19(f,__VA_ARGS__)
+#define NPF__MAP_21(f,a,...) f(a), NPF__MAP_20(f,__VA_ARGS__)
+#define NPF__MAP_22(f,a,...) f(a), NPF__MAP_21(f,__VA_ARGS__)
+#define NPF__MAP_23(f,a,...) f(a), NPF__MAP_22(f,__VA_ARGS__)
+#define NPF__MAP_24(f,a,...) f(a), NPF__MAP_23(f,__VA_ARGS__)
+#define NPF__MAP_25(f,a,...) f(a), NPF__MAP_24(f,__VA_ARGS__)
+#define NPF__MAP_26(f,a,...) f(a), NPF__MAP_25(f,__VA_ARGS__)
+#define NPF__MAP_27(f,a,...) f(a), NPF__MAP_26(f,__VA_ARGS__)
+#define NPF__MAP_28(f,a,...) f(a), NPF__MAP_27(f,__VA_ARGS__)
+#define NPF__MAP_29(f,a,...) f(a), NPF__MAP_28(f,__VA_ARGS__)
+#define NPF__MAP_30(f,a,...) f(a), NPF__MAP_29(f,__VA_ARGS__)
+#define NPF__MAP_31(f,a,...) f(a), NPF__MAP_30(f,__VA_ARGS__)
+#define NPF__MAP_32(f,a,...) f(a), NPF__MAP_31(f,__VA_ARGS__)
+#define NPF__MAP_33(f,a,...) f(a), NPF__MAP_32(f,__VA_ARGS__)
+#define NPF__MAP_34(f,a,...) f(a), NPF__MAP_33(f,__VA_ARGS__)
+#define NPF__MAP_35(f,a,...) f(a), NPF__MAP_34(f,__VA_ARGS__)
+#define NPF__MAP_36(f,a,...) f(a), NPF__MAP_35(f,__VA_ARGS__)
+#define NPF__MAP_37(f,a,...) f(a), NPF__MAP_36(f,__VA_ARGS__)
+#define NPF__MAP_38(f,a,...) f(a), NPF__MAP_37(f,__VA_ARGS__)
+#define NPF__MAP_39(f,a,...) f(a), NPF__MAP_38(f,__VA_ARGS__)
+#define NPF__MAP_40(f,a,...) f(a), NPF__MAP_39(f,__VA_ARGS__)
+#define NPF__MAP_41(f,a,...) f(a), NPF__MAP_40(f,__VA_ARGS__)
+#define NPF__MAP_42(f,a,...) f(a), NPF__MAP_41(f,__VA_ARGS__)
+#define NPF__MAP_43(f,a,...) f(a), NPF__MAP_42(f,__VA_ARGS__)
+#define NPF__MAP_44(f,a,...) f(a), NPF__MAP_43(f,__VA_ARGS__)
+#define NPF__MAP_45(f,a,...) f(a), NPF__MAP_44(f,__VA_ARGS__)
+#define NPF__MAP_46(f,a,...) f(a), NPF__MAP_45(f,__VA_ARGS__)
+#define NPF__MAP_47(f,a,...) f(a), NPF__MAP_46(f,__VA_ARGS__)
+#define NPF__MAP_48(f,a,...) f(a), NPF__MAP_47(f,__VA_ARGS__)
+#define NPF__MAP_49(f,a,...) f(a), NPF__MAP_48(f,__VA_ARGS__)
+#define NPF__MAP_50(f,a,...) f(a), NPF__MAP_49(f,__VA_ARGS__)
+#define NPF__MAP_51(f,a,...) f(a), NPF__MAP_50(f,__VA_ARGS__)
+#define NPF__MAP_52(f,a,...) f(a), NPF__MAP_51(f,__VA_ARGS__)
+#define NPF__MAP_53(f,a,...) f(a), NPF__MAP_52(f,__VA_ARGS__)
+#define NPF__MAP_54(f,a,...) f(a), NPF__MAP_53(f,__VA_ARGS__)
+#define NPF__MAP_55(f,a,...) f(a), NPF__MAP_54(f,__VA_ARGS__)
+#define NPF__MAP_56(f,a,...) f(a), NPF__MAP_55(f,__VA_ARGS__)
+#define NPF__MAP_57(f,a,...) f(a), NPF__MAP_56(f,__VA_ARGS__)
+#define NPF__MAP_58(f,a,...) f(a), NPF__MAP_57(f,__VA_ARGS__)
+#define NPF__MAP_59(f,a,...) f(a), NPF__MAP_58(f,__VA_ARGS__)
+#define NPF__MAP_60(f,a,...) f(a), NPF__MAP_59(f,__VA_ARGS__)
+#define NPF__MAP_61(f,a,...) f(a), NPF__MAP_60(f,__VA_ARGS__)
+#define NPF__MAP_62(f,a,...) f(a), NPF__MAP_61(f,__VA_ARGS__)
+#define NPF__MAP_63(f,a,...) f(a), NPF__MAP_62(f,__VA_ARGS__)
+#define NPF__MAP_64(f,a,...) f(a), NPF__MAP_63(f,__VA_ARGS__)
+
+#endif // NANOPRINTF_FLOAT_SINGLE_PRECISION
+
+#endif // NPF_MAP_INCLUDED
 
 /*
   nanoprintf is dual-licensed under both the "Unlicense" and the
