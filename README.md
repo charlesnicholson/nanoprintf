@@ -91,6 +91,7 @@ nanoprintf has the following static configuration flags.
 * `NANOPRINTF_USE_ALT_FORM_FLAG`: Set to `0` or `1`. Enables the `#` modifier for alternate print forms.
 * `NANOPRINTF_FLOAT_SINGLE_PRECISION`: Set to `0` or `1`. Uses `float` instead of `double` for all float math. Requires `NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=1` and `NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=1`.
 * `NANOPRINTF_VISIBILITY_STATIC`: Optional define. Marks prototypes as `static` to sandbox nanoprintf.
+* `NANOPRINTF_CONFIG_FILE`: Optional define. When set (e.g. `-DNANOPRINTF_CONFIG_FILE="\"my_npf_config.h\""` or `-DNANOPRINTF_CONFIG_FILE="<my_npf_config.h>"`), nanoprintf will `#include` the specified file at the top of `nanoprintf.h`, before any configuration-dependent code. This provides a FreeRTOS-style mechanism to ensure every translation unit sees the same configuration without requiring a wrapper header.
 
 If no configuration flags are specified, nanoprintf will default to "reasonable" embedded values in an attempt to be helpful: floats are enabled, but writeback, binary, and large formatters are disabled. If any configuration flags are explicitly specified, nanoprintf requires that all flags are explicitly specified.
 
@@ -177,11 +178,15 @@ When `NANOPRINTF_FLOAT_SINGLE_PRECISION` is set to `1`, nanoprintf uses `float` 
 
 C's variadic calling convention promotes `float` arguments to `double` when they cross a function boundary. To prevent this, single-precision mode wraps `float` and `double` arguments in a small struct (`npf_float_t`) at the call site, before they reach `va_start`. This wrapping is automatic: `npf_snprintf` and `npf_pprintf` are macros that apply `NPF_MAP_ARGS` to all arguments, which wraps any `float` or `double` values while passing all other types through unchanged.
 
-#### Mandatory wrapper header
+#### Link-time ABI safety
 
-**When using single-precision mode, you must create your own wrapper header that defines the configuration macros before including `nanoprintf.h`.** All source files in your project must include this wrapper header instead of `nanoprintf.h` directly. This is required because the `NPF_MAP_ARGS` macro and `npf_float_t` type are only defined when the configuration flags are visible, and they must be visible at every call site.
+When single-precision mode is enabled, nanoprintf automatically remaps its function names (e.g. `npf_vsnprintf` becomes `npf_vsnprintf_sp`) via preprocessor macros. If the implementation is compiled with `NANOPRINTF_FLOAT_SINGLE_PRECISION=1` but a caller includes `nanoprintf.h` without that flag (or vice versa), the mismatched names will produce a linker error instead of silent undefined behavior. This safety net works automatically and requires no user action.
 
-If any source file includes `nanoprintf.h` without the configuration flags, `NPF_MAP_ARGS` silently falls back to a pass-through that does not wrap floats. The float arguments will be promoted to `double` by the compiler, and `va_arg` will read the wrong type, producing garbage output with no compiler warning.
+#### Wrapper header (recommended)
+
+**When using single-precision mode, the recommended practice is to create your own wrapper header that defines the configuration macros before including `nanoprintf.h`**, or to use `NANOPRINTF_CONFIG_FILE` (see [Configuration](#configuration)). All source files in your project should include the wrapper header (or use the config file mechanism) instead of including `nanoprintf.h` directly with ad-hoc defines. This ensures the `NPF_MAP_ARGS` macro and `npf_float_t` type are visible at every call site.
+
+If any source file includes `nanoprintf.h` without the configuration flags, `NPF_MAP_ARGS` falls back to a pass-through that does not wrap floats. The float arguments will be promoted to `double` by the compiler, and `va_arg` will read the wrong type. The link-time ABI safety mechanism described above will catch this as a linker error.
 
 The pattern is:
 

@@ -6,6 +6,10 @@
 #ifndef NPF_H_INCLUDED
 #define NPF_H_INCLUDED
 
+#ifdef NANOPRINTF_CONFIG_FILE
+#include NANOPRINTF_CONFIG_FILE
+#endif
+
 #include <stdarg.h>
 #include <stddef.h>
 
@@ -29,6 +33,10 @@ typedef void (*npf_putc)(int c, void *ctx);
 #define NPF_PRINTF_SP_ATTR NPF_PRINTF_ATTR(3, 0)
 #define NPF_MAP_ARGS(...) NPF__MAP(NPF__WRAP, __VA_ARGS__)
 typedef struct { float val; } npf_float_t;
+#define npf_snprintf_  npf_snprintf_sp_
+#define npf_pprintf_   npf_pprintf_sp_
+#define npf_vsnprintf  npf_vsnprintf_sp
+#define npf_vpprintf   npf_vpprintf_sp
 #else
 #define NPF_PRINTF_SP_ATTR NPF_PRINTF_ATTR(3, 4)
 #define NPF_MAP_ARGS(...) __VA_ARGS__
