@@ -1,6 +1,5 @@
 /*
   Conformance tests for nanoprintf.
-  Merged from conformance.cc and mpaland-conformance/paland.cc.
 
   This file is compiled once per flag combination, both as C and as C++.
   The test function name is injected via -DNPF_TEST_FUNC=npf_test_combo_NNN.
