@@ -29,7 +29,7 @@ typedef void (*npf_putc)(int c, void *ctx);
   #define NPF_PRINTF_ATTR(FORMAT_INDEX, VARGS_INDEX)
 #endif
 
-#if defined(NANOPRINTF_FLOAT_SINGLE_PRECISION) && NANOPRINTF_FLOAT_SINGLE_PRECISION == 1
+#if defined(NANOPRINTF_USE_FLOAT_SINGLE_PRECISION) && NANOPRINTF_USE_FLOAT_SINGLE_PRECISION == 1
 #define NPF_PRINTF_SP_ATTR NPF_PRINTF_ATTR(3, 0)
 #define NPF_MAP_ARGS(...) NPF__MAP(NPF__WRAP, __VA_ARGS__)
 typedef struct { float val; } npf_float_t;
@@ -110,7 +110,7 @@ NPF_VISIBILITY int npf_vpprintf(npf_putc pc,
     !defined(NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS) && \
     !defined(NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS) && \
     !defined(NANOPRINTF_USE_ALT_FORM_FLAG) && \
-    !defined(NANOPRINTF_FLOAT_SINGLE_PRECISION)
+    !defined(NANOPRINTF_USE_FLOAT_SINGLE_PRECISION)
   #define NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS 1
   #define NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS 1
   #define NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS 1
@@ -119,12 +119,12 @@ NPF_VISIBILITY int npf_vpprintf(npf_putc pc,
   #define NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS 0
   #define NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS 0
   #define NANOPRINTF_USE_ALT_FORM_FLAG 1
-  #define NANOPRINTF_FLOAT_SINGLE_PRECISION 0
+  #define NANOPRINTF_USE_FLOAT_SINGLE_PRECISION 0
 #endif
 
 // Single-precision mode defaults to off unless explicitly enabled.
-#ifndef NANOPRINTF_FLOAT_SINGLE_PRECISION
-  #define NANOPRINTF_FLOAT_SINGLE_PRECISION 0
+#ifndef NANOPRINTF_USE_FLOAT_SINGLE_PRECISION
+  #define NANOPRINTF_USE_FLOAT_SINGLE_PRECISION 0
 #endif
 
 // If anything's been configured, everything must be configured.
@@ -156,12 +156,12 @@ NPF_VISIBILITY int npf_vpprintf(npf_putc pc,
   #error Precision format specifiers must be enabled if float support is enabled.
 #endif
 
-#if (NANOPRINTF_FLOAT_SINGLE_PRECISION == 1) && \
+#if (NANOPRINTF_USE_FLOAT_SINGLE_PRECISION == 1) && \
     (NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 0)
   #error Single precision requires float format specifiers to be enabled.
 #endif
 
-#if NANOPRINTF_FLOAT_SINGLE_PRECISION == 1
+#if NANOPRINTF_USE_FLOAT_SINGLE_PRECISION == 1
   #if defined(_MSVC_TRADITIONAL) && _MSVC_TRADITIONAL
     #error Single-precision float mode requires /Zc:preprocessor on MSVC.
   #endif
@@ -568,7 +568,7 @@ static NPF_NOINLINE int npf_utoa_rev(
 
 #include <float.h>
 
-#if NANOPRINTF_FLOAT_SINGLE_PRECISION == 1
+#if NANOPRINTF_USE_FLOAT_SINGLE_PRECISION == 1
   typedef float npf_real_t;
   #define NPF_REAL_MANT_DIG FLT_MANT_DIG
   #define NPF_REAL_MAX_EXP  FLT_MAX_EXP
@@ -1090,7 +1090,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
       case NPF_FMT_SPEC_CONV_FLOAT_SHORTEST:
       case NPF_FMT_SPEC_CONV_FLOAT_HEX: {
         npf_real_t val;
-#if NANOPRINTF_FLOAT_SINGLE_PRECISION == 1
+#if NANOPRINTF_USE_FLOAT_SINGLE_PRECISION == 1
         val = va_arg(args, npf_float_t).val;
 #else
         if (fs.length_modifier == NPF_FMT_SPEC_LEN_MOD_LONG_DOUBLE) {
@@ -1262,7 +1262,7 @@ int npf_snprintf_(char * NPF_RESTRICT buffer,
 #ifndef NPF_MAP_INCLUDED
 #define NPF_MAP_INCLUDED
 
-#if defined(NANOPRINTF_FLOAT_SINGLE_PRECISION) && NANOPRINTF_FLOAT_SINGLE_PRECISION == 1
+#if defined(NANOPRINTF_USE_FLOAT_SINGLE_PRECISION) && NANOPRINTF_USE_FLOAT_SINGLE_PRECISION == 1
 
 // NPF__WRAP: wrap float/double args into npf_float_t, pass other types through.
 // C++ uses function overloading; C uses _Generic with function-pointer selection.
@@ -1420,7 +1420,7 @@ int npf_snprintf_(char * NPF_RESTRICT buffer,
 #define NPF__MAP_63(f,a,...) f(a), NPF__MAP_62(f,__VA_ARGS__)
 #define NPF__MAP_64(f,a,...) f(a), NPF__MAP_63(f,__VA_ARGS__)
 
-#endif // NANOPRINTF_FLOAT_SINGLE_PRECISION
+#endif // NANOPRINTF_USE_FLOAT_SINGLE_PRECISION
 
 #endif // NPF_MAP_INCLUDED
 

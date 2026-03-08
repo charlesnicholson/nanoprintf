@@ -89,7 +89,7 @@ nanoprintf has the following static configuration flags.
 * `NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS`: Set to `0` or `1`. Enables binary specifiers.
 * `NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS`: Set to `0` or `1`. Enables `%n` for write-back.
 * `NANOPRINTF_USE_ALT_FORM_FLAG`: Set to `0` or `1`. Enables the `#` modifier for alternate print forms.
-* `NANOPRINTF_FLOAT_SINGLE_PRECISION`: Set to `0` or `1`. Uses `float` instead of `double` for all float math. Requires `NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=1` and `NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=1`.
+* `NANOPRINTF_USE_FLOAT_SINGLE_PRECISION`: Set to `0` or `1`. Uses `float` instead of `double` for all float math. Requires `NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=1` and `NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=1`.
 * `NANOPRINTF_VISIBILITY_STATIC`: Optional define. Marks prototypes as `static` to sandbox nanoprintf.
 * `NANOPRINTF_CONFIG_FILE`: Optional define. When set (e.g. `-DNANOPRINTF_CONFIG_FILE="\"my_npf_config.h\""` or `-DNANOPRINTF_CONFIG_FILE="<my_npf_config.h>"`), nanoprintf will `#include` the specified file at the top of `nanoprintf.h`, before any configuration-dependent code. This provides a FreeRTOS-style mechanism to ensure every translation unit sees the same configuration without requiring a wrapper header.
 
@@ -174,13 +174,13 @@ The `%e`/`%E`, `%a`/`%A`, and `%g`/`%G` specifiers are parsed but not formatted.
 
 ### Single-Precision Float Mode
 
-When `NANOPRINTF_FLOAT_SINGLE_PRECISION` is set to `1`, nanoprintf uses `float` instead of `double` for all internal floating-point math. This is useful on MCUs with single-precision FPUs (e.g. Cortex-M4) where enabling double-precision float formatting would otherwise pull in expensive soft-float library routines.
+When `NANOPRINTF_USE_FLOAT_SINGLE_PRECISION` is set to `1`, nanoprintf uses `float` instead of `double` for all internal floating-point math. This is useful on MCUs with single-precision FPUs (e.g. Cortex-M4) where enabling double-precision float formatting would otherwise pull in expensive soft-float library routines.
 
 C's variadic calling convention promotes `float` arguments to `double` when they cross a function boundary. To prevent this, single-precision mode wraps `float` and `double` arguments in a small struct (`npf_float_t`) at the call site, before they reach `va_start`. This wrapping is automatic: `npf_snprintf` and `npf_pprintf` are macros that apply `NPF_MAP_ARGS` to all arguments, which wraps any `float` or `double` values while passing all other types through unchanged.
 
 #### Link-time ABI safety
 
-When single-precision mode is enabled, nanoprintf automatically remaps its function names (e.g. `npf_vsnprintf` becomes `npf_vsnprintf_sp`) via preprocessor macros. If the implementation is compiled with `NANOPRINTF_FLOAT_SINGLE_PRECISION=1` but a caller includes `nanoprintf.h` without that flag (or vice versa), the mismatched names will produce a linker error instead of silent undefined behavior. This safety net works automatically and requires no user action.
+When single-precision mode is enabled, nanoprintf automatically remaps its function names (e.g. `npf_vsnprintf` becomes `npf_vsnprintf_sp`) via preprocessor macros. If the implementation is compiled with `NANOPRINTF_USE_FLOAT_SINGLE_PRECISION=1` but a caller includes `nanoprintf.h` without that flag (or vice versa), the mismatched names will produce a linker error instead of silent undefined behavior. This safety net works automatically and requires no user action.
 
 #### Wrapper header (recommended)
 
@@ -203,7 +203,7 @@ The pattern is:
 #define NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS 0
 #define NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS 0
 #define NANOPRINTF_USE_ALT_FORM_FLAG 1
-#define NANOPRINTF_FLOAT_SINGLE_PRECISION 1
+#define NANOPRINTF_USE_FLOAT_SINGLE_PRECISION 1
 
 #include "nanoprintf.h"
 #endif

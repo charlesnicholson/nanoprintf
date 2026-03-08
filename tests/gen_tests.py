@@ -32,7 +32,7 @@ FLAGS = [
     "NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS",
     "NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS",
     "NANOPRINTF_USE_ALT_FORM_FLAG",
-    "NANOPRINTF_FLOAT_SINGLE_PRECISION",
+    "NANOPRINTF_USE_FLOAT_SINGLE_PRECISION",
 ]
 
 
@@ -52,7 +52,7 @@ def valid_combos() -> list[dict[str, int]]:
         ):
             continue
         if (
-            combo["NANOPRINTF_FLOAT_SINGLE_PRECISION"] == 1
+            combo["NANOPRINTF_USE_FLOAT_SINGLE_PRECISION"] == 1
             and combo["NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS"] == 0
         ):
             continue
@@ -71,7 +71,7 @@ def combo_label(combo: dict[str, int], lang: str) -> str:
         "NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS": "bin",
         "NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS": "wb",
         "NANOPRINTF_USE_ALT_FORM_FLAG": "alt",
-        "NANOPRINTF_FLOAT_SINGLE_PRECISION": "sp",
+        "NANOPRINTF_USE_FLOAT_SINGLE_PRECISION": "sp",
     }
     parts = [f"{short[k]}={v}" for k, v in combo.items()]
     return f"[{lang}] " + " ".join(parts)
