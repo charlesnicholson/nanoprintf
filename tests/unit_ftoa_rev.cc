@@ -25,7 +25,7 @@ static void require_ftoa_rev(std::string const &expected, double dbl) {
   CHECK(n == (int)expected.size());
 }
 
-static void require_ftoa_rev_bin(char const *expected, npf_double_bin_t bin) {
+static void require_ftoa_rev_bin(char const *expected, npf_real_bin_t bin) {
   double dbl;
   memcpy(&dbl, &bin, sizeof(dbl));
   require_ftoa_rev(expected, dbl);

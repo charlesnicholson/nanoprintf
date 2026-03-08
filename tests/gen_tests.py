@@ -32,17 +32,28 @@ FLAGS = [
     "NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS",
     "NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS",
     "NANOPRINTF_USE_ALT_FORM_FLAG",
+    "NANOPRINTF_USE_FLOAT_SINGLE_PRECISION",
 ]
 
 
 def valid_combos() -> list[dict[str, int]]:
-    """Return every valid flag combination (skip float=1 when precision=0)."""
+    """Return every valid flag combination.
+
+    Constraints:
+      - float=1 requires precision=1
+      - single-precision=1 requires float=1 (and transitively precision=1)
+    """
     combos = []
     for bits in itertools.product((0, 1), repeat=len(FLAGS)):
         combo = dict(zip(FLAGS, bits, strict=True))
         if (
             combo["NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS"] == 1
             and combo["NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS"] == 0
+        ):
+            continue
+        if (
+            combo["NANOPRINTF_USE_FLOAT_SINGLE_PRECISION"] == 1
+            and combo["NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS"] == 0
         ):
             continue
         combos.append(combo)
@@ -60,6 +71,7 @@ def combo_label(combo: dict[str, int], lang: str) -> str:
         "NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS": "bin",
         "NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS": "wb",
         "NANOPRINTF_USE_ALT_FORM_FLAG": "alt",
+        "NANOPRINTF_USE_FLOAT_SINGLE_PRECISION": "sp",
     }
     parts = [f"{short[k]}={v}" for k, v in combo.items()]
     return f"[{lang}] " + " ".join(parts)
@@ -172,7 +184,6 @@ def write_makefile(
         f"{arch_flag} {san_flags} {extra_cflags}".rstrip()
     )
 
-    harness_rel = os.path.relpath(test_dir / "test_harness.h", out)
     nanoprintf_rel = os.path.relpath(repo_root / "nanoprintf.h", out)
 
     header = f"""\
@@ -183,9 +194,8 @@ CXXFLAGS = {cxx_cflags}
 LDFLAGS = {arch_flag} {san_flags} -lm
 CONFORMANCE_C = {conformance_rel}
 CONFORMANCE_CXX = conformance.cc
-HARNESS = {harness_rel}
 NANOPRINTF = {nanoprintf_rel}
-DEPS = $(CONFORMANCE_C) $(HARNESS) $(NANOPRINTF)
+DEPS = $(CONFORMANCE_C) $(NANOPRINTF)
 
 all: npf_conformance.timestamp
 
@@ -242,6 +252,7 @@ def write_compile_commands(
         "/Os",
         "/W4",
         "/WX",
+        "/Zc:preprocessor",
         "/wd4474",
         "/wd4476",
         "/wd4477",
@@ -250,7 +261,8 @@ def write_compile_commands(
         f"/I{include_rel}",
         f"/I{test_rel}",
     ]
-    cxx_extra = ["/TP", "/std:c++20", "/EHsc"]
+    c_extra = ["/std:c11"]
+    cxx_extra = ["/TP", "/std:c++20", "/EHsc", "/Zc:__cplusplus"]
 
     commands: list[list[str]] = []
 
@@ -264,7 +276,7 @@ def write_compile_commands(
         dflags = define_flags(combo, i, msvc=True).split()
         obj_name = f"combo_{i}.obj"
         obj_names.append(obj_name)
-        flags = common + (cxx_extra if is_cxx else [])
+        flags = common + (cxx_extra if is_cxx else c_extra)
         commands.append(
             ["cl.exe", *flags, *dflags, "/c", f"/Fo{obj_name}", conformance_rel]
         )

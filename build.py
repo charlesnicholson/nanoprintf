@@ -103,9 +103,7 @@ def _build_conformance(args: argparse.Namespace) -> bool:
         print(f"  Compiling {len(commands)} files with {workers} workers")
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as pool:
-        futures = {
-            pool.submit(_compile_one, cmd, gen_dir): cmd for cmd in commands
-        }
+        futures = {pool.submit(_compile_one, cmd, gen_dir): cmd for cmd in commands}
         for future in concurrent.futures.as_completed(futures):
             try:
                 future.result()
@@ -184,11 +182,7 @@ def _build_unit_tests(args: argparse.Namespace) -> bool:
                         "/DNANOPRINTF_USE_ALT_FORM_FLAG=1",
                         "/DDOCTEST_CONFIG_SUPER_FAST_ASSERTS",
                         f"/DNANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS={large_val}",
-                        *(
-                            ["/DNANOPRINTF_32_BIT_TESTS"]
-                            if args.arch == 32
-                            else []
-                        ),
+                        *(["/DNANOPRINTF_32_BIT_TESTS"] if args.arch == 32 else []),
                         "/c",
                         f"/Fo{obj}",
                         src,
