@@ -184,7 +184,6 @@ def write_makefile(
         f"{arch_flag} {san_flags} {extra_cflags}".rstrip()
     )
 
-    harness_rel = os.path.relpath(test_dir / "test_harness.h", out)
     nanoprintf_rel = os.path.relpath(repo_root / "nanoprintf.h", out)
 
     header = f"""\
@@ -195,9 +194,8 @@ CXXFLAGS = {cxx_cflags}
 LDFLAGS = {arch_flag} {san_flags} -lm
 CONFORMANCE_C = {conformance_rel}
 CONFORMANCE_CXX = conformance.cc
-HARNESS = {harness_rel}
 NANOPRINTF = {nanoprintf_rel}
-DEPS = $(CONFORMANCE_C) $(HARNESS) $(NANOPRINTF)
+DEPS = $(CONFORMANCE_C) $(NANOPRINTF)
 
 all: npf_conformance.timestamp
 
