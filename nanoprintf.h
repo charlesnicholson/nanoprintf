@@ -799,14 +799,14 @@ exit:
 
 #if NANOPRINTF_USE_FLOAT_HEX_FORMAT_SPECIFIER == 1
 
-// Hex float always operates on IEEE 754 binary64 (double), even in
-// single-precision mode, so we need double-specific types and constants.
+// Hex float always operates on IEEE 754 binary64 (double).
+// When not in single-precision mode, npf_real_* already handles double.
+#if NANOPRINTF_USE_FLOAT_SINGLE_PRECISION == 1
 typedef uint_fast64_t npf_double_bin_t;
 enum {
   NPF_DOUBLE_EXP_MASK = 2047,
   NPF_DOUBLE_EXP_BIAS = 1023,
   NPF_DOUBLE_MAN_BITS = 52,
-  NPF_DOUBLE_SIGN_POS = 63,
 };
 static NPF_FORCE_INLINE npf_double_bin_t npf_double_to_int_rep(double f) {
   npf_double_bin_t bin = 0;
@@ -815,6 +815,13 @@ static NPF_FORCE_INLINE npf_double_bin_t npf_double_to_int_rep(double f) {
   for (uint_fast8_t i = 0; i < sizeof(f); ++i) { dst[i] = src[i]; }
   return bin;
 }
+#else
+typedef npf_real_bin_t npf_double_bin_t;
+#define NPF_DOUBLE_EXP_MASK NPF_REAL_EXP_MASK
+#define NPF_DOUBLE_EXP_BIAS NPF_REAL_EXP_BIAS
+#define NPF_DOUBLE_MAN_BITS NPF_REAL_MAN_BITS
+#define npf_double_to_int_rep(f) npf_real_to_int_rep(f)
+#endif
 
 static NPF_NOINLINE int npf_atoa_rev(
     char *buf, npf_format_spec_t const *spec, double f) {
@@ -1194,25 +1201,19 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
         }
 #endif
 
-#if NANOPRINTF_USE_FLOAT_HEX_FORMAT_SPECIFIER == 1
-        { npf_double_bin_t const b = npf_double_to_int_rep((double)val);
-          sign_c = (b >> NPF_DOUBLE_SIGN_POS) ? '-' : fs.prepend;
+        { npf_real_bin_t const b = npf_real_to_int_rep(val);
+          sign_c = (b >> NPF_REAL_SIGN_POS) ? '-' : fs.prepend;
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
-          zero = !(b & ~((npf_double_bin_t)1 << NPF_DOUBLE_SIGN_POS));
+          zero = !(b & ~((npf_real_bin_t)1 << NPF_REAL_SIGN_POS));
 #endif
         }
+#if NANOPRINTF_USE_FLOAT_HEX_FORMAT_SPECIFIER == 1
         if ((fs.conv_spec == NPF_FMT_SPEC_CONV_FLOAT_HEX) &&
             ((cbuf_len = npf_atoa_rev(cbuf, &fs, (double)val)) > 0)) {
           need_0x = (char)('X' + fs.case_adjust);
         } else
+#endif
         { cbuf_len = npf_ftoa_rev(cbuf, &fs, val); }
-#else
-        sign_c = (npf_real_to_int_rep(val) >> NPF_REAL_SIGN_POS) ? '-' : fs.prepend;
-#if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
-        zero = (val == 0);
-#endif
-        cbuf_len = npf_ftoa_rev(cbuf, &fs, val);
-#endif
         if (cbuf_len < 0) { // negative means text (not number), so ignore the '0' flag
            cbuf_len = -cbuf_len;
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1

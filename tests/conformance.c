@@ -1444,7 +1444,29 @@ int NPF_TEST_FUNC(void) {
 
     /* multi-conversion in one format string */
     NPF_TEST("0x1p+0 0x1.8p+0", "%.0a %.1a", 1.0, 1.5);
-#endif /* NANOPRINTF_USE_FLOAT_HEX_FORMAT_SPECIFIER */
+#endif /* hex float tests (double-precision expected values) */
+
+    /* hex float in single-precision mode: float promoted to double for %a */
+#if NANOPRINTF_USE_FLOAT_HEX_FORMAT_SPECIFIER == 1 && \
+    NANOPRINTF_USE_FLOAT_SINGLE_PRECISION == 1
+    NPF_TEST("0x0p+0", "%.0a", 0.0f);
+    NPF_TEST("-0x0p+0", "%.0a", -0.0f);
+    NPF_TEST("0x1p+0", "%.0a", 1.0f);
+    NPF_TEST("0x1.8p+0", "%.1a", 1.5f);
+    NPF_TEST("-0x1.8p+0", "%.1a", -1.5f);
+    NPF_TEST("0x1.0p+1", "%.1a", 2.0f);
+    NPF_TEST("0x1.0p-1", "%.1a", 0.5f);
+    NPF_TEST("0x1.0p+10", "%.1a", 1024.0f);
+    NPF_TEST("inf", "%a", (double)(float)INFINITY);
+    NPF_TEST("-inf", "%a", -(double)(float)INFINITY);
+    /* float 0.1f = 0x1.99999a0000000p-4 when promoted to double */
+    NPF_TEST("0x1.99999a0000000p-4", "%a", 0.1f);
+    NPF_TEST("0x1.ap-4", "%.1a", 0.1f);
+#if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
+    NPF_TEST("    0x1p+0", "%10.0a", 1.0f);
+    NPF_TEST("0x001p+0", "%08.0a", 1.0f);
+#endif
+#endif /* hex float + single-precision */
 
 #if NANOPRINTF_USE_FLOAT_SINGLE_PRECISION == 1
     /* single-precision: wrapping with mixed arg types */
