@@ -1444,6 +1444,57 @@ int NPF_TEST_FUNC(void) {
 
     /* multi-conversion in one format string */
     NPF_TEST("0x1p+0 0x1.8p+0", "%.0a %.1a", 1.0, 1.5);
+    NPF_TEST("0x1p+0 42", "%.0a %d", 1.0, 42);
+
+    /* precision via * argument */
+    NPF_TEST("0x1p+0", "%.*a", 0, 1.0);
+    NPF_TEST("0x1.800p+0", "%.*a", 3, 1.5);
+    NPF_TEST("0x1.0000000000000p+0", "%.*a", 13, 1.0);
+
+    /* multi-digit exponents */
+    NPF_TEST("0x1p+100", "%.0a", 1267650600228229401496703205376.0);
+    NPF_TEST("0x1p-100", "%.0a", 7.888609052210118e-31);
+    NPF_TEST("0x1p-133", "%.0a", 1e-40);
+
+    /* rounding at precision 0 (round-half-up) */
+    NPF_TEST("0x1p+0", "%.0a", 1.25);      /* 0x1.4 -> round down */
+    NPF_TEST("0x2p+0", "%.0a", 1.5);       /* 0x1.8 -> round up (half-up) */
+    NPF_TEST("0x2p+0", "%.0a", 1.75);      /* 0x1.c -> round up */
+    NPF_TEST("0x2p-1", "%.0a", 0.75);      /* 0x1.8p-1 -> round up */
+    NPF_TEST("0x2p+0", "%.0a", 1.9375);    /* 0x1.f -> round up */
+
+    /* rounding carry through max mantissa (DBL_MAX) */
+    NPF_TEST("0x2p+1023", "%.0a", 1.7976931348623157e+308);
+    NPF_TEST("0x2.0p+1023", "%.1a", 1.7976931348623157e+308);
+    NPF_TEST("0x2.00p+1023", "%.2a", 1.7976931348623157e+308);
+
+    /* subnormal rounding: carry into integer digit */
+    NPF_TEST("0x1p-1022", "%.0a", 1.1125369292536007e-308); /* 0x0.8p-1022 -> 0x1 */
+    NPF_TEST("0x0.8p-1022", "%.1a", 1.1125369292536007e-308);
+
+    /* excess precision clamped to 13 (mantissa width) */
+    NPF_TEST("0x1.0000000000000p+0", "%.20a", 1.0);
+
+    /* return values for multi-digit exponents */
+    NPF_TEST_RET(8, "%.0a", 1267650600228229401496703205376.0); /* "0x1p+100" = 8 */
+    NPF_TEST_RET(9, "%.0a", 1.7976931348623157e+308);          /* "0x2p+1023" = 9 */
+
+#if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
+    /* width narrower than output (no effect) */
+    NPF_TEST("0x1p+0", "%1.0a", 1.0);
+    NPF_TEST("-0x1p+0", "%1.0a", -1.0);
+
+    /* zero with zero-pad + explicit precision 0 (known: pads with space, not '0') */
+    NPF_TEST("    0x0p+0", "%010.0a", 0.0);
+
+#if NANOPRINTF_USE_ALT_FORM_FLAG == 1
+    /* alt form + zero-pad + width */
+    NPF_TEST("0x000001.p+0", "%#012.0a", 1.0);
+    NPF_TEST("0x1.p+0     ", "%-#12.0a", 1.0);
+    NPF_TEST("-0x00001.p+0", "%#012.0a", -1.0);
+#endif
+#endif
+
 #endif /* hex float tests (double-precision expected values) */
 
     /* hex float in single-precision mode: float promoted to double for %a */
@@ -1462,9 +1513,46 @@ int NPF_TEST_FUNC(void) {
     /* float 0.1f = 0x1.99999a0000000p-4 when promoted to double */
     NPF_TEST("0x1.99999a0000000p-4", "%a", 0.1f);
     NPF_TEST("0x1.ap-4", "%.1a", 0.1f);
+    /* default precision (13 hex digits for double mantissa) */
+    NPF_TEST("0x1.0000000000000p+0", "%a", 1.0f);
+    NPF_TEST("0x0.0000000000000p+0", "%a", 0.0f);
+
+    /* FLT_MAX promoted to double */
+    NPF_TEST("0x1.fffffe0000000p+127", "%a", (float)3.4028235e+38f);
+    NPF_TEST("0x1.fffffep+127", "%.6a", (float)3.4028235e+38f);
+    NPF_TEST("0x2p+127", "%.0a", (float)3.4028235e+38f);
+
+    /* FLT_MIN */
+    NPF_TEST("0x1.0000000000000p-126", "%a", (float)1.175494351e-38f);
+    NPF_TEST("0x1p-126", "%.0a", (float)1.175494351e-38f);
+
+    /* smallest float subnormal promoted to double (becomes normal double) */
+    NPF_TEST("0x1.0000000000000p-149", "%a", 1.4e-45f);
+    NPF_TEST("0x1p-149", "%.0a", 1.4e-45f);
+
+    /* rounding */
+    NPF_TEST("0x2p+0", "%.0a", 1.5f);
+    NPF_TEST("0x2p+0", "%.0a", 1.75f);
+    NPF_TEST("0x1.cp+0", "%.1a", 1.75f);
+
+    /* sign flags */
+    NPF_TEST("+0x1p+0", "%+.0a", 1.0f);
+    NPF_TEST(" 0x1p+0", "% .0a", 1.0f);
+    NPF_TEST("-0x1p+0", "%+.0a", -1.0f);
+
+#if NANOPRINTF_USE_ALT_FORM_FLAG == 1
+    /* alt form */
+    NPF_TEST("0x1.p+0", "%#.0a", 1.0f);
+#endif
+
+    /* uppercase */
+    NPF_TEST("0X1P+0", "%.0A", 1.0f);
+
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
     NPF_TEST("    0x1p+0", "%10.0a", 1.0f);
     NPF_TEST("0x001p+0", "%08.0a", 1.0f);
+    NPF_TEST("-0x01p+0", "%08.0a", -1.0f);
+    NPF_TEST("0x1p+0    ", "%-10.0a", 1.0f);
 #endif
 #endif /* hex float + single-precision */
 
