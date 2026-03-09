@@ -1185,7 +1185,9 @@ int NPF_TEST_FUNC(void) {
     NPF_TEST("inf", "%.10f", (double)INFINITY);
     NPF_TEST("inf", "%.10e", (double)INFINITY);
     NPF_TEST("inf", "%.10g", (double)INFINITY);
+#if NANOPRINTF_USE_FLOAT_HEX_FORMAT_SPECIFIER == 1
     NPF_TEST("inf", "%.10a", (double)INFINITY);
+#endif
     NPF_TEST("INF", "%F", (double)INFINITY);
     NPF_TEST("+inf", "%+f", (double)INFINITY);
     NPF_TEST("-inf", "%+f", -(double)INFINITY);
