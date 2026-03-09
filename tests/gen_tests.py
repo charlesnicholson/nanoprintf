@@ -33,6 +33,7 @@ FLAGS = [
     "NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS",
     "NANOPRINTF_USE_ALT_FORM_FLAG",
     "NANOPRINTF_USE_FLOAT_SINGLE_PRECISION",
+    "NANOPRINTF_USE_FLOAT_HEX_FORMAT_SPECIFIER",
 ]
 
 
@@ -42,6 +43,7 @@ def valid_combos() -> list[dict[str, int]]:
     Constraints:
       - float=1 requires precision=1
       - single-precision=1 requires float=1 (and transitively precision=1)
+      - hex-float=1 requires float=1 (and transitively precision=1)
     """
     combos = []
     for bits in itertools.product((0, 1), repeat=len(FLAGS)):
@@ -53,6 +55,11 @@ def valid_combos() -> list[dict[str, int]]:
             continue
         if (
             combo["NANOPRINTF_USE_FLOAT_SINGLE_PRECISION"] == 1
+            and combo["NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS"] == 0
+        ):
+            continue
+        if (
+            combo["NANOPRINTF_USE_FLOAT_HEX_FORMAT_SPECIFIER"] == 1
             and combo["NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS"] == 0
         ):
             continue
@@ -72,6 +79,7 @@ def combo_label(combo: dict[str, int], lang: str) -> str:
         "NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS": "wb",
         "NANOPRINTF_USE_ALT_FORM_FLAG": "alt",
         "NANOPRINTF_USE_FLOAT_SINGLE_PRECISION": "sp",
+        "NANOPRINTF_USE_FLOAT_HEX_FORMAT_SPECIFIER": "hexa",
     }
     parts = [f"{short[k]}={v}" for k, v in combo.items()]
     return f"[{lang}] " + " ".join(parts)
