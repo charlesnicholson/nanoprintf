@@ -1,4 +1,4 @@
-/* nanoprintf v0.5.5: a tiny embeddable printf replacement written in C.
+/* nanoprintf v0.6.0: a tiny embeddable printf replacement written in C.
    https://github.com/charlesnicholson/nanoprintf
    charles.nicholson+nanoprintf@gmail.com
    dual-licensed under 0bsd and unlicense, take your pick. see eof for details. */
@@ -29,7 +29,8 @@ typedef void (*npf_putc)(int c, void *ctx);
   #define NPF_PRINTF_ATTR(FORMAT_INDEX, VARGS_INDEX)
 #endif
 
-#if defined(NANOPRINTF_USE_FLOAT_SINGLE_PRECISION) && NANOPRINTF_USE_FLOAT_SINGLE_PRECISION == 1
+#if defined(NANOPRINTF_USE_FLOAT_SINGLE_PRECISION) && \
+    (NANOPRINTF_USE_FLOAT_SINGLE_PRECISION == 1)
 #define NPF_PRINTF_SP_ATTR NPF_PRINTF_ATTR(3, 0)
 #define NPF_MAP_ARGS(...) NPF__MAP(NPF__WRAP, __VA_ARGS__)
 typedef struct { float val; } npf_float_t;
@@ -1382,7 +1383,8 @@ int npf_snprintf_(char * NPF_RESTRICT buffer,
 #ifndef NPF_MAP_INCLUDED
 #define NPF_MAP_INCLUDED
 
-#if defined(NANOPRINTF_USE_FLOAT_SINGLE_PRECISION) && NANOPRINTF_USE_FLOAT_SINGLE_PRECISION == 1
+#if defined(NANOPRINTF_USE_FLOAT_SINGLE_PRECISION) && \
+    (NANOPRINTF_USE_FLOAT_SINGLE_PRECISION == 1)
 
 // NPF__WRAP: wrap float/double args into npf_float_t, pass other types through.
 // C++ uses function overloading; C uses _Generic with function-pointer selection.
@@ -1391,9 +1393,13 @@ int npf_snprintf_(char * NPF_RESTRICT buffer,
 // behavior that would reject (float)(string_ptr) in non-selected branches.
 #if defined(__cplusplus)
   extern "C++" {
-  static inline npf_float_t npf__wrap_impl(float f) { npf_float_t r; r.val = f; return r; }
-  static inline npf_float_t npf__wrap_impl(double d) { npf_float_t r; r.val = (float)d; return r; }
-  template<typename T> static inline T npf__wrap_impl(T v) { return v; }
+    static inline npf_float_t npf__wrap_impl(float f) {
+      npf_float_t r; r.val = f; return r;
+    }
+    static inline npf_float_t npf__wrap_impl(double d) {
+      npf_float_t r; r.val = (float)d; return r;
+    }
+    template<typename T> static inline T npf__wrap_impl(T v) { return v; }
   }
   #define NPF__WRAP(x) npf__wrap_impl(x)
 #elif defined(__GNUC__) || defined(__clang__)
@@ -1405,9 +1411,16 @@ int npf_snprintf_(char * NPF_RESTRICT buffer,
        _npf_r; }), \
     (x))
 #elif defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 201112L)
-  static inline npf_float_t npf__wf(float f) { npf_float_t r; r.val = f; return r; }
-  static inline npf_float_t npf__wd(double d) { npf_float_t r; r.val = (float)d; return r; }
-  static inline npf_float_t npf__wld(long double d) { npf_float_t r; r.val = (float)d; return r; }
+  static inline npf_float_t npf__wf(float f) {
+    npf_float_t r; r.val = f; return r;
+  }
+  static inline npf_float_t npf__wd(double d) {
+    npf_float_t r; r.val = (float)d; return r;
+  }
+  static inline npf_float_t npf__wld(long double d) {
+    npf_float_t r; r.val = (float)d; return r;
+  }
+
   static inline int npf__id_i(int v) { return v; }
   static inline unsigned npf__id_u(unsigned v) { return v; }
   static inline long npf__id_l(long v) { return v; }
@@ -1428,6 +1441,7 @@ int npf_snprintf_(char * NPF_RESTRICT buffer,
   static inline long *npf__id_lp(long *v) { return v; }
   static inline long long *npf__id_llp(long long *v) { return v; }
   static inline signed char *npf__id_scp(signed char *v) { return v; }
+
   #define NPF__WRAP(x) _Generic((x), \
     float:              npf__wf, \
     double:             npf__wd, \
