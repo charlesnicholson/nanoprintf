@@ -73,6 +73,9 @@ jobs:
         - compiler: clang
           cc: clang
           cxx: clang++
+        exclude:
+        - compiler: gcc
+          architecture: 32
 
     steps:
       - uses: actions/checkout@v4
