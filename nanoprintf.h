@@ -1185,6 +1185,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
 
       if (fs.conv_spec == NPF_FMT_SPEC_CONV_SIGNED_INT) {
         npf_int_t sval = 0;
+#if !NPF_LONG_IS_INT || NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
         switch (fs.length_modifier) {
 #if !NPF_LONG_IS_INT
           NPF_EXTRACT(sval, LONG, long, long);
@@ -1195,15 +1196,20 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
           NPF_EXTRACT(sval, LARGE_SIZET, npf_ssize_t, npf_ssize_t);
           NPF_EXTRACT(sval, LARGE_PTRDIFFT, ptrdiff_t, ptrdiff_t);
 #endif
-          default: {
+          default:
+#endif
+          {
             int v = va_arg(args, int);
 #if NANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS == 1
             if (fs.length_modifier == NPF_FMT_SPEC_LEN_MOD_SHORT) { v = (short)v; }
             else if (fs.length_modifier == NPF_FMT_SPEC_LEN_MOD_CHAR) { v = (signed char)v; }
 #endif
             sval = v;
-          } break;
+          }
+#if !NPF_LONG_IS_INT || NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
+          break;
         }
+#endif
         sign_c = (sval < 0) ? '-' : fs.prepend;
         val = (npf_uint_t)sval;
         if (sval < 0) { val = 0 - val; }
@@ -1212,6 +1218,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
           val = (npf_uint_t)(uintptr_t)va_arg(args, void *);
           base = 16u;
         } else {
+#if !NPF_LONG_IS_INT || NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
           switch (fs.length_modifier) {
 #if !NPF_LONG_IS_INT
             NPF_EXTRACT(val, LONG, unsigned long, unsigned long);
@@ -1222,15 +1229,20 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
             NPF_EXTRACT(val, LARGE_SIZET, size_t, size_t);
             NPF_EXTRACT(val, LARGE_PTRDIFFT, npf_uptrdiff_t, npf_uptrdiff_t);
 #endif
-            default: {
+            default:
+#endif
+            {
               unsigned v = va_arg(args, unsigned);
 #if NANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS == 1
               if (fs.length_modifier == NPF_FMT_SPEC_LEN_MOD_SHORT) { v = (unsigned short)v; }
               else if (fs.length_modifier == NPF_FMT_SPEC_LEN_MOD_CHAR) { v = (unsigned char)v; }
 #endif
               val = v;
-            } break;
+            }
+#if !NPF_LONG_IS_INT || NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
+            break;
           }
+#endif
           if (fs.conv_spec == NPF_FMT_SPEC_CONV_OCTAL) { base = 8u; }
           else if (fs.conv_spec == NPF_FMT_SPEC_CONV_HEX_INT) { base = 16u; }
         }
