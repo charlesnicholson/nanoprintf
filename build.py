@@ -154,6 +154,7 @@ def _build_unit_tests(args: argparse.Namespace) -> bool:
         "/wd5039",
         "/wd5262",
         "/wd5264",
+        "/wd5285",
     ]
 
     # Compile doctest_main.cc once
