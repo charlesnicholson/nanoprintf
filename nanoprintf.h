@@ -729,7 +729,9 @@ static int npf_ftoa_rev(char *buf, npf_format_spec_t const *spec, npf_real_t f) 
 
   bin &= ((npf_real_bin_t)0x1 << NPF_REAL_MAN_BITS) - 1;
   if (!((unsigned)(exp + 1) & NPF_REAL_EXP_MASK)) { // special value
-    ret = "NAN\0FNI\0RRE" + ((bin) ? 0 : 4);
+    // Packed reversed specials "NAN"/"FNI"(inf)/"RRE"(err), indexed by offset.
+    // Cast this so we dont throw a warning for the + operation
+    ret = (char const *)"NAN\0FNI\0RRE" + ((bin) ? 0 : 4);
     goto exit;
   }
   if (spec->prec > (NANOPRINTF_CONVERSION_BUFFER_SIZE - 2)) { goto exit; }
@@ -888,7 +890,7 @@ static int npf_ftoa_rev(char *buf, npf_format_spec_t const *spec, npf_real_t f) 
 
   return (int)end;
 exit:
-  if (!ret) { ret = "NAN\0FNI\0RRE" + 8; }
+  if (!ret) { ret = (char const *)"NAN\0FNI\0RRE" + 8; }
   uint_fast8_t i = 0;
   do { buf[i] = (char)(ret[i] + spec->case_adjust); } while (ret[++i]);
   return -(int)i;
