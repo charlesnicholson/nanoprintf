@@ -1565,6 +1565,15 @@ int NPF_TEST_FUNC(void) {
     NPF_TEST("1.5 2.5 3.5", "%.1f %.1f %.1f", 1.5f, 2.5f, 3.5f);
     NPF_TEST("hello 42 3.14 !", "%s %d %.2f %c", "hello", 42, 3.14f, '!');
 
+    {
+      struct { unsigned u : 3; signed s : 4; unsigned w : 20; } const bf =
+        { .u = 5u, .s = -3, .w = 100000u };
+      NPF_TEST("5", "%u", bf.u);
+      NPF_TEST("-3", "%d", bf.s);
+      NPF_TEST("100000", "%u", bf.w);
+      NPF_TEST("5 -3 1.5", "%u %d %.1f", bf.u, bf.s, 1.5f);
+    }
+
     /* single-precision: double literals auto-narrowed via NPF_MAP_ARGS */
     NPF_TEST("3.14", "%.2f", 3.14);
     NPF_TEST("42.500000", "%f", 42.5);
