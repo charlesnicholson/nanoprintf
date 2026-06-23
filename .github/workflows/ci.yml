@@ -24,7 +24,7 @@ jobs:
         password: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Pyright
         run: python -m pyright --warnings --pythonversion 3.13 build.py tests/gen_tests.py tests/size_report.py
       - name: Ruff
@@ -45,7 +45,7 @@ jobs:
         architecture: [32, 64]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Build
         env:
           CC: /usr/bin/clang
@@ -78,7 +78,7 @@ jobs:
           architecture: 32
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Build
         env:
           CC: ${{ matrix.cc }}
@@ -107,7 +107,7 @@ jobs:
           cxx: clang++
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Build
         env:
           CC: ${{ matrix.cc }}
@@ -122,7 +122,7 @@ jobs:
         configuration: [Debug, Release]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Build
         run: make -j$(sysctl -n hw.ncpu) CFG=${{ matrix.configuration }} VERBOSE=1
 
@@ -135,9 +135,9 @@ jobs:
         architecture: [32, 64]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Set up Python 3.x
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.x'
       - name: Build
@@ -157,7 +157,7 @@ jobs:
         password: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: AVR2
         shell: bash
@@ -192,7 +192,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
