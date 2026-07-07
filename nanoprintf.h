@@ -133,12 +133,8 @@ NPF_VISIBILITY int npf_vpprintf(npf_putc pc,
   #define NANOPRINTF_USE_FLOAT_HEX_FORMAT_SPECIFIER 0
 #endif
 
-// Optional flag, defaults to 0 if not explicitly configured. On cores without a
-// hardware divider (e.g. ARMv6-M, or RISC-V without the M extension), libgcc's
-// __udivsi3 costs ~270 bytes; division-free digit extraction (shift/mask for
-// octal/hex, exact shift-add divide-by-10 for decimal) keeps it out of the link
-// entirely. Enable it explicitly (define to 1) on such targets; leave it off
-// where a hardware divider makes real division smaller.
+// Optional flag, defaults to 0 if not explicitly configured. Extracts digits
+// without integer division; smaller on cores without a hardware divider.
 #ifndef NANOPRINTF_USE_DIVISION_FREE_CONVERSION
   #define NANOPRINTF_USE_DIVISION_FREE_CONVERSION 0
 #endif
@@ -363,6 +359,33 @@ enum {
 #endif
 };
 
+// Assert range order/comparisons to enforce C standard ordering
+#define NPF_CONV_ORDER_ASSERT(NAME, COND) \
+  typedef char npf_assert_##NAME[(COND) ? 1 : -1]
+NPF_CONV_ORDER_ASSERT(text_convs_before_numeric,
+  (NPF_FMT_SPEC_CONV_PERCENT < NPF_FMT_SPEC_CONV_SIGNED_INT) &&
+  (NPF_FMT_SPEC_CONV_CHAR < NPF_FMT_SPEC_CONV_SIGNED_INT) &&
+  (NPF_FMT_SPEC_CONV_STRING < NPF_FMT_SPEC_CONV_SIGNED_INT));
+#if NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS == 1
+NPF_CONV_ORDER_ASSERT(int_convs_contiguous,
+  NPF_FMT_SPEC_CONV_UNSIGNED_INT == NPF_FMT_SPEC_CONV_SIGNED_INT + 4);
+#else
+NPF_CONV_ORDER_ASSERT(int_convs_contiguous,
+  NPF_FMT_SPEC_CONV_UNSIGNED_INT == NPF_FMT_SPEC_CONV_SIGNED_INT + 3);
+#endif
+NPF_CONV_ORDER_ASSERT(pointer_after_int_convs,
+  NPF_FMT_SPEC_CONV_POINTER > NPF_FMT_SPEC_CONV_UNSIGNED_INT);
+#if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
+#if NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS == 1
+NPF_CONV_ORDER_ASSERT(float_convs_last,
+  NPF_FMT_SPEC_CONV_FLOAT_DEC > NPF_FMT_SPEC_CONV_WRITEBACK);
+#else
+NPF_CONV_ORDER_ASSERT(float_convs_last,
+  NPF_FMT_SPEC_CONV_FLOAT_DEC > NPF_FMT_SPEC_CONV_POINTER);
+#endif
+#endif
+#undef NPF_CONV_ORDER_ASSERT
+
 typedef struct npf_format_spec {
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
   int field_width;
@@ -574,7 +597,7 @@ static NPF_FORCE_INLINE int npf_parse_format_spec(char const *format,
 }
 
 #if NANOPRINTF_USE_DIVISION_FREE_CONVERSION == 1
-// Exact n/10 for any uint32_t without hardware division (Hacker's Delight).
+// Calculate div by 10 justing a shift and mask to avoid using hw div operands
 static NPF_NOINLINE uint32_t npf_div10(uint32_t n) {
   uint32_t q = (n >> 1) + (n >> 2);
   q += q >> 4;
@@ -589,9 +612,7 @@ static NPF_NOINLINE char *npf_utoa_rev_end(
     npf_uint_t val, char *buf, uint_fast8_t base, char case_adj) {
 #if (NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1) || \
     ((NANOPRINTF_USE_DIVISION_FREE_CONVERSION == 1) && NPF_UINT_IS_WIDE)
-  // For values that don't fit in 32 bits, shift-and-subtract divmod avoids
-  // pulling in __udivmoddi4 (~784 B on ARM EABI). Slow but tiny; the 32-bit
-  // fast path below handles all typical values.
+  // Use shift and subtract here to avoid hw div operation
   while (val > 0xFFFFFFFFu) {
     npf_uint_t q = 0, r = 0;
     for (int i = (int)(sizeof(val) * 8) - 1; i >= 0; --i) {
@@ -701,9 +722,8 @@ static NPF_FORCE_INLINE npf_real_bin_t npf_real_to_int_rep(npf_real_t f) {
 }
 
 #if NANOPRINTF_USE_DIVISION_FREE_CONVERSION == 1
-// Variable shifts of 64-bit values call __aeabi_llsl/__aeabi_llsr on cores
-// without 64-bit shifters (e.g. ARMv6-M); one-bit-at-a-time loops keep those
-// helpers out of the link. 32-bit npf_real_bin_t shifts stay native.
+// Variable shifts of 64-bit values call sw helpers on archs
+// without 64-bit shifters. Perfer 1 bit shits to keep in 32 bit word spce.
 static NPF_FORCE_INLINE npf_real_bin_t npf_bin_shr(npf_real_bin_t v, int_fast8_t s) {
   if (sizeof(v) > sizeof(uint32_t)) { while (s--) { v >>= 1; } return v; }
   return (npf_real_bin_t)(v >> s);
@@ -720,6 +740,8 @@ static NPF_FORCE_INLINE npf_real_bin_t npf_bin_shl(npf_real_bin_t v, int_fast8_t
 #endif
 
 static int npf_ftoa_rev(char *buf, npf_format_spec_t const *spec, npf_real_t f) {
+  // Packed reversed specials "NAN"/"FNI"(inf)/"RRE"(err), selected by offset.
+  static char const specials[] = "NAN\0FNI\0RRE";
   char const *ret = NULL;
   npf_real_bin_t bin = npf_real_to_int_rep(f);
 
@@ -729,9 +751,7 @@ static int npf_ftoa_rev(char *buf, npf_format_spec_t const *spec, npf_real_t f) 
 
   bin &= ((npf_real_bin_t)0x1 << NPF_REAL_MAN_BITS) - 1;
   if (!((unsigned)(exp + 1) & NPF_REAL_EXP_MASK)) { // special value
-    // Packed reversed specials "NAN"/"FNI"(inf)/"RRE"(err), indexed by offset.
-    // Cast this so we dont throw a warning for the + operation
-    ret = (char const *)"NAN\0FNI\0RRE" + ((bin) ? 0 : 4);
+    ret = specials + (bin ? 0 : 4);
     goto exit;
   }
   if (spec->prec > (NANOPRINTF_CONVERSION_BUFFER_SIZE - 2)) { goto exit; }
@@ -890,7 +910,7 @@ static int npf_ftoa_rev(char *buf, npf_format_spec_t const *spec, npf_real_t f) 
 
   return (int)end;
 exit:
-  if (!ret) { ret = (char const *)"NAN\0FNI\0RRE" + 8; }
+  if (!ret) { ret = specials + 8; }
   uint_fast8_t i = 0;
   do { buf[i] = (char)(ret[i] + spec->case_adjust); } while (ret[++i]);
   return -(int)i;
@@ -1024,13 +1044,12 @@ static void npf_bufputc(int c, void *ctx) {
 }
 
 #define NPF_PUTC(VAL) do { pc((int)(VAL), pc_ctx); ++npf_n; } while (0)
-// Emission inside a conversion: the spec's total length is added to npf_n in bulk.
 #define NPF_PUT(VAL) do { pc((int)(VAL), pc_ctx); } while (0)
 
 #define NPF_EXTRACT(DST, MOD, CAST_TO, EXTRACT_AS) \
   case NPF_FMT_SPEC_LEN_MOD_##MOD: DST = (CAST_TO)va_arg(args, EXTRACT_AS); break
 
-// When sizeof(long) == sizeof(int) (any ILP32 ABI, e.g. ARM EABI / Win32 / Win64),
+// When sizeof(long) == sizeof(int)
 // va_arg(*args, long) and va_arg(*args, int) read the same bits, so the LONG
 // case can fall into the int-promotion default.
 #if LONG_MAX == INT_MAX
@@ -1038,10 +1057,6 @@ static void npf_bufputc(int c, void *ctx) {
 #else
   #define NPF_LONG_IS_INT 0
 #endif
-
-
-#define NPF_WRITEBACK(MOD, TYPE) \
-  case NPF_FMT_SPEC_LEN_MOD_##MOD: *(va_arg(args, TYPE *)) = (TYPE)npf_n; break
 
 int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
   npf_format_spec_t fs;
@@ -1128,7 +1143,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
 #if NANOPRINTF_USE_FLOAT_SINGLE_PRECISION == 1
       val = va_arg(args, npf_float_t).val;
 #elif LDBL_MANT_DIG == DBL_MANT_DIG
-      // long double has the same representation as double (e.g. ARM EABI);
+      // long double has the same representation as double
       // no need to branch on the 'L' length modifier.
       val = va_arg(args, double);
 #else
@@ -1377,6 +1392,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
     // this loop body only executes for left-justified specifiers.
     while (field_pad-- > 0) { NPF_PUT(pad_c); }
 #endif
+    // NPF_PUT emissions don't tally npf_n; add the conversion's total length in bulk.
     npf_n += spec_len;
   }
 
@@ -1386,6 +1402,9 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
 #undef NPF_PUTC
 #undef NPF_PUT
 #undef NPF_EXTRACT
+#undef NPF_LONG_IS_INT
+#undef NPF_BIN_SHR
+#undef NPF_BIN_SHL
 
 int npf_vsnprintf(char * NPF_RESTRICT buffer,
                   size_t bufsz,

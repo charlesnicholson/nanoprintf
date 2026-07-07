@@ -96,6 +96,7 @@ UNIT_SRCS := tests/unit_parse_format_spec.cc \
              tests/unit_ftoa_rev_32.cc \
              tests/unit_ftoa_rev_64.cc \
              tests/unit_utoa_rev.cc \
+             tests/unit_utoa_rev_divfree.cc \
              tests/unit_snprintf.cc \
              tests/unit_snprintf_safe_empty.cc \
              tests/unit_vpprintf.cc

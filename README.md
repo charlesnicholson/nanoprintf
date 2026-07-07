@@ -93,10 +93,13 @@ nanoprintf has the following static configuration flags.
 * `NANOPRINTF_USE_FLOAT_SINGLE_PRECISION`: Set to `0` or `1`. Uses `float` instead of `double` for all float math. Requires `NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=1` and `NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=1`.
 * `NANOPRINTF_VISIBILITY_STATIC`: Optional define. Marks prototypes as `static` to sandbox nanoprintf.
 * `NANOPRINTF_CONFIG_FILE`: Optional define. When set (e.g. `-DNANOPRINTF_CONFIG_FILE="\"my_npf_config.h\""` or `-DNANOPRINTF_CONFIG_FILE="<my_npf_config.h>"`), nanoprintf will `#include` the specified file at the top of `nanoprintf.h`, before any configuration-dependent code. This provides a FreeRTOS-style mechanism to ensure every translation unit sees the same configuration without requiring a wrapper header.
+* `NANOPRINTF_USE_DIVISION_FREE_CONVERSION`: Set to `0` or `1`. Enables extracting digits without integer division or modulo operations.
 
 If no configuration flags are specified, nanoprintf will default to "reasonable" embedded values in an attempt to be helpful: floats are enabled, but writeback, binary, and large formatters are disabled. If any configuration flags are explicitly specified, nanoprintf requires that all flags are explicitly specified.
 
 If a disabled format specifier feature is used, no conversion will occur and the format specifier string simply will be printed instead.
+
+Note, unrecognized conversion specifiers are undefined behavior. Nanoprintf folds the conversion specifier character to lowercase during parsing, so an unsupported uppercase specifier is treated as its lowercase counterpart: `%D` behaves like `%d`, `%S` like `%s`, `%P` prints a pointer, and so on, with uppercase output wherever case applies (hex digits, `INF`/`NAN`). Earlier versions of nanoprintf printed unrecognized specifiers literally instead; do not rely on either behavior.
 
 ### Floating-Point Conversion
 nanoprintf has the following floating-point specific configuration defines.
@@ -180,6 +183,12 @@ The `%e`/`%E` and `%g`/`%G` specifiers are parsed but not formatted. If used, th
 When `NANOPRINTF_USE_FLOAT_SINGLE_PRECISION` is set to `1`, nanoprintf uses `float` instead of `double` for all internal floating-point math. This is useful on MCUs with single-precision FPUs (e.g. Cortex-M4) where enabling double-precision float formatting would otherwise pull in expensive soft-float library routines.
 
 C's variadic calling convention promotes `float` arguments to `double` when they cross a function boundary. To prevent this, single-precision mode wraps `float` and `double` arguments in a small struct (`npf_float_t`) at the call site, before they reach `va_start`. This wrapping is automatic: `npf_snprintf` and `npf_pprintf` are macros that apply `NPF_MAP_ARGS` to all arguments, which wraps any `float` or `double` values while passing all other types through unchanged.
+
+### Division-Free Conversion
+
+When `NANOPRINTF_USE_DIVISION_FREE_CONVERSION` is set to `1`, nanoprintf performs all digit extraction without integer division or modulo operations: octal, hex and decimal digits are extracted with shifts, adds, and masks.
+
+On cores without a hardware divider (e.g. Cortex-M0), integer division compiles to a call into a software-divide helper routine; enabling this flag keeps those helpers out of the link, shrinking the binary. On cores with hardware divide instructions (e.g. Cortex-M4), plain division is usually smaller, so leave the flag off there.
 
 #### Link-time ABI safety
 
