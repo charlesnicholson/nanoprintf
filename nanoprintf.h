@@ -1486,8 +1486,9 @@ int npf_snprintf_(char * NPF_RESTRICT buffer,
   }
   #define NPF__WRAP(x) npf__wrap_impl(x)
 #elif defined(__GNUC__) || defined(__clang__)
-  #define NPF__IS_REAL(x) (__builtin_types_compatible_p(__typeof__(x), float) || \
-                            __builtin_types_compatible_p(__typeof__(x), double))
+  #define NPF__IS_REAL(x) \
+    (__builtin_types_compatible_p(__typeof__(0 ? (x) : (x)), float) || \
+     __builtin_types_compatible_p(__typeof__(0 ? (x) : (x)), double))
   #define NPF__WRAP(x) __builtin_choose_expr(NPF__IS_REAL(x), \
     ({ npf_float_t _npf_r; \
        _npf_r.val = (float)__builtin_choose_expr(NPF__IS_REAL(x), (x), 0); \
