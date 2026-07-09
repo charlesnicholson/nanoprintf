@@ -1,7 +1,7 @@
 """Generate the conformance test build artifacts for nanoprintf.
 
-Enumerates all valid flag combinations (192), then for each generates
-both a C and C++ compilation, for a total of 384 test objects:
+Enumerates all valid flag combinations (768), then for each generates
+both a C and C++ compilation, for a total of 1536 test objects:
   - main.c                : declares + calls all per-combo test functions
   - Makefile               : POSIX make rules (cc + c++)
   - compile_commands.json  : Windows parallel builds (cl.exe)
@@ -34,6 +34,7 @@ FLAGS = [
     "NANOPRINTF_USE_ALT_FORM_FLAG",
     "NANOPRINTF_USE_FLOAT_SINGLE_PRECISION",
     "NANOPRINTF_USE_FLOAT_HEX_FORMAT_SPECIFIER",
+    "NANOPRINTF_USE_DIVISION_FREE_CONVERSION",
 ]
 
 
@@ -80,6 +81,7 @@ def combo_label(combo: dict[str, int], lang: str) -> str:
         "NANOPRINTF_USE_ALT_FORM_FLAG": "alt",
         "NANOPRINTF_USE_FLOAT_SINGLE_PRECISION": "sp",
         "NANOPRINTF_USE_FLOAT_HEX_FORMAT_SPECIFIER": "hexa",
+        "NANOPRINTF_USE_DIVISION_FREE_CONVERSION": "divfree",
     }
     parts = [f"{short[k]}={v}" for k, v in combo.items()]
     return f"[{lang}] " + " ".join(parts)

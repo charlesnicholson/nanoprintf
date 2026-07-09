@@ -9,3 +9,4 @@
 * [Dean T](https://github.com/deanoburrito)
 * [Oskars Rubenis](https://github.com/Okarss)
 * [Ka Wing Li](https://github.com/kingiler)
+* [Fran Cap](https://github.com/fran-cap/)
