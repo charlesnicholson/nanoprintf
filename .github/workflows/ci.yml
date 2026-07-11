@@ -179,6 +179,10 @@ jobs:
         shell: bash
         run: python tests/size_report.py -p host
 
+      - name: README size table up to date
+        shell: bash
+        run: python tests/size_report.py --check-readme
+
   all-checks-pass:
     needs: [lint, sanitizers, linux-x64, linux-arm64, macos, win, size-reports]
     runs-on: ubuntu-latest
