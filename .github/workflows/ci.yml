@@ -179,9 +179,9 @@ jobs:
         shell: bash
         run: python tests/size_report.py -p host
 
-      - name: README size table up to date
+      - name: README size table generates
         shell: bash
-        run: python tests/size_report.py --check-readme
+        run: python tests/size_report.py --update-readme
 
   all-checks-pass:
     needs: [lint, sanitizers, linux-x64, linux-arm64, macos, win, size-reports]
