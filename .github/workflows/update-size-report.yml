@@ -1,0 +1,40 @@
+name: Update size report
+
+on:
+  schedule:
+    - cron: '0 3 * * 0'  # Weekly, an hour after the CI cron
+  workflow_dispatch:
+
+permissions:
+  packages: read
+  contents: write
+
+jobs:
+  update-readme:
+    runs-on: ubuntu-latest
+
+    container:
+      image: ghcr.io/charlesnicholson/docker-image:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Regenerate README size table
+        shell: bash
+        run: python tests/size_report.py --update-readme
+
+      - name: Commit and push if changed
+        shell: bash
+        run: |
+          git config --global --add safe.directory "$(pwd)"
+          if git diff --quiet -- README.md; then
+            echo "README size table already up to date."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Update README size table" -- README.md
+          git push
