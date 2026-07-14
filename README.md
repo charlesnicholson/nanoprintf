@@ -32,14 +32,21 @@ Then, in any file where you want to use nanoprintf, simply include the header an
 ```
 #include "nanoprintf.h"
 
+static void my_uart_putc(int c, void *ctx) {
+  uart_write((my_uart_t *)ctx, c);
+}
+
 void print_to_uart(void) {
-  npf_pprintf(&my_uart_putc, NULL, "Hello %s%c %d %u %f\n", "worl", 'd', 1, 2, 3.f);
+  my_uart_t *uart = get_my_uart();
+  npf_pprintf(&my_uart_putc, uart, "Hello %s%c %d %u %f\n", "worl", 'd', 1, 2, 3.f);
 }
 
 void print_to_buf(void *buf, unsigned len) {
   npf_snprintf(buf, len, "Hello %s", "world");
 }
 ```
+
+`my_uart_putc` is an `npf_putc` callback: nanoprintf calls it once for each output character and passes the same context pointer each time.
 
 See the "[Use nanoprintf directly](https://github.com/charlesnicholson/nanoprintf/blob/master/examples/use_npf_directly/main.cc)" and "[Wrap nanoprintf](https://github.com/charlesnicholson/nanoprintf/blob/master/examples/wrap_npf/main.cc)" examples for more details.
 
