@@ -1018,7 +1018,7 @@ static int npf_bin_len(npf_uint_t u) {
   #endif
 #elif NPF_CLANG || NPF_GCC_PAST_4_6
   #define NPF_HAVE_BUILTIN_CLZ
-  #if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
+  #if NPF_UINT_IS_WIDE
     #define NPF_CLZ(X) ((sizeof(long long) * CHAR_BIT) - (size_t)__builtin_clzll(X))
   #else
     #define NPF_CLZ(X) ((sizeof(long) * CHAR_BIT) - (size_t)__builtin_clzl(X))
