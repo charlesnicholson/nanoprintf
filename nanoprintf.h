@@ -810,7 +810,12 @@ static int npf_ftoa_special(char *buf, char case_adj, uint_fast8_t off) {
   return -(int)i;
 }
 
-enum { NPF_FTOA_NAN = 0, NPF_FTOA_INF = 4, NPF_FTOA_ERR = 8 };
+// Offsets into npf_ftoa_special's packed string. Macros rather than an enum: an
+// enum's underlying type is int, and narrowing that to uint_fast8_t (unsigned char
+// on MSVC) trips C4244, which the Windows build treats as an error.
+#define NPF_FTOA_NAN 0u
+#define NPF_FTOA_INF 4u
+#define NPF_FTOA_ERR 8u
 
 static int npf_ftoa_rev(
     char *buf, npf_format_spec_t const *spec, int prec, npf_real_t f) {
@@ -1759,6 +1764,9 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
 #undef NPF_LONG_IS_INT
 #undef NPF_BIN_SHR
 #undef NPF_BIN_SHL
+#undef NPF_FTOA_NAN
+#undef NPF_FTOA_INF
+#undef NPF_FTOA_ERR
 #ifdef NPF_FMT_SPEC_CONV_FLOAT_SCI_FIRST
   #undef NPF_FMT_SPEC_CONV_FLOAT_SCI_FIRST
 #endif
