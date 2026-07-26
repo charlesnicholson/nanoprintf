@@ -793,12 +793,23 @@ static NPF_FORCE_INLINE npf_real_bin_t npf_bin_shl(npf_real_bin_t v, int_fast8_t
   #define NPF_BIN_SHL(V, S) ((npf_real_bin_t)((V) << (S)))
 #endif
 
-/* Both conversions scale the mantissa from base-2 to base-10 with the same loop:
-   doubling is exact while the top bit is clear, otherwise the value is halved by
-   dividing by 5, which moves the decimal point and so produces a trailing zero.
-   'f' emits those zeros, 'e' and 'g' fold them into the exponent. Hoisting the loop
-   into a shared helper costs more in call overhead than it saves in duplication
-   (cortex-m0 -Os: Float +24, Float + Sci + Shortest +36), so it stays duplicated. */
+/* npf_ftoa_rev and npf_etoa_rev share a fair amount of shape: both scale the mantissa
+   from base-2 to base-10 with the same loop (doubling is exact while the top bit is
+   clear, otherwise the value is halved by dividing by 5, which moves the decimal point
+   and so produces a trailing zero -- 'f' emits those zeros, 'e' and 'g' fold them into
+   the exponent), and both unpack the float and extract the fraction the same way.
+
+   Hoisting any of that into shared helpers was measured and is a loss, because gcc
+   specializes the inlined copies better than it can call a helper. At -Os, relative to
+   this file, on the Float / Float + Sci / Float + Sci + Shortest configurations:
+
+     scaling loop     cortex-m0 +24 / +0  / +36     cortex-m4 +16 / +20 / +0
+     fraction split   cortex-m0 +4  / +48 / +4      cortex-m4 +0  / +16 / -8
+     float unpack     cortex-m0 +0  / -64 / -52     cortex-m4 +0  / +4  / +48
+
+   The unpack one is the interesting case: it is a real win on cortex-m0 and a real
+   loss on cortex-m4, so it is left out rather than trading one target for the other.
+   Please re-measure both before reintroducing any of them. */
 
 // Emits a reversed special into buf: 0 -> "NAN", 4 -> "INF", 8 -> "ERR". Returns the
 // negated length, the caller's signal that the payload is text and not a number.
@@ -1230,7 +1241,7 @@ static int npf_etoa_rev(char *buf, npf_format_spec_t const *spec, npf_real_t f) 
     if ((x >= -4) && (x < prec)) {
       // C11 7.21.6.1p8: style 'f' with precision prec-1-x, which is what npf_ftoa_rev
       // already does. Stripping trailing zeros just lowers that precision.
-      int const fp = strip ? (nsig - 1 - x) : (prec - 1 - x);
+      int const fp = (strip ? nsig : prec) - 1 - x;
       return npf_ftoa_rev(buf, spec, (fp > 0) ? fp : 0, f);
     }
   }
@@ -1238,20 +1249,13 @@ static int npf_etoa_rev(char *buf, npf_format_spec_t const *spec, npf_real_t f) 
 
   { // Compose "d.<frac>e<sign><exp>" reversed from buf[0] up.
     int pe = prec; // digits after the point
-    int dp, o;
+    int o;
 #if NANOPRINTF_USE_FLOAT_SHORTEST_FORMAT_SPECIFIER == 1
     if (g) { pe = (strip ? nsig : prec) - 1; }
 #endif
-    dp = (pe > 0);
-#if NANOPRINTF_USE_ALT_FORM_FLAG == 1
-    dp |= (spec->alt_form != 0);
-#endif
-
-    o = 0;
-    { int e = (x < 0) ? -x : x; // at least two exponent digits, at most three
-      do { buf[o++] = (char)('0' + (char)(e % 10)); e /= 10; } while (e);
-      if (o < 2) { buf[o++] = '0'; }
-    }
+    // The shared integer emitter already handles base 10 and the division-free path.
+    o = npf_utoa_rev((npf_uint_t)((x < 0) ? -x : x), buf, 10, 0);
+    if (o < 2) { buf[o++] = '0'; } // the standard mandates at least two digits
     buf[o++] = (char)((x < 0) ? '-' : '+');
     buf[o++] = (char)('E' + spec->case_adjust);
 
@@ -1259,11 +1263,18 @@ static int npf_etoa_rev(char *buf, npf_format_spec_t const *spec, npf_real_t f) 
     // advance in lockstep through each run, and only writes happen between runs, so
     // the gap is smallest at the final read, where it is BUFSIZE - (output length).
     // The nsig_max check above guarantees that is not negative.
-    for (int i = pe - (nsig - 1); i > 0; --i) { buf[o++] = '0'; }
-    for (int i = 0; i < nsig - 1; ++i) {
-      buf[o++] = buf[NANOPRINTF_CONVERSION_BUFFER_SIZE - nsig + i];
+    { int const pad = pe - (nsig - 1);
+      for (int i = 0; i < pe; ++i) {
+        buf[o++] = (i < pad) ? '0'
+          : buf[NANOPRINTF_CONVERSION_BUFFER_SIZE - nsig + (i - pad)];
+      }
     }
-    if (dp) { buf[o++] = '.'; }
+    // A point is emitted when a fraction follows it, or when '#' demands it.
+    { int dp = (pe > 0);
+#if NANOPRINTF_USE_ALT_FORM_FLAG == 1
+      dp |= (spec->alt_form != 0);
+#endif
+      buf[o] = '.'; o += dp; } // unconditional store, conditional advance
     buf[o++] = buf[NANOPRINTF_CONVERSION_BUFFER_SIZE - 1];
     return o;
   }
