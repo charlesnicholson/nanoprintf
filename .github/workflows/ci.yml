@@ -10,6 +10,14 @@ on:
     - cron: '0 2 * * 0'  # Weekly
   workflow_dispatch:
 
+# Supersede a pull request's earlier runs when it is pushed to again. head_ref is
+# only set for pull_request events, so tag pushes, the weekly cron, and manual
+# dispatches fall through to run_id, get a group to themselves, and are never
+# cancelled -- a tag push has to reach the release job.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
 permissions:
   packages: read
 
@@ -26,9 +34,9 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - name: Pyright
-        run: python -m pyright --warnings --pythonversion 3.13 build.py tests/gen_tests.py tests/size_report.py
+        run: python -m pyright --warnings --pythonversion 3.13 build.py tests/gen_tests.py tests/gen_eg_tests.py tests/size_report.py
       - name: Ruff
-        run: python -m ruff check build.py tests/gen_tests.py tests/size_report.py
+        run: python -m ruff check build.py tests/gen_tests.py tests/gen_eg_tests.py tests/size_report.py
 
   sanitizers:
     runs-on: ubuntu-latest
@@ -43,6 +51,7 @@ jobs:
       matrix:
         sanitizer: [ubsan, asan]
         architecture: [32, 64]
+        shard: ['1/4', '2/4', '3/4', '4/4']
 
     steps:
       - uses: actions/checkout@v7
@@ -50,7 +59,7 @@ jobs:
         env:
           CC: /usr/bin/clang
           CXX: /usr/bin/clang++
-        run: make -j$(nproc) ARCH=${{ matrix.architecture }} SAN=${{ matrix.sanitizer }} VERBOSE=1
+        run: make -j$(nproc) ARCH=${{ matrix.architecture }} SAN=${{ matrix.sanitizer }} SHARD=${{ matrix.shard }} VERBOSE=1
 
   linux-x64:
     runs-on: ubuntu-latest
@@ -66,6 +75,7 @@ jobs:
         compiler: [gcc, clang]
         configuration: [Debug, Release]
         architecture: [32, 64]
+        shard: ['1/4', '2/4', '3/4', '4/4']
         include:
         - compiler: gcc
           cc: gcc
@@ -83,7 +93,7 @@ jobs:
         env:
           CC: ${{ matrix.cc }}
           CXX: ${{ matrix.cxx }}
-        run: make -j$(nproc) CFG=${{ matrix.configuration }} ARCH=${{ matrix.architecture }} VERBOSE=1
+        run: make -j$(nproc) CFG=${{ matrix.configuration }} ARCH=${{ matrix.architecture }} SHARD=${{ matrix.shard }} VERBOSE=1
 
   linux-arm64:
     runs-on: ubuntu-24.04-arm
@@ -98,6 +108,7 @@ jobs:
       matrix:
         compiler: [gcc, clang]
         configuration: [Debug, Release]
+        shard: ['1/4', '2/4', '3/4', '4/4']
         include:
         - compiler: gcc
           cc: gcc
@@ -112,7 +123,7 @@ jobs:
         env:
           CC: ${{ matrix.cc }}
           CXX: ${{ matrix.cxx }}
-        run: make -j$(nproc) CFG=${{ matrix.configuration }} ARCH=64 VERBOSE=1
+        run: make -j$(nproc) CFG=${{ matrix.configuration }} ARCH=64 SHARD=${{ matrix.shard }} VERBOSE=1
 
   macos:
     runs-on: macos-latest
@@ -120,11 +131,12 @@ jobs:
     strategy:
       matrix:
         configuration: [Debug, Release]
+        shard: ['1/4', '2/4', '3/4', '4/4']
 
     steps:
       - uses: actions/checkout@v7
       - name: Build
-        run: make -j$(sysctl -n hw.ncpu) CFG=${{ matrix.configuration }} VERBOSE=1
+        run: make -j$(sysctl -n hw.ncpu) CFG=${{ matrix.configuration }} SHARD=${{ matrix.shard }} VERBOSE=1
 
   win:
     runs-on: windows-latest

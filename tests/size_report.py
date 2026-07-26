@@ -39,7 +39,7 @@ def _git_root() -> pathlib.Path:
     """Return the root of the current file git repository."""
     cur = pathlib.Path(__file__).resolve()
     while cur != cur.parent:
-        if (cur / ".git").is_dir():
+        if (cur / ".git").exists():  # dir for a normal clone, file for a worktree
             return cur
         cur = cur.parent
 
@@ -210,6 +210,35 @@ _CONFIGS = [
         ],
     },
     {
+        "name": "Float + Sci",
+        "flags": [
+            "-DNANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=0",
+            "-DNANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=1",
+            "-DNANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=1",
+            "-DNANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS=0",
+            "-DNANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0",
+            "-DNANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS=0",
+            "-DNANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=0",
+            "-DNANOPRINTF_USE_ALT_FORM_FLAG=1",
+            "-DNANOPRINTF_USE_FLOAT_SCI_FORMAT_SPECIFIER=1",
+        ],
+    },
+    {
+        "name": "Float + Sci + Shortest",
+        "flags": [
+            "-DNANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=0",
+            "-DNANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=1",
+            "-DNANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=1",
+            "-DNANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS=0",
+            "-DNANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0",
+            "-DNANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS=0",
+            "-DNANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=0",
+            "-DNANOPRINTF_USE_ALT_FORM_FLAG=1",
+            "-DNANOPRINTF_USE_FLOAT_SCI_FORMAT_SPECIFIER=1",
+            "-DNANOPRINTF_USE_FLOAT_SHORTEST_FORMAT_SPECIFIER=1",
+        ],
+    },
+    {
         "name": "Float + Hex Float",
         "flags": [
             "-DNANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=0",
@@ -234,6 +263,8 @@ _CONFIGS = [
             "-DNANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS=1",
             "-DNANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=1",
             "-DNANOPRINTF_USE_ALT_FORM_FLAG=1",
+            "-DNANOPRINTF_USE_FLOAT_SCI_FORMAT_SPECIFIER=1",
+            "-DNANOPRINTF_USE_FLOAT_SHORTEST_FORMAT_SPECIFIER=1",
         ],
     },
 ]

@@ -17,7 +17,7 @@ static void memrev(char *lhs, char *rhs) {
 
 static void require_ftoa_rev(std::string const &expected, double dbl) {
   char buf[NANOPRINTF_CONVERSION_BUFFER_SIZE + 1];
-  int const n = [&](){ int x = npf_ftoa_rev(buf, &spec, dbl); return x < 0 ? -x : x; }();
+  int const n = [&](){ int x = npf_ftoa_rev(buf, &spec, spec.prec, dbl); return x < 0 ? -x : x; }();
   REQUIRE(n <= NANOPRINTF_CONVERSION_BUFFER_SIZE);
   memrev(buf, &buf[n]);
   buf[n] = '\0';

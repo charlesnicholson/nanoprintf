@@ -163,6 +163,30 @@ TEST_CASE("overrun - large precision") {
 
   SUBCASE("large float precision") {
     check_string(nullptr, "%.100f", 3.14);
+    check_string(nullptr, "%.100e", 3.14);
+    check_string(nullptr, "%.100g", 3.14);
+    check_string(nullptr, "%.100E", 3.14);
+    check_string(nullptr, "%.100G", 3.14);
+  }
+
+  SUBCASE("float precision at the conversion buffer boundary") {
+    // The last precision that fits and the first that reports err, for each
+    // conversion. %e needs 7 bytes of slack past the precision, %g needs 6.
+    check_string(nullptr, "%.*e", NANOPRINTF_CONVERSION_BUFFER_SIZE - 8, 1.0);
+    check_string(nullptr, "%.*e", NANOPRINTF_CONVERSION_BUFFER_SIZE - 7, 1.0);
+    check_string(nullptr, "%.*g", NANOPRINTF_CONVERSION_BUFFER_SIZE - 7, 1.0);
+    check_string(nullptr, "%.*g", NANOPRINTF_CONVERSION_BUFFER_SIZE - 6, 1.0);
+    check_string(nullptr, "%.*f", NANOPRINTF_CONVERSION_BUFFER_SIZE - 2, 1.0);
+    check_string(nullptr, "%.*f", NANOPRINTF_CONVERSION_BUFFER_SIZE - 1, 1.0);
+  }
+
+  SUBCASE("sci and shortest at the exponent extremes") {
+    check_string(nullptr, "%.30e", 1.7976931348623157e308);
+    check_string(nullptr, "%.30g", 1.7976931348623157e308);
+    check_string(nullptr, "%.30e", 5e-324);
+    check_string(nullptr, "%.30g", 5e-324);
+    check_string(nullptr, "%300.30e", 1e300);
+    check_string(nullptr, "%-300.30g", 1e-300);
   }
 
   SUBCASE("width and precision both large") {

@@ -6,6 +6,9 @@ CXX     ?= c++
 CFG     ?= Release
 ARCH    ?= 64
 SAN     ?= none
+# Build only shard I of N flag combinations. Lets CI spread the conformance
+# matrix over parallel jobs; 1/1 builds every combination.
+SHARD   ?= 1/1
 VERBOSE ?=
 PYTHON3 ?= $(shell command -v python3.13 2>/dev/null || command -v python3 2>/dev/null || echo python3)
 
@@ -95,6 +98,11 @@ UNIT_SRCS := tests/unit_parse_format_spec.cc \
              tests/unit_ftoa_rev_16.cc \
              tests/unit_ftoa_rev_32.cc \
              tests/unit_ftoa_rev_64.cc \
+             tests/unit_etoa_rev.cc \
+             tests/unit_etoa_rev_08.cc \
+             tests/unit_etoa_rev_16.cc \
+             tests/unit_etoa_rev_32.cc \
+             tests/unit_etoa_rev_64.cc \
              tests/unit_utoa_rev.cc \
              tests/unit_utoa_rev_divfree.cc \
              tests/unit_snprintf.cc \
@@ -106,7 +114,7 @@ UNIT_LARGE_OBJS := $(patsubst tests/%.cc,$(BUILD)/unit_large/%.o,$(UNIT_SRCS))
 
 # --- Header dependencies ---
 NPF_H     := nanoprintf.h
-TEST_HDRS := tests/unit_nanoprintf.h tests/npf_doctest.h tests/doctest.h
+TEST_HDRS := tests/unit_nanoprintf.h tests/npf_doctest.h tests/doctest.h tests/unit_eg.inc
 
 # ============================================================
 # Top-level targets
@@ -119,14 +127,14 @@ all: conformance unit compile-only
 # --- Config change detection ---
 $(BUILD)/config.stamp: FORCE
 	@mkdir -p $(BUILD)
-	@echo '$(CC) $(CXX) $(CFG) $(ARCH) $(SAN)' > $(BUILD)/config.stamp.tmp
+	@echo '$(CC) $(CXX) $(CFG) $(ARCH) $(SAN) $(SHARD)' > $(BUILD)/config.stamp.tmp
 	@cmp -s $(BUILD)/config.stamp.tmp $@ 2>/dev/null || cp $(BUILD)/config.stamp.tmp $@
 	@rm -f $(BUILD)/config.stamp.tmp
 
 # --- Conformance tests (recursive make) ---
 tests/generated/Makefile: tests/gen_tests.py $(BUILD)/config.stamp
 	$(MSG) GEN conformance
-	$(QUIET)$(PYTHON3) tests/gen_tests.py --cc "$(CC)" --cxx "$(CXX)" --arch $(ARCH) --sanitizer $(SAN)
+	$(QUIET)$(PYTHON3) tests/gen_tests.py --cc "$(CC)" --cxx "$(CXX)" --arch $(ARCH) --sanitizer $(SAN) --shard $(SHARD)
 
 conformance: tests/generated/Makefile
 	$(QUIET)$(MAKE) -C tests/generated $(if $(filter 1,$(VERBOSE)),V=1)
