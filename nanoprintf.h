@@ -1169,6 +1169,13 @@ static int npf_etoa_rev(char *buf, npf_format_spec_t const *spec, npf_real_t f) 
         carry = 0;
       }
 
+      /* Nothing below can make a zero mantissa nonzero, and the carry it would
+         leave is masked off at the end anyway, so a zero fraction can skip all of
+         it. That is not just an optimization: without the guard, zero spends about
+         a thousand iterations folding leading zeros into an exponent the fixup
+         then discards, which makes the most commonly printed value the slowest. */
+      if (man_f) {
+
       // Scale the exponent from base-2 to base-10 and prepare the first digit.
       for (uint_fast8_t digit = 0; (end > lo) && (exp_f < 4); ++exp_f) {
         if ((man_f > ((npf_ftoa_man_t)-4 / 5)) || digit) {
@@ -1188,7 +1195,7 @@ static int npf_etoa_rev(char *buf, npf_format_spec_t const *spec, npf_real_t f) 
       man_f = (npf_ftoa_man_t)(man_f + carry);
       carry = (uint_fast8_t)(exp_f >= 0);
 
-      if (man_f && (end > lo)) {
+      if (end > lo) {
         // Print the fraction. Trailing zeros are implicit in 'dec', so unlike
         // npf_ftoa_rev this stops as soon as the mantissa is exhausted.
         for (;;) {
@@ -1200,6 +1207,9 @@ static int npf_etoa_rev(char *buf, npf_format_spec_t const *spec, npf_real_t f) 
         }
         man_f = (npf_ftoa_man_t)(man_f << 4);
       }
+
+      } // end of the nonzero-fraction path
+
       // If the buffer filled first, this carry is stale, but then the excess-digit
       // path below recomputes it from the first dropped digit.
       carry &= (uint_fast8_t)(man_f >> (NPF_FTOA_MAN_BITS - 1));
@@ -1212,9 +1222,10 @@ static int npf_etoa_rev(char *buf, npf_format_spec_t const *spec, npf_real_t f) 
   if (!nsig) { buf[--end] = '0'; nsig = 1; dec = 0; carry = 0; }
 
   if (nsig > nsig_max) { // Drop the excess digits, rounding on the first of them.
-    dec += nsig - nsig_max;
+    int const drop = nsig - nsig_max;
+    dec += drop;
+    end += drop;
     nsig = nsig_max;
-    end = NANOPRINTF_CONVERSION_BUFFER_SIZE - nsig;
     // A first dropped digit of '4' can never round up: the rest of the remainder is
     // under one unit in its place, so 0.4999.. + r stays below one half.
     carry = (uint_fast8_t)(buf[end - 1] >= '5');
