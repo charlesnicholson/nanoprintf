@@ -10,6 +10,14 @@ on:
     - cron: '0 2 * * 0'  # Weekly
   workflow_dispatch:
 
+# Supersede a pull request's earlier runs when it is pushed to again. head_ref is
+# only set for pull_request events, so tag pushes, the weekly cron, and manual
+# dispatches fall through to run_id, get a group to themselves, and are never
+# cancelled -- a tag push has to reach the release job.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
 permissions:
   packages: read
 
