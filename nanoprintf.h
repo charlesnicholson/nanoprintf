@@ -351,11 +351,11 @@ enum {
 #endif
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
   NPF_FMT_SPEC_CONV_FLOAT_DEC,      // 'f', 'F'
-  NPF_FMT_SPEC_CONV_FLOAT_SCI,      // 'e', 'E'
-  NPF_FMT_SPEC_CONV_FLOAT_SHORTEST, // 'g', 'G'
 #if NANOPRINTF_USE_FLOAT_HEX_FORMAT_SPECIFIER == 1
   NPF_FMT_SPEC_CONV_FLOAT_HEX,      // 'a', 'A'
 #endif
+  NPF_FMT_SPEC_CONV_FLOAT_SCI,      // 'e', 'E'
+  NPF_FMT_SPEC_CONV_FLOAT_SHORTEST, // 'g', 'G'
 #endif
 };
 
@@ -382,6 +382,15 @@ NPF_CONV_ORDER_ASSERT(float_convs_last,
 #else
 NPF_CONV_ORDER_ASSERT(float_convs_last,
   NPF_FMT_SPEC_CONV_FLOAT_DEC > NPF_FMT_SPEC_CONV_POINTER);
+#endif
+// 'e'/'g' are dispatched by a single >= FLOAT_SCI range test, so they must be the
+// last float convs; 'a' is dispatched by equality and sits between them and 'f'.
+NPF_CONV_ORDER_ASSERT(sci_convs_after_other_floats,
+  (NPF_FMT_SPEC_CONV_FLOAT_SCI > NPF_FMT_SPEC_CONV_FLOAT_DEC) &&
+  (NPF_FMT_SPEC_CONV_FLOAT_SHORTEST == NPF_FMT_SPEC_CONV_FLOAT_SCI + 1));
+#if NANOPRINTF_USE_FLOAT_HEX_FORMAT_SPECIFIER == 1
+NPF_CONV_ORDER_ASSERT(hex_conv_before_sci_convs,
+  NPF_FMT_SPEC_CONV_FLOAT_HEX < NPF_FMT_SPEC_CONV_FLOAT_SCI);
 #endif
 #endif
 #undef NPF_CONV_ORDER_ASSERT
@@ -739,10 +748,21 @@ static NPF_FORCE_INLINE npf_real_bin_t npf_bin_shl(npf_real_bin_t v, int_fast8_t
   #define NPF_BIN_SHL(V, S) ((npf_real_bin_t)((V) << (S)))
 #endif
 
-static int npf_ftoa_rev(char *buf, npf_format_spec_t const *spec, npf_real_t f) {
-  // Packed reversed specials "NAN"/"FNI"(inf)/"RRE"(err), selected by offset.
-  static char const specials[] = "NAN\0FNI\0RRE";
-  char const *ret = NULL;
+// Emits a reversed special into buf: 0 -> "NAN", 4 -> "INF", 8 -> "ERR". Returns the
+// negated length, the caller's signal that the payload is text and not a number.
+static int npf_ftoa_special(char *buf, char case_adj, uint_fast8_t off) {
+  static char const specials[] = "NAN\0FNI\0RRE"; // packed reversed, selected by offset
+  char const *const s = specials + off;
+  uint_fast8_t i = 0;
+  do { buf[i] = (char)(s[i] + case_adj); } while (s[++i]);
+  return -(int)i;
+}
+
+enum { NPF_FTOA_NAN = 0, NPF_FTOA_INF = 4, NPF_FTOA_ERR = 8 };
+
+static int npf_ftoa_rev(
+    char *buf, npf_format_spec_t const *spec, int prec, npf_real_t f) {
+  uint_fast8_t sp; sp = NPF_FTOA_ERR;
   npf_real_bin_t bin = npf_real_to_int_rep(f);
 
   // Unsigned -> signed int casting is IB and can raise a signal but generally doesn't.
@@ -751,10 +771,10 @@ static int npf_ftoa_rev(char *buf, npf_format_spec_t const *spec, npf_real_t f) 
 
   bin &= ((npf_real_bin_t)0x1 << NPF_REAL_MAN_BITS) - 1;
   if (!((unsigned)(exp + 1) & NPF_REAL_EXP_MASK)) { // special value
-    ret = specials + (bin ? 0 : 4);
+    sp = bin ? NPF_FTOA_NAN : NPF_FTOA_INF;
     goto exit;
   }
-  if (spec->prec > (NANOPRINTF_CONVERSION_BUFFER_SIZE - 2)) { goto exit; }
+  if (prec > (NANOPRINTF_CONVERSION_BUFFER_SIZE - 2)) { goto exit; }
   if (exp) { // normal number
     bin |= (npf_real_bin_t)0x1 << NPF_REAL_MAN_BITS;
   } else { // subnormal number
@@ -763,7 +783,7 @@ static int npf_ftoa_rev(char *buf, npf_format_spec_t const *spec, npf_real_t f) 
   exp = (npf_ftoa_exp_t)(exp - NPF_REAL_EXP_BIAS);
 
   uint_fast8_t carry; carry = 0;
-  npf_ftoa_dec_t end, dec; dec = (npf_ftoa_dec_t)spec->prec;
+  npf_ftoa_dec_t end, dec; dec = (npf_ftoa_dec_t)prec;
   if (dec
 #if NANOPRINTF_USE_ALT_FORM_FLAG == 1
       || spec->alt_form
@@ -838,7 +858,7 @@ static int npf_ftoa_rev(char *buf, npf_format_spec_t const *spec, npf_real_t f) 
 
   { // Fraction part
     npf_ftoa_man_t man_f;
-    npf_ftoa_dec_t dec_f = (npf_ftoa_dec_t)spec->prec;
+    npf_ftoa_dec_t dec_f = (npf_ftoa_dec_t)prec;
 
     if (exp < NPF_REAL_MAN_BITS) {
       int_fast8_t shift_f = (int_fast8_t)((exp < 0) ? -1 : exp);
@@ -910,10 +930,7 @@ static int npf_ftoa_rev(char *buf, npf_format_spec_t const *spec, npf_real_t f) 
 
   return (int)end;
 exit:
-  if (!ret) { ret = specials + 8; }
-  uint_fast8_t i = 0;
-  do { buf[i] = (char)(ret[i] + spec->case_adjust); } while (ret[++i]);
-  return -(int)i;
+  return npf_ftoa_special(buf, spec->case_adjust, sp);
 }
 
 #if NANOPRINTF_USE_FLOAT_HEX_FORMAT_SPECIFIER == 1
@@ -1166,7 +1183,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
         need_0x = (char)('X' + fs.case_adjust);
       } else
 #endif
-      { cbuf_len = npf_ftoa_rev(cbuf, &fs, val); }
+      { cbuf_len = npf_ftoa_rev(cbuf, &fs, fs.prec, val); }
       if (cbuf_len < 0) { // negative means text (not number), so ignore the '0' flag
          cbuf_len = -cbuf_len;
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
