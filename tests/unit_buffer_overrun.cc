@@ -76,7 +76,7 @@ void check_string_n(char const *expected, int buf_sz, char const *fmt, ...) {
 // Basic sanity
 // ---------------------------------------------------------------------------
 
-TEST_CASE("overrun - basic") {
+TEST_CASE("overrun - basic" NPF_FLOAT_PATH) {
   SUBCASE("empty format") { check_string("", ""); }
   SUBCASE("single char") { check_string("x", "x"); }
   SUBCASE("short string") { check_string("hello", "hello"); }
@@ -92,7 +92,7 @@ TEST_CASE("overrun - basic") {
 // Long input strings to %s
 // ---------------------------------------------------------------------------
 
-TEST_CASE("overrun - long %s") {
+TEST_CASE("overrun - long %s" NPF_FLOAT_PATH) {
   SUBCASE("string longer than buffer") {
     std::string s(300, 'B');
     check_string(s.substr(0, 255).c_str(), "%s", s.c_str());
@@ -118,7 +118,7 @@ TEST_CASE("overrun - long %s") {
 // Large widths
 // ---------------------------------------------------------------------------
 
-TEST_CASE("overrun - large width") {
+TEST_CASE("overrun - large width" NPF_FLOAT_PATH) {
   SUBCASE("width larger than buffer") {
     check_string(nullptr, "%300d", 1);
   }
@@ -148,7 +148,7 @@ TEST_CASE("overrun - large width") {
 // Large precisions
 // ---------------------------------------------------------------------------
 
-TEST_CASE("overrun - large precision") {
+TEST_CASE("overrun - large precision" NPF_FLOAT_PATH) {
   SUBCASE("precision larger than buffer") {
     check_string(nullptr, "%.300d", 1);
   }
@@ -198,7 +198,7 @@ TEST_CASE("overrun - large precision") {
 // Multiple specifiers that only overflow when concatenated
 // ---------------------------------------------------------------------------
 
-TEST_CASE("overrun - multiple specifiers concatenated") {
+TEST_CASE("overrun - multiple specifiers concatenated" NPF_FLOAT_PATH) {
   SUBCASE("three strings that overflow together") {
     std::string a(100, 'A');
     std::string b(100, 'B');
@@ -230,7 +230,7 @@ TEST_CASE("overrun - multiple specifiers concatenated") {
 // Long literal characters in the format string
 // ---------------------------------------------------------------------------
 
-TEST_CASE("overrun - long literal format string") {
+TEST_CASE("overrun - long literal format string" NPF_FLOAT_PATH) {
   SUBCASE("all literals exceeding buffer") {
     std::string fmt(300, 'L');
     check_string(fmt.substr(0, 255).c_str(), fmt.c_str());
@@ -269,7 +269,7 @@ TEST_CASE("overrun - long literal format string") {
 // Small buffers (edge cases)
 // ---------------------------------------------------------------------------
 
-TEST_CASE("overrun - small buffers") {
+TEST_CASE("overrun - small buffers" NPF_FLOAT_PATH) {
   SUBCASE("buffer size 1") {
     check_string_n("", 1, "hello");
   }

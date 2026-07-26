@@ -793,23 +793,16 @@ static NPF_FORCE_INLINE npf_real_bin_t npf_bin_shl(npf_real_bin_t v, int_fast8_t
   #define NPF_BIN_SHL(V, S) ((npf_real_bin_t)((V) << (S)))
 #endif
 
-/* npf_ftoa_rev and npf_etoa_rev share a fair amount of shape: both scale the mantissa
-   from base-2 to base-10 with the same loop (doubling is exact while the top bit is
-   clear, otherwise the value is halved by dividing by 5, which moves the decimal point
-   and so produces a trailing zero -- 'f' emits those zeros, 'e' and 'g' fold them into
-   the exponent), and both unpack the float and extract the fraction the same way.
+/* Only one of the two float conversions is compiled at a time. npf_ftoa_rev knows
+   where the decimal point goes before it starts, so it fuses digit generation with
+   placement; that is the most compact way to do 'f' by itself, and it is what gets
+   compiled when 'f' is all that is enabled. npf_etoa_rev cannot fuse them, because
+   'e' does not know the decimal exponent until the digits are generated and
+   rounded, so it generates digits plus an exponent and lays out afterwards. When
+   'e' or 'g' is enabled, 'f' uses that generator too rather than adding a second
+   one, which is why npf_ftoa_rev is compiled out in those configurations.
 
-   Hoisting any of that into shared helpers was measured and is a loss, because gcc
-   specializes the inlined copies better than it can call a helper. At -Os, relative to
-   this file, on the Float / Float + Sci / Float + Sci + Shortest configurations:
-
-     scaling loop     cortex-m0 +24 / +0  / +36     cortex-m4 +16 / +20 / +0
-     fraction split   cortex-m0 +4  / +48 / +4      cortex-m4 +0  / +16 / -8
-     float unpack     cortex-m0 +0  / -64 / -52     cortex-m4 +0  / +4  / +48
-
-   The unpack one is the interesting case: it is a real win on cortex-m0 and a real
-   loss on cortex-m4, so it is left out rather than trading one target for the other.
-   Please re-measure both before reintroducing any of them. */
+   The two are held to each other by tests/unit_f_paths.cc. */
 
 // Emits a reversed special into buf: 0 -> "NAN", 4 -> "INF", 8 -> "ERR". Returns the
 // negated length, the caller's signal that the payload is text and not a number.
@@ -828,6 +821,7 @@ static int npf_ftoa_special(char *buf, char case_adj, uint_fast8_t off) {
 #define NPF_FTOA_INF 4u
 #define NPF_FTOA_ERR 8u
 
+#if NPF_USE_SCI == 0
 static int npf_ftoa_rev(
     char *buf, npf_format_spec_t const *spec, int prec, npf_real_t f) {
   uint_fast8_t sp; sp = NPF_FTOA_ERR;
@@ -1003,6 +997,7 @@ static int npf_ftoa_rev(
 exit:
   return npf_ftoa_special(buf, spec->case_adjust, sp);
 }
+#endif // NPF_USE_SCI == 0
 
 #if NPF_USE_SCI == 1
 
@@ -1022,7 +1017,8 @@ exit:
    rounding decision requires. */
 static int npf_etoa_rev(char *buf, npf_format_spec_t const *spec, npf_real_t f) {
   // A 'goto exit' jumps over these, so none of them may have an initializer.
-  int prec, nsig_max, nsig, dec, end, x;
+  int prec, nsig_max, nsig, dec, end, x, pe, fmode, dstop;
+  npf_ftoa_exp_t exp0;
 #if NANOPRINTF_USE_FLOAT_SHORTEST_FORMAT_SPECIFIER == 1
   int g, strip;
 #endif
@@ -1041,14 +1037,17 @@ static int npf_etoa_rev(char *buf, npf_format_spec_t const *spec, npf_real_t f) 
     goto exit;
   }
 
-  // 'e' precision counts digits after the point, so one more than that is significant.
+  /* 'f' bounds generation by decimal position, everything else by significant
+     digit count, so each mode gets one of the two stops and disables the other. */
   prec = spec->prec;
   nsig_max = prec + 1;
+  fmode = (spec->conv_spec == NPF_FMT_SPEC_CONV_FLOAT_DEC);
+  dstop = INT_MIN; // unreachable, so only 'f' below arms the position stop
 #if NANOPRINTF_USE_FLOAT_SHORTEST_FORMAT_SPECIFIER == 1
 #if NANOPRINTF_USE_FLOAT_SCI_FORMAT_SPECIFIER == 1
   g = (spec->conv_spec == NPF_FMT_SPEC_CONV_FLOAT_SHORTEST);
 #else
-  g = 1; // only 'g' can reach this function
+  g = !fmode; // with 'e' compiled out, whatever is not 'f' here is 'g'
 #endif
   strip = 1;
 #if NANOPRINTF_USE_ALT_FORM_FLAG == 1
@@ -1057,8 +1056,17 @@ static int npf_etoa_rev(char *buf, npf_format_spec_t const *spec, npf_real_t f) 
   // 'g' precision counts significant digits, and 0 means 1.
   if (g) { prec = prec ? prec : 1; nsig_max = prec; }
 #endif
-  // The longest output is "d.<prec digits>e+ddd". Bail before doing wasted work.
-  if (nsig_max > (NANOPRINTF_CONVERSION_BUFFER_SIZE - 7)) { goto exit; }
+  if (fmode) {
+    /* 'f' needs every digit down to 10^-prec, so the position stop below is what
+       ends generation and this bound only has to keep the fraction inside the
+       buffer: nsig_max of BUF would put 'lo' at -1 and allow a write below buf. */
+    nsig_max = NANOPRINTF_CONVERSION_BUFFER_SIZE - 1;
+    dstop = -prec - 1;
+    if (prec > (NANOPRINTF_CONVERSION_BUFFER_SIZE - 2)) { goto exit; }
+  } else if (nsig_max > (NANOPRINTF_CONVERSION_BUFFER_SIZE - 7)) {
+    // The longest output is "d.<prec digits>e+ddd". Bail before wasted work.
+    goto exit;
+  }
 
   if (exp) { // normal number
     bin |= (npf_real_bin_t)0x1 << NPF_REAL_MAN_BITS;
@@ -1067,6 +1075,11 @@ static int npf_etoa_rev(char *buf, npf_format_spec_t const *spec, npf_real_t f) 
   }
   exp = (npf_ftoa_exp_t)(exp - NPF_REAL_EXP_BIAS);
 
+  exp0 = exp;
+#if NANOPRINTF_USE_FLOAT_SHORTEST_FORMAT_SPECIFIER == 1
+regen: // only 'g' comes back here, to switch from significance to position bounds
+#endif
+  exp = exp0; // generation clobbers exp to invalidate the fraction part
   carry = 0;
   dec = 0;
 
@@ -1120,7 +1133,7 @@ static int npf_etoa_rev(char *buf, npf_format_spec_t const *spec, npf_real_t f) 
     // count isn't known until they're all out, hence the move; the destination index
     // always exceeds the source index, so the two ranges may overlap.
     end = NANOPRINTF_CONVERSION_BUFFER_SIZE;
-    if (man_i) {
+    if (man_i || fmode) {
       int k;
       if ((sizeof(npf_ftoa_man_t) <= sizeof(uint32_t)) &&
           (sizeof(npf_uint_t) >= sizeof(uint32_t))) {
@@ -1169,15 +1182,17 @@ static int npf_etoa_rev(char *buf, npf_format_spec_t const *spec, npf_real_t f) 
         carry = 0;
       }
 
-      /* Nothing below can make a zero mantissa nonzero, and the carry it would
-         leave is masked off at the end anyway, so a zero fraction can skip all of
-         it. That is not just an optimization: without the guard, zero spends about
-         a thousand iterations folding leading zeros into an exponent the fixup
-         then discards, which makes the most commonly printed value the slowest. */
-      if (man_f) {
+      /* A zero mantissa with no pending carry stays zero through everything below,
+         and contributes nothing, so it can skip all of it. That is not just an
+         optimization: without the guard, zero runs the loop once per binary exponent
+         step, folding leading zeros into an exponent the fixup then discards, which
+         leaves the most commonly printed value the slowest to print. The carry has to
+         be part of the test because the scaling step adds 3 when one is pending,
+         which is how a zero mantissa can still produce digits. */
+      if (man_f || carry) {
 
       // Scale the exponent from base-2 to base-10 and prepare the first digit.
-      for (uint_fast8_t digit = 0; (end > lo) && (exp_f < 4); ++exp_f) {
+      for (uint_fast8_t digit = 0; (end > lo) && (dec > dstop) && (exp_f < 4); ++exp_f) {
         if ((man_f > ((npf_ftoa_man_t)-4 / 5)) || digit) {
           carry = (uint_fast8_t)(man_f & 0x1);
           man_f = (npf_ftoa_man_t)(man_f >> 1);
@@ -1195,14 +1210,14 @@ static int npf_etoa_rev(char *buf, npf_format_spec_t const *spec, npf_real_t f) 
       man_f = (npf_ftoa_man_t)(man_f + carry);
       carry = (uint_fast8_t)(exp_f >= 0);
 
-      if (end > lo) {
+      if ((end > lo) && (dec > dstop)) {
         // Print the fraction. Trailing zeros are implicit in 'dec', so unlike
         // npf_ftoa_rev this stops as soon as the mantissa is exhausted.
         for (;;) {
           buf[--end] = (char)('0' + (char)(man_f >> (NPF_FTOA_MAN_BITS - 4)));
           --dec;
           man_f = (npf_ftoa_man_t)(man_f & ~((npf_ftoa_man_t)0xF << (NPF_FTOA_MAN_BITS - 4)));
-          if (!man_f || (end <= lo)) { break; }
+          if (!man_f || (end <= lo) || (dec <= dstop)) { break; }
           man_f = (npf_ftoa_man_t)(man_f * 10);
         }
         man_f = (npf_ftoa_man_t)(man_f << 4);
@@ -1221,14 +1236,18 @@ static int npf_etoa_rev(char *buf, npf_format_spec_t const *spec, npf_real_t f) 
   nsig = NANOPRINTF_CONVERSION_BUFFER_SIZE - end;
   if (!nsig) { buf[--end] = '0'; nsig = 1; dec = 0; carry = 0; }
 
-  if (nsig > nsig_max) { // Drop the excess digits, rounding on the first of them.
-    int const drop = nsig - nsig_max;
-    dec += drop;
-    end += drop;
-    nsig = nsig_max;
-    // A first dropped digit of '4' can never round up: the rest of the remainder is
-    // under one unit in its place, so 0.4999.. + r stays below one half.
-    carry = (uint_fast8_t)(buf[end - 1] >= '5');
+  /* Drop the digits past what the conversion asked for and round on the first of
+     them. 'f' overshoots by however far dec fell below its precision, the others
+     by however many significant digits beyond the maximum they produced. */
+  { int const drop = fmode ? (-prec - dec) : (nsig - nsig_max);
+    if (drop > 0) {
+      dec += drop;
+      end += drop;
+      nsig -= drop;
+      // A first dropped digit of '4' can never round up: the rest of the remainder
+      // is under one unit in its place, so 0.4999.. + r stays below one half.
+      carry = (uint_fast8_t)(buf[end - 1] >= '5');
+    }
   }
 
   for (int i = end; carry; ++i) { // Round the number
@@ -1250,17 +1269,56 @@ static int npf_etoa_rev(char *buf, npf_format_spec_t const *spec, npf_real_t f) 
     // Stripping moves 'dec' and 'nsig' by the same amount, so 'x' is unaffected.
     if (strip) { while ((nsig > 1) && (buf[end] == '0')) { ++end; --nsig; ++dec; } }
     if ((x >= -4) && (x < prec)) {
-      // C11 7.21.6.1p8: style 'f' with precision prec-1-x, which is what npf_ftoa_rev
-      // already does. Stripping trailing zeros just lowers that precision.
+      /* C11 7.21.6.1p8: style 'f' with precision prec-1-x. That wants digits down
+         to a decimal position rather than a count of them, and 'f' generation also
+         writes the leading zeros and the units digit that 'e' folds into the
+         exponent, so this regenerates instead of relaying out the run already in
+         the buffer. Same two passes npf_ftoa_rev used to provide, minus the second
+         copy of the conversion. */
       int const fp = (strip ? nsig : prec) - 1 - x;
-      return npf_ftoa_rev(buf, spec, (fp > 0) ? fp : 0, f);
+      prec = (fp > 0) ? fp : 0;
+      fmode = 1;
+      nsig_max = NANOPRINTF_CONVERSION_BUFFER_SIZE - 1;
+      dstop = -prec - 1;
+      g = 0; // one trip through here is enough
+      goto regen;
     }
   }
 #endif
 
+  if (fmode) { /* Compose "<int>.<frac>" reversed from buf[0] up.
+
+    Everything is derived from nsig and dec, the exponent of the least significant
+    generated digit, so the digits occupy exponents dec through dec+nsig-1:
+      id  generated digits that land in the integer part
+      iz  integer trailing zeros, when the digits stop above the units
+      fd  generated digits that land in the fraction
+      fz  fraction trailing zeros, padding out to the precision
+    Reversed, the order runs least significant first: fz, fd, point, iz, id. */
+    int const above = nsig + ((dec > 0) ? 0 : dec); // generated digits at 10^0 or up
+    int const id = (above < 0) ? 0 : above;
+    int const iz = (dec > 0) ? dec : 0;             // integer zeros below the digits
+    int const fd = nsig - id;                       // generated fraction digits
+    int const fz = prec - fd;                       // fraction zeros past the digits
+    int dp = (prec > 0);
+    int o = 0, i;
+#if NANOPRINTF_USE_ALT_FORM_FLAG == 1
+    dp |= (spec->alt_form != 0);
+#endif
+    // Same lockstep argument as the 'e' layout: reads and writes both walk up, so
+    // the gap is tightest at the last read and this one check covers it.
+    if ((id + iz + dp + prec) > NANOPRINTF_CONVERSION_BUFFER_SIZE) { goto exit; }
+    for (i = fz; i > 0; --i) { buf[o++] = '0'; }
+    for (i = 0; i < fd; ++i) { buf[o++] = buf[end + i]; }
+    buf[o] = '.'; o += dp;
+    for (i = iz; i > 0; --i) { buf[o++] = '0'; }
+    for (i = 0; i < id; ++i) { buf[o++] = buf[end + fd + i]; }
+    return o;
+  }
+
   { // Compose "d.<frac>e<sign><exp>" reversed from buf[0] up.
-    int pe = prec; // digits after the point
     int o;
+    pe = prec; // digits after the point
 #if NANOPRINTF_USE_FLOAT_SHORTEST_FORMAT_SPECIFIER == 1
     if (g) { pe = (strip ? nsig : prec) - 1; }
 #endif
@@ -1541,11 +1599,10 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
       } else
 #endif
 #if NPF_USE_SCI == 1
-      if (fs.conv_spec >= NPF_FMT_SPEC_CONV_FLOAT_SCI_FIRST) {
-        cbuf_len = npf_etoa_rev(cbuf, &fs, val);
-      } else
-#endif
+      { cbuf_len = npf_etoa_rev(cbuf, &fs, val); }
+#else
       { cbuf_len = npf_ftoa_rev(cbuf, &fs, fs.prec, val); }
+#endif
       if (cbuf_len < 0) { // negative means text (not number), so ignore the '0' flag
          cbuf_len = -cbuf_len;
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1

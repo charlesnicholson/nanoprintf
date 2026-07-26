@@ -54,7 +54,7 @@ std::string print_double(char const *fmt, double d) {
 }
 }
 
-TEST_CASE("nan") {
+TEST_CASE("nan" NPF_FLOAT_PATH) {
   REQUIRE(print_double("%f", npf_nan(0, 1, 0)) == "nan");
   REQUIRE(print_double("%f", npf_nan(0, 1, 1)) == "nan");
   REQUIRE(print_double("%f", npf_nan(0, 0, 0)) == "nan");
@@ -100,7 +100,7 @@ TEST_CASE("nan") {
   REQUIRE(print_double("%-.6f", npf_nan(1, 1, 0)) == "-nan");
 }
 
-TEST_CASE("inf") {
+TEST_CASE("inf" NPF_FLOAT_PATH) {
   REQUIRE(print_double("%0.6f", (double)INFINITY) == "inf");
   REQUIRE(print_double("%0.6f", (double)-INFINITY) == "-inf");
   REQUIRE(print_double("%+.6f", (double)INFINITY) == "+inf");
