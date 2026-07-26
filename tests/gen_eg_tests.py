@@ -38,58 +38,51 @@ CONV = ["e", "E", "g", "G"]
 
 
 def curated() -> list[Case]:
+    """Cases for conformance.c, which compiles once per flag combination.
+
+    Keep this small and pointed at flag interactions: which code paths a guard
+    switches on and off. Value and precision breadth belongs in exhaustive(),
+    which lands in a unit test that compiles twice rather than thousands of times.
+    """
     out: list[Case] = []
 
     def add(group: str, fmt: str, val: str) -> None:
         out.append((group, fmt, val))
 
-    # zero, negative zero, one, and the sign/space flags on each spelling
-    for v in ["0.0", "-0.0", "1.0", "-1.0", "1.5", "-1.5"]:
+    # One representative per conversion and per sign flag, plus the zero and
+    # negative-zero cases that exercise the sign path without a conversion.
+    for v in ["0.0", "-0.0", "1.5", "-1.5", "1e-5", "1e100"]:
         for c in CONV:
             add("basic", f"%{c}", v)
-            add("basic", f"%+{c}", v)
-            add("basic", f"% {c}", v)
-            add("basic", f"%.0{c}", v)
-            add("basic", f"%.1{c}", v)
-            add("basic", f"%.3{c}", v)
+    for f in ["%+e", "% e", "%+g", "% g", "%.0e", "%.0g", "%.3e", "%.3g"]:
+        add("basic", f, "1.5")
+        add("basic", f, "-1.5")
 
-    # alt form: keeps the point and, for %g, the trailing zeros
-    for v in ["0.0", "1.0", "100.0", "1.5", "1e5", "1e-5", "0.0001"]:
+    # ALT_FORM: '#' keeps the point, and for %g also the trailing zeros.
+    for v in ["0.0", "1.0", "100.0", "1e-5"]:
         for c in CONV:
             add("alt-form", f"%#{c}", v)
-            add("alt-form", f"%#.0{c}", v)
-            add("alt-form", f"%#.1{c}", v)
-            add("alt-form", f"%#.4{c}", v)
+    for f in ["%#.0e", "%#.0g", "%#.4e", "%#.4g"]:
+        add("alt-form", f, "1.0")
 
-    # the %g style boundary, both sides, and trailing-zero removal
-    for v in ["1e-5", "0.0001", "0.001", "0.1", "1.0", "10.0", "100.0", "1000.0",
-              "100000.0", "1000000.0", "1e7", "999999.0"]:
-        for p in (1, 2, 4, 6):
-            add("g-style", f"%.{p}g", v)
-    for v in ["100.0", "1.5", "1.25", "1e5", "120.0", "0.5"]:
-        for p in (1, 3, 6):
-            add("g-strip", f"%.{p}g", v)
-            add("g-strip", f"%#.{p}g", v)
-
-    # exponent field: two digits minimum, three when the exponent needs them
-    for v in ["1.0", "10.0", "0.1", "1e9", "1e-9", "1e10", "1e-10", "1e99", "1e-99",
-              "1e100", "1e-100"]:
-        add("exponent", "%.3e", v)
-        add("exponent", "%.3E", v)
-        add("exponent", "%.2g", v)
-
-    # rounding carries that move the exponent
-    for v in ["9.5", "0.95", "9.9999", "0.99999", "0.09999"]:
-        for f in ["%.0e", "%.1e", "%.3e", "%.0g", "%.1g", "%.3g"]:
-            add("rounding", f, v)
-
-    # field width, justification, zero padding
-    for v in ["0.0", "-0.0", "1.5", "-1.5", "1e-5", "-1e100"]:
+    # FIELD_WIDTH: justification and zero padding, including the zero-value case
+    # where the '0' flag used to be dropped.
+    for v in ["0.0", "-0.0", "1.5", "-1.5"]:
         for f in ["%20e", "%20g", "%-20e", "%-20g", "%020e", "%020g",
-                  "%+20.3e", "%+-20.3g", "%020.3e", "%020.3g", "% 20.2e",
-                  "%1e", "%1g", "%13.3e", "%14.4g", "%020.0e", "%020.0g",
-                  "%08.0e", "%08.0g"]:
+                  "%020.0e", "%020.0g", "%08.0e", "%08.0g", "%+20.3e", "%020.3g"]:
             add("width", f, v)
+
+    # The style choice in %g, which is the one piece of logic a wrong guard would
+    # silently break: f style iff -4 <= X < P, on both sides of each boundary.
+    for p, v in [(1, "1e-5"), (1, "1e-4"), (1, "0.1"), (1, "1.0"), (1, "10.0"),
+                 (6, "1e-5"), (6, "0.0001"), (6, "100000.0"), (6, "1000000.0"),
+                 (2, "100.0"), (4, "999999.0"), (4, "1e7")]:
+        add("g-style", f"%.{p}g", v)
+
+    # Exponent field: two digits minimum, three when needed, both signs.
+    for v in ["1.0", "1e9", "1e-9", "1e100", "1e-100"]:
+        add("exponent", "%.2e", v)
+        add("exponent", "%.2E", v)
 
     return out
 
@@ -131,6 +124,30 @@ def exhaustive() -> list[Case]:
         for f in ["%e", "%g", "%.0e", "%.1e", "%.3e", "%.0g", "%.2g", "%.4g",
                   "%#.3e", "%#.3g", "%E", "%G"]:
             add(f, v)
+    # the precision sweep and boundary values that used to sit in conformance.c
+    for v in ["0.0", "1.0", "0.5", "1.5", "2.0", "0.25", "0.125", "0.00390625",
+              "42.5", "1024.0", "1e-5", "1e5", "0.0625"]:
+        for p in range(18):
+            for c in convs:
+                add(f"%.{p}{c}", v)
+                add(f"%#.{p}{c}", v)
+    for p in (1, 2, 3, 4, 6, 9):
+        for v in ["1e-5", "1e-4", "0.0001", "0.00012", "0.001", "0.01", "0.1", "1.0",
+                  "10.0", "100.0", "1000.0", "10000.0", "100000.0", "1000000.0",
+                  "1e7", "1e8", "1e9", "999999.0", "1000001.0"]:
+            add(f"%.{p}g", v)
+            add(f"%#.{p}g", v)
+    for v in ["100.0", "1000.0", "1.5", "1.25", "0.5", "1e5", "1.0", "120.0",
+              "0.1", "1.100000", "10.5", "1e-4"]:
+        for p in (1, 2, 3, 5, 6, 10):
+            add(f"%.{p}g", v)
+            add(f"%#.{p}g", v)
+    for v in ["1.0", "10.0", "1e-1", "1e9", "1e-9", "1e10", "1e-10", "1e99", "1e-99",
+              "1e100", "1e-100", "1e300", "1e-300", "1e-320", "5e-324",
+              "1.7976931348623157e308", "2.2250738585072014e-308"]:
+        for f in ["%.3e", "%.3E", "%.3g", "%.3G", "%.6e", "%.0e", "%e", "%g"]:
+            add(f, v)
+
     # widths crossed with signs on a handful of magnitudes
     for v in ["0.0", "-0.0", "1.5", "-1.5", "1e-5", "-1e-5", "1e10", "-1e10"]:
         for f in ["%20e", "%20g", "%-20e", "%-20g", "%020e", "%020g", "%+20.3e",

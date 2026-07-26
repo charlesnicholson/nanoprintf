@@ -43,6 +43,7 @@ jobs:
       matrix:
         sanitizer: [ubsan, asan]
         architecture: [32, 64]
+        shard: ['1/4', '2/4', '3/4', '4/4']
 
     steps:
       - uses: actions/checkout@v7
@@ -50,7 +51,7 @@ jobs:
         env:
           CC: /usr/bin/clang
           CXX: /usr/bin/clang++
-        run: make -j$(nproc) ARCH=${{ matrix.architecture }} SAN=${{ matrix.sanitizer }} VERBOSE=1
+        run: make -j$(nproc) ARCH=${{ matrix.architecture }} SAN=${{ matrix.sanitizer }} SHARD=${{ matrix.shard }} VERBOSE=1
 
   linux-x64:
     runs-on: ubuntu-latest
@@ -66,6 +67,7 @@ jobs:
         compiler: [gcc, clang]
         configuration: [Debug, Release]
         architecture: [32, 64]
+        shard: ['1/4', '2/4', '3/4', '4/4']
         include:
         - compiler: gcc
           cc: gcc
@@ -83,7 +85,7 @@ jobs:
         env:
           CC: ${{ matrix.cc }}
           CXX: ${{ matrix.cxx }}
-        run: make -j$(nproc) CFG=${{ matrix.configuration }} ARCH=${{ matrix.architecture }} VERBOSE=1
+        run: make -j$(nproc) CFG=${{ matrix.configuration }} ARCH=${{ matrix.architecture }} SHARD=${{ matrix.shard }} VERBOSE=1
 
   linux-arm64:
     runs-on: ubuntu-24.04-arm
@@ -98,6 +100,7 @@ jobs:
       matrix:
         compiler: [gcc, clang]
         configuration: [Debug, Release]
+        shard: ['1/4', '2/4', '3/4', '4/4']
         include:
         - compiler: gcc
           cc: gcc
@@ -112,7 +115,7 @@ jobs:
         env:
           CC: ${{ matrix.cc }}
           CXX: ${{ matrix.cxx }}
-        run: make -j$(nproc) CFG=${{ matrix.configuration }} ARCH=64 VERBOSE=1
+        run: make -j$(nproc) CFG=${{ matrix.configuration }} ARCH=64 SHARD=${{ matrix.shard }} VERBOSE=1
 
   macos:
     runs-on: macos-latest
@@ -120,11 +123,12 @@ jobs:
     strategy:
       matrix:
         configuration: [Debug, Release]
+        shard: ['1/4', '2/4', '3/4', '4/4']
 
     steps:
       - uses: actions/checkout@v7
       - name: Build
-        run: make -j$(sysctl -n hw.ncpu) CFG=${{ matrix.configuration }} VERBOSE=1
+        run: make -j$(sysctl -n hw.ncpu) CFG=${{ matrix.configuration }} SHARD=${{ matrix.shard }} VERBOSE=1
 
   win:
     runs-on: windows-latest

@@ -1,7 +1,9 @@
 """Generate the conformance test build artifacts for nanoprintf.
 
-Enumerates all valid flag combinations (768), then for each generates
-both a C and C++ compilation, for a total of 1536 test objects:
+Enumerates all valid flag combinations, then for each generates both a C and a
+C++ compilation. --shard I/N takes a strided slice of the combinations so CI can
+spread them over parallel jobs; the stride keeps each shard's flag mix varied,
+which balances the compile cost better than contiguous blocks would. Artifacts:
   - main.c                : declares + calls all per-combo test functions
   - Makefile               : POSIX make rules (cc + c++)
   - compile_commands.json  : Windows parallel builds (cl.exe)
@@ -92,7 +94,8 @@ def combo_label(combo: dict[str, int], lang: str) -> str:
     return f"[{lang}] " + " ".join(parts)
 
 
-def write_main_c(combos: list[dict[str, int]], out: pathlib.Path) -> bool:
+def write_main_c(combos: list[dict[str, int]], out: pathlib.Path,
+                 shard: str = "1/1") -> bool:
     """Write main.c that declares and calls every combo's test function."""
     n = len(combos)
     total = n * 2
@@ -128,7 +131,7 @@ int main(void) {{
     if (total_fail != 0) {{
         fprintf(stderr, "FAILED: %d assertion(s) across {total} combos\\n", total_fail);
     }} else {{
-        fprintf(stderr, "PASSED: %d assertions across {total} combos ({n} flags x 2 langs)\\n", total_pass);
+        fprintf(stderr, "PASSED: %d assertions across {total} objects ({n} flag combos, shard {shard}, x 2 langs)\\n", total_pass);
     }}
     return total_fail != 0 ? EXIT_FAILURE : EXIT_SUCCESS;
 }}
@@ -332,6 +335,12 @@ def main() -> int:
         default="none",
         help="Sanitizer to enable",
     )
+    parser.add_argument(
+        "--shard",
+        default="1/1",
+        metavar="I/N",
+        help="Build shard I of N (1-based). Default 1/1 builds every combination.",
+    )
     parser.add_argument("--extra-cflags", default="", help="Extra CFLAGS")
     parser.add_argument("--verbose", action="store_true", help="Verbose output")
     args = parser.parse_args()
@@ -341,15 +350,28 @@ def main() -> int:
     out = out.resolve()
     out.mkdir(parents=True, exist_ok=True)
 
+    try:
+        shard_index, shard_count = (int(x) for x in args.shard.split("/", 1))
+    except ValueError:
+        parser.error(f"--shard wants I/N, got {args.shard!r}")
+    if not 1 <= shard_index <= shard_count:
+        parser.error(f"--shard {args.shard} is out of range")
+
     combos = valid_combos()
+    all_count = len(combos)
+    # Stride rather than slice: consecutive combinations differ only in the
+    # last flags, so a contiguous block would be far cheaper to build than
+    # its neighbours and the shards would finish at wildly different times.
+    combos = combos[shard_index - 1 :: shard_count]
     total = len(combos) * 2
 
-    changed = write_main_c(combos, out)
+    changed = write_main_c(combos, out, args.shard)
     if sys.platform == "win32":
         changed |= write_compile_commands(combos, out)
         if args.verbose or changed:
             print(
-                f"Generated build for {total} combos ({len(combos)} flags x 2 langs) in {out}"
+                f"Generated build for {total} objects ({len(combos)} of {all_count} flag "
+                f"combos, shard {args.shard}, x 2 langs) in {out}"
             )
     else:
         changed |= write_makefile(
@@ -363,7 +385,8 @@ def main() -> int:
         )
         if args.verbose or changed:
             print(
-                f"Generated build for {total} combos ({len(combos)} flags x 2 langs) in {out}"
+                f"Generated build for {total} objects ({len(combos)} of {all_count} flag "
+                f"combos, shard {args.shard}, x 2 langs) in {out}"
             )
     return 0
 

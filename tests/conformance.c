@@ -1753,319 +1753,76 @@ int NPF_TEST_FUNC(void) {
     /* Verified against the system printf by tests/gen_eg_tests.py. */
 #if NANOPRINTF_USE_FLOAT_SCI_FORMAT_SPECIFIER == 1
     NPF_TEST("0.000000e+00", "%e", 0.0); /* basic */
-    NPF_TEST("+0.000000e+00", "%+e", 0.0); /* basic */
-    NPF_TEST(" 0.000000e+00", "% e", 0.0); /* basic */
-    NPF_TEST("0e+00", "%.0e", 0.0); /* basic */
-    NPF_TEST("0.0e+00", "%.1e", 0.0); /* basic */
-    NPF_TEST("0.000e+00", "%.3e", 0.0); /* basic */
     NPF_TEST("0.000000E+00", "%E", 0.0); /* basic */
-    NPF_TEST("+0.000000E+00", "%+E", 0.0); /* basic */
-    NPF_TEST(" 0.000000E+00", "% E", 0.0); /* basic */
-    NPF_TEST("0E+00", "%.0E", 0.0); /* basic */
-    NPF_TEST("0.0E+00", "%.1E", 0.0); /* basic */
-    NPF_TEST("0.000E+00", "%.3E", 0.0); /* basic */
     NPF_TEST("-0.000000e+00", "%e", -0.0); /* basic */
-    NPF_TEST("-0.000000e+00", "%+e", -0.0); /* basic */
-    NPF_TEST("-0.000000e+00", "% e", -0.0); /* basic */
-    NPF_TEST("-0e+00", "%.0e", -0.0); /* basic */
-    NPF_TEST("-0.0e+00", "%.1e", -0.0); /* basic */
-    NPF_TEST("-0.000e+00", "%.3e", -0.0); /* basic */
     NPF_TEST("-0.000000E+00", "%E", -0.0); /* basic */
-    NPF_TEST("-0.000000E+00", "%+E", -0.0); /* basic */
-    NPF_TEST("-0.000000E+00", "% E", -0.0); /* basic */
-    NPF_TEST("-0E+00", "%.0E", -0.0); /* basic */
-    NPF_TEST("-0.0E+00", "%.1E", -0.0); /* basic */
-    NPF_TEST("-0.000E+00", "%.3E", -0.0); /* basic */
-    NPF_TEST("1.000000e+00", "%e", 1.0); /* basic */
-    NPF_TEST("+1.000000e+00", "%+e", 1.0); /* basic */
-    NPF_TEST(" 1.000000e+00", "% e", 1.0); /* basic */
-    NPF_TEST("1e+00", "%.0e", 1.0); /* basic */
-    NPF_TEST("1.0e+00", "%.1e", 1.0); /* basic */
-    NPF_TEST("1.000e+00", "%.3e", 1.0); /* basic */
-    NPF_TEST("1.000000E+00", "%E", 1.0); /* basic */
-    NPF_TEST("+1.000000E+00", "%+E", 1.0); /* basic */
-    NPF_TEST(" 1.000000E+00", "% E", 1.0); /* basic */
-    NPF_TEST("1E+00", "%.0E", 1.0); /* basic */
-    NPF_TEST("1.0E+00", "%.1E", 1.0); /* basic */
-    NPF_TEST("1.000E+00", "%.3E", 1.0); /* basic */
-    NPF_TEST("-1.000000e+00", "%e", -1.0); /* basic */
-    NPF_TEST("-1.000000e+00", "%+e", -1.0); /* basic */
-    NPF_TEST("-1.000000e+00", "% e", -1.0); /* basic */
-    NPF_TEST("-1e+00", "%.0e", -1.0); /* basic */
-    NPF_TEST("-1.0e+00", "%.1e", -1.0); /* basic */
-    NPF_TEST("-1.000e+00", "%.3e", -1.0); /* basic */
-    NPF_TEST("-1.000000E+00", "%E", -1.0); /* basic */
-    NPF_TEST("-1.000000E+00", "%+E", -1.0); /* basic */
-    NPF_TEST("-1.000000E+00", "% E", -1.0); /* basic */
-    NPF_TEST("-1E+00", "%.0E", -1.0); /* basic */
-    NPF_TEST("-1.0E+00", "%.1E", -1.0); /* basic */
-    NPF_TEST("-1.000E+00", "%.3E", -1.0); /* basic */
     NPF_TEST("1.500000e+00", "%e", 1.5); /* basic */
-    NPF_TEST("+1.500000e+00", "%+e", 1.5); /* basic */
-    NPF_TEST(" 1.500000e+00", "% e", 1.5); /* basic */
-    NPF_TEST("2e+00", "%.0e", 1.5); /* basic */
-    NPF_TEST("1.5e+00", "%.1e", 1.5); /* basic */
-    NPF_TEST("1.500e+00", "%.3e", 1.5); /* basic */
     NPF_TEST("1.500000E+00", "%E", 1.5); /* basic */
-    NPF_TEST("+1.500000E+00", "%+E", 1.5); /* basic */
-    NPF_TEST(" 1.500000E+00", "% E", 1.5); /* basic */
-    NPF_TEST("2E+00", "%.0E", 1.5); /* basic */
-    NPF_TEST("1.5E+00", "%.1E", 1.5); /* basic */
-    NPF_TEST("1.500E+00", "%.3E", 1.5); /* basic */
     NPF_TEST("-1.500000e+00", "%e", -1.5); /* basic */
-    NPF_TEST("-1.500000e+00", "%+e", -1.5); /* basic */
-    NPF_TEST("-1.500000e+00", "% e", -1.5); /* basic */
-    NPF_TEST("-2e+00", "%.0e", -1.5); /* basic */
-    NPF_TEST("-1.5e+00", "%.1e", -1.5); /* basic */
-    NPF_TEST("-1.500e+00", "%.3e", -1.5); /* basic */
     NPF_TEST("-1.500000E+00", "%E", -1.5); /* basic */
-    NPF_TEST("-1.500000E+00", "%+E", -1.5); /* basic */
-    NPF_TEST("-1.500000E+00", "% E", -1.5); /* basic */
-    NPF_TEST("-2E+00", "%.0E", -1.5); /* basic */
-    NPF_TEST("-1.5E+00", "%.1E", -1.5); /* basic */
-    NPF_TEST("-1.500E+00", "%.3E", -1.5); /* basic */
-    NPF_TEST("1.000e+01", "%.3e", 10.0); /* exponent */
-    NPF_TEST("1.000E+01", "%.3E", 10.0); /* exponent */
-    NPF_TEST("1.000e-01", "%.3e", 0.1); /* exponent */
-    NPF_TEST("1.000E-01", "%.3E", 0.1); /* exponent */
-    NPF_TEST("1.000e+09", "%.3e", 1e9); /* exponent */
-    NPF_TEST("1.000E+09", "%.3E", 1e9); /* exponent */
-    NPF_TEST("1.000e-09", "%.3e", 1e-9); /* exponent */
-    NPF_TEST("1.000E-09", "%.3E", 1e-9); /* exponent */
-    NPF_TEST("1.000e+10", "%.3e", 1e10); /* exponent */
-    NPF_TEST("1.000E+10", "%.3E", 1e10); /* exponent */
-    NPF_TEST("1.000e-10", "%.3e", 1e-10); /* exponent */
-    NPF_TEST("1.000E-10", "%.3E", 1e-10); /* exponent */
-    NPF_TEST("1e+01", "%.0e", 9.5); /* rounding */
-    NPF_TEST("9.5e+00", "%.1e", 9.5); /* rounding */
-    NPF_TEST("9.500e+00", "%.3e", 9.5); /* rounding */
-    NPF_TEST("9e-01", "%.0e", 0.95); /* rounding */
-    NPF_TEST("9.5e-01", "%.1e", 0.95); /* rounding */
-    NPF_TEST("9.500e-01", "%.3e", 0.95); /* rounding */
-    NPF_TEST("1e+01", "%.0e", 9.9999); /* rounding */
-    NPF_TEST("1.0e+01", "%.1e", 9.9999); /* rounding */
-    NPF_TEST("1.000e+01", "%.3e", 9.9999); /* rounding */
-    NPF_TEST("1e+00", "%.0e", 0.99999); /* rounding */
-    NPF_TEST("1.0e+00", "%.1e", 0.99999); /* rounding */
-    NPF_TEST("1.000e+00", "%.3e", 0.99999); /* rounding */
-    NPF_TEST("1e-01", "%.0e", 0.09999); /* rounding */
-    NPF_TEST("1.0e-01", "%.1e", 0.09999); /* rounding */
-    NPF_TEST("9.999e-02", "%.3e", 0.09999); /* rounding */
+    NPF_TEST("1.000000e-05", "%e", 1e-5); /* basic */
+    NPF_TEST("1.000000E-05", "%E", 1e-5); /* basic */
+    NPF_TEST("+1.500000e+00", "%+e", 1.5); /* basic */
+    NPF_TEST("-1.500000e+00", "%+e", -1.5); /* basic */
+    NPF_TEST(" 1.500000e+00", "% e", 1.5); /* basic */
+    NPF_TEST("-1.500000e+00", "% e", -1.5); /* basic */
+    NPF_TEST("2e+00", "%.0e", 1.5); /* basic */
+    NPF_TEST("-2e+00", "%.0e", -1.5); /* basic */
+    NPF_TEST("1.500e+00", "%.3e", 1.5); /* basic */
+    NPF_TEST("-1.500e+00", "%.3e", -1.5); /* basic */
+    NPF_TEST("1.00e+00", "%.2e", 1.0); /* exponent */
+    NPF_TEST("1.00E+00", "%.2E", 1.0); /* exponent */
+    NPF_TEST("1.00e+09", "%.2e", 1e9); /* exponent */
+    NPF_TEST("1.00E+09", "%.2E", 1e9); /* exponent */
+    NPF_TEST("1.00e-09", "%.2e", 1e-9); /* exponent */
+    NPF_TEST("1.00E-09", "%.2E", 1e-9); /* exponent */
 #endif
 
 #if NANOPRINTF_USE_FLOAT_SHORTEST_FORMAT_SPECIFIER == 1
     NPF_TEST("0", "%g", 0.0); /* basic */
-    NPF_TEST("+0", "%+g", 0.0); /* basic */
-    NPF_TEST(" 0", "% g", 0.0); /* basic */
-    NPF_TEST("0", "%.0g", 0.0); /* basic */
-    NPF_TEST("0", "%.1g", 0.0); /* basic */
-    NPF_TEST("0", "%.3g", 0.0); /* basic */
     NPF_TEST("0", "%G", 0.0); /* basic */
-    NPF_TEST("+0", "%+G", 0.0); /* basic */
-    NPF_TEST(" 0", "% G", 0.0); /* basic */
-    NPF_TEST("0", "%.0G", 0.0); /* basic */
-    NPF_TEST("0", "%.1G", 0.0); /* basic */
-    NPF_TEST("0", "%.3G", 0.0); /* basic */
     NPF_TEST("-0", "%g", -0.0); /* basic */
-    NPF_TEST("-0", "%+g", -0.0); /* basic */
-    NPF_TEST("-0", "% g", -0.0); /* basic */
-    NPF_TEST("-0", "%.0g", -0.0); /* basic */
-    NPF_TEST("-0", "%.1g", -0.0); /* basic */
-    NPF_TEST("-0", "%.3g", -0.0); /* basic */
     NPF_TEST("-0", "%G", -0.0); /* basic */
-    NPF_TEST("-0", "%+G", -0.0); /* basic */
-    NPF_TEST("-0", "% G", -0.0); /* basic */
-    NPF_TEST("-0", "%.0G", -0.0); /* basic */
-    NPF_TEST("-0", "%.1G", -0.0); /* basic */
-    NPF_TEST("-0", "%.3G", -0.0); /* basic */
-    NPF_TEST("1", "%g", 1.0); /* basic */
-    NPF_TEST("+1", "%+g", 1.0); /* basic */
-    NPF_TEST(" 1", "% g", 1.0); /* basic */
-    NPF_TEST("1", "%.0g", 1.0); /* basic */
-    NPF_TEST("1", "%.1g", 1.0); /* basic */
-    NPF_TEST("1", "%.3g", 1.0); /* basic */
-    NPF_TEST("1", "%G", 1.0); /* basic */
-    NPF_TEST("+1", "%+G", 1.0); /* basic */
-    NPF_TEST(" 1", "% G", 1.0); /* basic */
-    NPF_TEST("1", "%.0G", 1.0); /* basic */
-    NPF_TEST("1", "%.1G", 1.0); /* basic */
-    NPF_TEST("1", "%.3G", 1.0); /* basic */
-    NPF_TEST("-1", "%g", -1.0); /* basic */
-    NPF_TEST("-1", "%+g", -1.0); /* basic */
-    NPF_TEST("-1", "% g", -1.0); /* basic */
-    NPF_TEST("-1", "%.0g", -1.0); /* basic */
-    NPF_TEST("-1", "%.1g", -1.0); /* basic */
-    NPF_TEST("-1", "%.3g", -1.0); /* basic */
-    NPF_TEST("-1", "%G", -1.0); /* basic */
-    NPF_TEST("-1", "%+G", -1.0); /* basic */
-    NPF_TEST("-1", "% G", -1.0); /* basic */
-    NPF_TEST("-1", "%.0G", -1.0); /* basic */
-    NPF_TEST("-1", "%.1G", -1.0); /* basic */
-    NPF_TEST("-1", "%.3G", -1.0); /* basic */
     NPF_TEST("1.5", "%g", 1.5); /* basic */
-    NPF_TEST("+1.5", "%+g", 1.5); /* basic */
-    NPF_TEST(" 1.5", "% g", 1.5); /* basic */
-    NPF_TEST("2", "%.0g", 1.5); /* basic */
-    NPF_TEST("2", "%.1g", 1.5); /* basic */
-    NPF_TEST("1.5", "%.3g", 1.5); /* basic */
     NPF_TEST("1.5", "%G", 1.5); /* basic */
-    NPF_TEST("+1.5", "%+G", 1.5); /* basic */
-    NPF_TEST(" 1.5", "% G", 1.5); /* basic */
-    NPF_TEST("2", "%.0G", 1.5); /* basic */
-    NPF_TEST("2", "%.1G", 1.5); /* basic */
-    NPF_TEST("1.5", "%.3G", 1.5); /* basic */
     NPF_TEST("-1.5", "%g", -1.5); /* basic */
-    NPF_TEST("-1.5", "%+g", -1.5); /* basic */
-    NPF_TEST("-1.5", "% g", -1.5); /* basic */
-    NPF_TEST("-2", "%.0g", -1.5); /* basic */
-    NPF_TEST("-2", "%.1g", -1.5); /* basic */
-    NPF_TEST("-1.5", "%.3g", -1.5); /* basic */
     NPF_TEST("-1.5", "%G", -1.5); /* basic */
-    NPF_TEST("-1.5", "%+G", -1.5); /* basic */
-    NPF_TEST("-1.5", "% G", -1.5); /* basic */
-    NPF_TEST("-2", "%.0G", -1.5); /* basic */
-    NPF_TEST("-2", "%.1G", -1.5); /* basic */
-    NPF_TEST("-1.5", "%.3G", -1.5); /* basic */
+    NPF_TEST("1e-05", "%g", 1e-5); /* basic */
+    NPF_TEST("1E-05", "%G", 1e-5); /* basic */
+    NPF_TEST("+1.5", "%+g", 1.5); /* basic */
+    NPF_TEST("-1.5", "%+g", -1.5); /* basic */
+    NPF_TEST(" 1.5", "% g", 1.5); /* basic */
+    NPF_TEST("-1.5", "% g", -1.5); /* basic */
+    NPF_TEST("2", "%.0g", 1.5); /* basic */
+    NPF_TEST("-2", "%.0g", -1.5); /* basic */
+    NPF_TEST("1.5", "%.3g", 1.5); /* basic */
+    NPF_TEST("-1.5", "%.3g", -1.5); /* basic */
     NPF_TEST("1e-05", "%.1g", 1e-5); /* g-style */
-    NPF_TEST("1e-05", "%.2g", 1e-5); /* g-style */
-    NPF_TEST("1e-05", "%.4g", 1e-5); /* g-style */
-    NPF_TEST("1e-05", "%.6g", 1e-5); /* g-style */
-    NPF_TEST("0.0001", "%.1g", 0.0001); /* g-style */
-    NPF_TEST("0.0001", "%.2g", 0.0001); /* g-style */
-    NPF_TEST("0.0001", "%.4g", 0.0001); /* g-style */
-    NPF_TEST("0.0001", "%.6g", 0.0001); /* g-style */
-    NPF_TEST("0.001", "%.1g", 0.001); /* g-style */
-    NPF_TEST("0.001", "%.2g", 0.001); /* g-style */
-    NPF_TEST("0.001", "%.4g", 0.001); /* g-style */
-    NPF_TEST("0.001", "%.6g", 0.001); /* g-style */
+    NPF_TEST("0.0001", "%.1g", 1e-4); /* g-style */
     NPF_TEST("0.1", "%.1g", 0.1); /* g-style */
-    NPF_TEST("0.1", "%.2g", 0.1); /* g-style */
-    NPF_TEST("0.1", "%.4g", 0.1); /* g-style */
-    NPF_TEST("0.1", "%.6g", 0.1); /* g-style */
-    NPF_TEST("1", "%.2g", 1.0); /* g-style */
-    NPF_TEST("1", "%.4g", 1.0); /* g-style */
-    NPF_TEST("1", "%.6g", 1.0); /* g-style */
+    NPF_TEST("1", "%.1g", 1.0); /* g-style */
     NPF_TEST("1e+01", "%.1g", 10.0); /* g-style */
-    NPF_TEST("10", "%.2g", 10.0); /* g-style */
-    NPF_TEST("10", "%.4g", 10.0); /* g-style */
-    NPF_TEST("10", "%.6g", 10.0); /* g-style */
-    NPF_TEST("1e+02", "%.1g", 100.0); /* g-style */
-    NPF_TEST("1e+02", "%.2g", 100.0); /* g-style */
-    NPF_TEST("100", "%.4g", 100.0); /* g-style */
-    NPF_TEST("100", "%.6g", 100.0); /* g-style */
-    NPF_TEST("1e+03", "%.1g", 1000.0); /* g-style */
-    NPF_TEST("1e+03", "%.2g", 1000.0); /* g-style */
-    NPF_TEST("1000", "%.4g", 1000.0); /* g-style */
-    NPF_TEST("1000", "%.6g", 1000.0); /* g-style */
-    NPF_TEST("1e+05", "%.1g", 100000.0); /* g-style */
-    NPF_TEST("1e+05", "%.2g", 100000.0); /* g-style */
-    NPF_TEST("1e+05", "%.4g", 100000.0); /* g-style */
+    NPF_TEST("1e-05", "%.6g", 1e-5); /* g-style */
+    NPF_TEST("0.0001", "%.6g", 0.0001); /* g-style */
     NPF_TEST("100000", "%.6g", 100000.0); /* g-style */
-    NPF_TEST("1e+06", "%.1g", 1000000.0); /* g-style */
-    NPF_TEST("1e+06", "%.2g", 1000000.0); /* g-style */
-    NPF_TEST("1e+06", "%.4g", 1000000.0); /* g-style */
     NPF_TEST("1e+06", "%.6g", 1000000.0); /* g-style */
-    NPF_TEST("1e+07", "%.1g", 1e7); /* g-style */
-    NPF_TEST("1e+07", "%.2g", 1e7); /* g-style */
-    NPF_TEST("1e+07", "%.4g", 1e7); /* g-style */
-    NPF_TEST("1e+07", "%.6g", 1e7); /* g-style */
-    NPF_TEST("1e+06", "%.1g", 999999.0); /* g-style */
-    NPF_TEST("1e+06", "%.2g", 999999.0); /* g-style */
+    NPF_TEST("1e+02", "%.2g", 100.0); /* g-style */
     NPF_TEST("1e+06", "%.4g", 999999.0); /* g-style */
-    NPF_TEST("999999", "%.6g", 999999.0); /* g-style */
-    NPF_TEST("100", "%.3g", 100.0); /* g-strip */
-    NPF_TEST("1.5", "%.6g", 1.5); /* g-strip */
-    NPF_TEST("1", "%.1g", 1.25); /* g-strip */
-    NPF_TEST("1.25", "%.3g", 1.25); /* g-strip */
-    NPF_TEST("1.25", "%.6g", 1.25); /* g-strip */
-    NPF_TEST("1e+05", "%.1g", 1e5); /* g-strip */
-    NPF_TEST("1e+05", "%.3g", 1e5); /* g-strip */
-    NPF_TEST("100000", "%.6g", 1e5); /* g-strip */
-    NPF_TEST("1e+02", "%.1g", 120.0); /* g-strip */
-    NPF_TEST("120", "%.3g", 120.0); /* g-strip */
-    NPF_TEST("120", "%.6g", 120.0); /* g-strip */
-    NPF_TEST("0.5", "%.1g", 0.5); /* g-strip */
-    NPF_TEST("0.5", "%.3g", 0.5); /* g-strip */
-    NPF_TEST("0.5", "%.6g", 0.5); /* g-strip */
-    NPF_TEST("1e+09", "%.2g", 1e9); /* exponent */
-    NPF_TEST("1e-09", "%.2g", 1e-9); /* exponent */
-    NPF_TEST("1e+10", "%.2g", 1e10); /* exponent */
-    NPF_TEST("1e-10", "%.2g", 1e-10); /* exponent */
-    NPF_TEST("1e+01", "%.0g", 9.5); /* rounding */
-    NPF_TEST("1e+01", "%.1g", 9.5); /* rounding */
-    NPF_TEST("9.5", "%.3g", 9.5); /* rounding */
-    NPF_TEST("0.9", "%.0g", 0.95); /* rounding */
-    NPF_TEST("0.9", "%.1g", 0.95); /* rounding */
-    NPF_TEST("0.95", "%.3g", 0.95); /* rounding */
-    NPF_TEST("1e+01", "%.0g", 9.9999); /* rounding */
-    NPF_TEST("1e+01", "%.1g", 9.9999); /* rounding */
-    NPF_TEST("10", "%.3g", 9.9999); /* rounding */
-    NPF_TEST("1", "%.0g", 0.99999); /* rounding */
-    NPF_TEST("1", "%.1g", 0.99999); /* rounding */
-    NPF_TEST("1", "%.3g", 0.99999); /* rounding */
-    NPF_TEST("0.1", "%.0g", 0.09999); /* rounding */
-    NPF_TEST("0.1", "%.1g", 0.09999); /* rounding */
-    NPF_TEST("0.1", "%.3g", 0.09999); /* rounding */
+    NPF_TEST("1e+07", "%.4g", 1e7); /* g-style */
 #endif
 
 #if NANOPRINTF_USE_FLOAT_SCI_FORMAT_SPECIFIER == 1
 #if NANOPRINTF_USE_ALT_FORM_FLAG == 1
     NPF_TEST("0.000000e+00", "%#e", 0.0); /* alt-form */
-    NPF_TEST("0.e+00", "%#.0e", 0.0); /* alt-form */
-    NPF_TEST("0.0e+00", "%#.1e", 0.0); /* alt-form */
-    NPF_TEST("0.0000e+00", "%#.4e", 0.0); /* alt-form */
     NPF_TEST("0.000000E+00", "%#E", 0.0); /* alt-form */
-    NPF_TEST("0.E+00", "%#.0E", 0.0); /* alt-form */
-    NPF_TEST("0.0E+00", "%#.1E", 0.0); /* alt-form */
-    NPF_TEST("0.0000E+00", "%#.4E", 0.0); /* alt-form */
     NPF_TEST("1.000000e+00", "%#e", 1.0); /* alt-form */
-    NPF_TEST("1.e+00", "%#.0e", 1.0); /* alt-form */
-    NPF_TEST("1.0e+00", "%#.1e", 1.0); /* alt-form */
-    NPF_TEST("1.0000e+00", "%#.4e", 1.0); /* alt-form */
     NPF_TEST("1.000000E+00", "%#E", 1.0); /* alt-form */
-    NPF_TEST("1.E+00", "%#.0E", 1.0); /* alt-form */
-    NPF_TEST("1.0E+00", "%#.1E", 1.0); /* alt-form */
-    NPF_TEST("1.0000E+00", "%#.4E", 1.0); /* alt-form */
     NPF_TEST("1.000000e+02", "%#e", 100.0); /* alt-form */
-    NPF_TEST("1.e+02", "%#.0e", 100.0); /* alt-form */
-    NPF_TEST("1.0e+02", "%#.1e", 100.0); /* alt-form */
-    NPF_TEST("1.0000e+02", "%#.4e", 100.0); /* alt-form */
     NPF_TEST("1.000000E+02", "%#E", 100.0); /* alt-form */
-    NPF_TEST("1.E+02", "%#.0E", 100.0); /* alt-form */
-    NPF_TEST("1.0E+02", "%#.1E", 100.0); /* alt-form */
-    NPF_TEST("1.0000E+02", "%#.4E", 100.0); /* alt-form */
-    NPF_TEST("1.500000e+00", "%#e", 1.5); /* alt-form */
-    NPF_TEST("2.e+00", "%#.0e", 1.5); /* alt-form */
-    NPF_TEST("1.5e+00", "%#.1e", 1.5); /* alt-form */
-    NPF_TEST("1.5000e+00", "%#.4e", 1.5); /* alt-form */
-    NPF_TEST("1.500000E+00", "%#E", 1.5); /* alt-form */
-    NPF_TEST("2.E+00", "%#.0E", 1.5); /* alt-form */
-    NPF_TEST("1.5E+00", "%#.1E", 1.5); /* alt-form */
-    NPF_TEST("1.5000E+00", "%#.4E", 1.5); /* alt-form */
-    NPF_TEST("1.000000e+05", "%#e", 1e5); /* alt-form */
-    NPF_TEST("1.e+05", "%#.0e", 1e5); /* alt-form */
-    NPF_TEST("1.0e+05", "%#.1e", 1e5); /* alt-form */
-    NPF_TEST("1.0000e+05", "%#.4e", 1e5); /* alt-form */
-    NPF_TEST("1.000000E+05", "%#E", 1e5); /* alt-form */
-    NPF_TEST("1.E+05", "%#.0E", 1e5); /* alt-form */
-    NPF_TEST("1.0E+05", "%#.1E", 1e5); /* alt-form */
-    NPF_TEST("1.0000E+05", "%#.4E", 1e5); /* alt-form */
     NPF_TEST("1.000000e-05", "%#e", 1e-5); /* alt-form */
-    NPF_TEST("1.e-05", "%#.0e", 1e-5); /* alt-form */
-    NPF_TEST("1.0e-05", "%#.1e", 1e-5); /* alt-form */
-    NPF_TEST("1.0000e-05", "%#.4e", 1e-5); /* alt-form */
     NPF_TEST("1.000000E-05", "%#E", 1e-5); /* alt-form */
-    NPF_TEST("1.E-05", "%#.0E", 1e-5); /* alt-form */
-    NPF_TEST("1.0E-05", "%#.1E", 1e-5); /* alt-form */
-    NPF_TEST("1.0000E-05", "%#.4E", 1e-5); /* alt-form */
-    NPF_TEST("1.000000e-04", "%#e", 0.0001); /* alt-form */
-    NPF_TEST("1.e-04", "%#.0e", 0.0001); /* alt-form */
-    NPF_TEST("1.0e-04", "%#.1e", 0.0001); /* alt-form */
-    NPF_TEST("1.0000e-04", "%#.4e", 0.0001); /* alt-form */
-    NPF_TEST("1.000000E-04", "%#E", 0.0001); /* alt-form */
-    NPF_TEST("1.E-04", "%#.0E", 0.0001); /* alt-form */
-    NPF_TEST("1.0E-04", "%#.1E", 0.0001); /* alt-form */
-    NPF_TEST("1.0000E-04", "%#.4E", 0.0001); /* alt-form */
+    NPF_TEST("1.e+00", "%#.0e", 1.0); /* alt-form */
+    NPF_TEST("1.0000e+00", "%#.4e", 1.0); /* alt-form */
 #endif
 #endif
 
@@ -2074,142 +1831,53 @@ int NPF_TEST_FUNC(void) {
     NPF_TEST("        0.000000e+00", "%20e", 0.0); /* width */
     NPF_TEST("0.000000e+00        ", "%-20e", 0.0); /* width */
     NPF_TEST("000000000.000000e+00", "%020e", 0.0); /* width */
-    NPF_TEST("          +0.000e+00", "%+20.3e", 0.0); /* width */
-    NPF_TEST("000000000000.000e+00", "%020.3e", 0.0); /* width */
-    NPF_TEST("            0.00e+00", "% 20.2e", 0.0); /* width */
-    NPF_TEST("0.000000e+00", "%1e", 0.0); /* width */
-    NPF_TEST("    0.000e+00", "%13.3e", 0.0); /* width */
     NPF_TEST("0000000000000000e+00", "%020.0e", 0.0); /* width */
     NPF_TEST("0000e+00", "%08.0e", 0.0); /* width */
+    NPF_TEST("          +0.000e+00", "%+20.3e", 0.0); /* width */
     NPF_TEST("       -0.000000e+00", "%20e", -0.0); /* width */
     NPF_TEST("-0.000000e+00       ", "%-20e", -0.0); /* width */
     NPF_TEST("-00000000.000000e+00", "%020e", -0.0); /* width */
-    NPF_TEST("          -0.000e+00", "%+20.3e", -0.0); /* width */
-    NPF_TEST("-00000000000.000e+00", "%020.3e", -0.0); /* width */
-    NPF_TEST("           -0.00e+00", "% 20.2e", -0.0); /* width */
-    NPF_TEST("-0.000000e+00", "%1e", -0.0); /* width */
-    NPF_TEST("   -0.000e+00", "%13.3e", -0.0); /* width */
     NPF_TEST("-000000000000000e+00", "%020.0e", -0.0); /* width */
     NPF_TEST("-000e+00", "%08.0e", -0.0); /* width */
+    NPF_TEST("          -0.000e+00", "%+20.3e", -0.0); /* width */
     NPF_TEST("        1.500000e+00", "%20e", 1.5); /* width */
     NPF_TEST("1.500000e+00        ", "%-20e", 1.5); /* width */
     NPF_TEST("000000001.500000e+00", "%020e", 1.5); /* width */
-    NPF_TEST("          +1.500e+00", "%+20.3e", 1.5); /* width */
-    NPF_TEST("000000000001.500e+00", "%020.3e", 1.5); /* width */
-    NPF_TEST("            1.50e+00", "% 20.2e", 1.5); /* width */
-    NPF_TEST("1.500000e+00", "%1e", 1.5); /* width */
-    NPF_TEST("    1.500e+00", "%13.3e", 1.5); /* width */
     NPF_TEST("0000000000000002e+00", "%020.0e", 1.5); /* width */
     NPF_TEST("0002e+00", "%08.0e", 1.5); /* width */
+    NPF_TEST("          +1.500e+00", "%+20.3e", 1.5); /* width */
     NPF_TEST("       -1.500000e+00", "%20e", -1.5); /* width */
     NPF_TEST("-1.500000e+00       ", "%-20e", -1.5); /* width */
     NPF_TEST("-00000001.500000e+00", "%020e", -1.5); /* width */
-    NPF_TEST("          -1.500e+00", "%+20.3e", -1.5); /* width */
-    NPF_TEST("-00000000001.500e+00", "%020.3e", -1.5); /* width */
-    NPF_TEST("           -1.50e+00", "% 20.2e", -1.5); /* width */
-    NPF_TEST("-1.500000e+00", "%1e", -1.5); /* width */
-    NPF_TEST("   -1.500e+00", "%13.3e", -1.5); /* width */
     NPF_TEST("-000000000000002e+00", "%020.0e", -1.5); /* width */
     NPF_TEST("-002e+00", "%08.0e", -1.5); /* width */
-    NPF_TEST("        1.000000e-05", "%20e", 1e-5); /* width */
-    NPF_TEST("1.000000e-05        ", "%-20e", 1e-5); /* width */
-    NPF_TEST("000000001.000000e-05", "%020e", 1e-5); /* width */
-    NPF_TEST("          +1.000e-05", "%+20.3e", 1e-5); /* width */
-    NPF_TEST("000000000001.000e-05", "%020.3e", 1e-5); /* width */
-    NPF_TEST("            1.00e-05", "% 20.2e", 1e-5); /* width */
-    NPF_TEST("1.000000e-05", "%1e", 1e-5); /* width */
-    NPF_TEST("    1.000e-05", "%13.3e", 1e-5); /* width */
-    NPF_TEST("0000000000000001e-05", "%020.0e", 1e-5); /* width */
-    NPF_TEST("0001e-05", "%08.0e", 1e-5); /* width */
+    NPF_TEST("          -1.500e+00", "%+20.3e", -1.5); /* width */
 #endif
 #endif
 
 #if NANOPRINTF_USE_FLOAT_SCI_FORMAT_SPECIFIER == 1
 #if NANOPRINTF_USE_FLOAT_SINGLE_PRECISION != 1
-    NPF_TEST("1.000e+99", "%.3e", 1e99); /* exponent */
-    NPF_TEST("1.000E+99", "%.3E", 1e99); /* exponent */
-    NPF_TEST("1.000e-99", "%.3e", 1e-99); /* exponent */
-    NPF_TEST("1.000E-99", "%.3E", 1e-99); /* exponent */
-    NPF_TEST("1.000e+100", "%.3e", 1e100); /* exponent */
-    NPF_TEST("1.000E+100", "%.3E", 1e100); /* exponent */
-    NPF_TEST("1.000e-100", "%.3e", 1e-100); /* exponent */
-    NPF_TEST("1.000E-100", "%.3E", 1e-100); /* exponent */
+    NPF_TEST("1.000000e+100", "%e", 1e100); /* basic */
+    NPF_TEST("1.000000E+100", "%E", 1e100); /* basic */
+    NPF_TEST("1.00e+100", "%.2e", 1e100); /* exponent */
+    NPF_TEST("1.00E+100", "%.2E", 1e100); /* exponent */
+    NPF_TEST("1.00e-100", "%.2e", 1e-100); /* exponent */
+    NPF_TEST("1.00E-100", "%.2E", 1e-100); /* exponent */
 #endif
 #endif
 
 #if NANOPRINTF_USE_FLOAT_SHORTEST_FORMAT_SPECIFIER == 1
 #if NANOPRINTF_USE_ALT_FORM_FLAG == 1
     NPF_TEST("0.00000", "%#g", 0.0); /* alt-form */
-    NPF_TEST("0.", "%#.0g", 0.0); /* alt-form */
-    NPF_TEST("0.", "%#.1g", 0.0); /* alt-form */
-    NPF_TEST("0.000", "%#.4g", 0.0); /* alt-form */
     NPF_TEST("0.00000", "%#G", 0.0); /* alt-form */
-    NPF_TEST("0.", "%#.0G", 0.0); /* alt-form */
-    NPF_TEST("0.", "%#.1G", 0.0); /* alt-form */
-    NPF_TEST("0.000", "%#.4G", 0.0); /* alt-form */
     NPF_TEST("1.00000", "%#g", 1.0); /* alt-form */
-    NPF_TEST("1.", "%#.0g", 1.0); /* alt-form */
-    NPF_TEST("1.", "%#.1g", 1.0); /* alt-form */
-    NPF_TEST("1.000", "%#.4g", 1.0); /* alt-form */
     NPF_TEST("1.00000", "%#G", 1.0); /* alt-form */
-    NPF_TEST("1.", "%#.0G", 1.0); /* alt-form */
-    NPF_TEST("1.", "%#.1G", 1.0); /* alt-form */
-    NPF_TEST("1.000", "%#.4G", 1.0); /* alt-form */
     NPF_TEST("100.000", "%#g", 100.0); /* alt-form */
-    NPF_TEST("1.e+02", "%#.0g", 100.0); /* alt-form */
-    NPF_TEST("1.e+02", "%#.1g", 100.0); /* alt-form */
-    NPF_TEST("100.0", "%#.4g", 100.0); /* alt-form */
     NPF_TEST("100.000", "%#G", 100.0); /* alt-form */
-    NPF_TEST("1.E+02", "%#.0G", 100.0); /* alt-form */
-    NPF_TEST("1.E+02", "%#.1G", 100.0); /* alt-form */
-    NPF_TEST("100.0", "%#.4G", 100.0); /* alt-form */
-    NPF_TEST("1.50000", "%#g", 1.5); /* alt-form */
-    NPF_TEST("2.", "%#.0g", 1.5); /* alt-form */
-    NPF_TEST("2.", "%#.1g", 1.5); /* alt-form */
-    NPF_TEST("1.500", "%#.4g", 1.5); /* alt-form */
-    NPF_TEST("1.50000", "%#G", 1.5); /* alt-form */
-    NPF_TEST("2.", "%#.0G", 1.5); /* alt-form */
-    NPF_TEST("2.", "%#.1G", 1.5); /* alt-form */
-    NPF_TEST("1.500", "%#.4G", 1.5); /* alt-form */
-    NPF_TEST("100000.", "%#g", 1e5); /* alt-form */
-    NPF_TEST("1.e+05", "%#.0g", 1e5); /* alt-form */
-    NPF_TEST("1.e+05", "%#.1g", 1e5); /* alt-form */
-    NPF_TEST("1.000e+05", "%#.4g", 1e5); /* alt-form */
-    NPF_TEST("100000.", "%#G", 1e5); /* alt-form */
-    NPF_TEST("1.E+05", "%#.0G", 1e5); /* alt-form */
-    NPF_TEST("1.E+05", "%#.1G", 1e5); /* alt-form */
-    NPF_TEST("1.000E+05", "%#.4G", 1e5); /* alt-form */
     NPF_TEST("1.00000e-05", "%#g", 1e-5); /* alt-form */
-    NPF_TEST("1.e-05", "%#.0g", 1e-5); /* alt-form */
-    NPF_TEST("1.e-05", "%#.1g", 1e-5); /* alt-form */
-    NPF_TEST("1.000e-05", "%#.4g", 1e-5); /* alt-form */
     NPF_TEST("1.00000E-05", "%#G", 1e-5); /* alt-form */
-    NPF_TEST("1.E-05", "%#.0G", 1e-5); /* alt-form */
-    NPF_TEST("1.E-05", "%#.1G", 1e-5); /* alt-form */
-    NPF_TEST("1.000E-05", "%#.4G", 1e-5); /* alt-form */
-    NPF_TEST("0.000100000", "%#g", 0.0001); /* alt-form */
-    NPF_TEST("0.0001", "%#.0g", 0.0001); /* alt-form */
-    NPF_TEST("0.0001", "%#.1g", 0.0001); /* alt-form */
-    NPF_TEST("0.0001000", "%#.4g", 0.0001); /* alt-form */
-    NPF_TEST("0.000100000", "%#G", 0.0001); /* alt-form */
-    NPF_TEST("0.0001", "%#.0G", 0.0001); /* alt-form */
-    NPF_TEST("0.0001", "%#.1G", 0.0001); /* alt-form */
-    NPF_TEST("0.0001000", "%#.4G", 0.0001); /* alt-form */
-    NPF_TEST("100.", "%#.3g", 100.0); /* g-strip */
-    NPF_TEST("100.000", "%#.6g", 100.0); /* g-strip */
-    NPF_TEST("1.50", "%#.3g", 1.5); /* g-strip */
-    NPF_TEST("1.50000", "%#.6g", 1.5); /* g-strip */
-    NPF_TEST("1.", "%#.1g", 1.25); /* g-strip */
-    NPF_TEST("1.25", "%#.3g", 1.25); /* g-strip */
-    NPF_TEST("1.25000", "%#.6g", 1.25); /* g-strip */
-    NPF_TEST("1.00e+05", "%#.3g", 1e5); /* g-strip */
-    NPF_TEST("100000.", "%#.6g", 1e5); /* g-strip */
-    NPF_TEST("1.e+02", "%#.1g", 120.0); /* g-strip */
-    NPF_TEST("120.", "%#.3g", 120.0); /* g-strip */
-    NPF_TEST("120.000", "%#.6g", 120.0); /* g-strip */
-    NPF_TEST("0.5", "%#.1g", 0.5); /* g-strip */
-    NPF_TEST("0.500", "%#.3g", 0.5); /* g-strip */
-    NPF_TEST("0.500000", "%#.6g", 0.5); /* g-strip */
+    NPF_TEST("1.", "%#.0g", 1.0); /* alt-form */
+    NPF_TEST("1.000", "%#.4g", 1.0); /* alt-form */
 #endif
 #endif
 
@@ -2218,90 +1886,34 @@ int NPF_TEST_FUNC(void) {
     NPF_TEST("                   0", "%20g", 0.0); /* width */
     NPF_TEST("0                   ", "%-20g", 0.0); /* width */
     NPF_TEST("00000000000000000000", "%020g", 0.0); /* width */
-    NPF_TEST("+0                  ", "%+-20.3g", 0.0); /* width */
-    NPF_TEST("00000000000000000000", "%020.3g", 0.0); /* width */
-    NPF_TEST("0", "%1g", 0.0); /* width */
-    NPF_TEST("             0", "%14.4g", 0.0); /* width */
     NPF_TEST("00000000000000000000", "%020.0g", 0.0); /* width */
     NPF_TEST("00000000", "%08.0g", 0.0); /* width */
+    NPF_TEST("00000000000000000000", "%020.3g", 0.0); /* width */
     NPF_TEST("                  -0", "%20g", -0.0); /* width */
     NPF_TEST("-0                  ", "%-20g", -0.0); /* width */
     NPF_TEST("-0000000000000000000", "%020g", -0.0); /* width */
-    NPF_TEST("-0                  ", "%+-20.3g", -0.0); /* width */
-    NPF_TEST("-0000000000000000000", "%020.3g", -0.0); /* width */
-    NPF_TEST("-0", "%1g", -0.0); /* width */
-    NPF_TEST("            -0", "%14.4g", -0.0); /* width */
     NPF_TEST("-0000000000000000000", "%020.0g", -0.0); /* width */
     NPF_TEST("-0000000", "%08.0g", -0.0); /* width */
+    NPF_TEST("-0000000000000000000", "%020.3g", -0.0); /* width */
     NPF_TEST("                 1.5", "%20g", 1.5); /* width */
     NPF_TEST("1.5                 ", "%-20g", 1.5); /* width */
     NPF_TEST("000000000000000001.5", "%020g", 1.5); /* width */
-    NPF_TEST("+1.5                ", "%+-20.3g", 1.5); /* width */
-    NPF_TEST("000000000000000001.5", "%020.3g", 1.5); /* width */
-    NPF_TEST("1.5", "%1g", 1.5); /* width */
-    NPF_TEST("           1.5", "%14.4g", 1.5); /* width */
     NPF_TEST("00000000000000000002", "%020.0g", 1.5); /* width */
     NPF_TEST("00000002", "%08.0g", 1.5); /* width */
+    NPF_TEST("000000000000000001.5", "%020.3g", 1.5); /* width */
     NPF_TEST("                -1.5", "%20g", -1.5); /* width */
     NPF_TEST("-1.5                ", "%-20g", -1.5); /* width */
     NPF_TEST("-00000000000000001.5", "%020g", -1.5); /* width */
-    NPF_TEST("-1.5                ", "%+-20.3g", -1.5); /* width */
-    NPF_TEST("-00000000000000001.5", "%020.3g", -1.5); /* width */
-    NPF_TEST("-1.5", "%1g", -1.5); /* width */
-    NPF_TEST("          -1.5", "%14.4g", -1.5); /* width */
     NPF_TEST("-0000000000000000002", "%020.0g", -1.5); /* width */
     NPF_TEST("-0000002", "%08.0g", -1.5); /* width */
-    NPF_TEST("               1e-05", "%20g", 1e-5); /* width */
-    NPF_TEST("1e-05               ", "%-20g", 1e-5); /* width */
-    NPF_TEST("0000000000000001e-05", "%020g", 1e-5); /* width */
-    NPF_TEST("+1e-05              ", "%+-20.3g", 1e-5); /* width */
-    NPF_TEST("0000000000000001e-05", "%020.3g", 1e-5); /* width */
-    NPF_TEST("1e-05", "%1g", 1e-5); /* width */
-    NPF_TEST("         1e-05", "%14.4g", 1e-5); /* width */
-    NPF_TEST("0000000000000001e-05", "%020.0g", 1e-5); /* width */
-    NPF_TEST("0001e-05", "%08.0g", 1e-5); /* width */
+    NPF_TEST("-00000000000000001.5", "%020.3g", -1.5); /* width */
 #endif
 #endif
 
 #if NANOPRINTF_USE_FLOAT_SHORTEST_FORMAT_SPECIFIER == 1
 #if NANOPRINTF_USE_FLOAT_SINGLE_PRECISION != 1
-    NPF_TEST("1e+99", "%.2g", 1e99); /* exponent */
-    NPF_TEST("1e-99", "%.2g", 1e-99); /* exponent */
-    NPF_TEST("1e+100", "%.2g", 1e100); /* exponent */
-    NPF_TEST("1e-100", "%.2g", 1e-100); /* exponent */
-#endif
-#endif
-
-#if NANOPRINTF_USE_FLOAT_SCI_FORMAT_SPECIFIER == 1
-#if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
-#if NANOPRINTF_USE_FLOAT_SINGLE_PRECISION != 1
-    NPF_TEST("      -1.000000e+100", "%20e", -1e100); /* width */
-    NPF_TEST("-1.000000e+100      ", "%-20e", -1e100); /* width */
-    NPF_TEST("-0000001.000000e+100", "%020e", -1e100); /* width */
-    NPF_TEST("         -1.000e+100", "%+20.3e", -1e100); /* width */
-    NPF_TEST("-0000000001.000e+100", "%020.3e", -1e100); /* width */
-    NPF_TEST("          -1.00e+100", "% 20.2e", -1e100); /* width */
-    NPF_TEST("-1.000000e+100", "%1e", -1e100); /* width */
-    NPF_TEST("  -1.000e+100", "%13.3e", -1e100); /* width */
-    NPF_TEST("-00000000000001e+100", "%020.0e", -1e100); /* width */
-    NPF_TEST("-01e+100", "%08.0e", -1e100); /* width */
-#endif
-#endif
-#endif
-
-#if NANOPRINTF_USE_FLOAT_SHORTEST_FORMAT_SPECIFIER == 1
-#if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
-#if NANOPRINTF_USE_FLOAT_SINGLE_PRECISION != 1
-    NPF_TEST("             -1e+100", "%20g", -1e100); /* width */
-    NPF_TEST("-1e+100             ", "%-20g", -1e100); /* width */
-    NPF_TEST("-00000000000001e+100", "%020g", -1e100); /* width */
-    NPF_TEST("-1e+100             ", "%+-20.3g", -1e100); /* width */
-    NPF_TEST("-00000000000001e+100", "%020.3g", -1e100); /* width */
-    NPF_TEST("-1e+100", "%1g", -1e100); /* width */
-    NPF_TEST("       -1e+100", "%14.4g", -1e100); /* width */
-    NPF_TEST("-00000000000001e+100", "%020.0g", -1e100); /* width */
-    NPF_TEST("-01e+100", "%08.0g", -1e100); /* width */
-#endif
+    NPF_TEST("1e+100", "%g", 1e100); /* basic */
+    NPF_TEST("1E+100", "%G", 1e100); /* basic */
 #endif
 #endif
 
