@@ -7,11 +7,11 @@
 [![](https://img.shields.io/badge/license-public_domain-brightgreen.svg)](https://github.com/charlesnicholson/nanoprintf/blob/master/LICENSE)
 [![](https://img.shields.io/badge/license-0BSD-brightgreen)](https://github.com/charlesnicholson/nanoprintf/blob/master/LICENSE)
 
-nanoprintf is an unencumbered implementation of snprintf and vsnprintf for embedded systems that, when fully enabled, aim for C11 standard compliance. The primary exceptions are scientific notation (`%e`, `%g`), and locale conversions that require `wcrtomb` to exist. C23 binary integer output is optionally supported as per [N2630](http://www.open-std.org/jtc1/sc22/wg14/www/docs/n2630.pdf). Safety extensions for snprintf and vsnprintf can be optionally configured to return trimmed or fully-empty strings on buffer overflow events.
+nanoprintf is an unencumbered implementation of snprintf and vsnprintf for embedded systems that, when fully enabled, aim for C11 standard compliance. The primary exception is locale conversions that require `wcrtomb` to exist. C23 binary integer output is optionally supported as per [N2630](http://www.open-std.org/jtc1/sc22/wg14/www/docs/n2630.pdf). Safety extensions for snprintf and vsnprintf can be optionally configured to return trimmed or fully-empty strings on buffer overflow events.
 
 Additionally, nanoprintf can be used to parse printf-style format strings to extract the various parameters and conversion specifiers, without doing any actual text formatting.
 
-nanoprintf makes no memory allocations and uses less than 100 bytes of stack. It compiles to between <!-- BEGIN SIZE RANGE -->*~480-2400 bytes of object code*<!-- END SIZE RANGE --> on a Cortex-M4 architecture, depending on configuration.
+nanoprintf makes no memory allocations and uses less than 100 bytes of stack. It compiles to between <!-- BEGIN SIZE RANGE -->*~470-3500 bytes of object code*<!-- END SIZE RANGE --> on a Cortex-M4 architecture, depending on configuration.
 
 All code is written in a minimal dialect of C99 for maximal compiler compatibility, compiles cleanly at the highest warning levels on clang + gcc + msvc, raises no issues from UBsan or Asan, and is exhaustively tested on 32-bit and 64-bit architectures. nanoprintf does include C standard headers but only uses them for C99 types and argument lists; no calls are made into stdlib / libc, with the exception of any internal large integer arithmetic calls your compiler might emit. As usual, some Windows-specific headers are required if you're compiling natively for msvc.
 
@@ -92,6 +92,8 @@ nanoprintf has the following static configuration flags.
 * `NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS`: Set to `0` or `1`. Enables precision specifiers.
 * `NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS`: Set to `0` or `1`. Enables floating-point specifiers (`%f`/`%F`).
 * `NANOPRINTF_USE_FLOAT_HEX_FORMAT_SPECIFIER`: Set to `0` or `1`. Enables hex float specifier (`%a`/`%A`). Requires `NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=1`.
+* `NANOPRINTF_USE_FLOAT_SCI_FORMAT_SPECIFIER`: Set to `0` or `1`. Enables scientific float specifier (`%e`/`%E`). Requires `NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=1`.
+* `NANOPRINTF_USE_FLOAT_SHORTEST_FORMAT_SPECIFIER`: Set to `0` or `1`. Enables shortest float specifier (`%g`/`%G`). Requires `NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=1`. Since `%g` selects between `%e` and `%f` output, enabling it alone costs nearly as much as enabling both it and `NANOPRINTF_USE_FLOAT_SCI_FORMAT_SPECIFIER`.
 * `NANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS`: Set to `0` or `1`. Enables small modifiers.
 * `NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS`: Set to `0` or `1`. Enables oversized modifiers.
 * `NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS`: Set to `0` or `1`. Enables binary specifiers.
@@ -104,7 +106,9 @@ nanoprintf has the following static configuration flags.
 
 If no configuration flags are specified, nanoprintf will default to "reasonable" embedded values in an attempt to be helpful: floats are enabled, but writeback, binary, and large formatters are disabled. If any configuration flags are explicitly specified, nanoprintf requires that all flags are explicitly specified.
 
-If a disabled format specifier feature is used, no conversion will occur and the format specifier string simply will be printed instead.
+If a disabled format specifier feature is used, no conversion will occur and the format specifier string simply will be printed instead. This holds for every feature flag and for conversions, flags, and length modifiers alike: with floats disabled `"%f"` prints `%f`, with `NANOPRINTF_USE_FLOAT_SCI_FORMAT_SPECIFIER=0` `"%.3e"` prints `%.3e`, with field widths disabled `"%5d"` prints `%5d`, and so on. You get either the correct string or an obviously broken one, never a plausible wrong one.
+
+Because the specifier never parses, nanoprintf also never consumes its argument. The value stays on the variadic argument list and shifts every later conversion in the same format string, so `npf_snprintf(b, n, "%f %d", 1.5, 7)` with floats disabled prints `%f` followed by garbage rather than `7`. Consuming the argument would require knowing its type, which is exactly the code that was compiled out.
 
 Note, unrecognized conversion specifiers are undefined behavior. Nanoprintf folds the conversion specifier character to lowercase during parsing, so an unsupported uppercase specifier is treated as its lowercase counterpart: `%D` behaves like `%d`, `%S` like `%s`, `%P` prints a pointer, and so on, with uppercase output wherever case applies (hex digits, `INF`/`NAN`). Earlier versions of nanoprintf printed unrecognized specifiers literally instead; do not rely on either behavior.
 
@@ -113,6 +117,21 @@ nanoprintf has the following floating-point specific configuration defines.
 
 * `NANOPRINTF_CONVERSION_BUFFER_SIZE`: Optional, defaults to `23`. Sets the size of a character buffer used for storing the converted value. Set to a larger number to enable printing of floating-point numbers with more characters. The buffer size does include the integer part, the fraction part and the decimal separator, but does not include the sign and the padding characters. If the number does not fit into buffer, an `err` is printed. Be careful with large sizes as the conversion buffer is allocated on stack memory.
 * `NANOPRINTF_CONVERSION_FLOAT_TYPE`: Optional, defaults to `unsigned int`. Sets the integer type used for float conversion algorithm, which determines the conversion accuracy. Can be set to any unsigned integer type, like for example `uint64_t` or `uint8_t`.
+
+#### Accuracy
+
+The conversion algorithm scales the mantissa between base 2 and base 10 one step at a time, and each step can lose up to half a bit. How many significant digits survive therefore depends both on the width of `NANOPRINTF_CONVERSION_FLOAT_TYPE` and on how far the value's decimal exponent is from zero, since a larger exponent means more scaling steps. Worst-case correct significant digits, measured over random mantissas:
+
+| decimal exponent | 0 | ±50 | ±100 | ±200 | ±300 |
+| --- | --- | --- | --- | --- | --- |
+| `unsigned int` (32-bit, the default) | 6 | 4-5 | 4 | 2-3 | 3-4 |
+| `uint64_t` | 18 | 12-13 | 13 | 13-14 | 12-13 |
+
+`%f` largely hides this, because a value with a large exponent needs a conversion buffer far beyond the default before it prints anything but `err`. `%e` and `%g` do not, so **if you enable `%e` or `%g` and care about values outside roughly 1e-20 to 1e20, set `NANOPRINTF_CONVERSION_FLOAT_TYPE` to a 64-bit type.** With the default 32-bit intermediate, `printf("%e", 1e300)` yields `9.999999e+299` rather than `1.000000e+300`: correct to about seven significant digits, but not the digits the system printf produces.
+
+Rounding is half away from zero rather than the system printf's half to even, so a value whose exact decimal expansion ends in a lone `5` at the rounding position rounds up: `%.0f` of `0.5` is `1`, and `%.1e` of `42.5` is `4.3e+01`. All three float conversions agree with each other on this and on their digits; they only differ from the system printf.
+
+Subnormal values need a wide enough intermediate to be representable at all. With the default 32-bit type, `%e` of `5e-324` prints `0.000000e+00`.
 
 ### Sprintf Safety
 By default, npf_snprintf and npf_vsnprintf behave according to the C Standard: the provided buffer will be filled but not overrun. If the string would have overrun the buffer, a null-terminator byte will be written to the final byte of the buffer. If the buffer is `null` or zero-sized, no bytes will be written.
@@ -170,8 +189,8 @@ Like `printf`, `nanoprintf` expects a conversion specification string of the fol
 	* `p`: Pointers (Use with `#` for the leading `0x`)
 	* `n`: Write the number of bytes written to the pointer vararg
 	* `f`/`F`: Floating-point decimal
-	* `e`/`E`: Floating-point scientific (unimplemented, prints float decimal)
-	* `g`/`G`: Floating-point shortest (unimplemented, prints float decimal)
+	* `e`/`E`: Floating-point scientific
+	* `g`/`G`: Floating-point shortest
 	* `a`/`A`: Floating-point hex
 	* `b`/`B`: Binary integers
 
@@ -183,7 +202,11 @@ Because the float -> fixed code operates on the raw float value bits, no floatin
 
 The `%a`/`%A` hex float specifier is optionally supported via `NANOPRINTF_USE_FLOAT_HEX_FORMAT_SPECIFIER`. It operates directly on the IEEE 754 binary representation, emitting the mantissa as hex nibbles and the exponent in decimal. No floating-point arithmetic is performed. Rounding uses a nibble-at-a-time carry loop with only constant 3- and 4-bit shifts, keeping the code compact on architectures without a barrel shifter (e.g. Cortex-M0).
 
-The `%e`/`%E` and `%g`/`%G` specifiers are parsed but not formatted. If used, the output will be identical to if `%f`/`%F` was used. Pull requests welcome! :)
+The `%e`/`%E` and `%g`/`%G` specifiers are optionally supported via `NANOPRINTF_USE_FLOAT_SCI_FORMAT_SPECIFIER` and `NANOPRINTF_USE_FLOAT_SHORTEST_FORMAT_SPECIFIER`. They share the scaling code above but not its layout: `%f` knows where the decimal point goes before it starts, so it can fuse digit generation with digit placement, whereas `%e` cannot know the decimal exponent until the digits have been generated *and* rounded. So the significant digits are generated right-aligned at the top of the conversion buffer alongside the exponent of the least significant one, and the output string is composed afterwards. Zeros that only carry magnitude, meaning the integer part's trailing zeros and the fraction's leading zeros, are folded into the exponent instead of being emitted.
+
+`%g` follows C11 7.21.6.1p8 literally: it converts as `%e` with precision `P-1`, reads the exponent `X` off the result, and when `-4 <= X < P` re-converts as `%f` with precision `P-1-X`. That second pass is a real call back into the `%f` conversion, so `%g` costs very little beyond `%e`.
+
+Note that earlier versions of nanoprintf parsed `%e` and `%g` but formatted them as `%f`. They are now literal passthroughs unless their flags are enabled, which is how every other disabled feature behaves.
 
 ### Single-Precision Float Mode
 
@@ -272,7 +295,7 @@ See the [wrap_npf_float](https://github.com/charlesnicholson/nanoprintf/blob/mas
 
 No wide-character support exists: the `%lc` and `%ls` fields require that the arg be converted to a char array as if by a call to [wcrtomb](http://man7.org/linux/man-pages/man3/wcrtomb.3.html). When locale and character set conversions get involved, it's hard to keep the name "nano". Accordingly, `%lc` and `%ls` behave like `%c` and `%s`, respectively.
 
-Currently the supported float conversions are `%f`/`%F` and `%a`/`%A`. Pull requests for `%e`/`%g` welcome!
+All C float conversions are supported: `%f`/`%F`, `%e`/`%E`, `%g`/`%G`, and `%a`/`%A`. Only `%f`/`%F` is on by default when floats are enabled; the rest are opt-in per specifier. See [Accuracy](#accuracy) for how many significant digits to expect.
 
 ## Measurement
 
@@ -284,14 +307,16 @@ All measurements are the total size in bytes of the `nanoprintf` text symbols, c
 
 | Configuration | Cortex-M0 | Cortex-M4 |
 |---|--:|--:|
-| Minimal | 460 | 484 |
-| Binary | 520 | 548 |
-| Field Width + Precision | 1108 | 1124 |
-| Field Width + Precision + Binary | 1196 | 1252 |
-| Float | 1348 | 1384 |
-| Float (single-precision) | 1328 | 1324 |
-| Float + Hex Float | 1696 | 1664 |
-| Everything | 2284 | 2400 |
+| Minimal | 472 | 472 |
+| Binary | 532 | 524 |
+| Field Width + Precision | 1136 | 1128 |
+| Field Width + Precision + Binary | 1172 | 1208 |
+| Float | 1308 | 1380 |
+| Float (single-precision) | 1296 | 1332 |
+| Float + Sci | 2156 | 2176 |
+| Float + Sci + Shortest | 2320 | 2404 |
+| Float + Hex Float | 1640 | 1652 |
+| Everything | 3348 | 3484 |
 
 <!-- END SIZE REPORT -->
 

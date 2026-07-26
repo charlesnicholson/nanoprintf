@@ -32,3 +32,6 @@ tests/generated/
 .DS_Store
 *.TMP
 .ruff_cache
+
+# scratch output of tests/gen_eg_tests.py; paste into conformance.c by hand
+tests/conformance_eg.inc

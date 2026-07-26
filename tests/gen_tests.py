@@ -34,7 +34,17 @@ FLAGS = [
     "NANOPRINTF_USE_ALT_FORM_FLAG",
     "NANOPRINTF_USE_FLOAT_SINGLE_PRECISION",
     "NANOPRINTF_USE_FLOAT_HEX_FORMAT_SPECIFIER",
+    "NANOPRINTF_USE_FLOAT_SCI_FORMAT_SPECIFIER",
+    "NANOPRINTF_USE_FLOAT_SHORTEST_FORMAT_SPECIFIER",
     "NANOPRINTF_USE_DIVISION_FREE_CONVERSION",
+]
+
+# Flags that are only meaningful when NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS is 1.
+FLOAT_DEPENDENT_FLAGS = [
+    "NANOPRINTF_USE_FLOAT_SINGLE_PRECISION",
+    "NANOPRINTF_USE_FLOAT_HEX_FORMAT_SPECIFIER",
+    "NANOPRINTF_USE_FLOAT_SCI_FORMAT_SPECIFIER",
+    "NANOPRINTF_USE_FLOAT_SHORTEST_FORMAT_SPECIFIER",
 ]
 
 
@@ -43,8 +53,7 @@ def valid_combos() -> list[dict[str, int]]:
 
     Constraints:
       - float=1 requires precision=1
-      - single-precision=1 requires float=1 (and transitively precision=1)
-      - hex-float=1 requires float=1 (and transitively precision=1)
+      - every flag in FLOAT_DEPENDENT_FLAGS requires float=1 (and so precision=1)
     """
     combos = []
     for bits in itertools.product((0, 1), repeat=len(FLAGS)):
@@ -54,14 +63,8 @@ def valid_combos() -> list[dict[str, int]]:
             and combo["NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS"] == 0
         ):
             continue
-        if (
-            combo["NANOPRINTF_USE_FLOAT_SINGLE_PRECISION"] == 1
-            and combo["NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS"] == 0
-        ):
-            continue
-        if (
-            combo["NANOPRINTF_USE_FLOAT_HEX_FORMAT_SPECIFIER"] == 1
-            and combo["NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS"] == 0
+        if combo["NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS"] == 0 and any(
+            combo[flag] == 1 for flag in FLOAT_DEPENDENT_FLAGS
         ):
             continue
         combos.append(combo)
@@ -81,6 +84,8 @@ def combo_label(combo: dict[str, int], lang: str) -> str:
         "NANOPRINTF_USE_ALT_FORM_FLAG": "alt",
         "NANOPRINTF_USE_FLOAT_SINGLE_PRECISION": "sp",
         "NANOPRINTF_USE_FLOAT_HEX_FORMAT_SPECIFIER": "hexa",
+        "NANOPRINTF_USE_FLOAT_SCI_FORMAT_SPECIFIER": "sci",
+        "NANOPRINTF_USE_FLOAT_SHORTEST_FORMAT_SPECIFIER": "shortest",
         "NANOPRINTF_USE_DIVISION_FREE_CONVERSION": "divfree",
     }
     parts = [f"{short[k]}={v}" for k, v in combo.items()]

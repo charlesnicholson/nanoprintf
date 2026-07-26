@@ -26,9 +26,9 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - name: Pyright
-        run: python -m pyright --warnings --pythonversion 3.13 build.py tests/gen_tests.py tests/size_report.py
+        run: python -m pyright --warnings --pythonversion 3.13 build.py tests/gen_tests.py tests/gen_eg_tests.py tests/size_report.py
       - name: Ruff
-        run: python -m ruff check build.py tests/gen_tests.py tests/size_report.py
+        run: python -m ruff check build.py tests/gen_tests.py tests/gen_eg_tests.py tests/size_report.py
 
   sanitizers:
     runs-on: ubuntu-latest

@@ -95,6 +95,11 @@ UNIT_SRCS := tests/unit_parse_format_spec.cc \
              tests/unit_ftoa_rev_16.cc \
              tests/unit_ftoa_rev_32.cc \
              tests/unit_ftoa_rev_64.cc \
+             tests/unit_etoa_rev.cc \
+             tests/unit_etoa_rev_08.cc \
+             tests/unit_etoa_rev_16.cc \
+             tests/unit_etoa_rev_32.cc \
+             tests/unit_etoa_rev_64.cc \
              tests/unit_utoa_rev.cc \
              tests/unit_utoa_rev_divfree.cc \
              tests/unit_snprintf.cc \
@@ -106,7 +111,7 @@ UNIT_LARGE_OBJS := $(patsubst tests/%.cc,$(BUILD)/unit_large/%.o,$(UNIT_SRCS))
 
 # --- Header dependencies ---
 NPF_H     := nanoprintf.h
-TEST_HDRS := tests/unit_nanoprintf.h tests/npf_doctest.h tests/doctest.h
+TEST_HDRS := tests/unit_nanoprintf.h tests/npf_doctest.h tests/doctest.h tests/unit_eg.inc
 
 # ============================================================
 # Top-level targets
