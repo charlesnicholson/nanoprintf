@@ -4,7 +4,7 @@
 
 #include "unit_ftoa_rev.cc"
 
-TEST_CASE("ftoa_rev_32") {
+TEST_CASE("ftoa_rev_32" NPF_FLOAT_PATH) {
   memset(&spec, 0, sizeof(spec));
 
   SUBCASE("integer overflow") {

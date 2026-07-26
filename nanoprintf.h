@@ -793,20 +793,16 @@ static NPF_FORCE_INLINE npf_real_bin_t npf_bin_shl(npf_real_bin_t v, int_fast8_t
   #define NPF_BIN_SHL(V, S) ((npf_real_bin_t)((V) << (S)))
 #endif
 
-/* Only one of the two float conversions is compiled at a time. npf_etoa_rev serves
-   'e', 'g' and, when either of those is enabled, 'f' as well: sharing one digit
-   generator beats npf_ftoa_rev's fused generate-and-place by about 230 bytes at -Os,
-   and 'f' on its own is untouched because npf_ftoa_rev is what gets compiled then.
+/* Only one of the two float conversions is compiled at a time. npf_ftoa_rev knows
+   where the decimal point goes before it starts, so it fuses digit generation with
+   placement; that is the most compact way to do 'f' by itself, and it is what gets
+   compiled when 'f' is all that is enabled. npf_etoa_rev cannot fuse them, because
+   'e' does not know the decimal exponent until the digits are generated and
+   rounded, so it generates digits plus an exponent and lays out afterwards. When
+   'e' or 'g' is enabled, 'f' uses that generator too rather than adding a second
+   one, which is why npf_ftoa_rev is compiled out in those configurations.
 
-   Sharing the pieces rather than the whole was tried first and lost every time,
-   because gcc specializes the inlined copies better than it can call a helper. At
-   -Os, on the Float / Float + Sci / Float + Sci + Shortest configurations:
-
-     scaling loop     cortex-m0 +24 / +0  / +36     cortex-m4 +16 / +20 / +0
-     fraction split   cortex-m0 +4  / +48 / +4      cortex-m4 +0  / +16 / -8
-     float unpack     cortex-m0 +0  / -64 / -52     cortex-m4 +0  / +4  / +48
-
-   Please re-measure both targets before reintroducing any of those. */
+   The two are held to each other by tests/unit_f_paths.cc. */
 
 // Emits a reversed special into buf: 0 -> "NAN", 4 -> "INF", 8 -> "ERR". Returns the
 // negated length, the caller's signal that the payload is text and not a number.
@@ -1186,12 +1182,14 @@ regen: // only 'g' comes back here, to switch from significance to position boun
         carry = 0;
       }
 
-      /* Nothing below can make a zero mantissa nonzero, and the carry it would
-         leave is masked off at the end anyway, so a zero fraction can skip all of
-         it. That is not just an optimization: without the guard, zero spends about
-         a thousand iterations folding leading zeros into an exponent the fixup
-         then discards, which makes the most commonly printed value the slowest. */
-      if (man_f) {
+      /* A zero mantissa with no pending carry stays zero through everything below,
+         and contributes nothing, so it can skip all of it. That is not just an
+         optimization: without the guard, zero runs the loop once per binary exponent
+         step, folding leading zeros into an exponent the fixup then discards, which
+         leaves the most commonly printed value the slowest to print. The carry has to
+         be part of the test because the scaling step adds 3 when one is pending,
+         which is how a zero mantissa can still produce digits. */
+      if (man_f || carry) {
 
       // Scale the exponent from base-2 to base-10 and prepare the first digit.
       for (uint_fast8_t digit = 0; (end > lo) && (dec > dstop) && (exp_f < 4); ++exp_f) {

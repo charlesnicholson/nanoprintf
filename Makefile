@@ -91,13 +91,20 @@ endif
 UNIT_SRCS := tests/unit_parse_format_spec.cc \
              tests/unit_binary.cc \
              tests/unit_buffer_overrun.cc \
+             tests/unit_buffer_overrun_fused.cc \
              tests/unit_bufputc.cc \
              tests/unit_ftoa_nan.cc \
+             tests/unit_ftoa_nan_fused.cc \
              tests/unit_ftoa_rev.cc \
              tests/unit_ftoa_rev_08.cc \
              tests/unit_ftoa_rev_16.cc \
              tests/unit_ftoa_rev_32.cc \
              tests/unit_ftoa_rev_64.cc \
+             tests/unit_ftoa_rev_fused.cc \
+             tests/unit_ftoa_rev_08_fused.cc \
+             tests/unit_ftoa_rev_16_fused.cc \
+             tests/unit_ftoa_rev_32_fused.cc \
+             tests/unit_ftoa_rev_64_fused.cc \
              tests/unit_etoa_rev.cc \
              tests/unit_etoa_rev_08.cc \
              tests/unit_etoa_rev_16.cc \

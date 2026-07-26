@@ -1,6 +1,3 @@
-#define NANOPRINTF_USE_FLOAT_SCI_FORMAT_SPECIFIER 0
-#define NANOPRINTF_USE_FLOAT_SHORTEST_FORMAT_SPECIFIER 0
-
 #include "unit_nanoprintf.h"
 
 #include <cmath>
@@ -18,9 +15,23 @@ static void memrev(char *lhs, char *rhs) {
   }
 }
 
+/* Whichever %f conversion this TU compiled. npf_ftoa_rev fuses generation with
+   placement and takes the precision directly; npf_etoa_rev serves %f when the sci
+   conversions are compiled in and reads it from the spec. Both produce the same
+   reversed buffer, so every case below runs against both. */
+static int npf_f_conv(char *buf, double dbl) {
+#if (NANOPRINTF_USE_FLOAT_SCI_FORMAT_SPECIFIER == 1) || \
+    (NANOPRINTF_USE_FLOAT_SHORTEST_FORMAT_SPECIFIER == 1)
+  spec.conv_spec = NPF_FMT_SPEC_CONV_FLOAT_DEC;
+  return npf_etoa_rev(buf, &spec, dbl);
+#else
+  return npf_ftoa_rev(buf, &spec, spec.prec, dbl);
+#endif
+}
+
 static void require_ftoa_rev(std::string const &expected, double dbl) {
   char buf[NANOPRINTF_CONVERSION_BUFFER_SIZE + 1];
-  int const n = [&](){ int x = npf_ftoa_rev(buf, &spec, spec.prec, dbl); return x < 0 ? -x : x; }();
+  int const n = [&](){ int x = npf_f_conv(buf, dbl); return x < 0 ? -x : x; }();
   REQUIRE(n <= NANOPRINTF_CONVERSION_BUFFER_SIZE);
   memrev(buf, &buf[n]);
   buf[n] = '\0';
@@ -35,7 +46,7 @@ static void require_ftoa_rev_bin(char const *expected, npf_real_bin_t bin) {
 }
 
 #ifndef NPF_FTOA_REV_CUSTOM_CONFIG
-TEST_CASE("ftoa_rev") {
+TEST_CASE("ftoa_rev" NPF_FLOAT_PATH) {
   memset(&spec, 0, sizeof(spec));
 
   SUBCASE("special values") {
