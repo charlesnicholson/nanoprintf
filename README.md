@@ -204,7 +204,12 @@ The `%a`/`%A` hex float specifier is optionally supported via `NANOPRINTF_USE_FL
 
 The `%e`/`%E` and `%g`/`%G` specifiers are optionally supported via `NANOPRINTF_USE_FLOAT_SCI_FORMAT_SPECIFIER` and `NANOPRINTF_USE_FLOAT_SHORTEST_FORMAT_SPECIFIER`. They share the scaling code above but not its layout: `%f` knows where the decimal point goes before it starts, so it can fuse digit generation with digit placement, whereas `%e` cannot know the decimal exponent until the digits have been generated *and* rounded. So the significant digits are generated right-aligned at the top of the conversion buffer alongside the exponent of the least significant one, and the output string is composed afterwards. Zeros that only carry magnitude, meaning the integer part's trailing zeros and the fraction's leading zeros, are folded into the exponent instead of being emitted.
 
-`%g` follows C11 7.21.6.1p8 literally: it converts as `%e` with precision `P-1`, reads the exponent `X` off the result, and when `-4 <= X < P` re-converts as `%f` with precision `P-1-X`. That second pass is a real call back into the `%f` conversion, so `%g` costs very little beyond `%e`.
+`%g` follows C11 7.21.6.1p8 literally: it converts as `%e` with precision `P-1`, reads the exponent `X` off the result, and when `-4 <= X < P` converts again as `%f` with precision `P-1-X`. The second pass is needed because the two forms want different digits: `%e` bounds generation by a count of significant digits, `%f` by a decimal position.
+
+Enabling either specifier makes `%f` share that generator rather than compiling a second one, which is smaller overall even though the fused form is smaller for `%f` on its own. Two consequences worth knowing:
+
+* `%f` output is unchanged, but its `err` boundary moves outward. The shared generator can fill the whole conversion buffer, where the fused one stops partway through generating; a value like `%.25f` of `5.5e37` prints digits instead of `err`. Nothing that printed a number before prints a different one.
+* The two `%f` implementations are held to each other by `tests/unit_f_paths.cc`, which compiles both in one binary and compares them over a randomized sweep.
 
 Note that earlier versions of nanoprintf parsed `%e` and `%g` but formatted them as `%f`. They are now literal passthroughs unless their flags are enabled, which is how every other disabled feature behaves.
 

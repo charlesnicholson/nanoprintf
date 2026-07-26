@@ -1,3 +1,6 @@
+#define NANOPRINTF_USE_FLOAT_SCI_FORMAT_SPECIFIER 0
+#define NANOPRINTF_USE_FLOAT_SHORTEST_FORMAT_SPECIFIER 0
+
 #include "unit_nanoprintf.h"
 
 #include <cfloat>
