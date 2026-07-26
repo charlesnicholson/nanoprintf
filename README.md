@@ -313,10 +313,10 @@ All measurements are the total size in bytes of the `nanoprintf` text symbols, c
 | Field Width + Precision + Binary | 1196 | 1252 |
 | Float | 1360 | 1384 |
 | Float (single-precision) | 1332 | 1336 |
-| Float + Sci | 2176 | 2180 |
-| Float + Sci + Shortest | 2464 | 2416 |
+| Float + Sci | 2096 | 2128 |
+| Float + Sci + Shortest | 2356 | 2360 |
 | Float + Hex Float | 1716 | 1684 |
-| Everything | 3476 | 3448 |
+| Everything | 3348 | 3408 |
 
 <!-- END SIZE REPORT -->
 
