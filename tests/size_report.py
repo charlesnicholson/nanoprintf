@@ -39,7 +39,7 @@ def _git_root() -> pathlib.Path:
     """Return the root of the current file git repository."""
     cur = pathlib.Path(__file__).resolve()
     while cur != cur.parent:
-        if (cur / ".git").is_dir():
+        if (cur / ".git").exists():  # dir for a normal clone, file for a worktree
             return cur
         cur = cur.parent
 
