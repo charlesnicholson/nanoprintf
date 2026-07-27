@@ -1137,6 +1137,14 @@ int NPF_TEST_FUNC(void) {
     NPF_TEST("-42       ", "%*d", -10, -42);
     NPF_TEST("x         ", "%*c", -10, 'x');
     NPF_TEST("hello     ", "%*s", -10, "hello");
+    /* A field width past the edge of int saturates at NPF_FMT_NUM_MAX. INT_MIN
+       has no positive counterpart, so negating it to left-justify would be UB;
+       a literal that far out would wrap negative and drop the padding. */
+    NPF_TEST_RET(NPF_FMT_NUM_MAX, "%*d", INT_MIN, 7);
+    NPF_TEST_RET(NPF_FMT_NUM_MAX, "%*d", INT_MAX, 7);
+    NPF_TEST_RET(NPF_FMT_NUM_MAX, "%2147483647d", 7);
+    NPF_TEST_RET(NPF_FMT_NUM_MAX, "%2147483648d", 7);
+    NPF_TEST_RET(NPF_FMT_NUM_MAX, "%99999999999d", 7);
 #endif
 
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
@@ -1152,6 +1160,13 @@ int NPF_TEST_FUNC(void) {
     NPF_TEST("42", "%.-5d", 42);
     NPF_TEST("2b", "%.-5x", 0x2bu);
     NPF_TEST("hello world", "%.-5s", "hello world");
+    /* A precision past the edge of int saturates the same way a field width
+       does. Left to wrap, it goes negative and the '0'-padding count with it. */
+    NPF_TEST_RET(NPF_FMT_NUM_MAX, "%.*d", INT_MAX, 7);
+    NPF_TEST_RET(NPF_FMT_NUM_MAX, "%.2147483647d", 7);
+    NPF_TEST_RET(NPF_FMT_NUM_MAX, "%.2147483648d", 7);
+    NPF_TEST_RET(NPF_FMT_NUM_MAX, "%.99999999999d", 7);
+    NPF_TEST("hello world", "%.99999999999s", "hello world");
 #if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
     NPF_TEST("1.500000", "%.-3f", 1.5);
     NPF_TEST("1.500000", "%.*f", -3, 1.5);
@@ -1694,9 +1709,9 @@ int NPF_TEST_FUNC(void) {
 #if NANOPRINTF_USE_FLOAT_SCI_FORMAT_SPECIFIER == 1
     NPF_TEST("err", "%.100e", 1.0);
     NPF_TEST("ERR", "%.100E", 1.0);
-    NPF_TEST("err", "%.*e", NANOPRINTF_CONVERSION_BUFFER_SIZE - 7, 1.0);
-    NPF_TEST_RET(NANOPRINTF_CONVERSION_BUFFER_SIZE - 2,
-                 "%.*e", NANOPRINTF_CONVERSION_BUFFER_SIZE - 8, 1.0);
+    NPF_TEST("err", "%.*e", NPF_CBUF - 7, 1.0);
+    NPF_TEST_RET(NPF_CBUF - 2,
+                 "%.*e", NPF_CBUF - 8, 1.0);
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
     NPF_TEST("         err", "%12.100e", 1.0);
     NPF_TEST("err         ", "%-12.100e", 1.0);
@@ -1705,11 +1720,32 @@ int NPF_TEST_FUNC(void) {
 #if NANOPRINTF_USE_FLOAT_SHORTEST_FORMAT_SPECIFIER == 1
     NPF_TEST("err", "%.100g", 1.0);
     NPF_TEST("ERR", "%.100G", 1.0);
-    NPF_TEST("err", "%.*g", NANOPRINTF_CONVERSION_BUFFER_SIZE - 6, 1.0);
-    NPF_TEST("1", "%.*g", NANOPRINTF_CONVERSION_BUFFER_SIZE - 7, 1.0);
+    NPF_TEST("err", "%.*g", NPF_CBUF - 6, 1.0);
+    NPF_TEST("1", "%.*g", NPF_CBUF - 7, 1.0);
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
     NPF_TEST("err         ", "%-12.100g", 1.0);
 #endif
+#endif
+
+    /* A precision at or past the edge of int. Literals saturate rather than
+       wrapping negative, and no arithmetic on the way to the conversion may
+       overflow: either failure lets a negative precision reach the digit
+       layout, which indexes below the conversion buffer. */
+    NPF_TEST("err", "%.2147483647f", 1.0);
+    NPF_TEST("err", "%.2147483648f", 1.0);
+    NPF_TEST("err", "%.99999999999f", 1.0);
+    NPF_TEST("err", "%.*f", INT_MAX, 1.0);
+#if NANOPRINTF_USE_FLOAT_SCI_FORMAT_SPECIFIER == 1
+    NPF_TEST("err", "%.2147483647e", 1.0);
+    NPF_TEST("err", "%.2147483648e", 1.0);
+    NPF_TEST("err", "%.99999999999e", 1.0);
+    NPF_TEST("err", "%.*e", INT_MAX, 1.0);
+#endif
+#if NANOPRINTF_USE_FLOAT_SHORTEST_FORMAT_SPECIFIER == 1
+    NPF_TEST("err", "%.2147483647g", 1.0);
+    NPF_TEST("err", "%.2147483648g", 1.0);
+    NPF_TEST("err", "%.99999999999g", 1.0);
+    NPF_TEST("err", "%.*g", INT_MAX, 1.0);
 #endif
 
     /* Star-supplied field width and precision. A negative star precision is

@@ -1,5 +1,6 @@
 #include "unit_nanoprintf.h"
 
+#include <climits>
 #include <cstdarg>
 #include <cstring>
 #include <string>
@@ -172,12 +173,12 @@ TEST_CASE("overrun - large precision" NPF_FLOAT_PATH) {
   SUBCASE("float precision at the conversion buffer boundary") {
     // The last precision that fits and the first that reports err, for each
     // conversion. %e needs 7 bytes of slack past the precision, %g needs 6.
-    check_string(nullptr, "%.*e", NANOPRINTF_CONVERSION_BUFFER_SIZE - 8, 1.0);
-    check_string(nullptr, "%.*e", NANOPRINTF_CONVERSION_BUFFER_SIZE - 7, 1.0);
-    check_string(nullptr, "%.*g", NANOPRINTF_CONVERSION_BUFFER_SIZE - 7, 1.0);
-    check_string(nullptr, "%.*g", NANOPRINTF_CONVERSION_BUFFER_SIZE - 6, 1.0);
-    check_string(nullptr, "%.*f", NANOPRINTF_CONVERSION_BUFFER_SIZE - 2, 1.0);
-    check_string(nullptr, "%.*f", NANOPRINTF_CONVERSION_BUFFER_SIZE - 1, 1.0);
+    check_string(nullptr, "%.*e", NPF_CBUF - 8, 1.0);
+    check_string(nullptr, "%.*e", NPF_CBUF - 7, 1.0);
+    check_string(nullptr, "%.*g", NPF_CBUF - 7, 1.0);
+    check_string(nullptr, "%.*g", NPF_CBUF - 6, 1.0);
+    check_string(nullptr, "%.*f", NPF_CBUF - 2, 1.0);
+    check_string(nullptr, "%.*f", NPF_CBUF - 1, 1.0);
   }
 
   SUBCASE("sci and shortest at the exponent extremes") {
@@ -191,6 +192,27 @@ TEST_CASE("overrun - large precision" NPF_FLOAT_PATH) {
 
   SUBCASE("width and precision both large") {
     check_string(nullptr, "%300.200d", 42);
+  }
+
+  SUBCASE("width and precision at the edge of int") {
+    // A precision that wraps negative on the way in reaches the digit layout,
+    // which then indexes below the conversion buffer. Not visible in the output
+    // buffer this harness guards, so it needs a sanitizer build to catch.
+    check_string(nullptr, "%.2147483647e", 1.0);
+    check_string(nullptr, "%.2147483648e", 1.0);
+    check_string(nullptr, "%.99999999999e", 1.0);
+    check_string(nullptr, "%.*e", INT_MAX, 1.0);
+    check_string(nullptr, "%.2147483647f", 1.0);
+    check_string(nullptr, "%.2147483648f", 1.0);
+    check_string(nullptr, "%.*f", INT_MAX, 1.0);
+    check_string(nullptr, "%.2147483647g", 1.0);
+    check_string(nullptr, "%.2147483648g", 1.0);
+    check_string(nullptr, "%.*g", INT_MAX, 1.0);
+    check_string(nullptr, "%.2147483648d", 7);
+    check_string(nullptr, "%2147483648d", 7);
+    check_string(nullptr, "%*d", INT_MIN, 7);
+    check_string(nullptr, "%*d", INT_MAX, 7);
+    check_string(nullptr, "%.2147483648s", "hello");
   }
 }
 

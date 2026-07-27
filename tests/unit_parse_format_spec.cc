@@ -193,8 +193,21 @@ TEST_CASE("npf_parse_format_spec") {
 
     SUBCASE("field width is literal") {
       REQUIRE(npf_parse_format_spec("%123u", &spec) == 5);
-      REQUIRE(spec.field_width_opt == NPF_FMT_SPEC_OPT_LITERAL);
+      // A literal field width and an absent one are the same instruction to the
+      // caller -- use field_width as-is -- so only STAR gets its own opt value.
+      REQUIRE(spec.field_width_opt == NPF_FMT_SPEC_OPT_NONE);
       REQUIRE(spec.field_width == 123);
+    }
+
+    SUBCASE("field width digits stop before overflowing int") {
+      // The ceiling belongs to npf_vpprintf. All the parser owes it is a value
+      // that never wraps negative and still outranks the ceiling, so that the
+      // clamp there lands on NPF_FMT_NUM_MAX.
+      REQUIRE(npf_parse_format_spec("%2147483648u", &spec) == 12);
+      REQUIRE(spec.field_width > NPF_FMT_NUM_MAX);
+
+      REQUIRE(npf_parse_format_spec("%99999999999999999999u", &spec) == 22);
+      REQUIRE(spec.field_width > NPF_FMT_NUM_MAX);
     }
   }
 
@@ -248,6 +261,15 @@ TEST_CASE("npf_parse_format_spec") {
     SUBCASE("precision is none when a negative literal is provided") {
       REQUIRE(npf_parse_format_spec("%.-34u", &spec) == 6);
       REQUIRE(spec.prec_opt == NPF_FMT_SPEC_OPT_NONE);
+    }
+
+    SUBCASE("precision digits stop before overflowing int") {
+      REQUIRE(npf_parse_format_spec("%.2147483648u", &spec) == 13);
+      REQUIRE(spec.prec_opt == NPF_FMT_SPEC_OPT_LITERAL);
+      REQUIRE(spec.prec > NPF_FMT_NUM_MAX);
+
+      REQUIRE(npf_parse_format_spec("%.99999999999999999999u", &spec) == 23);
+      REQUIRE(spec.prec > NPF_FMT_NUM_MAX);
     }
 
     SUBCASE("period alone is precision zero") {

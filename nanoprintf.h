@@ -226,6 +226,23 @@ NPF_VISIBILITY int npf_vpprintf(npf_putc pc,
   #error The size of the conversion buffer must be at least 23 bytes.
 #endif
 
+/* The macro is the user's, so it may be an expression and may be unsigned; every
+   in-code use goes through this int-typed, parenthesized alias instead. Unsigned
+   would turn the signed comparisons against it into unsigned ones. */
+#define NPF_CBUF ((int)(NANOPRINTF_CONVERSION_BUFFER_SIZE))
+
+/* Ceiling for a field width or precision, whether from the format string or a
+   star argument. Values are int-typed and user-supplied, so an unbounded one
+   overflows on the way to the output-length arithmetic; INT_MIN cannot even be
+   negated. Any cap avoids that, and this one clears the 4095 that C11 5.2.4.1
+   requires an implementation to accept. 0xFF00 rather than a rounder number
+   because it is one of the immediates Thumb-2 can fold into a compare. */
+#if NANOPRINTF_CONVERSION_BUFFER_SIZE > 65280
+  #define NPF_FMT_NUM_MAX NPF_CBUF
+#else
+  #define NPF_FMT_NUM_MAX 65280
+#endif
+
 // intmax_t / uintmax_t require stdint from c99 / c++11
 #if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
   #ifndef _MSC_VER
@@ -481,6 +498,27 @@ typedef struct npf_bufputc_ctx {
   #include <intrin.h>
 #endif
 
+#if (NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1) || \
+    (NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1)
+/* Consumes a decimal run into *out and returns the cursor. Nothing in the format
+   string bounds the digit count, and an int that wraps here would hand the
+   conversions a negative width or precision, so the accumulator stops growing
+   once another digit could carry it out of int. Anything that stops is already
+   far above NPF_FMT_NUM_MAX, which npf_vpprintf applies; only the ordering
+   against that ceiling has to survive, not the digits past it. Testing the top
+   bits beats testing against the ceiling itself: no constant to materialize, and
+   this is the one site the caller inlines twice. */
+static char const *npf_fmt_num(char const *cur, int *out) {
+  int n = 0;
+  while ((unsigned)(*cur - '0') < 10u) {
+    if (!(n >> 27)) { n = (n * 10) + (*cur - '0'); }
+    ++cur;
+  }
+  *out = n;
+  return cur;
+}
+#endif
+
 // Returns a pointer one past the last consumed character on success, null on
 // failure. A pointer return inlines into npf_vpprintf with smaller code than
 // a length return (the caller continues from the returned cursor directly).
@@ -514,16 +552,16 @@ static char const *npf_parse_format_spec_end(char const *format,
   }
 
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
-  out_spec->field_width = 0;
+  /* Only STAR is ever read back for a field width: a literal one and an absent one
+     both mean "use field_width as-is", which npf_fmt_num sets to 0 when the digit
+     run is empty. So this stays two-state, unlike prec_opt, whose NONE selects the
+     conversion's default precision and so must be told apart from a literal. */
   out_spec->field_width_opt = NPF_FMT_SPEC_OPT_NONE;
   if (*cur == '*') {
     out_spec->field_width_opt = NPF_FMT_SPEC_OPT_STAR;
     ++cur;
   } else {
-    while ((unsigned)(*cur - '0') < 10u) {
-      out_spec->field_width_opt = NPF_FMT_SPEC_OPT_LITERAL;
-      out_spec->field_width = (out_spec->field_width * 10) + (*cur++ - '0');
-    }
+    cur = npf_fmt_num(cur, &out_spec->field_width);
   }
 #endif
 
@@ -541,9 +579,7 @@ static char const *npf_parse_format_spec_end(char const *format,
       } else {
         out_spec->prec_opt = NPF_FMT_SPEC_OPT_LITERAL;
       }
-      while ((unsigned)(*cur - '0') < 10u) {
-        out_spec->prec = (out_spec->prec * 10) + (*cur++ - '0');
-      }
+      cur = npf_fmt_num(cur, &out_spec->prec);
     }
   }
 #endif
@@ -836,7 +872,7 @@ static int npf_ftoa_rev(
     sp = bin ? NPF_FTOA_NAN : NPF_FTOA_INF;
     goto exit;
   }
-  if (prec > (NANOPRINTF_CONVERSION_BUFFER_SIZE - 2)) { goto exit; }
+  if (prec > (NPF_CBUF - 2)) { goto exit; }
   if (exp) { // normal number
     bin |= (npf_real_bin_t)0x1 << NPF_REAL_MAN_BITS;
   } else { // subnormal number
@@ -879,7 +915,7 @@ static int npf_ftoa_rev(
         if (!(man_i >> (NPF_FTOA_MAN_BITS - 1))) {
           man_i = (npf_ftoa_man_t)((man_i << 1) | carry); carry = 0;
         } else {
-          if (dec >= NANOPRINTF_CONVERSION_BUFFER_SIZE) { goto exit; }
+          if (dec >= NPF_CBUF) { goto exit; }
           buf[dec++] = '0';
 #if NANOPRINTF_USE_DIVISION_FREE_CONVERSION == 1
           if (sizeof(man_i) <= sizeof(uint32_t)) { // n/5 = 2*(n/10) + (n%10 >= 5)
@@ -907,11 +943,11 @@ static int npf_ftoa_rev(
     // digits than the remaining capacity in the last 9 bytes now reports ERR.)
     if ((sizeof(npf_ftoa_man_t) <= sizeof(uint32_t)) &&
         (sizeof(npf_uint_t) >= sizeof(uint32_t))) {
-      if (end > NANOPRINTF_CONVERSION_BUFFER_SIZE - 10) { goto exit; }
+      if (end > NPF_CBUF - 10) { goto exit; }
       end = (npf_ftoa_dec_t)(npf_utoa_rev_end((npf_uint_t)man_i, buf + end, 10, 0) - buf);
     } else { // man_i may be wider than npf_uint_t: emit in place
       do {
-        if (end >= NANOPRINTF_CONVERSION_BUFFER_SIZE) { goto exit; }
+        if (end >= NPF_CBUF) { goto exit; }
         buf[end++] = (char)('0' + (char)(man_i % 10));
         man_i /= 10;
       } while (man_i);
@@ -994,7 +1030,7 @@ static int npf_ftoa_rev(
 
   // Round the number
   for (; carry; ++dec) {
-    if (dec >= NANOPRINTF_CONVERSION_BUFFER_SIZE) { goto exit; }
+    if (dec >= NPF_CBUF) { goto exit; }
     if (dec >= end) { buf[end++] = '0'; }
     char const c = buf[dec];
     if (c == '.') { continue; }
@@ -1049,6 +1085,10 @@ static int npf_etoa_rev(char *buf, npf_format_spec_t const *spec, npf_real_t f) 
   /* 'f' bounds generation by decimal position, everything else by significant
      digit count, so each mode gets one of the two stops and disables the other. */
   prec = spec->prec;
+  /* Nothing this large fits, whichever mode runs, so bail before 'prec + 1'
+     below can overflow: a wrapped nsig_max is negative, and a negative one slips
+     under the significance bound rather than tripping it. */
+  if (prec > (NPF_CBUF - 2)) { goto exit; }
   nsig_max = prec + 1;
   fmode = (spec->conv_spec == NPF_FMT_SPEC_CONV_FLOAT_DEC);
   dstop = INT_MIN; // unreachable, so only 'f' below arms the position stop
@@ -1069,10 +1109,9 @@ static int npf_etoa_rev(char *buf, npf_format_spec_t const *spec, npf_real_t f) 
     /* 'f' needs every digit down to 10^-prec, so the position stop below is what
        ends generation and this bound only has to keep the fraction inside the
        buffer: nsig_max of BUF would put 'lo' at -1 and allow a write below buf. */
-    nsig_max = NANOPRINTF_CONVERSION_BUFFER_SIZE - 1;
+    nsig_max = NPF_CBUF - 1;
     dstop = -prec - 1;
-    if (prec > (NANOPRINTF_CONVERSION_BUFFER_SIZE - 2)) { goto exit; }
-  } else if (nsig_max > (NANOPRINTF_CONVERSION_BUFFER_SIZE - 7)) {
+  } else if (nsig_max > (NPF_CBUF - 7)) {
     // The longest output is "d.<prec digits>e+ddd". Bail before wasted work.
     goto exit;
   }
@@ -1145,7 +1184,7 @@ regen: // only 'g' comes back here, to switch from significance to position boun
     // Emit the integer digits at buf[0], then right-align them at the top of buf. The
     // count isn't known until they're all out, hence the move; the destination index
     // always exceeds the source index, so the two ranges may overlap.
-    end = NANOPRINTF_CONVERSION_BUFFER_SIZE;
+    end = NPF_CBUF;
     if (man_i || fmode) {
       int k;
       if ((sizeof(npf_ftoa_man_t) <= sizeof(uint32_t)) &&
@@ -1154,22 +1193,22 @@ regen: // only 'g' comes back here, to switch from significance to position boun
       } else { // man_i may be wider than npf_uint_t: emit in place
         k = 0;
         do {
-          if (k >= NANOPRINTF_CONVERSION_BUFFER_SIZE) { goto exit; }
+          if (k >= NPF_CBUF) { goto exit; }
           buf[k++] = (char)('0' + (char)(man_i % 10));
           man_i /= 10;
         } while (man_i);
       }
       for (int i = 0; i < k; ++i) {
-        buf[NANOPRINTF_CONVERSION_BUFFER_SIZE - 1 - i] = buf[k - 1 - i];
+        buf[NPF_CBUF - 1 - i] = buf[k - 1 - i];
       }
-      end = NANOPRINTF_CONVERSION_BUFFER_SIZE - k;
+      end = NPF_CBUF - k;
     }
   }
 
   { // Fraction part
     // Generate one digit past the precision: with the full decimal expansion in hand,
     // rounding up is exactly "first dropped digit >= 5", so one guard digit suffices.
-    int const lo = NANOPRINTF_CONVERSION_BUFFER_SIZE - nsig_max - 1;
+    int const lo = NPF_CBUF - nsig_max - 1;
     npf_ftoa_man_t man_f;
 
     if (exp < NPF_REAL_MAN_BITS) {
@@ -1178,7 +1217,7 @@ regen: // only 'g' comes back here, to switch from significance to position boun
       npf_real_bin_t bin_f =
         NPF_BIN_SHL(bin, (NPF_REAL_BIN_BITS - NPF_REAL_MAN_BITS) + shift_f);
       // A leading fraction zero is significant only if an integer digit precedes it.
-      uint_fast8_t const lead = (uint_fast8_t)(end == NANOPRINTF_CONVERSION_BUFFER_SIZE);
+      uint_fast8_t const lead = (uint_fast8_t)(end == NPF_CBUF);
 
       // This if-else statement can be completely optimized at compile time.
       if (NPF_REAL_BIN_BITS > NPF_FTOA_MAN_BITS) {
@@ -1248,7 +1287,7 @@ regen: // only 'g' comes back here, to switch from significance to position boun
 
   // No digits generated means the value is zero: one '0' digit at exponent 0. The
   // scaling loop above will have walked 'dec' down while chasing a nonzero digit.
-  nsig = NANOPRINTF_CONVERSION_BUFFER_SIZE - end;
+  nsig = NPF_CBUF - end;
   if (!nsig) { buf[--end] = '0'; nsig = 1; dec = 0; carry = 0; }
 
   /* Drop the digits past what the conversion asked for and round on the first of
@@ -1273,10 +1312,10 @@ regen: // only 'g' comes back here, to switch from significance to position boun
   }
 
   for (int i = end; carry; ++i) { // Round the number
-    if (i >= NANOPRINTF_CONVERSION_BUFFER_SIZE) {
+    if (i >= NPF_CBUF) {
       // Every digit was '9' and is now '0'; "999" becomes "100" with a bigger
       // exponent, so the significant digit count doesn't change.
-      buf[NANOPRINTF_CONVERSION_BUFFER_SIZE - 1] = '1';
+      buf[NPF_CBUF - 1] = '1';
       ++dec;
       break;
     }
@@ -1300,7 +1339,7 @@ regen: // only 'g' comes back here, to switch from significance to position boun
       int const fp = (strip ? nsig : prec) - 1 - x;
       prec = (fp > 0) ? fp : 0;
       fmode = 1;
-      nsig_max = NANOPRINTF_CONVERSION_BUFFER_SIZE - 1;
+      nsig_max = NPF_CBUF - 1;
       dstop = -prec - 1;
       g = 0; // one trip through here is enough
       goto regen;
@@ -1329,7 +1368,7 @@ regen: // only 'g' comes back here, to switch from significance to position boun
 #endif
     // Same lockstep argument as the 'e' layout: reads and writes both walk up, so
     // the gap is tightest at the last read and this one check covers it.
-    if ((id + iz + dp + prec) > NANOPRINTF_CONVERSION_BUFFER_SIZE) { goto exit; }
+    if ((id + iz + dp + prec) > NPF_CBUF) { goto exit; }
     for (i = fz; i > 0; --i) { buf[o++] = '0'; }
     for (i = 0; i < fd; ++i) { buf[o++] = buf[end + i]; }
     buf[o] = '.'; o += dp;
@@ -1357,7 +1396,7 @@ regen: // only 'g' comes back here, to switch from significance to position boun
     { int const pad = pe - (nsig - 1);
       for (int i = 0; i < pe; ++i) {
         buf[o++] = (i < pad) ? '0'
-          : buf[NANOPRINTF_CONVERSION_BUFFER_SIZE - nsig + (i - pad)];
+          : buf[NPF_CBUF - nsig + (i - pad)];
       }
     }
     // A point is emitted when a fraction follows it, or when '#' demands it.
@@ -1366,7 +1405,7 @@ regen: // only 'g' comes back here, to switch from significance to position boun
       dp |= (spec->alt_form != 0);
 #endif
       buf[o] = '.'; o += dp; } // unconditional store, conditional advance
-    buf[o++] = buf[NANOPRINTF_CONVERSION_BUFFER_SIZE - 1];
+    buf[o++] = buf[NPF_CBUF - 1];
     return o;
   }
 exit:
@@ -1530,19 +1569,23 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
 
     // Extract star-args immediately
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
+    /* The one ceiling both a literal and a star width pass through, so the digit
+       loop does not need its own. The magnitude is taken in unsigned because
+       INT_MIN has no positive int counterpart, and the same top-bit test the digit
+       loop uses keeps that magnitude in range for the signed compare below. */
     if (fs.field_width_opt == NPF_FMT_SPEC_OPT_STAR) {
-      fs.field_width = va_arg(args, int);
-      if (fs.field_width < 0) {
-        fs.field_width = -fs.field_width;
-        fs.left_justified = 1;
-      }
+      unsigned w = (unsigned)va_arg(args, int);
+      if ((int)w < 0) { w = 0u - w; fs.left_justified = 1; }
+      fs.field_width = (int)((w >> 27) ? (unsigned)NPF_FMT_NUM_MAX : w);
     }
+    if (fs.field_width > NPF_FMT_NUM_MAX) { fs.field_width = NPF_FMT_NUM_MAX; }
 #endif
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
     if (fs.prec_opt == NPF_FMT_SPEC_OPT_STAR) {
       fs.prec = va_arg(args, int);
       if (fs.prec < 0) { fs.prec_opt = NPF_FMT_SPEC_OPT_NONE; }
     }
+    if (fs.prec > NPF_FMT_NUM_MAX) { fs.prec = NPF_FMT_NUM_MAX; }
 #endif
 
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
@@ -1580,7 +1623,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
        ) { fs.leading_zero_pad = 0; }
 #endif
 
-    union { char cbuf_mem[NANOPRINTF_CONVERSION_BUFFER_SIZE]; npf_uint_t binval; } u;
+    union { char cbuf_mem[NPF_CBUF]; npf_uint_t binval; } u;
     char *cbuf = u.cbuf_mem, sign_c = 0;
     int cbuf_len = 0;
     char need_0x = 0;

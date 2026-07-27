@@ -19,7 +19,7 @@ static void ememrev(char *lhs, char *rhs) {
 }
 
 static void require_etoa_rev(std::string const &expected, double dbl) {
-  char buf[NANOPRINTF_CONVERSION_BUFFER_SIZE + 1];
+  char buf[NPF_CBUF + 1];
   int const n = [&](){ int x = npf_etoa_rev(buf, &espec, dbl); return x < 0 ? -x : x; }();
   REQUIRE(n <= NANOPRINTF_CONVERSION_BUFFER_SIZE);
   ememrev(buf, &buf[n]);
@@ -214,10 +214,10 @@ TEST_CASE("etoa_rev") {
 
   SUBCASE("precision that cannot fit reports err") {
     // The longest output is "d.<prec>e+ddd", so prec must leave 7 bytes of room.
-    espec.prec = NANOPRINTF_CONVERSION_BUFFER_SIZE - 8;
+    espec.prec = NPF_CBUF - 8;
     require_etoa_rev(std::string("1.") +
                      std::string((size_t)espec.prec, '0') + "e+00", 1.);
-    espec.prec = NANOPRINTF_CONVERSION_BUFFER_SIZE - 7;
+    espec.prec = NPF_CBUF - 7;
     require_etoa_rev("err", 1.);
     espec.prec = NANOPRINTF_CONVERSION_BUFFER_SIZE;
     require_etoa_rev("err", 1.);
