@@ -30,7 +30,7 @@ static int npf_f_conv(char *buf, double dbl) {
 }
 
 static void require_ftoa_rev(std::string const &expected, double dbl) {
-  char buf[NANOPRINTF_CONVERSION_BUFFER_SIZE + 1];
+  char buf[NPF_CBUF + 1];
   int const n = [&](){ int x = npf_f_conv(buf, dbl); return x < 0 ? -x : x; }();
   REQUIRE(n <= NANOPRINTF_CONVERSION_BUFFER_SIZE);
   memrev(buf, &buf[n]);
@@ -55,7 +55,7 @@ TEST_CASE("ftoa_rev" NPF_FLOAT_PATH) {
     require_ftoa_rev("INF", (double)+INFINITY);
     require_ftoa_rev("INF", (double)-INFINITY);
     require_ftoa_rev("ERR", DBL_MAX);
-    spec.prec = NANOPRINTF_CONVERSION_BUFFER_SIZE - 2;
+    spec.prec = NPF_CBUF - 2;
     require_ftoa_rev("ERR", 10.);
     spec.prec += 1;
     require_ftoa_rev("ERR", 9.);

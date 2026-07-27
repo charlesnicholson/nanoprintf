@@ -165,6 +165,8 @@ Like `printf`, `nanoprintf` expects a conversion specification string of the fol
 * **Precision** (if enabled)
 
 	Prefixed with a `.`, a number that specifies the precision of the number or string. If precision is `*`, the precision is read from the next vararg.
+
+	Field widths and precisions are capped at 65280, whether they come from the format string or from a `*` vararg. A negative `*` field width is left-justified at its magnitude, and a negative `*` precision is discarded, both after the cap. Nothing in printf's grammar bounds these numbers, and letting one run past `INT_MAX` would overflow the output-length arithmetic.
 * **Length modifier**
 
 	None or more of the following:
