@@ -1091,7 +1091,10 @@ regen: // only 'g' comes back here, to switch from significance to position boun
   exp = exp0; // generation clobbers exp to invalidate the fraction part
   carry = 0;
   dec = 0;
-  tail = 0;
+  // An exponent the integer scaling has to walk down loses remainders, so no tie is
+  // visible there. Anything else starts out able to see one; the fraction part
+  // below refines this to whether the digits it generates are the whole expansion.
+  tail = (uint_fast8_t)(exp0 <= NPF_FTOA_SHIFT_BITS);
 
   { // Integer part
     npf_ftoa_man_t man_i;
@@ -1239,8 +1242,6 @@ regen: // only 'g' comes back here, to switch from significance to position boun
       // path below recomputes it from the first dropped digit.
       carry &= (uint_fast8_t)(man_f >> (NPF_FTOA_MAN_BITS - 1));
       // Whether the digits in buf are the whole expansion, for the tie test below.
-      // Stays 0 when the integer scaling ran, so a big-integer conversion never
-      // claims a tie it cannot actually see.
       tail = (uint_fast8_t)!man_f;
     }
   }
