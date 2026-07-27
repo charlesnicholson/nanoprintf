@@ -115,7 +115,7 @@ Note, unrecognized conversion specifiers are undefined behavior. Nanoprintf fold
 ### Floating-Point Conversion
 nanoprintf has the following floating-point specific configuration defines.
 
-* `NANOPRINTF_CONVERSION_BUFFER_SIZE`: Optional, defaults to `23`. Sets the size of a character buffer used for storing the converted value. Set to a larger number to enable printing of floating-point numbers with more characters. The buffer size does include the integer part, the fraction part and the decimal separator, but does not include the sign and the padding characters. If the number does not fit into buffer, an `err` is printed. Be careful with large sizes as the conversion buffer is allocated on stack memory.
+* `NANOPRINTF_CONVERSION_BUFFER_SIZE`: Optional, defaults to `64` when floats are enabled and `23` when they are not. Sets the size of a character buffer used for storing the converted value. Set to a larger number to enable printing of floating-point numbers with more characters. The buffer size does include the integer part, the fraction part and the decimal separator, but does not include the sign and the padding characters. If the number does not fit into buffer, an `err` is printed. Be careful with large sizes as the conversion buffer is allocated on stack memory.
 * `NANOPRINTF_CONVERSION_FLOAT_TYPE`: Optional, defaults to `unsigned int`. Sets the integer type used for float conversion algorithm, which determines the conversion accuracy. Can be set to any unsigned integer type, like for example `uint64_t` or `uint8_t`.
 
 #### Accuracy
@@ -129,7 +129,7 @@ The conversion algorithm scales the mantissa between base 2 and base 10 one step
 
 `%f` largely hides this, because a value with a large exponent needs a conversion buffer far beyond the default before it prints anything but `err`. `%e` and `%g` do not, so **if you enable `%e` or `%g` and care about values outside roughly 1e-20 to 1e20, set `NANOPRINTF_CONVERSION_FLOAT_TYPE` to a 64-bit type.** With the default 32-bit intermediate, `printf("%e", 1e300)` yields `9.999999e+299` rather than `1.000000e+300`: correct to about seven significant digits, but not the digits the system printf produces.
 
-Rounding is half away from zero rather than the system printf's half to even, so a value whose exact decimal expansion ends in a lone `5` at the rounding position rounds up: `%.0f` of `0.5` is `1`, and `%.1e` of `42.5` is `4.3e+01`. All three float conversions agree with each other on this and on their digits; they only differ from the system printf.
+Rounding is half to even, matching the system printf's default `FE_TONEAREST`: `%.0f` of `0.5` is `0`, `%.0f` of `1.5` is `2`, and `%.1e` of `42.5` is `4.2e+01`. A tie is only recognized when the remainder in the intermediate integer is exactly one half, so a remainder that has already lost bits to a narrow `NANOPRINTF_CONVERSION_FLOAT_TYPE` can look like a tie when it is not: with `double` and the default 32-bit intermediate, `%.1f` of `0.05` is `0.0` where the system prints `0.1`. Setting the intermediate to a 64-bit type removes that for `double`; single-precision mode is unaffected. All three float conversions agree with each other on this and on their digits.
 
 Subnormal values need a wide enough intermediate to be representable at all. With the default 32-bit type, `%e` of `5e-324` prints `0.000000e+00`.
 
@@ -301,6 +301,8 @@ See the [wrap_npf_float](https://github.com/charlesnicholson/nanoprintf/blob/mas
 No wide-character support exists: the `%lc` and `%ls` fields require that the arg be converted to a char array as if by a call to [wcrtomb](http://man7.org/linux/man-pages/man3/wcrtomb.3.html). When locale and character set conversions get involved, it's hard to keep the name "nano". Accordingly, `%lc` and `%ls` behave like `%c` and `%s`, respectively.
 
 All C float conversions are supported: `%f`/`%F`, `%e`/`%E`, `%g`/`%G`, and `%a`/`%A`. Only `%f`/`%F` is on by default when floats are enabled; the rest are opt-in per specifier. See [Accuracy](#accuracy) for how many significant digits to expect.
+
+The rounding direction is fixed. C asks that conversions track the direction set by `fesetround`, but nanoprintf always rounds to nearest with ties to even, which is what `FE_TONEAREST` selects and therefore what a default-configured program gets. `FE_UPWARD`, `FE_DOWNWARD`, and `FE_TOWARDZERO` are ignored. Reading `<fenv.h>` at runtime would pull in floating-point state that the conversion code otherwise never touches, for a distinction that sits well inside the error the intermediate integer already introduces.
 
 ## Measurement
 

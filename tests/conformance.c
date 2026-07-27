@@ -1251,7 +1251,7 @@ int NPF_TEST_FUNC(void) {
     NPF_TEST("42.90", "%.2f", 42.8952);
     NPF_TEST("4.0", "%.1f", 3.999);
     NPF_TEST("4", "%.0f", 3.5);
-    NPF_TEST("5", "%.0f", 4.5);
+    NPF_TEST("4", "%.0f", 4.5);
     NPF_TEST("3", "%.0f", 3.49);
     NPF_TEST("3.5", "%.1f", 3.49);
 #if NANOPRINTF_USE_FLOAT_SINGLE_PRECISION != 1

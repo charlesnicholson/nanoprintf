@@ -9,7 +9,7 @@ TEST_CASE("ftoa_rev_64" NPF_FLOAT_PATH) {
 
   SUBCASE("integer overflow") {
     spec.prec = 1;
-    require_ftoa_rev("2251799813685247.3", ((npf_real_bin_t)0x1 << (DBL_MANT_DIG - 2)) - 1 + 0.25);
+    require_ftoa_rev("2251799813685247.2", ((npf_real_bin_t)0x1 << (DBL_MANT_DIG - 2)) - 1 + 0.25);
     require_ftoa_rev("2251799813685247.5", ((npf_real_bin_t)0x1 << (DBL_MANT_DIG - 2)) - 1 + 0.5);
     require_ftoa_rev("2251799813685247.8", ((npf_real_bin_t)0x1 << (DBL_MANT_DIG - 2)) - 1 + 0.75);
     require_ftoa_rev("4503599627370495.5", ((npf_real_bin_t)0x1 << (DBL_MANT_DIG - 1)) - 1 + 0.5);
