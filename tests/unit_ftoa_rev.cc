@@ -73,19 +73,19 @@ TEST_CASE("ftoa_rev" NPF_FLOAT_PATH) {
   }
 
   SUBCASE("rounding") {
-    require_ftoa_rev("9", 8.5);
+    require_ftoa_rev("8", 8.5); // exact ties round to even
     require_ftoa_rev("10", 9.5);
-    require_ftoa_rev("49", 48.5);
+    require_ftoa_rev("48", 48.5);
     require_ftoa_rev("50", 49.5);
-    require_ftoa_rev("99", 98.5);
+    require_ftoa_rev("98", 98.5);
     require_ftoa_rev("100", 99.5);
 
     require_ftoa_rev("0", 0.40625);
-    require_ftoa_rev("1", 0.5);
+    require_ftoa_rev("0", 0.5);
 
     spec.prec = 1;
     require_ftoa_rev("0.3", 0.34375);
-    require_ftoa_rev("0.3", 0.25);
+    require_ftoa_rev("0.2", 0.25);
     require_ftoa_rev("0.9", 0.9375);
     require_ftoa_rev("1.0", 0.96875);
 

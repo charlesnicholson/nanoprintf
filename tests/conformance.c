@@ -1251,7 +1251,7 @@ int NPF_TEST_FUNC(void) {
     NPF_TEST("42.90", "%.2f", 42.8952);
     NPF_TEST("4.0", "%.1f", 3.999);
     NPF_TEST("4", "%.0f", 3.5);
-    NPF_TEST("5", "%.0f", 4.5);
+    NPF_TEST("4", "%.0f", 4.5);
     NPF_TEST("3", "%.0f", 3.49);
     NPF_TEST("3.5", "%.1f", 3.49);
 #if NANOPRINTF_USE_FLOAT_SINGLE_PRECISION != 1
@@ -1863,6 +1863,19 @@ int NPF_TEST_FUNC(void) {
     NPF_TEST("1.00E+100", "%.2E", 1e100); /* exponent */
     NPF_TEST("1.00e-100", "%.2e", 1e-100); /* exponent */
     NPF_TEST("1.00E-100", "%.2E", 1e-100); /* exponent */
+#endif
+#endif
+
+    /* An integer in [2^23, 2^24) reaches digit generation with the mantissa
+       already in place: no base-10 scaling of the integer part, and no fraction
+       bits at all. The digits are the whole expansion, so a dropped '5' with
+       nothing under it is an exact tie and rounds to even. */
+#if NANOPRINTF_USE_FLOAT_SCI_FORMAT_SPECIFIER == 1
+#if NANOPRINTF_USE_FLOAT_SINGLE_PRECISION == 1
+    NPF_TEST("1.234560e+07", "%.6e", 12345605.0f);
+    NPF_TEST("1.23456e+07", "%.5e", 12345650.0f);
+    NPF_TEST("1.234562e+07", "%.6e", 12345615.0f); /* odd kept digit rounds up */
+    NPF_TEST("8.38860e+06", "%.5e", 8388605.0f);   /* below 2^23: fraction path */
 #endif
 #endif
 

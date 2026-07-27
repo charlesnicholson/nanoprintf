@@ -980,6 +980,15 @@ static int npf_ftoa_rev(
     }
     if (exp < NPF_REAL_MAN_BITS) {
       carry &= (uint_fast8_t)(man_f >> (NPF_FTOA_MAN_BITS - 1));
+      // Ties to even: an exact half rounds up only when the last kept digit is odd.
+      // Reversed that is buf[0], unless '#' with precision 0 put the point there.
+      if (man_f == ((npf_ftoa_man_t)0x1 << (NPF_FTOA_MAN_BITS - 1))) {
+        char lsd = buf[0];
+#if NANOPRINTF_USE_ALT_FORM_FLAG == 1
+        if (lsd == '.') { lsd = buf[1]; }
+#endif
+        carry &= (uint_fast8_t)(lsd & 1);
+      }
     }
   }
 
@@ -1022,7 +1031,7 @@ static int npf_etoa_rev(char *buf, npf_format_spec_t const *spec, npf_real_t f) 
 #if NANOPRINTF_USE_FLOAT_SHORTEST_FORMAT_SPECIFIER == 1
   int g, strip;
 #endif
-  uint_fast8_t sp, carry;
+  uint_fast8_t sp, carry, tail;
   sp = NPF_FTOA_ERR;
 
   npf_real_bin_t bin = npf_real_to_int_rep(f);
@@ -1082,6 +1091,10 @@ regen: // only 'g' comes back here, to switch from significance to position boun
   exp = exp0; // generation clobbers exp to invalidate the fraction part
   carry = 0;
   dec = 0;
+  // An exponent the integer scaling has to walk down loses remainders, so no tie is
+  // visible there. Anything else starts out able to see one; the fraction part
+  // below refines this to whether the digits it generates are the whole expansion.
+  tail = (uint_fast8_t)(exp0 <= NPF_FTOA_SHIFT_BITS);
 
   { // Integer part
     npf_ftoa_man_t man_i;
@@ -1228,6 +1241,8 @@ regen: // only 'g' comes back here, to switch from significance to position boun
       // If the buffer filled first, this carry is stale, but then the excess-digit
       // path below recomputes it from the first dropped digit.
       carry &= (uint_fast8_t)(man_f >> (NPF_FTOA_MAN_BITS - 1));
+      // Whether the digits in buf are the whole expansion, for the tie test below.
+      tail = (uint_fast8_t)!man_f;
     }
   }
 
@@ -1241,12 +1256,19 @@ regen: // only 'g' comes back here, to switch from significance to position boun
      by however many significant digits beyond the maximum they produced. */
   { int const drop = fmode ? (-prec - dec) : (nsig - nsig_max);
     if (drop > 0) {
+      int i = end;
       dec += drop;
       end += drop;
       nsig -= drop;
       // A first dropped digit of '4' can never round up: the rest of the remainder
       // is under one unit in its place, so 0.4999.. + r stays below one half.
       carry = (uint_fast8_t)(buf[end - 1] >= '5');
+      /* Ties to even. A tie is a dropped '5' with nothing but zeros under it, and
+         it rounds up only when the last kept digit is odd. */
+      if (buf[end - 1] == '5') {
+        for (; tail && (i < end - 1); ++i) { tail = (uint_fast8_t)(buf[i] == '0'); }
+        if (tail) { carry = (uint_fast8_t)(buf[end] & 1); }
+      }
     }
   }
 

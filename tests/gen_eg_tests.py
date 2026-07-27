@@ -12,9 +12,10 @@ the curated case list here changes.
 Every expected string is produced by nanoprintf and then checked against the
 system printf in both double and single-precision modes. A case that nanoprintf
 and the system disagree on is dropped and reported, unless the value's exact
-decimal expansion is a half-way tie, which nanoprintf deliberately rounds away
-from zero exactly as its %f does. Rows that need a double-precision build go into
-a separate table so single-precision mode can skip them.
+decimal expansion is a half-way tie: nanoprintf rounds those to even like the
+system does, but only sees the tie when the intermediate integer still holds the
+remainder exactly. Rows that need a double-precision build go into a separate
+table so single-precision mode can skip them.
 
 Run from anywhere: python3 tests/gen_eg_tests.py
 """
