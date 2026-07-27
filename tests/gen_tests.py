@@ -50,23 +50,38 @@ FLOAT_DEPENDENT_FLAGS = [
 ]
 
 
+# float=1 + precision=0 is legal, but crossing it with everything would nearly
+# double the matrix. Precision compiles out every path where it interacts with the
+# other flags, so the float output that survives varies only with these; the flags
+# outside the set are pinned to 1 rather than enumerated.
+NO_PRECISION_FLOAT_VARIED = {
+    "NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS",
+    "NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS",
+    "NANOPRINTF_USE_ALT_FORM_FLAG",
+    "NANOPRINTF_USE_DIVISION_FREE_CONVERSION",
+    *FLOAT_DEPENDENT_FLAGS,
+}
+
+
 def valid_combos() -> list[dict[str, int]]:
     """Return every valid flag combination.
 
     Constraints:
-      - float=1 requires precision=1
-      - every flag in FLOAT_DEPENDENT_FLAGS requires float=1 (and so precision=1)
+      - every flag in FLOAT_DEPENDENT_FLAGS requires float=1
+      - float=1 + precision=0 is sampled over NO_PRECISION_FLOAT_VARIED only
     """
     combos = []
     for bits in itertools.product((0, 1), repeat=len(FLAGS)):
         combo = dict(zip(FLAGS, bits, strict=True))
+        if combo["NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS"] == 0 and any(
+            combo[flag] == 1 for flag in FLOAT_DEPENDENT_FLAGS
+        ):
+            continue
         if (
             combo["NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS"] == 1
             and combo["NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS"] == 0
-        ):
-            continue
-        if combo["NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS"] == 0 and any(
-            combo[flag] == 1 for flag in FLOAT_DEPENDENT_FLAGS
+            and any(v == 0 for k, v in combo.items()
+                    if k not in NO_PRECISION_FLOAT_VARIED)
         ):
             continue
         combos.append(combo)

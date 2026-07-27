@@ -1189,7 +1189,8 @@ int NPF_TEST_FUNC(void) {
 #endif
 
     /* ===== float ===== */
-#if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
+#if (NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1) && \
+    (NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1)
     /* nan */
     {
         char nan_buf[32];
@@ -1984,7 +1985,87 @@ int NPF_TEST_FUNC(void) {
 #endif
 #endif
 
-#endif /* NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS */
+#endif /* NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS && PRECISION_FORMAT_SPECIFIERS */
+
+    /* ===== float with precision compiled out =====
+
+       Every conversion runs at the default precision it would have picked anyway,
+       so these are the same strings the precision-enabled build produces for a
+       format with no '.' in it. Values are exact in both float and double so the
+       single-precision build agrees. */
+#if (NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1) && \
+    (NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 0)
+    NPF_TEST("0.000000", "%f", 0.0);
+    NPF_TEST("1.500000", "%f", 1.5);
+    NPF_TEST("-1.500000", "%f", -1.5);
+    NPF_TEST("0.003906", "%f", 0.00390625);
+    NPF_TEST("123456.000000", "%f", 123456.0);
+    NPF_TEST("1.500000", "%F", 1.5);
+    NPF_TEST("+1.500000", "%+f", 1.5);
+    NPF_TEST(" 1.500000", "% f", 1.5);
+    NPF_TEST("inf", "%f", (double)INFINITY);
+    NPF_TEST("-INF", "%F", (double)-INFINITY);
+#if NANOPRINTF_USE_ALT_FORM_FLAG == 1
+    NPF_TEST("1.500000", "%#f", 1.5);
+#endif
+#if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
+    NPF_TEST("    1.500000", "%12f", 1.5);
+    NPF_TEST("1.500000    ", "%-12f", 1.5);
+    NPF_TEST("00001.500000", "%012f", 1.5);
+    NPF_TEST("-0001.500000", "%012f", -1.5);
+#endif
+
+#if NANOPRINTF_USE_FLOAT_SCI_FORMAT_SPECIFIER == 1
+    NPF_TEST("0.000000e+00", "%e", 0.0);
+    NPF_TEST("1.500000e+00", "%e", 1.5);
+    NPF_TEST("3.906250e-03", "%e", 0.00390625);
+    NPF_TEST("1.234560e+05", "%e", 123456.0);
+    NPF_TEST("1.500000E+00", "%E", 1.5);
+    NPF_TEST("+1.500000e+00", "%+e", 1.5);
+#if NANOPRINTF_USE_ALT_FORM_FLAG == 1
+    NPF_TEST("1.500000e+00", "%#e", 1.5);
+#endif
+#if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
+    NPF_TEST("  1.500000e+00", "%14e", 1.5);
+    NPF_TEST("1.500000e+00  ", "%-14e", 1.5);
+    NPF_TEST("-01.500000e+00", "%014e", -1.5);
+#endif
+#endif
+
+#if NANOPRINTF_USE_FLOAT_SHORTEST_FORMAT_SPECIFIER == 1
+    NPF_TEST("0", "%g", 0.0);
+    NPF_TEST("1.5", "%g", 1.5);
+    NPF_TEST("0.00390625", "%g", 0.00390625);
+    NPF_TEST("123456", "%g", 123456.0);
+    NPF_TEST("1.5", "%G", 1.5);
+    NPF_TEST("+1.5", "%+g", 1.5);
+#if NANOPRINTF_USE_ALT_FORM_FLAG == 1
+    NPF_TEST("1.50000", "%#g", 1.5);
+#endif
+#if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
+    NPF_TEST("         1.5", "%12g", 1.5);
+    NPF_TEST("1.5         ", "%-12g", 1.5);
+    NPF_TEST("-000000001.5", "%012g", -1.5);
+#endif
+#endif
+
+    /* %a's default precision is the full mantissa, which is what the
+       precision-enabled build already emits when no '.' is present. */
+#if NANOPRINTF_USE_FLOAT_HEX_FORMAT_SPECIFIER == 1
+    NPF_TEST("0x0.0000000000000p+0", "%a", 0.0);
+    NPF_TEST("0x1.8000000000000p+0", "%a", 1.5);
+    NPF_TEST("-0x1.8000000000000p+0", "%a", -1.5);
+    NPF_TEST("0x1.0000000000000p-8", "%a", 0.00390625);
+    NPF_TEST("0x1.e240000000000p+16", "%a", 123456.0);
+    NPF_TEST("0X1.8000000000000P+0", "%A", 1.5);
+    NPF_TEST("+0x1.8000000000000p+0", "%+a", 1.5);
+#if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
+    NPF_TEST("      0x1.8000000000000p+0", "%26a", 1.5);
+    NPF_TEST("0x1.8000000000000p+0      ", "%-26a", 1.5);
+    NPF_TEST("-0x000001.8000000000000p+0", "%026a", -1.5);
+#endif
+#endif
+#endif
 
     /* ===== a conversion whose feature is compiled out is emitted verbatim =====
 
@@ -2040,6 +2121,24 @@ int NPF_TEST_FUNC(void) {
 #endif
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 0
     NPF_TEST("%.3d", "%.3d", 5);
+    NPF_TEST("%.*d", "%.*d", 3, 5);
+    NPF_TEST("%.3s", "%.3s", "hello");
+#if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
+    NPF_TEST("%.2f", "%.2f", 1.5);
+    NPF_TEST("%.0F", "%.0F", 1.5);
+    NPF_TEST("%.*f", "%.*f", 2, 1.5);
+    NPF_TEST("%8.2f", "%8.2f", 1.5);
+    NPF_TEST("[%.2f]", "[%.2f]", 1.5);
+#if NANOPRINTF_USE_FLOAT_SCI_FORMAT_SPECIFIER == 1
+    NPF_TEST("%.3e", "%.3e", 1.5);
+#endif
+#if NANOPRINTF_USE_FLOAT_SHORTEST_FORMAT_SPECIFIER == 1
+    NPF_TEST("%.3g", "%.3g", 1.5);
+#endif
+#if NANOPRINTF_USE_FLOAT_HEX_FORMAT_SPECIFIER == 1
+    NPF_TEST("%.3a", "%.3a", 1.5);
+#endif
+#endif
 #endif
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 0
     NPF_TEST("%5d", "%5d", 5);

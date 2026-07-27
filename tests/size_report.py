@@ -2,6 +2,7 @@
 
 import argparse
 import pathlib
+import re
 import subprocess
 import sys
 import tempfile
@@ -129,145 +130,96 @@ def _measure(build_output: str) -> None:
     print(f"Total size: 0x{total:x} ({total}) bytes")
 
 
-_CONFIGS = [
-    {
-        "name": "Minimal",
-        "flags": [
-            "-DNANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=0",
-            "-DNANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=0",
-            "-DNANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=0",
-            "-DNANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS=0",
-            "-DNANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0",
-            "-DNANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS=0",
-            "-DNANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=0",
-            "-DNANOPRINTF_USE_ALT_FORM_FLAG=0",
-        ],
-    },
-    {
-        "name": "Binary",
-        "flags": [
-            "-DNANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=0",
-            "-DNANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=0",
-            "-DNANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=0",
-            "-DNANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS=0",
-            "-DNANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0",
-            "-DNANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS=1",
-            "-DNANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=0",
-            "-DNANOPRINTF_USE_ALT_FORM_FLAG=0",
-        ],
-    },
-    {
-        "name": "Field Width + Precision",
-        "flags": [
-            "-DNANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=1",
-            "-DNANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=1",
-            "-DNANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=0",
-            "-DNANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS=1",
-            "-DNANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0",
-            "-DNANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS=0",
-            "-DNANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=0",
-            "-DNANOPRINTF_USE_ALT_FORM_FLAG=1",
-        ],
-    },
-    {
-        "name": "Field Width + Precision + Binary",
-        "flags": [
-            "-DNANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=1",
-            "-DNANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=1",
-            "-DNANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=0",
-            "-DNANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS=1",
-            "-DNANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0",
-            "-DNANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS=1",
-            "-DNANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=0",
-            "-DNANOPRINTF_USE_ALT_FORM_FLAG=1",
-        ],
-    },
-    {
-        "name": "Float",
-        "flags": [
-            "-DNANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=0",
-            "-DNANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=1",
-            "-DNANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=1",
-            "-DNANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS=0",
-            "-DNANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0",
-            "-DNANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS=0",
-            "-DNANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=0",
-            "-DNANOPRINTF_USE_ALT_FORM_FLAG=1",
-        ],
-    },
-    {
-        "name": "Float (single-precision)",
-        "flags": [
-            "-DNANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=0",
-            "-DNANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=1",
-            "-DNANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=1",
-            "-DNANOPRINTF_USE_FLOAT_SINGLE_PRECISION=1",
-            "-DNANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS=0",
-            "-DNANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0",
-            "-DNANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS=0",
-            "-DNANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=0",
-            "-DNANOPRINTF_USE_ALT_FORM_FLAG=1",
-        ],
-    },
-    {
-        "name": "Float + Sci",
-        "flags": [
-            "-DNANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=0",
-            "-DNANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=1",
-            "-DNANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=1",
-            "-DNANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS=0",
-            "-DNANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0",
-            "-DNANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS=0",
-            "-DNANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=0",
-            "-DNANOPRINTF_USE_ALT_FORM_FLAG=1",
-            "-DNANOPRINTF_USE_FLOAT_SCI_FORMAT_SPECIFIER=1",
-        ],
-    },
-    {
-        "name": "Float + Sci + Shortest",
-        "flags": [
-            "-DNANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=0",
-            "-DNANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=1",
-            "-DNANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=1",
-            "-DNANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS=0",
-            "-DNANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0",
-            "-DNANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS=0",
-            "-DNANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=0",
-            "-DNANOPRINTF_USE_ALT_FORM_FLAG=1",
-            "-DNANOPRINTF_USE_FLOAT_SCI_FORMAT_SPECIFIER=1",
-            "-DNANOPRINTF_USE_FLOAT_SHORTEST_FORMAT_SPECIFIER=1",
-        ],
-    },
-    {
-        "name": "Float + Hex Float",
-        "flags": [
-            "-DNANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=0",
-            "-DNANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=1",
-            "-DNANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=1",
-            "-DNANOPRINTF_USE_FLOAT_HEX_FORMAT_SPECIFIER=1",
-            "-DNANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS=0",
-            "-DNANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0",
-            "-DNANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS=0",
-            "-DNANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=0",
-            "-DNANOPRINTF_USE_ALT_FORM_FLAG=1",
-        ],
-    },
-    {
-        "name": "Everything",
-        "flags": [
-            "-DNANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS=1",
-            "-DNANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS=1",
-            "-DNANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=1",
-            "-DNANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS=1",
-            "-DNANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=1",
-            "-DNANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS=1",
-            "-DNANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS=1",
-            "-DNANOPRINTF_USE_ALT_FORM_FLAG=1",
-            "-DNANOPRINTF_USE_FLOAT_SCI_FORMAT_SPECIFIER=1",
-            "-DNANOPRINTF_USE_FLOAT_SHORTEST_FORMAT_SPECIFIER=1",
-        ],
-    },
+_MANDATORY = (
+    "FIELD_WIDTH_FORMAT_SPECIFIERS",
+    "PRECISION_FORMAT_SPECIFIERS",
+    "FLOAT_FORMAT_SPECIFIERS",
+    "SMALL_FORMAT_SPECIFIERS",
+    "LARGE_FORMAT_SPECIFIERS",
+    "BINARY_FORMAT_SPECIFIERS",
+    "WRITEBACK_FORMAT_SPECIFIERS",
+    "ALT_FORM_FLAG",
+)
+
+_OPTIONAL = (
+    "FLOAT_SINGLE_PRECISION",
+    "FLOAT_HEX_FORMAT_SPECIFIER",
+    "FLOAT_SCI_FORMAT_SPECIFIER",
+    "FLOAT_SHORTEST_FORMAT_SPECIFIER",
+)
+
+
+def _flags(**on: int) -> list[str]:
+    """Build the -D list for a configuration.
+
+    nanoprintf requires every mandatory flag to be defined once any of them is, so
+    those are always emitted; the optional ones default to 0 in the header and are
+    emitted only when set. Keyword names are the NANOPRINTF_USE_ prefix stripped.
+    """
+    if unknown := set(on) - set(_MANDATORY) - set(_OPTIONAL):
+        msg = f"unknown configuration flags: {sorted(unknown)}"
+        raise ValueError(msg)
+
+    return [f"-DNANOPRINTF_USE_{f}={int(on.get(f, 0))}" for f in _MANDATORY] + [
+        f"-DNANOPRINTF_USE_{f}=1" for f in _OPTIONAL if on.get(f)
+    ]
+
+
+# The float table's zero: what a float build has apart from the floats.
+_BASE = {
+    "FIELD_WIDTH_FORMAT_SPECIFIERS": 1,
+    "SMALL_FORMAT_SPECIFIERS": 1,
+    "ALT_FORM_FLAG": 1,
+}
+
+_INT_CONFIGS = [
+    ("Minimal", _flags()),
+    ("Minimal + binary", _flags(BINARY_FORMAT_SPECIFIERS=1)),
+    ("Field width", _flags(**_BASE)),
+    ("Field width + precision", _flags(**_BASE, PRECISION_FORMAT_SPECIFIERS=1)),
+    (
+        "Field width + precision + binary",
+        _flags(**_BASE, PRECISION_FORMAT_SPECIFIERS=1, BINARY_FORMAT_SPECIFIERS=1),
+    ),
 ]
+
+_SCI = {"FLOAT_SCI_FORMAT_SPECIFIER": 1}
+_SHORTEST = {"FLOAT_SHORTEST_FORMAT_SPECIFIER": 1}
+_HEX = {"FLOAT_HEX_FORMAT_SPECIFIER": 1}
+_ALL_FLOAT = {**_SCI, **_SHORTEST, **_HEX}
+
+# Rows of the float table, each measured with precision on and off. Every row also
+# gets _BASE and %f; the name lists what the row adds on top.
+_FLOAT_CONFIGS = [
+    ("%f", {}),
+    ("%f %e", _SCI),
+    ("%f %g", _SHORTEST),
+    ("%f %e %g", {**_SCI, **_SHORTEST}),
+    ("%f %a", _HEX),
+    ("%f %e %g %a", _ALL_FLOAT),
+    ("%f %e %g %a, single-precision", {**_ALL_FLOAT, "FLOAT_SINGLE_PRECISION": 1}),
+    ("Everything (adds large, binary, write-back)",
+     {**_ALL_FLOAT, "LARGE_FORMAT_SPECIFIERS": 1, "BINARY_FORMAT_SPECIFIERS": 1,
+      "WRITEBACK_FORMAT_SPECIFIERS": 1}),
+]
+
+
+def _float_flags(extra: dict[str, int], *, precision: bool) -> list[str]:
+    """Flags for one cell of the float table."""
+    return _flags(
+        **_BASE, FLOAT_FORMAT_SPECIFIERS=1,
+        PRECISION_FORMAT_SPECIFIERS=int(precision), **extra,
+    )
+
+
+def _configs() -> list[tuple[str, list[str]]]:
+    """Every measured configuration, for the per-platform breakdown."""
+    out = list(_INT_CONFIGS)
+    for name, extra in _FLOAT_CONFIGS:
+        for precision in (True, False):
+            suffix = "" if precision else ", no precision"
+            out.append((f"{name}{suffix}", _float_flags(extra, precision=precision)))
+    return out
 
 
 _README_BEGIN = "<!-- BEGIN SIZE REPORT (generated by tests/size_report.py --update-readme) -->"
@@ -276,19 +228,43 @@ _README_RANGE_BEGIN = "<!-- BEGIN SIZE RANGE -->"
 _README_RANGE_END = "<!-- END SIZE RANGE -->"
 
 
+def _sizes(flags: list[str]) -> tuple[int, int]:
+    """Cortex-M0 and Cortex-M4 text size for one configuration."""
+    return _total_size(_build("cm0", flags)), _total_size(_build("cm4", flags))
+
+
 def _readme_regions() -> tuple[str, str]:
-    """Build the Cortex-M0/M4 size table and the summary size-range snippet."""
-    rows = ["| Configuration | Cortex-M0 | Cortex-M4 |", "|---|--:|--:|"]
+    """Build the two Cortex-M0/M4 size tables and the summary size-range snippet."""
     m4_sizes = []
-    for cfg in _CONFIGS:
-        m0 = _total_size(_build("cm0", cfg["flags"]))
-        m4 = _total_size(_build("cm4", cfg["flags"]))
+
+    int_rows = ["| Integer only | Cortex-M0 | Cortex-M4 |", "|---|--:|--:|"]
+    for name, flags in _INT_CONFIGS:
+        m0, m4 = _sizes(flags)
         m4_sizes.append(m4)
-        rows.append(f"| {cfg['name']} | {m0} | {m4} |")
+        int_rows.append(f"| {name} | {m0} | {m4} |")
+
+    # the float table is two-dimensional: specifier set down, precision across
+    float_rows = [
+        (
+            "| Floating point | Cortex-M0 | Cortex-M0, no precision "
+            "| Cortex-M4 | Cortex-M4, no precision |"
+        ),
+        "|---|--:|--:|--:|--:|",
+    ]
+    for name, extra in _FLOAT_CONFIGS:
+        cells = []
+        for precision in (True, False):
+            m0, m4 = _sizes(_float_flags(extra, precision=precision))
+            m4_sizes.append(m4)
+            cells.append((m0, m4))
+        (p_m0, p_m4), (n_m0, n_m4) = cells
+        md = re.sub(r"%\w", r"`\g<0>`", name)  # specifiers read better as code
+        float_rows.append(f"| {md} | {p_m0} | {n_m0} | {p_m4} | {n_m4} |")
 
     low = min(m4_sizes) // 10 * 10
     high = -(-max(m4_sizes) // 100) * 100
-    return "\n".join(rows), f"*~{low}-{high} bytes of object code*"
+    table = "\n".join(int_rows) + "\n\n" + "\n".join(float_rows)
+    return table, f"*~{low}-{high} bytes of object code*"
 
 
 def _replace_region(text: str, begin: str, end: str, replacement: str) -> str:
@@ -352,9 +328,9 @@ def main() -> int:
     if args.check_readme or args.update_readme:
         return _readme(check=args.check_readme)
 
-    for cfg in _CONFIGS:
-        print(f'Configuration "{cfg["name"]}":')
-        _measure(_build(args.platform, cfg["flags"]))
+    for name, flags in _configs():
+        print(f'Configuration "{name}":')
+        _measure(_build(args.platform, flags))
         print()
 
     return 0
