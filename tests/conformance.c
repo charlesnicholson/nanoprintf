@@ -1148,11 +1148,29 @@ int NPF_TEST_FUNC(void) {
     NPF_TEST("0", "%.*d", -1, 0);
     NPF_TEST("hello", "%.*s", -1, "hello");
     NPF_TEST("hello world", "%.*s", -1, "hello world");
+    /* negative literal precision = precision omitted, digits must not leak */
+    NPF_TEST("42", "%.-5d", 42);
+    NPF_TEST("2b", "%.-5x", 0x2bu);
+    NPF_TEST("hello world", "%.-5s", "hello world");
+#if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
+    NPF_TEST("1.500000", "%.-3f", 1.5);
+    NPF_TEST("1.500000", "%.*f", -3, 1.5);
+#endif
 #endif
 
 #if (NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1) && \
     (NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1)
     NPF_TEST("        07", "%*.*i", 10, 2, 7);
+    /* an ignored precision must not cancel the '0' flag either */
+    NPF_TEST("0000000002", "%010.*i", -1, 2);
+    NPF_TEST("-000000002", "%010.*d", -1, -2);
+    NPF_TEST("0000000002", "%010.*u", -1, 2u);
+    NPF_TEST("000000002b", "%010.*x", -1, 0x2bu);
+    NPF_TEST("0000000042", "%010.-5d", 42);
+#if NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1
+    NPF_TEST("001.234000", "%010.*f", -5, 1.234);
+    NPF_TEST("001.500000", "%010.-5f", 1.5);
+#endif
 #endif
 
     /* ===== float ===== */

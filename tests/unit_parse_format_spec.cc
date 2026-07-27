@@ -249,6 +249,12 @@ TEST_CASE("npf_parse_format_spec") {
       REQUIRE(npf_parse_format_spec("%.-34u", &spec) == 6);
       REQUIRE(spec.prec_opt == NPF_FMT_SPEC_OPT_NONE);
     }
+
+    SUBCASE("period alone is precision zero") {
+      REQUIRE(npf_parse_format_spec("%.u", &spec) == 3);
+      REQUIRE(spec.prec_opt == NPF_FMT_SPEC_OPT_LITERAL);
+      REQUIRE(spec.prec == 0);
+    }
   }
 
   SUBCASE("length modifiers") {
