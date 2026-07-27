@@ -139,6 +139,15 @@ int NPF_TEST_FUNC(void) {
     /* NUL char: %c with '\0' must return 1, not 0 */
     NPF_TEST_RET(1, "%c", 0);
 
+    /* %c converts its int argument to unsigned char; the high bits are dropped */
+    NPF_TEST("a", "%c", 'a' + 256);
+    NPF_TEST("a", "%c", 'a' - 256);
+    NPF_TEST("a", "%c", (int)('a' + (UINT_MAX << 8)));
+    NPF_TEST("\xff", "%c", 0xFF);
+    NPF_TEST("\xff", "%c", 0xFF - 256);
+    NPF_TEST("\xff", "%c", 0x100 + 0xFF);
+    NPF_TEST_RET(1, "%c", 0x100);
+
     NPF_TEST("A", "%+c", 'A');
 
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
@@ -256,6 +265,16 @@ int NPF_TEST_FUNC(void) {
 #endif
     NPF_TEST("32767", "%hd", SHRT_MAX);
     NPF_TEST("-32768", "%hd", SHRT_MIN);
+    /* 'hh' and 'h' convert the promoted int argument to signed char / short,
+       even when the caller passes a value that doesn't fit. */
+    NPF_TEST("0", "%hhi", INT_MIN);
+    NPF_TEST("-1", "%hhi", INT_MAX);
+    NPF_TEST("-1", "%hhi", (int)UINT_MAX);
+    NPF_TEST("0", "%hi", INT_MIN);
+    NPF_TEST("-1", "%hi", INT_MAX);
+    NPF_TEST("-1", "%hi", (int)UINT_MAX);
+    NPF_TEST("-32768", "%hi", 32768);
+    NPF_TEST("-128", "%hhi", 0x7F00 + 128);
 #endif
 
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
@@ -519,6 +538,16 @@ int NPF_TEST_FUNC(void) {
     NPF_TEST("4660", "%hu", (unsigned short)0x1234u);
     NPF_TEST("255", "%hhu", (unsigned char)UCHAR_MAX);
     NPF_TEST("65535", "%hu", (unsigned short)USHRT_MAX);
+    /* 'hh' and 'h' convert the promoted unsigned argument to unsigned char /
+       unsigned short, even when the caller passes a value that doesn't fit. */
+    NPF_TEST("0", "%hhu", INT_MIN);
+    NPF_TEST("255", "%hhu", UINT_MAX);
+    NPF_TEST("0", "%hu", INT_MIN);
+    NPF_TEST("65535", "%hu", UINT_MAX);
+    NPF_TEST("377", "%hho", UINT_MAX);
+    NPF_TEST("177777", "%ho", UINT_MAX);
+    NPF_TEST("ff", "%hhx", UINT_MAX);
+    NPF_TEST("ffff", "%hx", UINT_MAX);
 #endif
 
 #if ULONG_MAX > UINT_MAX
@@ -1001,6 +1030,8 @@ int NPF_TEST_FUNC(void) {
     NPF_TEST("11111111", "%hhb", 0xFFu);
     NPF_TEST("0", "%hhb", 256u);
     NPF_TEST("1111111111111111", "%hb", 0xFFFFu);
+    NPF_TEST("11111111", "%hhb", UINT_MAX);
+    NPF_TEST("1111111111111111", "%hb", UINT_MAX);
 #endif
 
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
@@ -1099,6 +1130,13 @@ int NPF_TEST_FUNC(void) {
     { short wb = -1;
       npf_pprintf(npf_test_null_putc, 0, "1234%hn", &wb);
       NPF_TEST_WB(4, wb); }
+#if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
+    /* writeback truncates to the modifier's type, like the value conversions:
+       a count of 200 wraps to -56 in a signed char */
+    { signed char wb = 0;
+      npf_pprintf(npf_test_null_putc, 0, "%200d%hhn", 0, &wb);
+      NPF_TEST_WB(-56, wb); }
+#endif
     /* writeback char */
     { signed char wb = -1;
       npf_pprintf(npf_test_null_putc, 0, "1234567%hhn", &wb);
