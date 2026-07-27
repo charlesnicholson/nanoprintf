@@ -177,11 +177,6 @@ NPF_VISIBILITY int npf_vpprintf(npf_putc pc,
 #endif
 
 // Ensure flags are compatible.
-#if (NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 1) && \
-    (NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 0)
-  #error Precision format specifiers must be enabled if float support is enabled.
-#endif
-
 #if (NANOPRINTF_USE_FLOAT_HEX_FORMAT_SPECIFIER == 1) && \
     (NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 0)
   #error Float format specifiers must be enabled if float hex support is enabled.
@@ -241,6 +236,16 @@ NPF_VISIBILITY int npf_vpprintf(npf_putc pc,
   #define NPF_FMT_NUM_MAX NPF_CBUF
 #else
   #define NPF_FMT_NUM_MAX 65280
+#endif
+
+/* Precision the float conversions run with. When precision specifiers are
+   compiled out, the conversion default is a constant the compiler folds. */
+#if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
+  #define NPF_DEC_PREC(spec) ((spec)->prec)
+  #define NPF_HEX_PREC(spec) ((spec)->prec)
+#else
+  #define NPF_DEC_PREC(spec) 6
+  #define NPF_HEX_PREC(spec) INT_MAX
 #endif
 
 // intmax_t / uintmax_t require stdint from c99 / c++11
@@ -1084,7 +1089,7 @@ static int npf_etoa_rev(char *buf, npf_format_spec_t const *spec, npf_real_t f) 
 
   /* 'f' bounds generation by decimal position, everything else by significant
      digit count, so each mode gets one of the two stops and disables the other. */
-  prec = spec->prec;
+  prec = NPF_DEC_PREC(spec);
   /* Nothing this large fits, whichever mode runs, so bail before 'prec + 1'
      below can overflow: a wrapped nsig_max is negative, and a negative one slips
      under the significance bound rather than tripping it. */
@@ -1457,7 +1462,7 @@ static NPF_NOINLINE int npf_atoa_rev(
   }
 
   { int const n_frac_dig = (NPF_DOUBLE_MAN_BITS + 3) / 4;
-    int const prec = NPF_MIN(spec->prec, n_frac_dig);
+    int const prec = NPF_MIN(NPF_HEX_PREC(spec), n_frac_dig);
     int end, i;
 
     // Discard low nibbles and round (only constant shifts of 3 and 4)
@@ -1667,7 +1672,7 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
 #if NPF_USE_SCI == 1
       { cbuf_len = npf_etoa_rev(cbuf, &fs, val); }
 #else
-      { cbuf_len = npf_ftoa_rev(cbuf, &fs, fs.prec, val); }
+      { cbuf_len = npf_ftoa_rev(cbuf, &fs, NPF_DEC_PREC(&fs), val); }
 #endif
       if (cbuf_len < 0) { // negative means text (not number), so ignore the '0' flag
          cbuf_len = -cbuf_len;
