@@ -1717,27 +1717,28 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
 #endif
 #if NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS == 1
     if (fs.conv_spec == NPF_FMT_SPEC_CONV_WRITEBACK) {
+      void *wb = va_arg(args, void *);
       switch (fs.length_modifier) {
 #if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
         NPF_LM_Z_INT NPF_LM_T_INT
 #endif
-        case NPF_FMT_SPEC_LEN_MOD_NONE: *(va_arg(args, int *)) = npf_n; break;
+        case NPF_FMT_SPEC_LEN_MOD_NONE: *(int *)wb = npf_n; break;
 #if NANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS == 1
-        case NPF_FMT_SPEC_LEN_MOD_SHORT: *(va_arg(args, short *)) = (short)npf_n; break;
-        case NPF_FMT_SPEC_LEN_MOD_CHAR: *(va_arg(args, signed char *)) = (signed char)npf_n; break;
+        case NPF_FMT_SPEC_LEN_MOD_SHORT: *(short *)wb = (short)npf_n; break;
+        case NPF_FMT_SPEC_LEN_MOD_CHAR: *(signed char *)wb = (signed char)npf_n; break;
 #endif
 #if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
         NPF_LM_Z_LONG NPF_LM_T_LONG
 #endif
-        case NPF_FMT_SPEC_LEN_MOD_LONG: *(va_arg(args, long *)) = (long)npf_n; break;
+        case NPF_FMT_SPEC_LEN_MOD_LONG: *(long *)wb = (long)npf_n; break;
 #if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
-        case NPF_FMT_SPEC_LEN_MOD_LARGE_LONG_LONG: *(va_arg(args, long long *)) = (long long)npf_n; break;
-        case NPF_FMT_SPEC_LEN_MOD_LARGE_INTMAX: *(va_arg(args, intmax_t *)) = (intmax_t)npf_n; break;
+        case NPF_FMT_SPEC_LEN_MOD_LARGE_LONG_LONG: *(long long *)wb = (long long)npf_n; break;
+        case NPF_FMT_SPEC_LEN_MOD_LARGE_INTMAX: *(intmax_t *)wb = (intmax_t)npf_n; break;
   #if NPF_LM_Z_OWN
-        case NPF_FMT_SPEC_LEN_MOD_LARGE_SIZET: *(va_arg(args, npf_ssize_t *)) = (npf_ssize_t)npf_n; break;
+        case NPF_FMT_SPEC_LEN_MOD_LARGE_SIZET: *(npf_ssize_t *)wb = (npf_ssize_t)npf_n; break;
   #endif
   #if NPF_LM_T_OWN
-        case NPF_FMT_SPEC_LEN_MOD_LARGE_PTRDIFFT: *(va_arg(args, ptrdiff_t *)) = (ptrdiff_t)npf_n; break;
+        case NPF_FMT_SPEC_LEN_MOD_LARGE_PTRDIFFT: *(ptrdiff_t *)wb = (ptrdiff_t)npf_n; break;
   #endif
 #endif
         default: break;
