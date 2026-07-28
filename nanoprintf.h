@@ -43,15 +43,17 @@ typedef struct { float val; } npf_float_t;
 #define NPF_MAP_ARGS(...) __VA_ARGS__
 #endif
 
-#ifdef __cplusplus
-#define NPF_RESTRICT
-extern "C" {
-#else
-#if defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L)
+#if !defined(__cplusplus) && \
+    defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L)
 #define NPF_RESTRICT restrict
+#elif defined(__GNUC__) || defined(_MSC_VER)
+#define NPF_RESTRICT __restrict
 #else
 #define NPF_RESTRICT
 #endif
+
+#ifdef __cplusplus
+extern "C" {
 #endif
 
 NPF_VISIBILITY int npf_snprintf_(char * NPF_RESTRICT buffer,
