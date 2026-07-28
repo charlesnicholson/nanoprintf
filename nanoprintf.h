@@ -1563,6 +1563,37 @@ static void npf_bufputc(int c, void *ctx) {
   #define NPF_LONG_IS_INT 0
 #endif
 
+// 'z' and 't' are rarely distinct widths from 'int' or 'long'; fold them into
+// whichever same-width case already exists instead of paying for their own
+// va_arg sites.
+#if SIZE_MAX == UINT_MAX
+  #define NPF_LM_Z_INT   case NPF_FMT_SPEC_LEN_MOD_LARGE_SIZET:
+  #define NPF_LM_Z_LONG
+  #define NPF_LM_Z_OWN 0
+#elif SIZE_MAX == ULONG_MAX && !NPF_LONG_IS_INT
+  #define NPF_LM_Z_INT
+  #define NPF_LM_Z_LONG  case NPF_FMT_SPEC_LEN_MOD_LARGE_SIZET:
+  #define NPF_LM_Z_OWN 0
+#else
+  #define NPF_LM_Z_INT
+  #define NPF_LM_Z_LONG
+  #define NPF_LM_Z_OWN 1
+#endif
+
+#if PTRDIFF_MAX == INT_MAX
+  #define NPF_LM_T_INT   case NPF_FMT_SPEC_LEN_MOD_LARGE_PTRDIFFT:
+  #define NPF_LM_T_LONG
+  #define NPF_LM_T_OWN 0
+#elif PTRDIFF_MAX == LONG_MAX && !NPF_LONG_IS_INT
+  #define NPF_LM_T_INT
+  #define NPF_LM_T_LONG  case NPF_FMT_SPEC_LEN_MOD_LARGE_PTRDIFFT:
+  #define NPF_LM_T_OWN 0
+#else
+  #define NPF_LM_T_INT
+  #define NPF_LM_T_LONG
+  #define NPF_LM_T_OWN 1
+#endif
+
 int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
   npf_format_spec_t fs;
   char const *cur = format;
@@ -1687,17 +1718,27 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
 #if NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS == 1
     if (fs.conv_spec == NPF_FMT_SPEC_CONV_WRITEBACK) {
       switch (fs.length_modifier) {
+#if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
+        NPF_LM_Z_INT NPF_LM_T_INT
+#endif
         case NPF_FMT_SPEC_LEN_MOD_NONE: *(va_arg(args, int *)) = npf_n; break;
 #if NANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS == 1
         case NPF_FMT_SPEC_LEN_MOD_SHORT: *(va_arg(args, short *)) = (short)npf_n; break;
         case NPF_FMT_SPEC_LEN_MOD_CHAR: *(va_arg(args, signed char *)) = (signed char)npf_n; break;
 #endif
+#if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
+        NPF_LM_Z_LONG NPF_LM_T_LONG
+#endif
         case NPF_FMT_SPEC_LEN_MOD_LONG: *(va_arg(args, long *)) = (long)npf_n; break;
 #if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
         case NPF_FMT_SPEC_LEN_MOD_LARGE_LONG_LONG: *(va_arg(args, long long *)) = (long long)npf_n; break;
         case NPF_FMT_SPEC_LEN_MOD_LARGE_INTMAX: *(va_arg(args, intmax_t *)) = (intmax_t)npf_n; break;
+  #if NPF_LM_Z_OWN
         case NPF_FMT_SPEC_LEN_MOD_LARGE_SIZET: *(va_arg(args, npf_ssize_t *)) = (npf_ssize_t)npf_n; break;
+  #endif
+  #if NPF_LM_T_OWN
         case NPF_FMT_SPEC_LEN_MOD_LARGE_PTRDIFFT: *(va_arg(args, ptrdiff_t *)) = (ptrdiff_t)npf_n; break;
+  #endif
 #endif
         default: break;
       }
@@ -1712,13 +1753,21 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
 #if !NPF_LONG_IS_INT || NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
         switch (fs.length_modifier) {
 #if !NPF_LONG_IS_INT
+  #if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
+          NPF_LM_Z_LONG NPF_LM_T_LONG
+  #endif
           NPF_EXTRACT(sval, LONG, long, long);
 #endif
 #if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
           NPF_EXTRACT(sval, LARGE_LONG_LONG, long long, long long);
           NPF_EXTRACT(sval, LARGE_INTMAX, intmax_t, intmax_t);
+  #if NPF_LM_Z_OWN
           NPF_EXTRACT(sval, LARGE_SIZET, npf_ssize_t, npf_ssize_t);
+  #endif
+  #if NPF_LM_T_OWN
           NPF_EXTRACT(sval, LARGE_PTRDIFFT, ptrdiff_t, ptrdiff_t);
+  #endif
+          NPF_LM_Z_INT NPF_LM_T_INT
 #endif
           default:
 #endif
@@ -1745,13 +1794,21 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
 #if !NPF_LONG_IS_INT || NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
           switch (fs.length_modifier) {
 #if !NPF_LONG_IS_INT
+  #if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
+            NPF_LM_Z_LONG NPF_LM_T_LONG
+  #endif
             NPF_EXTRACT(val, LONG, unsigned long, unsigned long);
 #endif
 #if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
             NPF_EXTRACT(val, LARGE_LONG_LONG, unsigned long long, unsigned long long);
             NPF_EXTRACT(val, LARGE_INTMAX, uintmax_t, uintmax_t);
+  #if NPF_LM_Z_OWN
             NPF_EXTRACT(val, LARGE_SIZET, size_t, size_t);
+  #endif
+  #if NPF_LM_T_OWN
             NPF_EXTRACT(val, LARGE_PTRDIFFT, npf_uptrdiff_t, npf_uptrdiff_t);
+  #endif
+            NPF_LM_Z_INT NPF_LM_T_INT
 #endif
             default:
 #endif
