@@ -127,6 +127,7 @@ nanoprintf has the following static configuration flags.
 * `NANOPRINTF_USE_FLOAT_SHORTEST_FORMAT_SPECIFIER`: Set to `0` or `1`. Enables shortest float specifier (`%g`/`%G`). Requires `NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS=1`. Since `%g` selects between `%e` and `%f` output, enabling it alone costs nearly as much as enabling both it and `NANOPRINTF_USE_FLOAT_SCI_FORMAT_SPECIFIER`.
 * `NANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS`: Set to `0` or `1`. Enables small modifiers.
 * `NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS`: Set to `0` or `1`. Enables oversized modifiers.
+* `NANOPRINTF_USE_FIXED_WIDTH_FORMAT_SPECIFIERS`: Optional, defaults to `0`. Enables the C23 fixed-width modifiers `wN` and `wfN`. Requires `NANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS=1`, and `w64`/`wf64` additionally require `NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=1` on targets where the 64-bit stdint types are `long long`.
 * `NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS`: Set to `0` or `1`. Enables binary specifiers.
 * `NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS`: Set to `0` or `1`. Enables `%n` for write-back.
 * `NANOPRINTF_USE_ALT_FORM_FLAG`: Set to `0` or `1`. Enables the `#` modifier for alternate print forms.
@@ -209,6 +210,12 @@ Like `printf`, `nanoprintf` expects a conversion specification string of the fol
 	* `j`: (large specifier) Use the `[u]intmax_t` types for integral and write-back vararg width.
 	* `z`: (large specifier) Use the `size_t` types for integral and write-back vararg width.
 	* `t`: (large specifier) Use the `ptrdiff_t` types for integral and write-back vararg width.
+	* `wN`: (fixed-width specifier) Use the `[u]int_leastN_t` types for integral and write-back vararg width.
+	* `wfN`: (fixed-width specifier) Use the `[u]int_fastN_t` types for integral and write-back vararg width.
+
+	`N` is `8`, `16`, `32`, or `64`: the widths C23 requires `<stdint.h>` to define types for. Every other `N` is implementation-defined, and nanoprintf defines it as not parsing, so `"%w24d"` prints `%w24d`. So does `w64`/`wf64` in a build whose length modifiers cannot carry a 64-bit type — see `NANOPRINTF_USE_FIXED_WIDTH_FORMAT_SPECIFIERS` above.
+
+	`wN` and `wfN` name the same types as `[u]intN_t` and the `least`/`fast` families in `<stdint.h>`, and at those four widths every one of them is a typedef for a type one of the modifiers above already carries. nanoprintf resolves them while it parses the format string, so `%w8d` *is* `%hhd` where `int8_t` is `signed char`, `%wf16d` *is* `%ld` where `int_fast16_t` is `long`, and so on. The mapping is derived from each type's range rather than assumed, so it also holds where `CHAR_BIT` is not 8: on a target with 16-bit `char`, `int_least8_t` is 16 bits wide and `%w8d` converts to 16 bits, as it must. A target whose `<stdint.h>` defined exact- or minimum-width types at some *other* width would need those supported too, and no length modifier can convert to a width no standard type has; nanoprintf rejects such a target at compile time rather than silently ignoring the requirement.
 * **Conversion specifier**
 
 	Exactly one of the following:

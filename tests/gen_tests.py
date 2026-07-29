@@ -38,6 +38,7 @@ FLAGS = [
     "NANOPRINTF_USE_FLOAT_HEX_FORMAT_SPECIFIER",
     "NANOPRINTF_USE_FLOAT_SCI_FORMAT_SPECIFIER",
     "NANOPRINTF_USE_FLOAT_SHORTEST_FORMAT_SPECIFIER",
+    "NANOPRINTF_USE_FIXED_WIDTH_FORMAT_SPECIFIERS",
     "NANOPRINTF_USE_DIVISION_FREE_CONVERSION",
 ]
 
@@ -59,7 +60,26 @@ NO_PRECISION_FLOAT_VARIED = {
     "NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS",
     "NANOPRINTF_USE_ALT_FORM_FLAG",
     "NANOPRINTF_USE_DIVISION_FREE_CONVERSION",
+    "NANOPRINTF_USE_FIXED_WIDTH_FORMAT_SPECIFIERS",
     *FLOAT_DEPENDENT_FLAGS,
+}
+
+
+# 'wN' and 'wfN' resolve to an already-existing length modifier while the format
+# string is parsed, so they only interact with the flags owning those modifiers
+# and the conversions they can precede. Crossing fixed-width=1 with the float
+# family would grow the matrix by half for no coverage those flags can affect;
+# the flags outside this set are pinned to 0 instead.
+FIXED_WIDTH_VARIED = {
+    "NANOPRINTF_USE_FIXED_WIDTH_FORMAT_SPECIFIERS",
+    "NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS",
+    "NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS",
+    "NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS",
+    "NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS",
+    "NANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS",
+    "NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS",
+    "NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS",
+    "NANOPRINTF_USE_ALT_FORM_FLAG",
 }
 
 
@@ -69,12 +89,18 @@ def valid_combos() -> list[dict[str, int]]:
     Constraints:
       - every flag in FLOAT_DEPENDENT_FLAGS requires float=1
       - float=1 + precision=0 is sampled over NO_PRECISION_FLOAT_VARIED only
+      - fixed-width=1 requires small=1, and is sampled over FIXED_WIDTH_VARIED only
     """
     combos = []
     for bits in itertools.product((0, 1), repeat=len(FLAGS)):
         combo = dict(zip(FLAGS, bits, strict=True))
         if combo["NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS"] == 0 and any(
             combo[flag] == 1 for flag in FLOAT_DEPENDENT_FLAGS
+        ):
+            continue
+        if combo["NANOPRINTF_USE_FIXED_WIDTH_FORMAT_SPECIFIERS"] == 1 and (
+            combo["NANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS"] == 0
+            or any(v == 1 for k, v in combo.items() if k not in FIXED_WIDTH_VARIED)
         ):
             continue
         if (
@@ -103,6 +129,7 @@ def combo_label(combo: dict[str, int], lang: str) -> str:
         "NANOPRINTF_USE_FLOAT_HEX_FORMAT_SPECIFIER": "hexa",
         "NANOPRINTF_USE_FLOAT_SCI_FORMAT_SPECIFIER": "sci",
         "NANOPRINTF_USE_FLOAT_SHORTEST_FORMAT_SPECIFIER": "shortest",
+        "NANOPRINTF_USE_FIXED_WIDTH_FORMAT_SPECIFIERS": "fixedw",
         "NANOPRINTF_USE_DIVISION_FREE_CONVERSION": "divfree",
     }
     parts = [f"{short[k]}={v}" for k, v in combo.items()]
@@ -286,7 +313,14 @@ def write_compile_commands(
         "/W4",
         "/WX",
         "/Zc:preprocessor",
+        # Narrowing a constant is the whole point of the truncation tests.
+        "/wd4310",
+        # MSVC's own 'w' length modifier means wide, so its format checker
+        # reads the C23 'wN' / 'wfN' the malformed-specifier tests pass to the
+        # system snprintf as a wide conversion with the wrong argument.
+        "/wd4473",
         "/wd4474",
+        "/wd4475",
         "/wd4476",
         "/wd4477",
         "/wd4505",
