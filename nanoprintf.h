@@ -140,6 +140,9 @@ NPF_VISIBILITY int npf_vpprintf(npf_putc pc,
 #ifndef NANOPRINTF_USE_FLOAT_SHORTEST_FORMAT_SPECIFIER
   #define NANOPRINTF_USE_FLOAT_SHORTEST_FORMAT_SPECIFIER 0
 #endif
+#ifndef NANOPRINTF_USE_FIXED_WIDTH_FORMAT_SPECIFIERS
+  #define NANOPRINTF_USE_FIXED_WIDTH_FORMAT_SPECIFIERS 0
+#endif
 
 // 'e' and 'g' share a conversion function; 'g' selects between 'e' and 'f' output.
 #if (NANOPRINTF_USE_FLOAT_SCI_FORMAT_SPECIFIER == 1) || \
@@ -191,6 +194,28 @@ NPF_VISIBILITY int npf_vpprintf(npf_putc pc,
 #if (NANOPRINTF_USE_FLOAT_SINGLE_PRECISION == 1) && \
     (NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS == 0)
   #error Single precision requires float format specifiers to be enabled.
+#endif
+
+// 'w8' and 'w16' resolve to the 'hh' and 'h' length modifiers.
+#if (NANOPRINTF_USE_FIXED_WIDTH_FORMAT_SPECIFIERS == 1) && \
+    (NANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS == 0)
+  #error Small format specifiers must be enabled if fixed-width support is enabled.
+#endif
+
+/* C23 requires 'wN' to cover every exact-width and minimum-width type stdint.h
+   defines, not only the four widths it requires stdint.h to define. Those four
+   always name a typedef for char / short / int / long / long long, which is what
+   lets 'wN' resolve to a length modifier that already exists; a width no standard
+   type has would instead need the promoted value masked at runtime. Nothing
+   defines such a type today, so rather than carry that code, catch the target
+   that would need it. */
+#if NANOPRINTF_USE_FIXED_WIDTH_FORMAT_SPECIFIERS == 1
+  #if defined(INT24_MAX) || defined(INT_LEAST24_MAX) || \
+      defined(INT40_MAX) || defined(INT_LEAST40_MAX) || \
+      defined(INT48_MAX) || defined(INT_LEAST48_MAX) || \
+      defined(INT128_MAX) || defined(INT_LEAST128_MAX)
+    #error Fixed-width specifiers cannot convert to the other stdint widths here.
+  #endif
 #endif
 
 #if NANOPRINTF_USE_FLOAT_SINGLE_PRECISION == 1
@@ -374,6 +399,37 @@ enum {
   NPF_FMT_SPEC_LEN_MOD_LARGE_PTRDIFFT,  // 't'
 #endif
 };
+
+#if NANOPRINTF_USE_FIXED_WIDTH_FORMAT_SPECIFIERS == 1
+/* 'wN' names int_leastN_t and 'wfN' names int_fastN_t, and each of those is a
+   typedef for a type that some length modifier already carries. Resolving N to
+   that modifier at parse time is the entire feature: extraction, conversion and
+   writeback then run on the 'hh' / 'h' / 'l' / 'll' paths unchanged. */
+#if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
+  #define NPF_LM_WIDEST NPF_FMT_SPEC_LEN_MOD_LARGE_LONG_LONG
+  #define NPF_W_BITS_MAX 64
+#elif (INT_LEAST64_MAX <= LONG_MAX) && (INT_FAST64_MAX <= LONG_MAX)
+  #define NPF_LM_WIDEST NPF_FMT_SPEC_LEN_MOD_LONG
+  #define NPF_W_BITS_MAX 64
+#else
+  // Nothing here carries a 'long long', so 'w64' and 'wf64' don't parse.
+  #define NPF_LM_WIDEST NPF_FMT_SPEC_LEN_MOD_LONG
+  #define NPF_W_BITS_MAX 32
+#endif
+
+// The narrowest length modifier whose type holds MAX: the one stdint.h picked.
+#define NPF_LM_OF(MAX) (uint8_t)( \
+  ((MAX) <= SCHAR_MAX) ? NPF_FMT_SPEC_LEN_MOD_CHAR : \
+  ((MAX) <= SHRT_MAX)  ? NPF_FMT_SPEC_LEN_MOD_SHORT : \
+  ((MAX) <= INT_MAX)   ? NPF_FMT_SPEC_LEN_MOD_NONE : \
+  ((MAX) <= LONG_MAX)  ? NPF_FMT_SPEC_LEN_MOD_LONG : NPF_LM_WIDEST)
+
+/* The modifier for one width, either family. The two coincide unless the
+   platform's fastest type of that width is wider than its narrowest, so this
+   usually folds to a constant and the parse carries no mapping table at all. */
+#define NPF_LM_OF_W(FAST, N) \
+  ((FAST) ? NPF_LM_OF(INT_FAST##N##_MAX) : NPF_LM_OF(INT_LEAST##N##_MAX))
+#endif
 
 enum {
   NPF_FMT_SPEC_CONV_NONE,
@@ -592,6 +648,30 @@ static char const *npf_parse_format_spec_end(char const *format,
 #endif
 
   out_spec->length_modifier = NPF_FMT_SPEC_LEN_MOD_NONE;
+#if NANOPRINTF_USE_FIXED_WIDTH_FORMAT_SPECIFIERS == 1
+  if (*cur == 'w') {
+    ++cur;
+    uint_fast8_t fast = 0;
+    if (*cur == 'f') { fast = 1; ++cur; }
+    /* The widths stdint.h is required to define are the only ones supported,
+       and the first digit tells them apart; a second digit, where the width
+       has one, only has to be confirmed. Nothing here needs the value, so no
+       arithmetic is spent building one. */
+    char const c = *cur++;
+    char d2 = 0;
+    if (c == '1') { out_spec->length_modifier = NPF_LM_OF_W(fast, 16); d2 = '6'; }
+    else if (c == '3') { out_spec->length_modifier = NPF_LM_OF_W(fast, 32); d2 = '2'; }
+#if NPF_W_BITS_MAX == 64
+    else if (c == '6') { out_spec->length_modifier = NPF_LM_OF_W(fast, 64); d2 = '4'; }
+#endif
+    else if (c == '8') { out_spec->length_modifier = NPF_LM_OF_W(fast, 8); }
+    else { return NULL; }
+    if (d2) {
+      if (*cur != d2) { return NULL; }
+      ++cur;
+    }
+  } else
+#endif
   switch (*cur++) { // Length modifier
 #if NANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS == 1
     case 'h':

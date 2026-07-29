@@ -16,6 +16,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 static int npf_test_pass_count;
@@ -1163,6 +1164,334 @@ int NPF_TEST_FUNC(void) {
 #endif
 #endif /* NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS */
 
+    /* ===== fixed-width length modifiers ===== */
+#if NANOPRINTF_USE_FIXED_WIDTH_FORMAT_SPECIFIERS == 1
+    /* 'wN' selects int_leastN_t / uint_leastN_t, which is the same type as
+       intN_t / uintN_t wherever the exact-width type exists. Those are exactly N
+       bits wide, so on the CHAR_BIT == 8 targets this file already assumes for
+       'hh' and 'h', the promoted argument truncates to a written-out value. */
+    NPF_TEST("0", "%w8d", 0);
+    NPF_TEST("127", "%w8d", 127);
+    NPF_TEST("-128", "%w8d", 128);
+    NPF_TEST("-1", "%w8d", 255);
+    NPF_TEST("0", "%w8d", 256);
+    NPF_TEST("44", "%w8i", 300);
+    NPF_TEST("-1", "%w8i", -1);
+    NPF_TEST("-1", "%w8i", INT_MAX);
+    NPF_TEST("0", "%w8i", INT_MIN);
+    NPF_TEST("255", "%w8u", 255u);
+    NPF_TEST("0", "%w8u", 256u);
+    NPF_TEST("255", "%w8u", UINT_MAX);
+    NPF_TEST("ff", "%w8x", UINT_MAX);
+    NPF_TEST("FF", "%w8X", UINT_MAX);
+    NPF_TEST("377", "%w8o", UINT_MAX);
+
+    NPF_TEST("0", "%w16d", 0);
+    NPF_TEST("32767", "%w16d", 32767);
+    NPF_TEST("-32768", "%w16d", 32768);
+    NPF_TEST("-1", "%w16d", 65535);
+    NPF_TEST("0", "%w16d", 65536);
+    NPF_TEST("-1", "%w16i", INT_MAX);
+    NPF_TEST("65535", "%w16u", 65535u);
+    NPF_TEST("0", "%w16u", 65536u);
+    NPF_TEST("65535", "%w16u", UINT_MAX);
+    NPF_TEST("ffff", "%w16x", UINT_MAX);
+    NPF_TEST("177777", "%w16o", UINT_MAX);
+
+    NPF_TEST("0", "%w32d", (int32_t)0);
+    NPF_TEST("-1", "%w32d", (int32_t)-1);
+    NPF_TEST("2147483647", "%w32d", (int32_t)INT32_MAX);
+    NPF_TEST("-2147483648", "%w32d", (int32_t)INT32_MIN);
+    NPF_TEST("4294967295", "%w32u", (uint32_t)UINT32_MAX);
+    NPF_TEST("ffffffff", "%w32x", (uint32_t)UINT32_MAX);
+    NPF_TEST("37777777777", "%w32o", (uint32_t)UINT32_MAX);
+
+#if NPF_W_BITS_MAX == 64
+    NPF_TEST("-1", "%w64d", (int64_t)-1);
+    NPF_TEST("9223372036854775807", "%w64d", (int64_t)INT64_MAX);
+    NPF_TEST("-9223372036854775808", "%w64d", (int64_t)INT64_MIN);
+    NPF_TEST("18446744073709551615", "%w64u", (uint64_t)UINT64_MAX);
+    NPF_TEST("ffffffffffffffff", "%w64x", (uint64_t)UINT64_MAX);
+#endif
+
+#if NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS == 1
+    NPF_TEST("11111111", "%w8b", UINT_MAX);
+    NPF_TEST("1111111111111111", "%w16b", UINT_MAX);
+    NPF_TEST("11111111111111111111111111111111", "%w32b", (uint32_t)UINT32_MAX);
+    NPF_TEST("11111111", "%w8B", UINT_MAX);
+    NPF_TEST("101", "%wf8b", (uint_fast8_t)5);
+#endif
+
+    /* the return value counts the converted length, not the specifier's */
+    NPF_TEST_RET(2, "%w8d", 42);
+    NPF_TEST_RET(3, "%w8d", 200);   /* (int8_t)200 == -56 */
+    NPF_TEST_RET(3, "%w16u", 65535u + 1u + 999u);
+
+    /* The minimum-width and fastest-minimum-width types are only guaranteed to
+       be at least N bits, so these expectations are built from the value. Every
+       one goes through the widest value the type can hold, which is what catches
+       a length modifier that reads the wrong number of bytes back out. */
+#define NPF_TEST_WS(fmt, type, val) do { \
+      type npf_ws_v = (type)(val); \
+      char npf_ws_exp[32]; \
+      snprintf(npf_ws_exp, sizeof(npf_ws_exp), "%lld", (long long)npf_ws_v); \
+      NPF_TEST_DYN(npf_ws_exp, fmt, npf_ws_v); \
+    } while (0)
+
+#define NPF_TEST_WU(fmt, sys_fmt, type, val) do { \
+      type npf_wu_v = (type)(val); \
+      char npf_wu_exp[32]; \
+      snprintf(npf_wu_exp, sizeof(npf_wu_exp), sys_fmt, (unsigned long long)npf_wu_v); \
+      NPF_TEST_DYN(npf_wu_exp, fmt, npf_wu_v); \
+    } while (0)
+
+    NPF_TEST_WS("%w8d", int_least8_t, INT_LEAST8_MAX);
+    NPF_TEST_WS("%w8d", int_least8_t, INT_LEAST8_MIN);
+    NPF_TEST_WS("%w8i", int_least8_t, -1);
+    NPF_TEST_WU("%w8u", "%llu", uint_least8_t, UINT_LEAST8_MAX);
+    NPF_TEST_WU("%w8x", "%llx", uint_least8_t, UINT_LEAST8_MAX);
+    NPF_TEST_WS("%w16d", int_least16_t, INT_LEAST16_MAX);
+    NPF_TEST_WS("%w16d", int_least16_t, INT_LEAST16_MIN);
+    NPF_TEST_WU("%w16u", "%llu", uint_least16_t, UINT_LEAST16_MAX);
+    NPF_TEST_WS("%w32d", int_least32_t, INT_LEAST32_MAX);
+    NPF_TEST_WS("%w32d", int_least32_t, INT_LEAST32_MIN);
+    NPF_TEST_WU("%w32u", "%llu", uint_least32_t, UINT_LEAST32_MAX);
+    NPF_TEST_WU("%w32X", "%llX", uint_least32_t, UINT_LEAST32_MAX);
+
+    NPF_TEST_WS("%wf8d", int_fast8_t, 0);
+    NPF_TEST_WS("%wf8d", int_fast8_t, -1);
+    NPF_TEST_WS("%wf8d", int_fast8_t, INT_FAST8_MAX);
+    NPF_TEST_WS("%wf8d", int_fast8_t, INT_FAST8_MIN);
+    NPF_TEST_WU("%wf8u", "%llu", uint_fast8_t, UINT_FAST8_MAX);
+    NPF_TEST_WU("%wf8x", "%llx", uint_fast8_t, UINT_FAST8_MAX);
+    NPF_TEST_WU("%wf8o", "%llo", uint_fast8_t, UINT_FAST8_MAX);
+    NPF_TEST_WS("%wf16d", int_fast16_t, -1);
+    NPF_TEST_WS("%wf16d", int_fast16_t, INT_FAST16_MAX);
+    NPF_TEST_WS("%wf16d", int_fast16_t, INT_FAST16_MIN);
+    NPF_TEST_WU("%wf16u", "%llu", uint_fast16_t, UINT_FAST16_MAX);
+    NPF_TEST_WU("%wf16X", "%llX", uint_fast16_t, UINT_FAST16_MAX);
+    NPF_TEST_WS("%wf32d", int_fast32_t, -1);
+    NPF_TEST_WS("%wf32d", int_fast32_t, INT_FAST32_MAX);
+    NPF_TEST_WS("%wf32d", int_fast32_t, INT_FAST32_MIN);
+    NPF_TEST_WU("%wf32u", "%llu", uint_fast32_t, UINT_FAST32_MAX);
+    NPF_TEST_WU("%wf32o", "%llo", uint_fast32_t, UINT_FAST32_MAX);
+#if NPF_W_BITS_MAX == 64
+    NPF_TEST_WS("%w64d", int_least64_t, INT_LEAST64_MAX);
+    NPF_TEST_WS("%w64d", int_least64_t, INT_LEAST64_MIN);
+    NPF_TEST_WU("%w64u", "%llu", uint_least64_t, UINT_LEAST64_MAX);
+    NPF_TEST_WS("%wf64d", int_fast64_t, -1);
+    NPF_TEST_WS("%wf64d", int_fast64_t, INT_FAST64_MAX);
+    NPF_TEST_WS("%wf64d", int_fast64_t, INT_FAST64_MIN);
+    NPF_TEST_WU("%wf64u", "%llu", uint_fast64_t, UINT_FAST64_MAX);
+    NPF_TEST_WU("%wf64x", "%llx", uint_fast64_t, UINT_FAST64_MAX);
+#endif
+#undef NPF_TEST_WS
+#undef NPF_TEST_WU
+
+    /* A modifier that resolved to the wrong width would read the wrong number of
+       bytes and leave the rest of the argument list misaligned, so every width is
+       also run with a second conversion behind it. */
+    NPF_TEST("42|7", "%w8d|%d", 42, 7);
+    NPF_TEST("42|7", "%w16d|%d", 42, 7);
+    NPF_TEST("42|7", "%w32d|%d", (int32_t)42, 7);
+    NPF_TEST("42|7", "%wf8d|%d", (int_fast8_t)42, 7);
+    NPF_TEST("42|7", "%wf16d|%d", (int_fast16_t)42, 7);
+    NPF_TEST("42|7", "%wf32d|%d", (int_fast32_t)42, 7);
+#if NPF_W_BITS_MAX == 64
+    NPF_TEST("42|7", "%w64d|%d", (int64_t)42, 7);
+    NPF_TEST("42|7", "%wf64d|%d", (int_fast64_t)42, 7);
+    NPF_TEST("1|2|3|4|5", "%w8d|%w16d|%w32d|%w64d|%d",
+             1, 2, (int32_t)3, (int64_t)4, 5);
+#else
+    NPF_TEST("1|2|3|4", "%w8d|%w16d|%w32d|%d", 1, 2, (int32_t)3, 4);
+#endif
+    /* mixed with the classic modifiers, which share the same extraction paths */
+    NPF_TEST("1|2|3|4", "%w8d|%hhd|%w16d|%hd", 1, 2, 3, 4);
+
+    /* Truncation of the promoted argument. The expectation comes from the type,
+       so these hold on a target where int_leastN_t is wider than N bits (any
+       CHAR_BIT other than 8) as well. Skipped where the type is wider than int,
+       since then the argument would not be an int in the first place. */
+#define NPF_TEST_WPROMO(fmt, type, raw) do { \
+      if (sizeof(type) <= sizeof(int)) { \
+        char npf_wp_exp[32]; \
+        snprintf(npf_wp_exp, sizeof(npf_wp_exp), "%lld", (long long)(type)(raw)); \
+        NPF_TEST_DYN(npf_wp_exp, fmt, (int)(raw)); \
+      } \
+    } while (0)
+
+    NPF_TEST_WPROMO("%w8d", int_least8_t, 0);
+    NPF_TEST_WPROMO("%w8d", int_least8_t, 127);
+    NPF_TEST_WPROMO("%w8d", int_least8_t, 128);
+    NPF_TEST_WPROMO("%w8d", int_least8_t, 255);
+    NPF_TEST_WPROMO("%w8d", int_least8_t, 256);
+    NPF_TEST_WPROMO("%w8d", int_least8_t, 300);
+    NPF_TEST_WPROMO("%w8d", int_least8_t, -1);
+    NPF_TEST_WPROMO("%w8i", int_least8_t, INT_MAX);
+    NPF_TEST_WPROMO("%w8i", int_least8_t, INT_MIN);
+    NPF_TEST_WPROMO("%w16d", int_least16_t, 32767);
+    NPF_TEST_WPROMO("%w16d", int_least16_t, 32768);
+    NPF_TEST_WPROMO("%w16d", int_least16_t, 65535);
+    NPF_TEST_WPROMO("%w16d", int_least16_t, 65536);
+    NPF_TEST_WPROMO("%w16i", int_least16_t, INT_MAX);
+    NPF_TEST_WPROMO("%wf8d", int_fast8_t, 300);
+    NPF_TEST_WPROMO("%wf8d", int_fast8_t, -1);
+    NPF_TEST_WPROMO("%wf16d", int_fast16_t, 70000);
+    NPF_TEST_WPROMO("%wf16d", int_fast16_t, -1);
+#undef NPF_TEST_WPROMO
+
+    /* The design claim, asserted directly: at a width whose stdint type is the
+       same type a classic modifier names, the two specifiers agree exactly. */
+#define NPF_TEST_WSAME(cond, wfmt, cfmt, ...) do { \
+      if (cond) { \
+        char npf_wq_a[64], npf_wq_b[64]; \
+        npf_snprintf(npf_wq_a, sizeof(npf_wq_a), wfmt, __VA_ARGS__); \
+        npf_snprintf(npf_wq_b, sizeof(npf_wq_b), cfmt, __VA_ARGS__); \
+        if (strcmp(npf_wq_a, npf_wq_b) != 0) { \
+          fprintf(stderr, "FAIL [%s:%d]: \"%s\"=\"%s\" \"%s\"=\"%s\"\n", \
+                  __FILE__, __LINE__, wfmt, npf_wq_a, cfmt, npf_wq_b); \
+          ++npf_test_fail_count; \
+        } else { ++npf_test_pass_count; } \
+      } \
+    } while (0)
+
+    NPF_TEST_WSAME(sizeof(int_least8_t) == sizeof(signed char), "%w8d", "%hhd", 300);
+    NPF_TEST_WSAME(sizeof(int_least8_t) == sizeof(signed char), "%w8i", "%hhi", -1);
+    NPF_TEST_WSAME(sizeof(uint_least8_t) == sizeof(unsigned char), "%w8u", "%hhu", 511u);
+    NPF_TEST_WSAME(sizeof(uint_least8_t) == sizeof(unsigned char), "%w8x", "%hhx", UINT_MAX);
+    NPF_TEST_WSAME(sizeof(uint_least8_t) == sizeof(unsigned char), "%w8o", "%hho", UINT_MAX);
+    NPF_TEST_WSAME(sizeof(int_least16_t) == sizeof(short), "%w16d", "%hd", 70000);
+    NPF_TEST_WSAME(sizeof(uint_least16_t) == sizeof(unsigned short), "%w16u", "%hu", UINT_MAX);
+    NPF_TEST_WSAME(sizeof(int_least32_t) == sizeof(int), "%w32d", "%d", (int32_t)-12345);
+    NPF_TEST_WSAME(sizeof(int_fast8_t) == sizeof(signed char), "%wf8d", "%hhd", 300);
+    NPF_TEST_WSAME(sizeof(int_fast8_t) == sizeof(int), "%wf8d", "%d", 300);
+    NPF_TEST_WSAME(sizeof(int_fast16_t) == sizeof(int), "%wf16d", "%d", 70000);
+#if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
+    NPF_TEST_WSAME(sizeof(int_least64_t) == sizeof(long long), "%w64d", "%lld",
+                   (long long)INT64_MIN);
+    NPF_TEST_WSAME(sizeof(uint_least64_t) == sizeof(unsigned long long), "%w64x", "%llx",
+                   (unsigned long long)UINT64_MAX);
+#endif
+    NPF_TEST_WSAME(sizeof(int_least64_t) == sizeof(long), "%w64d", "%ld", (long)-12345);
+#undef NPF_TEST_WSAME
+
+    /* Flags, field width and precision all apply as usual. */
+    NPF_TEST("+127", "%+w8d", 127);
+    NPF_TEST(" 127", "% w8d", 127);
+#if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
+    NPF_TEST("  -1", "%4w8d", 255);
+    NPF_TEST("-1  ", "%-4w8d", 255);
+    NPF_TEST("-001", "%04w8d", 255);
+    NPF_TEST("  -1", "%*w8d", 4, 255);
+#endif
+#if (NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1) && \
+    (NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1)
+    NPF_TEST("  -01", "%*.*w8d", 5, 2, 255);
+#endif
+#if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
+    NPF_TEST("-001", "%.3w8d", 255);
+    NPF_TEST("", "%.0w8d", 256);
+    NPF_TEST("0ff", "%.3w8x", UINT_MAX);
+#endif
+#if NANOPRINTF_USE_ALT_FORM_FLAG == 1
+    NPF_TEST("0xff", "%#w8x", UINT_MAX);
+    NPF_TEST("0377", "%#w8o", UINT_MAX);
+#endif
+
+    /* N must be one of the widths stdint.h is required to define; anything else
+       fails to parse and the specifier is emitted verbatim. */
+    NPF_TEST("%wd", "%wd", 5);
+    NPF_TEST("%w", "%w");
+    NPF_TEST("%wf", "%wf");
+    NPF_TEST("%w1", "%w1");
+    NPF_TEST("%wfd", "%wfd", 5);
+    NPF_TEST("%w0d", "%w0d", 5);
+    NPF_TEST("%w1d", "%w1d", 5);
+    NPF_TEST("%w08d", "%w08d", 5);
+    NPF_TEST("%wf08d", "%wf08d", 5);
+    NPF_TEST("%w7d", "%w7d", 5);
+    NPF_TEST("%w9d", "%w9d", 5);
+    NPF_TEST("%w24d", "%w24d", 5);
+    NPF_TEST("%w33d", "%w33d", 5);
+    NPF_TEST("%w48d", "%w48d", 5);
+    NPF_TEST("%w65d", "%w65d", 5);
+    NPF_TEST("%w99d", "%w99d", 5);
+    NPF_TEST("%w128d", "%w128d", 5);
+    NPF_TEST("%w160d", "%w160d", 5);
+    NPF_TEST("%w644d", "%w644d", 5);
+    NPF_TEST("%w4294967296d", "%w4294967296d", 5);
+    NPF_TEST("%w3", "%w3");
+    NPF_TEST("%w6", "%w6");
+    NPF_TEST("%w8", "%w8");
+    NPF_TEST("%wf16", "%wf16");
+    NPF_TEST("a%w7db", "a%w7db", 5);
+    NPF_TEST("[%wd]", "[%wd]", 5);
+    NPF_TEST("x%wy", "x%wy");
+    NPF_TEST("ok 5", "ok %w8d", 5);
+    NPF_TEST("%wf7d", "%wf7d", 5);
+    NPF_TEST("%wf24d", "%wf24d", 5);
+    NPF_TEST("%wf128d", "%wf128d", 5);
+    NPF_TEST("%ww8d", "%ww8d", 5);
+    NPF_TEST("%wff8d", "%wff8d", 5);
+#if NPF_W_BITS_MAX < 64
+    /* Nothing in this build carries a 64-bit type. */
+    NPF_TEST("%w64d", "%w64d", 5);
+    NPF_TEST("%wf64d", "%wf64d", 5);
+#endif
+
+    /* A format string that ends inside a 'w' specifier must stop at the
+       terminator. Run from an exactly-sized heap buffer so that reading one
+       byte past it is a real overrun for a sanitizer to catch. */
+    { static char const *const npf_w_cut[] = {
+        "%w", "%wf", "%w1", "%w3", "%w6", "%w8", "%w16", "%wf1", "%wf3", "%wf6"
+      };
+      size_t npf_w_i;
+      for (npf_w_i = 0; npf_w_i < sizeof(npf_w_cut) / sizeof(npf_w_cut[0]); ++npf_w_i) {
+        size_t const npf_w_n = strlen(npf_w_cut[npf_w_i]) + 1;
+        char *npf_w_f = (char *)malloc(npf_w_n);
+        memcpy(npf_w_f, npf_w_cut[npf_w_i], npf_w_n);
+        npf_snprintf(npf_test_buf, sizeof(npf_test_buf), npf_w_f);
+        NPF_TEST_WB(0, strcmp(npf_test_buf, npf_w_cut[npf_w_i]));
+        free(npf_w_f);
+      }
+    }
+
+#if NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS == 1
+    /* 'n' writes back through a pointer to the fixed-width type, so a modifier
+       that resolved to the wrong width would store past the object. */
+#define NPF_TEST_WN(fmt, type) do { \
+      union { type v; unsigned char b[sizeof(type) + 8]; } npf_wn; \
+      int npf_wn_clean = 1; size_t npf_wn_i; \
+      memset(&npf_wn, 0x5A, sizeof(npf_wn)); \
+      npf_pprintf(npf_test_null_putc, 0, "abc" fmt, &npf_wn.v); \
+      NPF_TEST_WB(3, npf_wn.v); \
+      for (npf_wn_i = sizeof(type); npf_wn_i < sizeof(npf_wn.b); ++npf_wn_i) { \
+        if (npf_wn.b[npf_wn_i] != 0x5A) { npf_wn_clean = 0; } \
+      } \
+      NPF_TEST_WB(1, npf_wn_clean); \
+    } while (0)
+
+    NPF_TEST_WN("%w8n", int_least8_t);
+    NPF_TEST_WN("%w16n", int_least16_t);
+    NPF_TEST_WN("%w32n", int_least32_t);
+    NPF_TEST_WN("%wf8n", int_fast8_t);
+    NPF_TEST_WN("%wf16n", int_fast16_t);
+    NPF_TEST_WN("%wf32n", int_fast32_t);
+#if NPF_W_BITS_MAX == 64
+    NPF_TEST_WN("%w64n", int_least64_t);
+    NPF_TEST_WN("%wf64n", int_fast64_t);
+#endif
+#undef NPF_TEST_WN
+
+#if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
+    /* the count truncates to the fixed-width type, like the value conversions */
+    { int_least8_t wb = 0;
+      npf_pprintf(npf_test_null_putc, 0, "%200d%w8n", 0, &wb);
+      NPF_TEST_WB(-56, wb); }
+#endif
+#endif /* NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS */
+#endif /* NANOPRINTF_USE_FIXED_WIDTH_FORMAT_SPECIFIERS */
+
     /* ===== star args ===== */
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
     NPF_TEST("         Z", "%*c", 10, 'Z');
@@ -2156,6 +2485,13 @@ int NPF_TEST_FUNC(void) {
 #if NANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS == 0
     NPF_TEST("%hd", "%hd", 5);
     NPF_TEST("%hhd", "%hhd", 5);
+#endif
+#if NANOPRINTF_USE_FIXED_WIDTH_FORMAT_SPECIFIERS == 0
+    NPF_TEST("%w8d", "%w8d", 5);
+    NPF_TEST("%w16u", "%w16u", 5u);
+    NPF_TEST("%w32x", "%w32x", 5u);
+    NPF_TEST("%wf8d", "%wf8d", 5);
+    NPF_TEST("%wf64d", "%wf64d", 5);
 #endif
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 0
     NPF_TEST("%.3d", "%.3d", 5);

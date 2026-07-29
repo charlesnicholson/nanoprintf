@@ -374,6 +374,153 @@ TEST_CASE("npf_parse_format_spec") {
       REQUIRE(spec.length_modifier == NPF_FMT_SPEC_LEN_MOD_LONG_DOUBLE);
     }
 #endif
+
+#if NANOPRINTF_USE_FIXED_WIDTH_FORMAT_SPECIFIERS == 1
+    /*
+       wN Specifies that a following b, d, i, o, u, x, or X conversion specifier
+       applies to an integer argument with a specific width where N is a positive
+       decimal integer with no leading zeros [...] or that a following n
+       conversion specifier applies to a pointer to an integer type argument with
+       a width of N bits.
+
+       wfN the same, for the fastest minimum-width types.
+
+       nanoprintf resolves these to whichever length modifier already carries the
+       stdint type, so the expectation is derived from that type's size rather
+       than from the parser's own mapping.
+    */
+    SUBCASE("wN and wfN") {
+      auto const len_mod_for = [](size_t size) -> unsigned {
+        if (size == sizeof(signed char)) { return NPF_FMT_SPEC_LEN_MOD_CHAR; }
+        if (size == sizeof(short)) { return NPF_FMT_SPEC_LEN_MOD_SHORT; }
+        if (size == sizeof(int)) { return NPF_FMT_SPEC_LEN_MOD_NONE; }
+#if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
+        if (size == sizeof(long)) { return NPF_FMT_SPEC_LEN_MOD_LONG; }
+        return NPF_FMT_SPEC_LEN_MOD_LARGE_LONG_LONG;
+#else
+        // Without 'll' there is nothing wider; NPF_W_BITS_MAX caps N to suit.
+        return NPF_FMT_SPEC_LEN_MOD_LONG;
+#endif
+      };
+
+      REQUIRE(npf_parse_format_spec("%w8u", &spec) == 4);
+      REQUIRE(spec.length_modifier == len_mod_for(sizeof(uint_least8_t)));
+      REQUIRE(npf_parse_format_spec("%w16u", &spec) == 5);
+      REQUIRE(spec.length_modifier == len_mod_for(sizeof(uint_least16_t)));
+      REQUIRE(npf_parse_format_spec("%w32u", &spec) == 5);
+      REQUIRE(spec.length_modifier == len_mod_for(sizeof(uint_least32_t)));
+      REQUIRE(npf_parse_format_spec("%wf8u", &spec) == 5);
+      REQUIRE(spec.length_modifier == len_mod_for(sizeof(uint_fast8_t)));
+      REQUIRE(npf_parse_format_spec("%wf16u", &spec) == 6);
+      REQUIRE(spec.length_modifier == len_mod_for(sizeof(uint_fast16_t)));
+      REQUIRE(npf_parse_format_spec("%wf32u", &spec) == 6);
+      REQUIRE(spec.length_modifier == len_mod_for(sizeof(uint_fast32_t)));
+#if NPF_W_BITS_MAX == 64
+      REQUIRE(npf_parse_format_spec("%w64u", &spec) == 5);
+      REQUIRE(spec.length_modifier == len_mod_for(sizeof(uint_least64_t)));
+      REQUIRE(npf_parse_format_spec("%wf64u", &spec) == 6);
+      REQUIRE(spec.length_modifier == len_mod_for(sizeof(uint_fast64_t)));
+#else
+      REQUIRE(!npf_parse_format_spec("%w64u", &spec));
+      REQUIRE(!npf_parse_format_spec("%wf64u", &spec));
+#endif
+
+      // 'w' composes with the flags, field width and precision like any other
+      // length modifier, and applies to every integer conversion.
+      REQUIRE(npf_parse_format_spec("%-+#08.4w16x", &spec) == 12);
+      REQUIRE(spec.length_modifier == len_mod_for(sizeof(uint_least16_t)));
+      REQUIRE(spec.conv_spec == NPF_FMT_SPEC_CONV_HEX_INT);
+      REQUIRE(npf_parse_format_spec("%w8d", &spec) == 4);
+      REQUIRE(npf_parse_format_spec("%w8i", &spec) == 4);
+      REQUIRE(npf_parse_format_spec("%w8o", &spec) == 4);
+      REQUIRE(npf_parse_format_spec("%w8X", &spec) == 4);
+#if NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS == 1
+      REQUIRE(npf_parse_format_spec("%w8b", &spec) == 4);
+#endif
+#if NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS == 1
+      REQUIRE(npf_parse_format_spec("%wf16n", &spec) == 6);
+      REQUIRE(spec.length_modifier == len_mod_for(sizeof(int_fast16_t)));
+#endif
+
+      // NPF_LM_OF_W picks the family; each half must equal NPF_LM_OF of that
+      // family's type, whether or not the two fold together on this target.
+      REQUIRE(NPF_LM_OF_W(0, 8) == NPF_LM_OF(INT_LEAST8_MAX));
+      REQUIRE(NPF_LM_OF_W(1, 8) == NPF_LM_OF(INT_FAST8_MAX));
+      REQUIRE(NPF_LM_OF_W(0, 16) == NPF_LM_OF(INT_LEAST16_MAX));
+      REQUIRE(NPF_LM_OF_W(1, 16) == NPF_LM_OF(INT_FAST16_MAX));
+      REQUIRE(NPF_LM_OF_W(0, 32) == NPF_LM_OF(INT_LEAST32_MAX));
+      REQUIRE(NPF_LM_OF_W(1, 32) == NPF_LM_OF(INT_FAST32_MAX));
+#if NPF_W_BITS_MAX == 64
+      REQUIRE(NPF_LM_OF_W(0, 64) == NPF_LM_OF(INT_LEAST64_MAX));
+      REQUIRE(NPF_LM_OF_W(1, 64) == NPF_LM_OF(INT_FAST64_MAX));
+#endif
+
+      // A width never resolves to a modifier whose type is too narrow to hold it.
+      auto const mod_size = [](unsigned mod) -> size_t {
+        switch (mod) {
+          case NPF_FMT_SPEC_LEN_MOD_CHAR: return sizeof(signed char);
+          case NPF_FMT_SPEC_LEN_MOD_SHORT: return sizeof(short);
+          case NPF_FMT_SPEC_LEN_MOD_NONE: return sizeof(int);
+          case NPF_FMT_SPEC_LEN_MOD_LONG: return sizeof(long);
+          default: return sizeof(long long);
+        }
+      };
+      REQUIRE(mod_size(NPF_LM_OF_W(0, 8)) == sizeof(int_least8_t));
+      REQUIRE(mod_size(NPF_LM_OF_W(1, 8)) == sizeof(int_fast8_t));
+      REQUIRE(mod_size(NPF_LM_OF_W(0, 16)) == sizeof(int_least16_t));
+      REQUIRE(mod_size(NPF_LM_OF_W(1, 16)) == sizeof(int_fast16_t));
+      REQUIRE(mod_size(NPF_LM_OF_W(0, 32)) == sizeof(int_least32_t));
+      REQUIRE(mod_size(NPF_LM_OF_W(1, 32)) == sizeof(int_fast32_t));
+#if NPF_W_BITS_MAX == 64
+      REQUIRE(mod_size(NPF_LM_OF_W(0, 64)) == sizeof(int_least64_t));
+      REQUIRE(mod_size(NPF_LM_OF_W(1, 64)) == sizeof(int_fast64_t));
+#endif
+
+      // A 'w' specifier consumes exactly its own characters and nothing after.
+      REQUIRE(npf_parse_format_spec("%w8dxyz", &spec) == 4);
+      REQUIRE(npf_parse_format_spec("%wf16uxyz", &spec) == 6);
+      REQUIRE(npf_parse_format_spec("%-8.4w16dxyz", &spec) == 9);
+
+      // Only the widths stdint.h must define are supported.
+      REQUIRE(!npf_parse_format_spec("%w", &spec));
+      REQUIRE(!npf_parse_format_spec("%wf", &spec));
+      REQUIRE(!npf_parse_format_spec("%wd", &spec));
+      REQUIRE(!npf_parse_format_spec("%wfd", &spec));
+      REQUIRE(!npf_parse_format_spec("%w0d", &spec));
+      REQUIRE(!npf_parse_format_spec("%w1d", &spec));
+      REQUIRE(!npf_parse_format_spec("%w08d", &spec));   // N has no leading zeros
+      REQUIRE(!npf_parse_format_spec("%wf08d", &spec));
+      REQUIRE(!npf_parse_format_spec("%w7d", &spec));
+      REQUIRE(!npf_parse_format_spec("%w9d", &spec));
+      REQUIRE(!npf_parse_format_spec("%w24d", &spec));
+      REQUIRE(!npf_parse_format_spec("%w33d", &spec));
+      REQUIRE(!npf_parse_format_spec("%w48d", &spec));
+      REQUIRE(!npf_parse_format_spec("%w65d", &spec));
+      REQUIRE(!npf_parse_format_spec("%w99d", &spec));
+      REQUIRE(!npf_parse_format_spec("%w128d", &spec));
+      REQUIRE(!npf_parse_format_spec("%w160d", &spec));
+      REQUIRE(!npf_parse_format_spec("%w644d", &spec));
+      REQUIRE(!npf_parse_format_spec("%w4294967296d", &spec));
+      REQUIRE(!npf_parse_format_spec("%wf7d", &spec));
+      REQUIRE(!npf_parse_format_spec("%wf24d", &spec));
+      REQUIRE(!npf_parse_format_spec("%wf128d", &spec));
+      REQUIRE(!npf_parse_format_spec("%ww8d", &spec));
+      REQUIRE(!npf_parse_format_spec("%wff8d", &spec));
+      // a modifier with no conversion behind it, and truncated widths
+      REQUIRE(!npf_parse_format_spec("%w8", &spec));
+      REQUIRE(!npf_parse_format_spec("%w16", &spec));
+      REQUIRE(!npf_parse_format_spec("%w3", &spec));
+      REQUIRE(!npf_parse_format_spec("%w6", &spec));
+      REQUIRE(!npf_parse_format_spec("%wf1", &spec));
+
+      // 'w' before a conversion it does not apply to is undefined behavior, and
+      // the parser no more rejects it than it rejects "%hhf": the modifier parses
+      // and the conversion ignores it.
+      REQUIRE(npf_parse_format_spec("%w8f", &spec) == 4);
+      REQUIRE(npf_parse_format_spec("%w16s", &spec) == 5);
+      REQUIRE(npf_parse_format_spec("%w8c", &spec) == 4);
+    }
+#endif
   }
 
   SUBCASE("conversion specifiers") {

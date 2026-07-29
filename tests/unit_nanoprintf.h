@@ -16,6 +16,7 @@
 #define NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS 1
 #define NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS 1
 #define NANOPRINTF_USE_ALT_FORM_FLAG 1
+#define NANOPRINTF_USE_FIXED_WIDTH_FORMAT_SPECIFIERS 1
 
 /* Which %f implementation this TU got. Tests that go through npf_snprintf rather
    than calling a conversion directly are compiled under both, so their doctest
