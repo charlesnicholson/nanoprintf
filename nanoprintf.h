@@ -257,12 +257,28 @@ NPF_VISIBILITY int npf_vpprintf(npf_putc pc,
    star argument. Values are int-typed and user-supplied, so an unbounded one
    overflows on the way to the output-length arithmetic; INT_MIN cannot even be
    negated. Any cap avoids that, and this one clears the 4095 that C11 5.2.4.1
-   requires an implementation to accept. 0xFF00 rather than a rounder number
-   because it is one of the immediates Thumb-2 can fold into a compare. */
-#if NANOPRINTF_CONVERSION_BUFFER_SIZE > 65280
+   requires an implementation to accept. A width and a precision both land in the
+   same length, so the cap also has to leave twice itself plus a conversion buffer
+   inside int: fine at 0xFF00 for a 32-bit int, so 0x2000 where int is 16 bits.
+   0xFF00 rather than a rounder number because it is one of the immediates Thumb-2
+   can fold into a compare. */
+#if INT_MAX < 65280
+  #define NPF_FMT_NUM_MAX 8192
+#elif NANOPRINTF_CONVERSION_BUFFER_SIZE > 65280
   #define NPF_FMT_NUM_MAX NPF_CBUF
 #else
   #define NPF_FMT_NUM_MAX 65280
+#endif
+
+/* True once the accumulator below is too large for another decimal digit to fit in
+   int: five bits below the width, so 10n+9 cannot reach INT_MAX. The 27 covers int
+   at 32 bits and above, where the digits past it are discarded anyway. A shift is
+   the cheapest spelling where one instruction can shift by 27; a 16-bit int is on
+   a machine without a barrel shifter, so there it is a mask instead. */
+#if (INT_MAX >> 27) != 0
+  #define NPF_FMT_NUM_BIG(n) ((n) >> 27)
+#else
+  #define NPF_FMT_NUM_BIG(n) ((n) & ~0x7FF)
 #endif
 
 /* Precision the float conversions run with. When precision specifiers are
@@ -566,15 +582,14 @@ typedef struct npf_bufputc_ctx {
 /* Consumes a decimal run into *out and returns the cursor. Nothing in the format
    string bounds the digit count, and an int that wraps here would hand the
    conversions a negative width or precision, so the accumulator stops growing
-   once another digit could carry it out of int. Anything that stops is already
-   far above NPF_FMT_NUM_MAX, which npf_vpprintf applies; only the ordering
-   against that ceiling has to survive, not the digits past it. Testing the top
-   bits beats testing against the ceiling itself: no constant to materialize, and
-   this is the one site the caller inlines twice. */
+   once another digit could carry it out of int. npf_vpprintf applies
+   NPF_FMT_NUM_MAX after this, so the digits past the stop do not have to survive.
+   Testing the top bit beats testing against the ceiling itself: no constant to
+   materialize, and this is the one site the caller inlines twice. */
 static char const *npf_fmt_num(char const *cur, int *out) {
   int n = 0;
   while ((unsigned)(*cur - '0') < 10u) {
-    if (!(n >> 27)) { n = (n * 10) + (*cur - '0'); }
+    if (!NPF_FMT_NUM_BIG(n)) { n = (n * 10) + (*cur - '0'); }
     ++cur;
   }
   *out = n;
@@ -1689,12 +1704,12 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
     /* The one ceiling both a literal and a star width pass through, so the digit
        loop does not need its own. The magnitude is taken in unsigned because
-       INT_MIN has no positive int counterpart, and the same top-bit test the digit
-       loop uses keeps that magnitude in range for the signed compare below. */
+       INT_MIN has no positive int counterpart; that is also the only magnitude the
+       signed compare below could not hold, so it is the only one pinned here. */
     if (fs.field_width_opt == NPF_FMT_SPEC_OPT_STAR) {
       unsigned w = (unsigned)va_arg(args, int);
       if ((int)w < 0) { w = 0u - w; fs.left_justified = 1; }
-      fs.field_width = (int)((w >> 27) ? (unsigned)NPF_FMT_NUM_MAX : w);
+      fs.field_width = (int)((w > (unsigned)INT_MAX) ? (unsigned)NPF_FMT_NUM_MAX : w);
     }
     if (fs.field_width > NPF_FMT_NUM_MAX) { fs.field_width = NPF_FMT_NUM_MAX; }
 #endif

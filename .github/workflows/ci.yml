@@ -34,9 +34,9 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - name: Pyright
-        run: python -m pyright --warnings --pythonversion 3.13 build.py tests/gen_tests.py tests/gen_eg_tests.py tests/size_report.py
+        run: python -m pyright --warnings --pythonversion 3.13 build.py tests/gen_tests.py tests/gen_eg_tests.py tests/size_report.py tests/avr_int16.py
       - name: Ruff
-        run: python -m ruff check build.py tests/gen_tests.py tests/gen_eg_tests.py tests/size_report.py
+        run: python -m ruff check build.py tests/gen_tests.py tests/gen_eg_tests.py tests/size_report.py tests/avr_int16.py
 
   sanitizers:
     runs-on: ubuntu-latest
@@ -195,8 +195,31 @@ jobs:
         shell: bash
         run: python tests/size_report.py --update-readme
 
+  avr-int16:
+    runs-on: ubuntu-latest
+
+    container:
+      image: ghcr.io/charlesnicholson/docker-image:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: qemu-system-avr
+        shell: bash
+        run: |
+          apt-get update -qq
+          DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
+            --no-install-recommends qemu-system-misc
+
+      - name: 16-bit int conformance
+        shell: bash
+        run: python tests/avr_int16.py
+
   all-checks-pass:
-    needs: [lint, sanitizers, linux-x64, linux-arm64, macos, win, size-reports]
+    needs: [lint, sanitizers, linux-x64, linux-arm64, macos, win, size-reports, avr-int16]
     runs-on: ubuntu-latest
     steps:
     - run: echo Done

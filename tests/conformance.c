@@ -1112,6 +1112,20 @@ int NPF_TEST_FUNC(void) {
       npf_pprintf(npf_test_null_putc, 0, "%u%s%n", 0, "abcd", &wb);
       NPF_TEST_WB(5, wb); }
 
+    /* An argument behind %n. A writeback that failed to consume its own pointer
+       would leave every later conversion reading the wrong slot. */
+    { int wb = -1;
+      NPF_TEST("abcd1234", "%s%n%i", "abcd", &wb, 1234);
+      NPF_TEST_WB(4, wb); }
+
+    /* The writeback stores through the modifier's type, so nothing on either side
+       of the target may move. volatile is what keeps the guard reads, which can
+       only fail on UB, from being folded away. */
+    { struct { volatile int lo; int wb; volatile int hi; } g;
+      g.lo = -1; g.wb = -1; g.hi = -1;
+      npf_pprintf(npf_test_null_putc, 0, "1234%n", &g.wb);
+      NPF_TEST_WB(4, g.wb); NPF_TEST_WB(-1, g.lo); NPF_TEST_WB(-1, g.hi); }
+
     /* snprintf writeback */
     { char wbbuf[100]; int wb = 1234;
       npf_snprintf(wbbuf, sizeof(wbbuf), "%n", &wb);
@@ -1142,6 +1156,15 @@ int NPF_TEST_FUNC(void) {
     { signed char wb = -1;
       npf_pprintf(npf_test_null_putc, 0, "1234567%hhn", &wb);
       NPF_TEST_WB(7, wb); }
+
+    /* A store wider than the modifier's type would run into the bytes behind the
+       target. An array rather than neighboring members so that no padding can
+       absorb it, and volatile so the guard reads survive. */
+    { signed char wb[4]; signed char volatile *v = wb;
+      wb[0] = -1; wb[1] = -1; wb[2] = -1; wb[3] = -1;
+      npf_pprintf(npf_test_null_putc, 0, "1234%hhn", &wb[0]);
+      NPF_TEST_WB(4, v[0]);
+      NPF_TEST_WB(-1, v[1]); NPF_TEST_WB(-1, v[2]); NPF_TEST_WB(-1, v[3]); }
 #endif
 
 #if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
