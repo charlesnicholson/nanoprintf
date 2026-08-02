@@ -9,6 +9,11 @@ on:
   schedule:
     - cron: '0 2 * * 0'  # Weekly
   workflow_dispatch:
+    inputs:
+      size_only:
+        description: 'Skip everything but size-reports (for README-only commits)'
+        type: boolean
+        default: false
 
 # Supersede a pull request's earlier runs when it is pushed to again. head_ref is
 # only set for pull_request events, so tag pushes, the weekly cron, and manual
@@ -23,6 +28,7 @@ permissions:
 
 jobs:
   lint:
+    if: github.event.inputs.size_only != 'true'
     runs-on: ubuntu-latest
 
     container:
@@ -39,6 +45,7 @@ jobs:
         run: python -m ruff check build.py tests/gen_tests.py tests/gen_eg_tests.py tests/size_report.py tests/avr_int16.py
 
   sanitizers:
+    if: github.event.inputs.size_only != 'true'
     runs-on: ubuntu-latest
 
     container:
@@ -62,6 +69,7 @@ jobs:
         run: make -j$(nproc) ARCH=${{ matrix.architecture }} SAN=${{ matrix.sanitizer }} SHARD=${{ matrix.shard }} VERBOSE=1
 
   linux-x64:
+    if: github.event.inputs.size_only != 'true'
     runs-on: ubuntu-latest
 
     container:
@@ -96,6 +104,7 @@ jobs:
         run: make -j$(nproc) CFG=${{ matrix.configuration }} ARCH=${{ matrix.architecture }} SHARD=${{ matrix.shard }} VERBOSE=1
 
   linux-arm64:
+    if: github.event.inputs.size_only != 'true'
     runs-on: ubuntu-24.04-arm
 
     container:
@@ -126,6 +135,7 @@ jobs:
         run: make -j$(nproc) CFG=${{ matrix.configuration }} ARCH=64 SHARD=${{ matrix.shard }} VERBOSE=1
 
   macos:
+    if: github.event.inputs.size_only != 'true'
     runs-on: macos-latest
 
     strategy:
@@ -139,6 +149,7 @@ jobs:
         run: make -j$(sysctl -n hw.ncpu) CFG=${{ matrix.configuration }} SHARD=${{ matrix.shard }} VERBOSE=1
 
   win:
+    if: github.event.inputs.size_only != 'true'
     runs-on: windows-latest
 
     strategy:
@@ -196,6 +207,7 @@ jobs:
         run: python tests/size_report.py --update-readme
 
   avr-int16:
+    if: github.event.inputs.size_only != 'true'
     runs-on: ubuntu-latest
 
     container:
@@ -220,8 +232,13 @@ jobs:
 
   all-checks-pass:
     needs: [lint, sanitizers, linux-x64, linux-arm64, macos, win, size-reports, avr-int16]
+    # A size_only dispatch skips most of the jobs above, and a skipped dependency
+    # would skip this job too, leaving the required check with nothing to report.
+    if: always()
     runs-on: ubuntu-latest
     steps:
+    - if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+      run: echo "A required job did not pass." && exit 1
     - run: echo Done
 
   release:
