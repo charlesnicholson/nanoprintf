@@ -1,9 +1,18 @@
 name: Update size report
 
 on:
+  push:
+    branches: [ main ]
   schedule:
     - cron: '0 3 * * 0'  # Weekly, an hour after the CI cron
   workflow_dispatch:
+
+# Merges can land faster than a size report takes to build, and each run force-pushes
+# the same branch. Let the newest merge cancel the older run so the table that wins is
+# the one measured against the newest main.
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
 
 permissions:
   packages: read
@@ -64,4 +73,4 @@ jobs:
           # action_required and never runs, so dispatch it by hand to produce the
           # required all-checks-pass status.
           curl -fsS -X POST "${api}/actions/workflows/ci.yml/dispatches" "${auth[@]}" \
-            -d "{\"ref\":\"${BRANCH}\"}"
+            -d "{\"ref\":\"${BRANCH}\",\"inputs\":{\"size_only\":true}}"
