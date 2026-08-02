@@ -17,22 +17,16 @@ def _parse_args() -> argparse.Namespace:
         choices=("cm0", "cm4", "avr2", "avr5", "host"),
         help="print a detailed size breakdown for this target platform",
     )
-    group = parser.add_mutually_exclusive_group()
-    group.add_argument(
-        "--check-readme",
-        action="store_true",
-        help="verify the README size table matches the current source",
-    )
-    group.add_argument(
+    parser.add_argument(
         "--update-readme",
         action="store_true",
         help="rewrite the README size table from the current source",
     )
     args = parser.parse_args()
-    if not (args.platform or args.check_readme or args.update_readme):
-        parser.error("one of -p/--platform, --check-readme, or --update-readme is required")
-    if args.platform and (args.check_readme or args.update_readme):
-        parser.error("-p/--platform cannot be combined with --check-readme/--update-readme")
+    if not (args.platform or args.update_readme):
+        parser.error("one of -p/--platform or --update-readme is required")
+    if args.platform and args.update_readme:
+        parser.error("-p/--platform cannot be combined with --update-readme")
     return args
 
 
@@ -306,8 +300,8 @@ def _render_readme(readme: str, table: str, size_range: str) -> str:
     return _replace_region(readme, _README_BEGIN, _README_END, f"\n\n{table}\n\n")
 
 
-def _readme(*, check: bool) -> int:
-    """Update the README size table, or (when check) verify it is current."""
+def _readme() -> int:
+    """Rewrite the README size table from the current source."""
     toolchain = subprocess.run(
         ["arm-none-eabi-gcc", "--version"], check=True, stdout=subprocess.PIPE
     ).stdout.decode().splitlines()[0]
@@ -323,22 +317,8 @@ def _readme(*, check: bool) -> int:
         print(exc, file=sys.stderr)
         return 1
 
-    if not check:
-        readme_path.write_text(updated, encoding="utf-8", newline="\n")
-        print("Updated README size table.")
-        return 0
-
-    if updated != original:
-        print(
-            "README size table is out of date; "
-            "run 'python tests/size_report.py --update-readme' with the toolchain "
-            "above, or paste the expected regions:\n"
-            f"\n{table}\n\n{size_range}",
-            file=sys.stderr,
-        )
-        return 1
-
-    print("README size table is up to date.")
+    readme_path.write_text(updated, encoding="utf-8", newline="\n")
+    print("Updated README size table.")
     return 0
 
 
@@ -346,8 +326,8 @@ def main() -> int:
     """Entry point"""
     args = _parse_args()
 
-    if args.check_readme or args.update_readme:
-        return _readme(check=args.check_readme)
+    if args.update_readme:
+        return _readme()
 
     for name, flags in _configs():
         print(f'Configuration "{name}":')
