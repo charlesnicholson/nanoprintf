@@ -31,18 +31,10 @@ jobs:
     if: github.event.inputs.size_only != 'true'
     runs-on: ubuntu-latest
 
-    container:
-      image: ghcr.io/charlesnicholson/docker-image:latest
-      credentials:
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
-
     steps:
       - uses: actions/checkout@v7
-      - name: Pyright
-        run: python -m pyright --warnings --pythonversion 3.13 build.py tests/gen_tests.py tests/gen_eg_tests.py tests/size_report.py tests/avr_int16.py
       - name: Ruff
-        run: python -m ruff check build.py tests/gen_tests.py tests/gen_eg_tests.py tests/size_report.py tests/avr_int16.py
+        run: ./bin/ruff check build.py tests/gen_tests.py tests/gen_eg_tests.py tests/size_report.py tests/avr_int16.py
 
   sanitizers:
     if: github.event.inputs.size_only != 'true'
@@ -159,16 +151,12 @@ jobs:
 
     steps:
       - uses: actions/checkout@v7
-      - name: Set up Python 3.x
-        uses: actions/setup-python@v6
-        with:
-          python-version: '3.x'
       - name: Build
         shell: cmd
         run: |
           for /f "usebackq tokens=*" %%i in (`"C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -property installationPath`) do set "VSPATH=%%i"
           call "%VSPATH%\VC\Auxiliary\Build\vcvars${{ matrix.architecture }}.bat"
-          python.exe build.py --cfg ${{ matrix.configuration }} -v --arch ${{ matrix.architecture }}
+          call build.bat --cfg ${{ matrix.configuration }} -v --arch ${{ matrix.architecture }}
 
   size-reports:
     runs-on: ubuntu-latest
@@ -184,27 +172,27 @@ jobs:
 
       - name: AVR2
         shell: bash
-        run: python tests/size_report.py -p avr2
+        run: ./bin/python3 tests/size_report.py -p avr2
 
       - name: AVR5
         shell: bash
-        run: python tests/size_report.py -p avr5
+        run: ./bin/python3 tests/size_report.py -p avr5
 
       - name: Cortex-M0
         shell: bash
-        run: python tests/size_report.py -p cm0
+        run: ./bin/python3 tests/size_report.py -p cm0
 
       - name: Cortex-M4
         shell: bash
-        run: python tests/size_report.py -p cm4
+        run: ./bin/python3 tests/size_report.py -p cm4
 
       - name: Linux x64
         shell: bash
-        run: python tests/size_report.py -p host
+        run: ./bin/python3 tests/size_report.py -p host
 
       - name: README size table generates
         shell: bash
-        run: python tests/size_report.py --update-readme
+        run: ./bin/python3 tests/size_report.py --update-readme
 
   avr-int16:
     if: github.event.inputs.size_only != 'true'
@@ -228,7 +216,7 @@ jobs:
 
       - name: 16-bit int conformance
         shell: bash
-        run: python tests/avr_int16.py
+        run: ./bin/python3 tests/avr_int16.py
 
   all-checks-pass:
     needs: [lint, sanitizers, linux-x64, linux-arm64, macos, win, size-reports, avr-int16]

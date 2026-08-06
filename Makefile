@@ -10,9 +10,29 @@ SAN     ?= none
 # matrix over parallel jobs; 1/1 builds every combination.
 SHARD   ?= 1/1
 VERBOSE ?=
-PYTHON3 ?= $(shell command -v python3.13 2>/dev/null || command -v python3 2>/dev/null || echo python3)
 
 BUILD := build
+GEN   := $(BUILD)/generated
+
+# --- envy-managed toolchain ---
+ENVY := ./bin/envy
+
+# Installed up front so a fresh clone running `make -j12` has the whole toolchain
+# before the first rule fires, not one package at a time as the shims are reached.
+ifneq ($(MAKECMDGOALS),clean)
+  ENVY_INSTALLED := $(shell $(ENVY) install && echo ok)
+  ifneq ($(ENVY_INSTALLED),ok)
+    $(error envy install failed)
+  endif
+
+  PYTHON3     ?= ./bin/python3
+  DOCTEST_H   := $(shell $(ENVY) -q product doctest_cpp_h)
+  ifeq ($(DOCTEST_H),)
+    $(error envy could not resolve doctest_cpp_h)
+  endif
+  # -isystem, not -I: doctest.h is not ours to keep clean under -Weverything -Werror.
+  DOCTEST_INC := -isystem $(dir $(DOCTEST_H))
+endif
 
 # --- Verbosity ---
 ifeq ($(VERBOSE),1)
@@ -88,43 +108,16 @@ ifeq ($(ARCH),32)
   UNIT_DEFS += -DNANOPRINTF_32_BIT_TESTS
 endif
 
-UNIT_SRCS := tests/unit_parse_format_spec.cc \
-             tests/unit_binary.cc \
-             tests/unit_buffer_overrun.cc \
-             tests/unit_buffer_overrun_fused.cc \
-             tests/unit_bufputc.cc \
-             tests/unit_ftoa_nan.cc \
-             tests/unit_ftoa_nan_fused.cc \
-             tests/unit_ftoa_rev.cc \
-             tests/unit_ftoa_rev_08.cc \
-             tests/unit_ftoa_rev_16.cc \
-             tests/unit_ftoa_rev_32.cc \
-             tests/unit_ftoa_rev_64.cc \
-             tests/unit_ftoa_rev_fused.cc \
-             tests/unit_ftoa_rev_08_fused.cc \
-             tests/unit_ftoa_rev_16_fused.cc \
-             tests/unit_ftoa_rev_32_fused.cc \
-             tests/unit_ftoa_rev_64_fused.cc \
-             tests/unit_etoa_rev.cc \
-             tests/unit_etoa_rev_08.cc \
-             tests/unit_etoa_rev_16.cc \
-             tests/unit_etoa_rev_32.cc \
-             tests/unit_etoa_rev_64.cc \
-             tests/unit_f_paths.cc \
-             tests/unit_f_paths_fused.cc \
-             tests/unit_f_paths_unified.cc \
-             tests/unit_utoa_rev.cc \
-             tests/unit_utoa_rev_divfree.cc \
-             tests/unit_snprintf.cc \
-             tests/unit_snprintf_safe_empty.cc \
-             tests/unit_vpprintf.cc
+# Globbed so a new test file needs no registration here, and so build.py can compile
+# the same set from the same glob rather than a second hand-maintained copy.
+UNIT_SRCS := $(sort $(wildcard tests/unit_*.cc))
 
 UNIT_OBJS       := $(patsubst tests/%.cc,$(BUILD)/unit/%.o,$(UNIT_SRCS))
 UNIT_LARGE_OBJS := $(patsubst tests/%.cc,$(BUILD)/unit_large/%.o,$(UNIT_SRCS))
 
 # --- Header dependencies ---
 NPF_H     := nanoprintf.h
-TEST_HDRS := tests/unit_nanoprintf.h tests/npf_doctest.h tests/doctest.h tests/unit_eg.inc tests/npf_f_paths.h
+TEST_HDRS := tests/unit_nanoprintf.h tests/npf_doctest.h $(DOCTEST_H) tests/unit_eg.inc tests/npf_f_paths.h
 
 # ============================================================
 # Top-level targets
@@ -142,24 +135,24 @@ $(BUILD)/config.stamp: FORCE
 	@rm -f $(BUILD)/config.stamp.tmp
 
 # --- Conformance tests (recursive make) ---
-tests/generated/Makefile: tests/gen_tests.py $(BUILD)/config.stamp
+$(GEN)/Makefile: tests/gen_tests.py $(BUILD)/config.stamp
 	$(MSG) GEN conformance
-	$(QUIET)$(PYTHON3) tests/gen_tests.py --cc "$(CC)" --cxx "$(CXX)" --arch $(ARCH) --sanitizer $(SAN) --shard $(SHARD)
+	$(QUIET)$(PYTHON3) tests/gen_tests.py --output $(GEN) --cc "$(CC)" --cxx "$(CXX)" --arch $(ARCH) --sanitizer $(SAN) --shard $(SHARD)
 
-conformance: tests/generated/Makefile
-	$(QUIET)$(MAKE) -C tests/generated $(if $(filter 1,$(VERBOSE)),V=1)
+conformance: $(GEN)/Makefile
+	$(QUIET)$(MAKE) -C $(GEN) $(if $(filter 1,$(VERBOSE)),V=1)
 
 # --- Doctest main (compiled once) ---
 $(BUILD)/doctest_main.o: tests/doctest_main.cc $(TEST_HDRS) $(BUILD)/config.stamp
 	@mkdir -p $(BUILD)
 	$(MSG) CXX $<
-	$(QUIET)$(CXX) $(CXXFLAGS) $(TEST_WARN) -c -o $@ $<
+	$(QUIET)$(CXX) $(CXXFLAGS) $(TEST_WARN) $(DOCTEST_INC) -c -o $@ $<
 
 # --- Unit tests (LARGE=0) ---
 $(BUILD)/unit/%.o: tests/%.cc $(NPF_H) $(TEST_HDRS) $(BUILD)/config.stamp
 	@mkdir -p $(BUILD)/unit
 	$(MSG) CXX $<
-	$(QUIET)$(CXX) $(CXXFLAGS) $(TEST_WARN) $(UNIT_DEFS) -DNANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0 -c -o $@ $<
+	$(QUIET)$(CXX) $(CXXFLAGS) $(TEST_WARN) $(DOCTEST_INC) $(UNIT_DEFS) -DNANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=0 -c -o $@ $<
 
 $(BUILD)/unit_tests: $(UNIT_OBJS) $(BUILD)/doctest_main.o
 	$(MSG) LINK $@
@@ -173,7 +166,7 @@ $(BUILD)/unit_tests.timestamp: $(BUILD)/unit_tests
 $(BUILD)/unit_large/%.o: tests/%.cc $(NPF_H) $(TEST_HDRS) $(BUILD)/config.stamp
 	@mkdir -p $(BUILD)/unit_large
 	$(MSG) CXX $<
-	$(QUIET)$(CXX) $(CXXFLAGS) $(TEST_WARN) $(UNIT_DEFS) -DNANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=1 -c -o $@ $<
+	$(QUIET)$(CXX) $(CXXFLAGS) $(TEST_WARN) $(DOCTEST_INC) $(UNIT_DEFS) -DNANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=1 -c -o $@ $<
 
 $(BUILD)/unit_tests_large: $(UNIT_LARGE_OBJS) $(BUILD)/doctest_main.o
 	$(MSG) LINK $@
@@ -210,5 +203,9 @@ $(BUILD)/wrap_npf: examples/wrap_npf/your_project_printf.cc examples/wrap_npf/ma
 		examples/wrap_npf/your_project_printf.cc examples/wrap_npf/main.cc
 
 # --- Clean ---
+# Everything under $(BUILD) except the package cache: refetching the toolchain is not
+# what anyone means by `make clean`. Use `rm -rf $(BUILD)` for that.
 clean:
-	rm -rf $(BUILD) tests/generated
+	$(QUIET)if [ -d $(BUILD) ]; then \
+	  find $(BUILD) -mindepth 1 -maxdepth 1 ! -name envy-cache -exec rm -rf {} +; \
+	fi

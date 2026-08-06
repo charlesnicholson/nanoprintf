@@ -28,7 +28,6 @@ cmake-build*
 *.dSYM/
 build
 external
-tests/generated/
 .DS_Store
 *.TMP
 .ruff_cache

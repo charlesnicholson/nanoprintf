@@ -355,11 +355,11 @@ All measurements are the total size in bytes of the `nanoprintf` text symbols, c
 To get the environment and run tests:
 
 1. Clone or fork this repository.
-1. Run `./b` from the root (or `py -3 build.py` in a Visual Studio Developer Command Prompt, for Windows users)
+1. Run `make -j12` from the root (or `build.bat` in a Visual Studio Developer Command Prompt, for Windows users)
 
 This will build all of the unit, conformance, and compilation tests for your host environment. Any test failures will return a non-zero exit code.
 
-The nanoprintf development environment uses [cmake](https://cmake.org/) and [ninja](https://ninja-build.org/). If you have these in your path, `./b` will use them. If not, `./b` will download and deploy them into `path/to/your/nanoprintf/external`.
+The only things you need on your host are a C/C++ compiler, `make`, and the `curl`/`git`/`tar` that the bootstrap script uses. The rest of what the tests need — a Python interpreter, [ruff](https://docs.astral.sh/ruff/), and the [doctest](https://github.com/doctest/doctest) header — is pinned in `envy.lua` and installed on demand by [envy](https://github.com/envy-package-manager/envy) through the committed `bin/envy` bootstrap script, which `make` and `build.bat` invoke for you. Packages land in `build/envy-cache` rather than a machine-wide cache, so everything this repo generates is under `build/`. `make clean` removes the build products but keeps the cache; `rm -rf build` takes the toolchain with it. Point `ENVY_CACHE_ROOT` at a shared cache if you would rather have one copy across projects.
 
 nanoprintf uses GitHub Actions for all continuous integration builds. The GitHub Linux builds use [this](https://github.com/charlesnicholson/docker-images/packages/751874) Docker image from [my Docker repository](https://github.com/charlesnicholson/docker-images).
 

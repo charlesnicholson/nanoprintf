@@ -37,7 +37,7 @@ jobs:
         shell: bash
         run: |
           git config --global --add safe.directory "$(pwd)"
-          python tests/size_report.py --update-readme
+          ./bin/python3 tests/size_report.py --update-readme
 
       - name: Open a pull request if changed
         id: size-report-pr

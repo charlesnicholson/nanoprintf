@@ -1,0 +1,3 @@
+# Executed by their platform's shell verbatim.
+bin/* eol=lf
+*.bat eol=crlf
