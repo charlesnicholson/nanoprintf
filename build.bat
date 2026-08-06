@@ -2,10 +2,8 @@
 setlocal
 cd /d "%~dp0"
 
-REM NPF_DOCTEST_H names a host doctest.h and opts out of envy: the interpreter has to come
-REM from PATH too, since the shim below is what re-execs envy. See README "Building
-REM without envy". Otherwise the shim resolves (and installs, if needed) the interpreter
-REM envy pins.
+REM NPF_DOCTEST_H opts out of envy, so the interpreter comes from PATH: the shim re-execs
+REM envy. Otherwise the shim resolves (and installs, if needed) the interpreter envy pins.
 if defined NPF_DOCTEST_H (
   python build.py %*
 ) else (

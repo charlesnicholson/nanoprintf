@@ -359,53 +359,28 @@ To get the environment and run tests:
 
 This will build all of the unit, conformance, and compilation tests for your host environment. Any test failures will return a non-zero exit code.
 
-The only things you need on your host are a C/C++ compiler, `make`, and the `curl`/`git`/`tar` that the bootstrap script uses. The rest of what the tests need — a Python interpreter, [ruff](https://docs.astral.sh/ruff/), and the [doctest](https://github.com/doctest/doctest) header — is pinned in `envy.lua` and installed on demand by [envy](https://github.com/envy-package-manager/envy) through the committed `bin/envy` bootstrap script, which `make` and `build.bat` invoke for you. Packages land in `build/envy-cache` rather than a machine-wide cache, so everything this repo generates is under `build/`. `make clean` removes the build products but keeps the cache; `rm -rf build` takes the toolchain with it. Point `ENVY_CACHE_ROOT` at a shared cache if you would rather have one copy across projects.
-
-None of this touches anyone who is only *using* nanoprintf. The header is self-contained and the release assets are a header and a source bundle; the toolchain below exists to run the test suite.
-
-### Restricted or offline networks
-
-A first build fetches about 140 MB, all of it from GitHub:
-
-| What | Where from | Size |
-| --- | --- | --- |
-| the `envy` binary | `github.com/envy-package-manager/envy` release assets | 4 MB |
-| package specs | `git clone` of `github.com/envy-package-manager/package-specs` | 170 KB |
-| CPython | `github.com/astral-sh/python-build-standalone` release assets | 123 MB |
-| ruff | `github.com/astral-sh/ruff` release assets | 11 MB |
-| `doctest.h` | `raw.githubusercontent.com` | 363 KB |
-
-Where that is slow, filtered, or simply not there, in rough order of least to most work:
-
-- **A proxy covers the downloads.** `http_proxy`, `https_proxy`, and `no_proxy` are honored both by the bootstrap script and by every package fetch envy makes. The one exception is the package-spec `git clone`, which goes through libgit2 and connects to `github.com` directly whatever those variables say; configure a proxy in git itself, or seed `specs/` from another machine as below.
-- **`ENVY_CACHE_ROOT` buys one copy.** Point it somewhere outside the repo and every clone, worktree, and sibling project shares a single populated cache, so the 140 MB is paid once per machine instead of once per checkout.
-- **Prime a cache and carry it in.** On a machine that does have access, `./bin/envy export -o depot` writes one `.tar.zst` per package. Copy `depot/` plus the cache's `specs/` and `envy/` directories to the target machine, then `./bin/envy import --dir depot` and build; nothing reaches the network. The archives are keyed by platform, so the two machines have to agree on OS and architecture. Copying the whole `build/envy-cache` tree works just as well and skips the export.
-- **Mirror it.** `ENVY_MIRROR` (or an `@envy mirror` directive in `envy.lua`) redirects the bootstrap to your own copy of the envy release, and a `PACKAGE_DEPOTS` global in `envy.lua` does the same for the packages — an internal artifact server, an object-store bucket, whatever is reachable. `envy export --depot-prefix` builds the depot manifest to publish. The `@envy sha256sums` pin in `envy.lua` attests the envy binary against a hash held in this repo rather than one fetched alongside it, and each package spec carries its own hash, so an untrusted mirror cannot substitute anything.
+The only things you need on your host are a C/C++ compiler, `make`, and the `curl`/`git`/`tar` that the bootstrap script uses. The rest of what the tests need — a Python interpreter, [ruff](https://docs.astral.sh/ruff/), and the [doctest](https://github.com/doctest/doctest) header — is pinned in `envy.lua` and installed on demand by [envy](https://github.com/envy-package-manager/envy) through the committed `bin/envy` bootstrap script, which `make` and `build.bat` invoke for you. Packages land in `build/envy-cache` rather than a machine-wide cache, so everything this repo generates is under `build/`. `make clean` removes the build products but keeps the cache; `rm -rf build` takes the packages with it. Point `ENVY_CACHE_ROOT` at a shared cache if you would rather have one copy across projects.
 
 ### Building without envy
 
-Setting `DOCTEST_H` opts out completely — envy is never invoked and nothing is downloaded:
+Using nanoprintf needs none of the above; the header is self-contained. Running the tests fetches about 140 MB from GitHub, and where that is slow or filtered, `http_proxy` and `https_proxy` are honored by the bootstrap script and by every package fetch. The package-spec `git clone` goes through libgit2 and connects directly whatever they say.
+
+Setting `DOCTEST_H` skips envy altogether — nothing is downloaded and no package manager runs:
 
 ```sh
 make -j12 DOCTEST_H=/path/to/doctest.h
 ```
-
-That path wants a C/C++ compiler, `make`, a Python interpreter at 3.10 or newer, and a copy of `doctest.h`, which is a single self-contained header from any source you like: a release, a distribution package, a mirror, a coworker. `PYTHON3` names the interpreter and defaults to whatever `python3` on `PATH` resolves to. ruff is not needed; nothing in the build lints.
-
-On Windows the same escape hatch is an environment variable, since `build.bat` otherwise runs the interpreter envy pins:
 
 ```bat
 set NPF_DOCTEST_H=C:\path\to\doctest.h
 build.bat
 ```
 
-This is the path to reach for on an air-gapped machine, or on a platform envy has no build for. CI exercises it on every pull request, so it does not rot.
+That path wants a C/C++ compiler, `make`, Python 3.10 or newer, and a copy of `doctest.h` from wherever you like. `PYTHON3` names the interpreter and defaults to `python3` on `PATH`. ruff is not needed; nothing in the build lints.
 
 nanoprintf uses GitHub Actions for all continuous integration builds. The GitHub Linux builds use [this](https://github.com/charlesnicholson/docker-images/packages/751874) Docker image from [my Docker repository](https://github.com/charlesnicholson/docker-images).
 
 The matrix builds [Debug, Release] x [32-bit, 64-bit] x [Mac, Windows, Linux] x [gcc, clang, msvc], minus the 32-bit clang Mac configurations.
-
-Some conformance cases are ported from the [printf test suite](https://github.com/eyalroz/printf/blob/master/test/test_suite.cpp) credited in [Acknowledgments](#acknowledgments), rewritten as `NPF_TEST` cases in `tests/conformance.c`. They build and run with everything else: no submodule to retrieve, no flag to pass. No third-party code is vendored here, so the whole repository is under nanoprintf's own [license](LICENSE).
 
 ## Acknowledgments
 

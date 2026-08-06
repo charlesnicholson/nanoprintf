@@ -14,18 +14,15 @@ VERBOSE ?=
 BUILD := build
 GEN   := $(BUILD)/generated
 
-# --- Toolchain ---
-# The pinned toolchain comes from envy by default. Supplying DOCTEST_H from the command
-# line or the environment opts out of it entirely -- envy is never invoked, nothing is
-# downloaded -- for hosts that must bring their own tools: a blocked or absent network, an
-# air-gap, a platform envy has no build for. DOCTEST_H and PYTHON3 are the whole toolchain
-# that path needs; no ruff, since nothing here lints. See README "Building without envy".
+# --- envy-managed packages ---
+# Supplying DOCTEST_H opts out: envy is never invoked and nothing is downloaded, so
+# DOCTEST_H and PYTHON3 are all the build needs. See README "Building without envy".
 ENVY := ./bin/envy
 
 ifneq ($(MAKECMDGOALS),clean)
   ifeq ($(origin DOCTEST_H),undefined)
-    # Installed up front so a fresh clone running `make -j12` has the whole toolchain
-    # before the first rule fires, not one package at a time as the shims are reached.
+    # Installed up front so a fresh clone running `make -j12` has every package before the
+    # first rule fires, not one at a time as the shims are reached.
     ENVY_INSTALLED := $(shell $(ENVY) install && echo ok)
     ifneq ($(ENVY_INSTALLED),ok)
       $(error envy install failed)
@@ -37,8 +34,7 @@ ifneq ($(MAKECMDGOALS),clean)
       $(error envy could not resolve doctest_cpp_h)
     endif
   else
-    # Not ./bin/python3: that shim re-execs envy, which is the whole thing being opted out
-    # of. Override PYTHON3 to name a specific interpreter.
+    # Not ./bin/python3: that shim re-execs envy.
     PYTHON3 ?= python3
     ifeq ($(wildcard $(DOCTEST_H)),)
       $(error DOCTEST_H=$(DOCTEST_H) does not exist)

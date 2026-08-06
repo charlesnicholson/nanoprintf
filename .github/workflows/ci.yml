@@ -162,11 +162,7 @@ jobs:
           call "%VSPATH%\VC\Auxiliary\Build\vcvars${{ matrix.architecture }}.bat"
           call build.bat --cfg ${{ matrix.configuration }} -v --arch ${{ matrix.architecture }}
 
-  # Guards the no-envy path in README "Building without envy". Deliberately not the CI
-  # container and deliberately no envy: the runner's own gcc and python3, and a doctest.h
-  # fetched by hand, are exactly what someone on a blocked network or an unsupported
-  # platform has to work with. One shard -- the other jobs cover the flag matrix, this one
-  # covers the toolchain.
+  # Guards the DOCTEST_H path: no container, no envy, the runner's own gcc and python3.
   host-tools:
     if: github.event.inputs.size_only != 'true'
     runs-on: ubuntu-latest
@@ -174,8 +170,6 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      # The version envy.lua pins, kept in step by hand. Nothing breaks if they drift;
-      # what is under test is that the override is honored, not which doctest it names.
       - name: doctest.h
         run: |
           mkdir -p "${RUNNER_TEMP}/doctest"

@@ -52,13 +52,7 @@ def _envy_product(name: str) -> str:
 
 
 def _doctest_include_dir() -> pathlib.Path:
-    """Directory to put on the /I line for doctest.h.
-
-    NPF_DOCTEST_H names a host copy and opts out of envy entirely, the Makefile's
-    DOCTEST_H by another name; build.bat routes around the envy python shim when it is
-    set. For a blocked or absent network, or a platform envy has no build for. See
-    README "Building without envy".
-    """
+    """Include directory for doctest.h. NPF_DOCTEST_H names a host copy and skips envy."""
     override = os.environ.get("NPF_DOCTEST_H")
     if not override:
         return pathlib.Path(_envy_product("doctest_cpp_h")).parent
