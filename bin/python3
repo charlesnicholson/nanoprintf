@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# envy-managed schema "1"
+SCRIPT_DIR="$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+exec "$("$SCRIPT_DIR/envy" product "python3")" "$@"

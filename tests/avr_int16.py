@@ -47,7 +47,9 @@ def main() -> int:
     """Build the probe, run it under qemu, and report what it printed."""
     root = _git_root()
     src = pathlib.Path(__file__).with_suffix(".c")
-    elf = root / "avr_int16.elf"
+    build = root / "build"
+    build.mkdir(parents=True, exist_ok=True)
+    elf = build / "avr_int16.elf"
 
     cc_cmd = [
         "avr-gcc",

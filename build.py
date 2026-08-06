@@ -9,37 +9,14 @@ import subprocess
 import sys
 
 _SCRIPT_PATH = pathlib.Path(__file__).resolve().parent
+_ENVY = _SCRIPT_PATH / "bin" / ("envy.bat" if os.name == "nt" else "envy")
 
-_UNIT_SRCS = [
-    "tests/unit_parse_format_spec.cc",
-    "tests/unit_binary.cc",
-    "tests/unit_bufputc.cc",
-    "tests/unit_ftoa_nan.cc",
-    "tests/unit_ftoa_nan_fused.cc",
-    "tests/unit_ftoa_rev.cc",
-    "tests/unit_ftoa_rev_08.cc",
-    "tests/unit_ftoa_rev_16.cc",
-    "tests/unit_ftoa_rev_32.cc",
-    "tests/unit_ftoa_rev_64.cc",
-    "tests/unit_ftoa_rev_fused.cc",
-    "tests/unit_ftoa_rev_08_fused.cc",
-    "tests/unit_ftoa_rev_16_fused.cc",
-    "tests/unit_ftoa_rev_32_fused.cc",
-    "tests/unit_ftoa_rev_64_fused.cc",
-    "tests/unit_etoa_rev.cc",
-    "tests/unit_etoa_rev_08.cc",
-    "tests/unit_etoa_rev_16.cc",
-    "tests/unit_etoa_rev_32.cc",
-    "tests/unit_etoa_rev_64.cc",
-    "tests/unit_f_paths.cc",
-    "tests/unit_f_paths_fused.cc",
-    "tests/unit_f_paths_unified.cc",
-    "tests/unit_utoa_rev.cc",
-    "tests/unit_utoa_rev_divfree.cc",
-    "tests/unit_snprintf.cc",
-    "tests/unit_snprintf_safe_empty.cc",
-    "tests/unit_vpprintf.cc",
-]
+# Globbed, not listed: the Makefile compiles the same set, and a hand-maintained copy
+# here silently missed every unit test added since it was written.
+_UNIT_SRCS = sorted(
+    p.relative_to(_SCRIPT_PATH).as_posix()
+    for p in (_SCRIPT_PATH / "tests").glob("unit_*.cc")
+)
 
 
 def _parse_args() -> argparse.Namespace:
@@ -66,6 +43,14 @@ def _parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def _envy_product(name: str) -> str:
+    """Resolve an envy product to its absolute path, installing it if it is missing."""
+    result = subprocess.run(
+        [str(_ENVY), "-q", "product", name], check=True, capture_output=True, text=True
+    )
+    return result.stdout.strip()
+
+
 def _run(
     args: list[str | pathlib.Path],
     *,
@@ -88,10 +73,42 @@ def _compile_one(cmd: list[str], cwd: pathlib.Path) -> subprocess.CompletedProce
     return result
 
 
+def _compile_all(commands: list[list[str]], cwd: pathlib.Path, *, verbose: bool) -> bool:
+    """Run compile commands concurrently. Returns False on the first failure."""
+    workers = os.cpu_count() or 1
+    if verbose:
+        print(f"  Compiling {len(commands)} files with {workers} workers")
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as pool:
+        futures = {pool.submit(_compile_one, cmd, cwd): cmd for cmd in commands}
+        for future in concurrent.futures.as_completed(futures):
+            try:
+                future.result()
+            except subprocess.CalledProcessError:
+                # Cancel remaining futures on first failure
+                for f in futures:
+                    f.cancel()
+                return False
+    return True
+
+
+def _cl_opt_flags(cfg: str) -> list[str]:
+    """MSVC counterpart of the Makefile's per-configuration optimization flags.
+
+    /Z7 rather than /Zi: the debug info lands in each .obj, so parallel cl.exe
+    processes never race on one shared PDB.
+    """
+    if cfg == "Debug":
+        return ["/Od", "/Z7"]
+    if cfg == "RelWithDebInfo":
+        return ["/Os", "/Z7"]
+    return ["/Os"]
+
+
 def _build_conformance(args: argparse.Namespace) -> bool:
     """Generate, build, and run the conformance test suite."""
     gen_script = _SCRIPT_PATH / "tests" / "gen_tests.py"
-    gen_dir = _SCRIPT_PATH / "tests" / "generated"
+    gen_dir = _SCRIPT_PATH / "build" / "generated"
 
     gen_args: list[str | pathlib.Path] = [
         sys.executable,
@@ -113,20 +130,8 @@ def _build_conformance(args: argparse.Namespace) -> bool:
     with (gen_dir / "compile_commands.json").open() as f:
         commands: list[list[str]] = json.load(f)
 
-    workers = os.cpu_count() or 1
-    if args.verbose:
-        print(f"  Compiling {len(commands)} files with {workers} workers")
-
-    with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as pool:
-        futures = {pool.submit(_compile_one, cmd, gen_dir): cmd for cmd in commands}
-        for future in concurrent.futures.as_completed(futures):
-            try:
-                future.result()
-            except subprocess.CalledProcessError:
-                # Cancel remaining futures on first failure
-                for f in futures:
-                    f.cancel()
-                return False
+    if not _compile_all(commands, gen_dir, verbose=args.verbose):
+        return False
 
     # Link
     try:
@@ -152,10 +157,10 @@ def _build_unit_tests(args: argparse.Namespace) -> bool:
     build_dir = _SCRIPT_PATH / "build"
     build_dir.mkdir(parents=True, exist_ok=True)
 
-    opt_flag = "/Od" if args.cfg == "Debug" else "/Os"
     cxx_flags = [
         "/nologo",
-        opt_flag,
+        *_cl_opt_flags(args.cfg),
+        f"/I{pathlib.Path(_envy_product('doctest_cpp_h')).parent}",
         "/std:c++20",
         "/EHsc",
         "/W4",
@@ -172,15 +177,12 @@ def _build_unit_tests(args: argparse.Namespace) -> bool:
         "/wd5285",
     ]
 
-    # Compile doctest_main.cc once
+    # doctest_main.cc is compiled once and linked into both variants.
     doctest_obj = build_dir / "doctest_main.obj"
-    try:
-        _run(
-            ["cl.exe", *cxx_flags, "/c", f"/Fo{doctest_obj}", "tests/doctest_main.cc"],
-            verbose=args.verbose,
-        )
-    except subprocess.CalledProcessError:
-        return False
+    commands = [
+        ["cl.exe", *cxx_flags, "/c", f"/Fo{doctest_obj}", "tests/doctest_main.cc"]
+    ]
+    variants: list[tuple[pathlib.Path, list[pathlib.Path]]] = []
 
     for suffix, large_val in [("", "0"), ("_large", "1")]:
         var_dir = build_dir / f"unit{suffix}"
@@ -190,25 +192,25 @@ def _build_unit_tests(args: argparse.Namespace) -> bool:
         for src in _UNIT_SRCS:
             obj = var_dir / (pathlib.Path(src).stem + ".obj")
             objs.append(obj)
-            try:
-                _run(
-                    [
-                        "cl.exe",
-                        *cxx_flags,
-                        "/DNANOPRINTF_USE_ALT_FORM_FLAG=1",
-                        "/DDOCTEST_CONFIG_SUPER_FAST_ASSERTS",
-                        f"/DNANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS={large_val}",
-                        *(["/DNANOPRINTF_32_BIT_TESTS"] if args.arch == 32 else []),
-                        "/c",
-                        f"/Fo{obj}",
-                        src,
-                    ],
-                    verbose=args.verbose,
-                )
-            except subprocess.CalledProcessError:
-                return False
+            commands.append(
+                [
+                    "cl.exe",
+                    *cxx_flags,
+                    "/DNANOPRINTF_USE_ALT_FORM_FLAG=1",
+                    "/DDOCTEST_CONFIG_SUPER_FAST_ASSERTS",
+                    f"/DNANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS={large_val}",
+                    *(["/DNANOPRINTF_32_BIT_TESTS"] if args.arch == 32 else []),
+                    "/c",
+                    f"/Fo{obj}",
+                    src,
+                ]
+            )
+        variants.append((build_dir / f"unit_tests{suffix}.exe", objs))
 
-        exe = build_dir / f"unit_tests{suffix}.exe"
+    if not _compile_all(commands, _SCRIPT_PATH, verbose=args.verbose):
+        return False
+
+    for exe, objs in variants:
         try:
             _run(
                 [
@@ -236,23 +238,23 @@ def _build_compile_only(args: argparse.Namespace) -> bool:
     build_dir = _SCRIPT_PATH / "build"
     build_dir.mkdir(parents=True, exist_ok=True)
 
-    opt_flag = "/Od" if args.cfg == "Debug" else "/Os"
+    opt = _cl_opt_flags(args.cfg)
 
     targets: list[tuple[str, list[str], list[str]]] = [
         # (name, extra_cl_flags, source_files)
         (
             "npf_static",
-            ["/nologo", opt_flag],
+            ["/nologo", *opt],
             ["tests/static_nanoprintf.c", "tests/static_main.c"],
         ),
         (
             "npf_include_multiple",
-            ["/nologo", opt_flag, "/W4", "/WX", "/wd4464", "/wd4514", "/wd4710", "/wd4711"],
+            ["/nologo", *opt, "/W4", "/WX", "/wd4464", "/wd4514", "/wd4710", "/wd4711"],
             ["tests/include_multiple.c"],
         ),
         (
             "use_npf_directly",
-            ["/nologo", opt_flag, "/std:c++20", "/EHsc"],
+            ["/nologo", *opt, "/std:c++20", "/EHsc"],
             [
                 "examples/use_npf_directly/your_project_nanoprintf.cc",
                 "examples/use_npf_directly/main.cc",
@@ -260,7 +262,7 @@ def _build_compile_only(args: argparse.Namespace) -> bool:
         ),
         (
             "wrap_npf",
-            ["/nologo", opt_flag, "/std:c++20", "/EHsc"],
+            ["/nologo", *opt, "/std:c++20", "/EHsc"],
             [
                 "examples/wrap_npf/your_project_printf.cc",
                 "examples/wrap_npf/main.cc",
@@ -268,17 +270,26 @@ def _build_compile_only(args: argparse.Namespace) -> bool:
         ),
     ]
 
+    commands: list[list[str]] = []
     for name, flags, srcs in targets:
-        exe = build_dir / f"{name}.exe"
-        try:
-            _run(
-                ["cl.exe", *flags, f"/Fe{exe}", *srcs, "/link", "/nologo"],
-                verbose=args.verbose,
-            )
-        except subprocess.CalledProcessError:
-            return False
+        # A private object directory per target: without /Fo cl.exe drops the .obj in
+        # the working directory, which puts build output in the repo root and makes
+        # the two targets that each compile a `main.cc` race for the same name.
+        obj_dir = build_dir / "compile_only" / name
+        obj_dir.mkdir(parents=True, exist_ok=True)
+        commands.append(
+            [
+                "cl.exe",
+                *flags,
+                f"/Fo{obj_dir}{os.sep}",
+                f"/Fe{build_dir / f'{name}.exe'}",
+                *srcs,
+                "/link",
+                "/nologo",
+            ]
+        )
 
-    return True
+    return _compile_all(commands, _SCRIPT_PATH, verbose=args.verbose)
 
 
 def main() -> int:

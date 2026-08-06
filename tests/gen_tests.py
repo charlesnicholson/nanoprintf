@@ -16,6 +16,11 @@ import pathlib
 import sys
 import textwrap
 
+# The sources are found relative to this script, never relative to the output
+# directory: everything generated lands under build/, which is nowhere near tests/.
+_TESTS_DIR = pathlib.Path(__file__).resolve().parent
+_REPO_ROOT = _TESTS_DIR.parent
+
 
 def _write_if_changed(path: pathlib.Path, content: str) -> bool:
     """Write content to path only if it differs. Returns True if changed."""
@@ -203,14 +208,11 @@ def write_makefile(
     """Write a POSIX Makefile that compiles all combos and links them."""
     n = len(combos)
     total = n * 2
-    test_dir = out.parent  # tests/
-    repo_root = test_dir.parent
-    conformance_c = test_dir / "conformance.c"
 
-    # Paths relative to the output (generated/) directory
-    conformance_rel = os.path.relpath(conformance_c, out)
-    include_rel = os.path.relpath(repo_root, out)
-    test_rel = os.path.relpath(test_dir, out)
+    # Paths relative to the output directory
+    conformance_rel = os.path.relpath(_TESTS_DIR / "conformance.c", out)
+    include_rel = os.path.relpath(_REPO_ROOT, out)
+    test_rel = os.path.relpath(_TESTS_DIR, out)
 
     obj_names = [f"combo_{i}.o" for i in range(total)]
 
@@ -244,7 +246,7 @@ def write_makefile(
         f"{arch_flag} {san_flags} {extra_cflags}".rstrip()
     )
 
-    nanoprintf_rel = os.path.relpath(repo_root / "nanoprintf.h", out)
+    nanoprintf_rel = os.path.relpath(_REPO_ROOT / "nanoprintf.h", out)
 
     header = f"""\
 CC = {cc}
@@ -300,12 +302,9 @@ def write_compile_commands(
 
     n = len(combos)
     total = n * 2
-    test_dir = out.parent
-    repo_root = test_dir.parent
-    conformance_c = test_dir / "conformance.c"
-    conformance_rel = os.path.relpath(conformance_c, out)
-    include_rel = os.path.relpath(repo_root, out)
-    test_rel = os.path.relpath(test_dir, out)
+    conformance_rel = os.path.relpath(_TESTS_DIR / "conformance.c", out)
+    include_rel = os.path.relpath(_REPO_ROOT, out)
+    test_rel = os.path.relpath(_TESTS_DIR, out)
 
     common = [
         "/nologo",
@@ -367,7 +366,7 @@ def main() -> int:
         "--output",
         type=pathlib.Path,
         default=None,
-        help="Output directory (default: tests/generated/)",
+        help="Output directory (default: build/generated/)",
     )
     parser.add_argument("--cc", default="cc", help="C compiler (default: cc)")
     parser.add_argument("--cxx", default="c++", help="C++ compiler (default: c++)")
@@ -394,8 +393,7 @@ def main() -> int:
     parser.add_argument("--verbose", action="store_true", help="Verbose output")
     args = parser.parse_args()
 
-    script_dir = pathlib.Path(__file__).resolve().parent
-    out = args.output or script_dir / "generated"
+    out = args.output or _REPO_ROOT / "build" / "generated"
     out = out.resolve()
     out.mkdir(parents=True, exist_ok=True)
 
