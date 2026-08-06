@@ -239,6 +239,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      pull-requests: read  # release.py reads the titles of the pull requests it links
     steps:
       - uses: actions/checkout@v7
         with:

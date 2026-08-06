@@ -65,10 +65,11 @@ def _write_bundle(zip_path: pathlib.Path, prefix: str, header: bytes) -> None:
 
 
 def _pr_title(repo: str, pr: str) -> str:
-    """Look up a pull request title, empty if it cannot be read.
+    """Look up a pull request title, empty if the number names no pull request.
 
-    A number in a commit message can name an issue rather than a pull request, and gh
-    prints the 404 body on stdout, so the exit status is what decides.
+    A number in a commit message can name an issue instead, which 404s. Every other
+    failure -- a token without pull-requests read, a rate limit -- would quietly drop
+    entries from the notes, so raise on those rather than publish a short changelog.
     """
     result = subprocess.run(
         ["gh", "api", f"repos/{repo}/pulls/{pr}", "--jq", ".title"],
@@ -77,7 +78,12 @@ def _pr_title(repo: str, pr: str) -> str:
         text=True,
         cwd=_SCRIPT_PATH,
     )
-    return result.stdout.strip() if result.returncode == 0 else ""
+    if result.returncode == 0:
+        return result.stdout.strip()
+    if "HTTP 404" in result.stderr:
+        return ""
+    msg = f"reading the title of pull request {pr} failed: {result.stderr.strip()}"
+    raise RuntimeError(msg)
 
 
 def _release_notes(tag: str, repo: str, zip_name: str) -> str:
