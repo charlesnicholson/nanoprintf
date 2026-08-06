@@ -51,6 +51,24 @@ def _envy_product(name: str) -> str:
     return result.stdout.strip()
 
 
+def _doctest_include_dir() -> pathlib.Path:
+    """Directory to put on the /I line for doctest.h.
+
+    NPF_DOCTEST_H names a host copy and opts out of envy entirely, the Makefile's
+    DOCTEST_H by another name; build.bat routes around the envy python shim when it is
+    set. For a blocked or absent network, or a platform envy has no build for. See
+    README "Building without envy".
+    """
+    override = os.environ.get("NPF_DOCTEST_H")
+    if not override:
+        return pathlib.Path(_envy_product("doctest_cpp_h")).parent
+    doctest_h = pathlib.Path(override).resolve()
+    if not doctest_h.is_file():
+        msg = f"NPF_DOCTEST_H={override} does not exist"
+        raise ValueError(msg)
+    return doctest_h.parent
+
+
 def _run(
     args: list[str | pathlib.Path],
     *,
@@ -160,7 +178,7 @@ def _build_unit_tests(args: argparse.Namespace) -> bool:
     cxx_flags = [
         "/nologo",
         *_cl_opt_flags(args.cfg),
-        f"/I{pathlib.Path(_envy_product('doctest_cpp_h')).parent}",
+        f"/I{_doctest_include_dir()}",
         "/std:c++20",
         "/EHsc",
         "/W4",

@@ -162,6 +162,29 @@ jobs:
           call "%VSPATH%\VC\Auxiliary\Build\vcvars${{ matrix.architecture }}.bat"
           call build.bat --cfg ${{ matrix.configuration }} -v --arch ${{ matrix.architecture }}
 
+  # Guards the no-envy path in README "Building without envy". Deliberately not the CI
+  # container and deliberately no envy: the runner's own gcc and python3, and a doctest.h
+  # fetched by hand, are exactly what someone on a blocked network or an unsupported
+  # platform has to work with. One shard -- the other jobs cover the flag matrix, this one
+  # covers the toolchain.
+  host-tools:
+    if: github.event.inputs.size_only != 'true'
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      # The version envy.lua pins, kept in step by hand. Nothing breaks if they drift;
+      # what is under test is that the override is honored, not which doctest it names.
+      - name: doctest.h
+        run: |
+          mkdir -p "${RUNNER_TEMP}/doctest"
+          curl -fsSL -o "${RUNNER_TEMP}/doctest/doctest.h" \
+            https://raw.githubusercontent.com/doctest/doctest/v2.5.3/doctest/doctest.h
+
+      - name: Build without envy
+        run: make -j$(nproc) DOCTEST_H="${RUNNER_TEMP}/doctest/doctest.h" SHARD=1/4 VERBOSE=1
+
   size-reports:
     runs-on: ubuntu-latest
 
@@ -223,7 +246,7 @@ jobs:
         run: ./bin/python3 tests/avr_int16.py
 
   all-checks-pass:
-    needs: [lint, sanitizers, linux-x64, linux-arm64, macos, win, size-reports, avr-int16]
+    needs: [lint, sanitizers, linux-x64, linux-arm64, macos, win, host-tools, size-reports, avr-int16]
     # A size_only dispatch skips most of the jobs above, and a skipped dependency
     # would skip this job too, leaving the required check with nothing to report.
     if: always()

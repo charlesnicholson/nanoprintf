@@ -5,6 +5,7 @@
 
 -- @envy schema "1"
 -- @envy version "0.1.2"
+-- @envy sha256sums "8271f14cf53fe0925674d960096f6a14c910a9df5bedc0081e7d55ed157ca7aa"
 -- @envy bin "bin"
 -- @envy cache-posix "build/envy-cache"
 -- @envy cache-win "build\envy-cache"

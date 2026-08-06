@@ -14,22 +14,37 @@ VERBOSE ?=
 BUILD := build
 GEN   := $(BUILD)/generated
 
-# --- envy-managed toolchain ---
+# --- Toolchain ---
+# The pinned toolchain comes from envy by default. Supplying DOCTEST_H from the command
+# line or the environment opts out of it entirely -- envy is never invoked, nothing is
+# downloaded -- for hosts that must bring their own tools: a blocked or absent network, an
+# air-gap, a platform envy has no build for. DOCTEST_H and PYTHON3 are the whole toolchain
+# that path needs; no ruff, since nothing here lints. See README "Building without envy".
 ENVY := ./bin/envy
 
-# Installed up front so a fresh clone running `make -j12` has the whole toolchain
-# before the first rule fires, not one package at a time as the shims are reached.
 ifneq ($(MAKECMDGOALS),clean)
-  ENVY_INSTALLED := $(shell $(ENVY) install && echo ok)
-  ifneq ($(ENVY_INSTALLED),ok)
-    $(error envy install failed)
+  ifeq ($(origin DOCTEST_H),undefined)
+    # Installed up front so a fresh clone running `make -j12` has the whole toolchain
+    # before the first rule fires, not one package at a time as the shims are reached.
+    ENVY_INSTALLED := $(shell $(ENVY) install && echo ok)
+    ifneq ($(ENVY_INSTALLED),ok)
+      $(error envy install failed)
+    endif
+
+    PYTHON3   ?= ./bin/python3
+    DOCTEST_H := $(shell $(ENVY) -q product doctest_cpp_h)
+    ifeq ($(DOCTEST_H),)
+      $(error envy could not resolve doctest_cpp_h)
+    endif
+  else
+    # Not ./bin/python3: that shim re-execs envy, which is the whole thing being opted out
+    # of. Override PYTHON3 to name a specific interpreter.
+    PYTHON3 ?= python3
+    ifeq ($(wildcard $(DOCTEST_H)),)
+      $(error DOCTEST_H=$(DOCTEST_H) does not exist)
+    endif
   endif
 
-  PYTHON3     ?= ./bin/python3
-  DOCTEST_H   := $(shell $(ENVY) -q product doctest_cpp_h)
-  ifeq ($(DOCTEST_H),)
-    $(error envy could not resolve doctest_cpp_h)
-  endif
   # -isystem, not -I: doctest.h is not ours to keep clean under -Weverything -Werror.
   DOCTEST_INC := -isystem $(dir $(DOCTEST_H))
 endif
