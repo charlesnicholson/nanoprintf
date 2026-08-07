@@ -359,13 +359,28 @@ To get the environment and run tests:
 
 This will build all of the unit, conformance, and compilation tests for your host environment. Any test failures will return a non-zero exit code.
 
-The only things you need on your host are a C/C++ compiler, `make`, and the `curl`/`git`/`tar` that the bootstrap script uses. The rest of what the tests need — a Python interpreter, [ruff](https://docs.astral.sh/ruff/), and the [doctest](https://github.com/doctest/doctest) header — is pinned in `envy.lua` and installed on demand by [envy](https://github.com/envy-package-manager/envy) through the committed `bin/envy` bootstrap script, which `make` and `build.bat` invoke for you. Packages land in `build/envy-cache` rather than a machine-wide cache, so everything this repo generates is under `build/`. `make clean` removes the build products but keeps the cache; `rm -rf build` takes the toolchain with it. Point `ENVY_CACHE_ROOT` at a shared cache if you would rather have one copy across projects.
+The only things you need on your host are a C/C++ compiler, `make`, and the `curl`/`git`/`tar` that the bootstrap script uses. The rest of what the tests need — a Python interpreter, [ruff](https://docs.astral.sh/ruff/), and the [doctest](https://github.com/doctest/doctest) header — is pinned in `envy.lua` and installed on demand by [envy](https://github.com/envy-package-manager/envy) through the committed `bin/envy` bootstrap script, which `make` and `build.bat` invoke for you. Packages land in `build/envy-cache` rather than a machine-wide cache, so everything this repo generates is under `build/`. `make clean` removes the build products but keeps the cache; `rm -rf build` takes the packages with it. Point `ENVY_CACHE_ROOT` at a shared cache if you would rather have one copy across projects.
+
+### Building without envy
+
+Using nanoprintf needs none of the above; the header is self-contained. Running the tests fetches about 140 MB from GitHub, and where that is slow or filtered, `http_proxy` and `https_proxy` are honored by the bootstrap script and by every package fetch. The package-spec `git clone` goes through libgit2 and connects directly whatever they say.
+
+Setting `DOCTEST_H` skips envy altogether — nothing is downloaded and no package manager runs:
+
+```sh
+make -j12 DOCTEST_H=/path/to/doctest.h
+```
+
+```bat
+set NPF_DOCTEST_H=C:\path\to\doctest.h
+build.bat
+```
+
+That path wants a C/C++ compiler, `make`, Python 3.10 or newer, and a copy of `doctest.h` from wherever you like. `PYTHON3` names the interpreter and defaults to `python3` on `PATH`. ruff is not needed; nothing in the build lints.
 
 nanoprintf uses GitHub Actions for all continuous integration builds. The GitHub Linux builds use [this](https://github.com/charlesnicholson/docker-images/packages/751874) Docker image from [my Docker repository](https://github.com/charlesnicholson/docker-images).
 
 The matrix builds [Debug, Release] x [32-bit, 64-bit] x [Mac, Windows, Linux] x [gcc, clang, msvc], minus the 32-bit clang Mac configurations.
-
-One test suite is a fork from the [printf test suite](), which is MIT licensed. It exists as a submodule for licensing purposes- nanoprintf is public domain, so this particular test suite is optional and excluded by default. To build it, retrieve it by updating submodules and add the `--paland` flag to your `./b` invocation. It is not required to use nanoprintf at all.
 
 ## Acknowledgments
 

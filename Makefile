@@ -14,22 +14,33 @@ VERBOSE ?=
 BUILD := build
 GEN   := $(BUILD)/generated
 
-# --- envy-managed toolchain ---
+# --- envy-managed packages ---
+# Supplying DOCTEST_H opts out: envy is never invoked and nothing is downloaded, so
+# DOCTEST_H and PYTHON3 are all the build needs. See README "Building without envy".
 ENVY := ./bin/envy
 
-# Installed up front so a fresh clone running `make -j12` has the whole toolchain
-# before the first rule fires, not one package at a time as the shims are reached.
 ifneq ($(MAKECMDGOALS),clean)
-  ENVY_INSTALLED := $(shell $(ENVY) install && echo ok)
-  ifneq ($(ENVY_INSTALLED),ok)
-    $(error envy install failed)
+  ifeq ($(origin DOCTEST_H),undefined)
+    # Installed up front so a fresh clone running `make -j12` has every package before the
+    # first rule fires, not one at a time as the shims are reached.
+    ENVY_INSTALLED := $(shell $(ENVY) install && echo ok)
+    ifneq ($(ENVY_INSTALLED),ok)
+      $(error envy install failed)
+    endif
+
+    PYTHON3   ?= ./bin/python3
+    DOCTEST_H := $(shell $(ENVY) -q product doctest_cpp_h)
+    ifeq ($(DOCTEST_H),)
+      $(error envy could not resolve doctest_cpp_h)
+    endif
+  else
+    # Not ./bin/python3: that shim re-execs envy.
+    PYTHON3 ?= python3
+    ifeq ($(wildcard $(DOCTEST_H)),)
+      $(error DOCTEST_H=$(DOCTEST_H) does not exist)
+    endif
   endif
 
-  PYTHON3     ?= ./bin/python3
-  DOCTEST_H   := $(shell $(ENVY) -q product doctest_cpp_h)
-  ifeq ($(DOCTEST_H),)
-    $(error envy could not resolve doctest_cpp_h)
-  endif
   # -isystem, not -I: doctest.h is not ours to keep clean under -Weverything -Werror.
   DOCTEST_INC := -isystem $(dir $(DOCTEST_H))
 endif
