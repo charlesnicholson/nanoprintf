@@ -310,7 +310,7 @@ def write_compile_commands(
         "/nologo",
         "/Os",
         "/W4",
-        "/WX",
+        "/WX",  # MSVC's -Werror; build.py holds the same policy for its own targets.
         "/Zc:preprocessor",
         # Narrowing a constant is the whole point of the truncation tests.
         "/wd4310",

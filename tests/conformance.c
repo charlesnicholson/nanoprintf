@@ -1334,15 +1334,20 @@ int NPF_TEST_FUNC(void) {
     /* Truncation of the promoted argument. The expectation comes from the type,
        so these hold on a target where int_leastN_t is wider than N bits (any
        CHAR_BIT other than 8) as well. Skipped where the type is wider than int,
-       since then the argument would not be an int in the first place. */
+       since then the argument would not be an int in the first place.
+
+       The preprocessor draws that line, from the type's maximum rather than its
+       sizeof: a signed type is no wider than int exactly when its maximum fits in
+       INT_MAX. An `if` over the sizeof would say the same thing, but a condition
+       the compiler can fold is what MSVC's C4127 objects to, and C has no
+       `if constexpr` to say "yes, on purpose" with. */
 #define NPF_TEST_WPROMO(fmt, type, raw) do { \
-      if (sizeof(type) <= sizeof(int)) { \
-        char npf_wp_exp[32]; \
-        snprintf(npf_wp_exp, sizeof(npf_wp_exp), "%lld", (long long)(type)(raw)); \
-        NPF_TEST_DYN(npf_wp_exp, fmt, (int)(raw)); \
-      } \
+      char npf_wp_exp[32]; \
+      snprintf(npf_wp_exp, sizeof(npf_wp_exp), "%lld", (long long)(type)(raw)); \
+      NPF_TEST_DYN(npf_wp_exp, fmt, (int)(raw)); \
     } while (0)
 
+#if INT_LEAST8_MAX <= INT_MAX
     NPF_TEST_WPROMO("%w8d", int_least8_t, 0);
     NPF_TEST_WPROMO("%w8d", int_least8_t, 127);
     NPF_TEST_WPROMO("%w8d", int_least8_t, 128);
@@ -1352,50 +1357,80 @@ int NPF_TEST_FUNC(void) {
     NPF_TEST_WPROMO("%w8d", int_least8_t, -1);
     NPF_TEST_WPROMO("%w8i", int_least8_t, INT_MAX);
     NPF_TEST_WPROMO("%w8i", int_least8_t, INT_MIN);
+#endif
+#if INT_LEAST16_MAX <= INT_MAX
     NPF_TEST_WPROMO("%w16d", int_least16_t, 32767);
     NPF_TEST_WPROMO("%w16d", int_least16_t, 32768);
     NPF_TEST_WPROMO("%w16d", int_least16_t, 65535);
     NPF_TEST_WPROMO("%w16d", int_least16_t, 65536);
     NPF_TEST_WPROMO("%w16i", int_least16_t, INT_MAX);
+#endif
+#if INT_FAST8_MAX <= INT_MAX
     NPF_TEST_WPROMO("%wf8d", int_fast8_t, 300);
     NPF_TEST_WPROMO("%wf8d", int_fast8_t, -1);
+#endif
+#if INT_FAST16_MAX <= INT_MAX
     NPF_TEST_WPROMO("%wf16d", int_fast16_t, 70000);
     NPF_TEST_WPROMO("%wf16d", int_fast16_t, -1);
+#endif
 #undef NPF_TEST_WPROMO
 
     /* The design claim, asserted directly: at a width whose stdint type is the
-       same type a classic modifier names, the two specifiers agree exactly. */
-#define NPF_TEST_WSAME(cond, wfmt, cfmt, ...) do { \
-      if (cond) { \
-        char npf_wq_a[64], npf_wq_b[64]; \
-        npf_snprintf(npf_wq_a, sizeof(npf_wq_a), wfmt, __VA_ARGS__); \
-        npf_snprintf(npf_wq_b, sizeof(npf_wq_b), cfmt, __VA_ARGS__); \
-        if (strcmp(npf_wq_a, npf_wq_b) != 0) { \
-          fprintf(stderr, "FAIL [%s:%d]: \"%s\"=\"%s\" \"%s\"=\"%s\"\n", \
-                  __FILE__, __LINE__, wfmt, npf_wq_a, cfmt, npf_wq_b); \
-          ++npf_test_fail_count; \
-        } else { ++npf_test_pass_count; } \
-      } \
+       same type a classic modifier names, the two specifiers agree exactly.
+
+       Which widths those are is again a question for the preprocessor, and again
+       answered through the maxima: two integer types of one signedness hold the
+       same values exactly when their maxima match, which is the property these
+       cases actually rest on. */
+#define NPF_TEST_WSAME(wfmt, cfmt, ...) do { \
+      char npf_wq_a[64], npf_wq_b[64]; \
+      npf_snprintf(npf_wq_a, sizeof(npf_wq_a), wfmt, __VA_ARGS__); \
+      npf_snprintf(npf_wq_b, sizeof(npf_wq_b), cfmt, __VA_ARGS__); \
+      if (strcmp(npf_wq_a, npf_wq_b) != 0) { \
+        fprintf(stderr, "FAIL [%s:%d]: \"%s\"=\"%s\" \"%s\"=\"%s\"\n", \
+                __FILE__, __LINE__, wfmt, npf_wq_a, cfmt, npf_wq_b); \
+        ++npf_test_fail_count; \
+      } else { ++npf_test_pass_count; } \
     } while (0)
 
-    NPF_TEST_WSAME(sizeof(int_least8_t) == sizeof(signed char), "%w8d", "%hhd", 300);
-    NPF_TEST_WSAME(sizeof(int_least8_t) == sizeof(signed char), "%w8i", "%hhi", -1);
-    NPF_TEST_WSAME(sizeof(uint_least8_t) == sizeof(unsigned char), "%w8u", "%hhu", 511u);
-    NPF_TEST_WSAME(sizeof(uint_least8_t) == sizeof(unsigned char), "%w8x", "%hhx", UINT_MAX);
-    NPF_TEST_WSAME(sizeof(uint_least8_t) == sizeof(unsigned char), "%w8o", "%hho", UINT_MAX);
-    NPF_TEST_WSAME(sizeof(int_least16_t) == sizeof(short), "%w16d", "%hd", 70000);
-    NPF_TEST_WSAME(sizeof(uint_least16_t) == sizeof(unsigned short), "%w16u", "%hu", UINT_MAX);
-    NPF_TEST_WSAME(sizeof(int_least32_t) == sizeof(int), "%w32d", "%d", (int32_t)-12345);
-    NPF_TEST_WSAME(sizeof(int_fast8_t) == sizeof(signed char), "%wf8d", "%hhd", 300);
-    NPF_TEST_WSAME(sizeof(int_fast8_t) == sizeof(int), "%wf8d", "%d", 300);
-    NPF_TEST_WSAME(sizeof(int_fast16_t) == sizeof(int), "%wf16d", "%d", 70000);
-#if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
-    NPF_TEST_WSAME(sizeof(int_least64_t) == sizeof(long long), "%w64d", "%lld",
-                   (long long)INT64_MIN);
-    NPF_TEST_WSAME(sizeof(uint_least64_t) == sizeof(unsigned long long), "%w64x", "%llx",
-                   (unsigned long long)UINT64_MAX);
+#if INT_LEAST8_MAX == SCHAR_MAX
+    NPF_TEST_WSAME("%w8d", "%hhd", 300);
+    NPF_TEST_WSAME("%w8i", "%hhi", -1);
 #endif
-    NPF_TEST_WSAME(sizeof(int_least64_t) == sizeof(long), "%w64d", "%ld", (long)-12345);
+#if UINT_LEAST8_MAX == UCHAR_MAX
+    NPF_TEST_WSAME("%w8u", "%hhu", 511u);
+    NPF_TEST_WSAME("%w8x", "%hhx", UINT_MAX);
+    NPF_TEST_WSAME("%w8o", "%hho", UINT_MAX);
+#endif
+#if INT_LEAST16_MAX == SHRT_MAX
+    NPF_TEST_WSAME("%w16d", "%hd", 70000);
+#endif
+#if UINT_LEAST16_MAX == USHRT_MAX
+    NPF_TEST_WSAME("%w16u", "%hu", UINT_MAX);
+#endif
+#if INT_LEAST32_MAX == INT_MAX
+    NPF_TEST_WSAME("%w32d", "%d", (int32_t)-12345);
+#endif
+#if INT_FAST8_MAX == SCHAR_MAX
+    NPF_TEST_WSAME("%wf8d", "%hhd", 300);
+#endif
+#if INT_FAST8_MAX == INT_MAX
+    NPF_TEST_WSAME("%wf8d", "%d", 300);
+#endif
+#if INT_FAST16_MAX == INT_MAX
+    NPF_TEST_WSAME("%wf16d", "%d", 70000);
+#endif
+#if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
+#if INT_LEAST64_MAX == LLONG_MAX
+    NPF_TEST_WSAME("%w64d", "%lld", (long long)INT64_MIN);
+#endif
+#if UINT_LEAST64_MAX == ULLONG_MAX
+    NPF_TEST_WSAME("%w64x", "%llx", (unsigned long long)UINT64_MAX);
+#endif
+#endif
+#if INT_LEAST64_MAX == LONG_MAX
+    NPF_TEST_WSAME("%w64d", "%ld", (long)-12345);
+#endif
 #undef NPF_TEST_WSAME
 
     /* Flags, field width and precision all apply as usual. */
