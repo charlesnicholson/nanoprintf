@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 # envy-managed bootstrap script - do not edit
-set -euo pipefail
+set -Eeuo pipefail
 
-DEFAULT_MIRROR="https://github.com/envy-package-manager/envy/releases/download"
-LATEST_URL="https://github.com/envy-package-manager/envy/releases/latest"
-ENV_MIRROR="${ENVY_MIRROR:-}"
-FALLBACK_VERSION="0.1.2"
+ENVY_DEFAULT_MIRROR="https://github.com/envy-package-manager/envy/releases/download"
+ENVY_LATEST_URL="https://github.com/envy-package-manager/envy/releases/latest"
+ENVY_ENV_MIRROR="${ENVY_MIRROR:-}"
+ENVY_FALLBACK_VERSION="0.2.3"
+ENVY_MIN_DIRECTIVE_VERSION="0.2.0"
 
 resolve_script_dir() {
     local src="${BASH_SOURCE[0]}"
@@ -17,68 +18,71 @@ resolve_script_dir() {
     cd -P "$(dirname "$src")" && pwd -P
 }
 
+# Header directives only -- blank lines and comments up to the first line of code, the rule
+# parse_envy_meta in src/manifest.cpp applies. No line cap; `q` bounds the read.
+manifest_directives() {
+    sed -nE '
+        /^[[:space:]]*$/d
+        /^[[:space:]]*--/!q
+        s/^[[:space:]]*--[[:space:]]*@envy[[:space:]]+(version|cache-local|cache-mode|state-dir|mirror|sha256sums|root)[[:space:]]+"(([^"\\]|\\.)*)".*/\1 \2/p
+    ' "$1"
+}
+
 find_manifest() {
     local d; d="$(resolve_script_dir)"
     local candidates=()
     while [[ "$d" != / ]]; do
         if [[ -f "$d/envy.lua" ]]; then
-            local is_root="true"
-            if head -20 "$d/envy.lua" | grep -qE '^--[[:space:]]*@envy[[:space:]]+root[[:space:]]+"false"'; then
-                is_root="false"
-            fi
+            # `if`, not `&&`: a nonzero last command in the body is a `set -e` kill.
+            local is_root="true" key val
+            while read -r key val || [[ -n "$key$val" ]]; do
+                if [[ "$key" == "root" && "$val" == "false" ]]; then is_root="false"; fi
+            done < <(manifest_directives "$d/envy.lua")
             if [[ "$is_root" == "true" ]]; then
                 echo "$d/envy.lua" && return
             else
                 candidates+=("$d/envy.lua")
             fi
         fi
+        # A repo is a hard boundary, matching discover() in src/manifest.cpp.
+        if [[ -d "$d/.git" ]]; then break; fi
         d="${d%/*}"; d="${d:-/}"
     done
     [[ ${#candidates[@]} -gt 0 ]] && echo "${candidates[${#candidates[@]}-1]}" && return
     return 1
 }
 
-MANIFEST=$(find_manifest) || { echo "ERROR: envy.lua not found" >&2; exit 1; }
+ENVY_MANIFEST=$(find_manifest) || { echo "ERROR: envy.lua not found" >&2; exit 1; }
 
-parse_directives() {
-    head -20 "$MANIFEST" | sed -nE '
-        s/^--[[:space:]]*@envy[[:space:]]+version[[:space:]]+"(([^"\\]|\\.)*)".*/version \1/p
-        s/^--[[:space:]]*@envy[[:space:]]+cache-posix[[:space:]]+"(([^"\\]|\\.)*)".*/cache \1/p
-        s/^--[[:space:]]*@envy[[:space:]]+mirror[[:space:]]+"(([^"\\]|\\.)*)".*/mirror \1/p
-        s/^--[[:space:]]*@envy[[:space:]]+sha256sums[[:space:]]+"(([^"\\]|\\.)*)".*/sums \1/p
-    '
-}
-
-VERSION="" MANIFEST_CACHE="" MANIFEST_MIRROR="" SUMS_PIN=""
-while read -r key val; do
-    val="${val//\\\"/\"}"
-    val="${val//\\\\/\\}"
-    case "$key" in
-        version) VERSION="$val" ;; cache) MANIFEST_CACHE="$val" ;;
-        mirror) MANIFEST_MIRROR="$val" ;; sums) SUMS_PIN="$val" ;;
+ENVY_VERSION="" ENVY_CACHE_LOCAL="" ENVY_CACHE_MODE="" ENVY_STATE_DIR_REL="" ENVY_MANIFEST_MIRROR="" ENVY_SUMS_PIN=""
+# `|| [[ -n ... ]]`: a bare `read` returns nonzero on an unterminated last line, dropping
+# the directive on it -- a final `sha256sums` line would bootstrap with no pin at all.
+while read -r ENVY_KEY ENVY_VAL || [[ -n "$ENVY_KEY$ENVY_VAL" ]]; do
+    ENVY_VAL="${ENVY_VAL//\\\"/\"}"
+    ENVY_VAL="${ENVY_VAL//\\\\/\\}"
+    case "$ENVY_KEY" in
+        version) ENVY_VERSION="$ENVY_VAL" ;; cache-local) ENVY_CACHE_LOCAL="$ENVY_VAL" ;;
+        cache-mode) ENVY_CACHE_MODE="$ENVY_VAL" ;;
+        state-dir) ENVY_STATE_DIR_REL="$ENVY_VAL" ;;
+        mirror) ENVY_MANIFEST_MIRROR="$ENVY_VAL" ;;
+        sha256sums) ENVY_SUMS_PIN="$ENVY_VAL" ;;
     esac
-done < <(parse_directives)
-# A sums pin names one release's checksum file, so it is meaningless against a resolved or
-# stamped-fallback version. Captured before the resolution chain overwrites VERSION.
-PINNED_VERSION="$VERSION"
+done < <(manifest_directives "$ENVY_MANIFEST")
+ENVY_PINNED_VERSION="$ENVY_VERSION"  # a pin is meaningless against a resolved version
 
-# Fail closed before any network: a pin that silently stops verifying is worse than none,
-# since the manifest still advertises attestation.
-if [[ -n "$SUMS_PIN" && -z "$PINNED_VERSION" ]]; then
-    echo "ERROR: '@envy sha256sums' requires '@envy version' in $MANIFEST" >&2
+# Fail closed before any network: a pin that silently stops verifying is worse than none.
+if [[ -n "$ENVY_SUMS_PIN" && -z "$ENVY_PINNED_VERSION" ]]; then
+    echo "ERROR: '@envy sha256sums' requires '@envy version' in $ENVY_MANIFEST" >&2
     exit 1
 fi
 
-# Precedence: ENVY_MIRROR env > @envy mirror directive > envy upstream, matching the
-# runtime resolver in src/reexec.cpp. DEFAULT_MIRROR is always envy's own release URL,
-# never a copy of this project's mirror: deleting the directive must not resolve this
-# script and the re-exec'd binary to different mirrors.
-if [[ -n "$ENV_MIRROR" ]]; then ENVY_MIRROR="$ENV_MIRROR"
-elif [[ -n "$MANIFEST_MIRROR" ]]; then ENVY_MIRROR="$MANIFEST_MIRROR"
-else ENVY_MIRROR="$DEFAULT_MIRROR"; fi
+# Precedence: ENVY_MIRROR env > @envy mirror > upstream, matching src/reexec.cpp.
+# ENVY_DEFAULT_MIRROR is always envy's own release URL, never a copy of the directive's.
+if [[ -n "$ENVY_ENV_MIRROR" ]]; then ENVY_MIRROR="$ENVY_ENV_MIRROR"
+elif [[ -n "$ENVY_MANIFEST_MIRROR" ]]; then ENVY_MIRROR="$ENVY_MANIFEST_MIRROR"
+else ENVY_MIRROR="$ENVY_DEFAULT_MIRROR"; fi
 
-# A trailing slash would produce ".../releases//v1.2.3/...", a distinct and nonexistent
-# s3:// key.
+# A trailing slash makes ".../releases//v1.2.3/...", a distinct nonexistent s3:// key.
 while [[ "$ENVY_MIRROR" == */ ]]; do ENVY_MIRROR="${ENVY_MIRROR%/}"; done
 
 mirror_is_s3() { [[ "$ENVY_MIRROR" == s3://* || "$ENVY_MIRROR" == S3://* ]]; }
@@ -91,8 +95,6 @@ require_aws() {
     }
 }
 
-# Streams one mirror object to stdout; non-zero if missing or unreadable. AWS region and
-# credentials come from the environment/profile, as for any other AWS tool.
 mirror_cat() {
     if mirror_is_s3; then
         require_aws
@@ -102,8 +104,8 @@ mirror_cat() {
     fi
 }
 
-# sha256 of a file, lowercase hex, no filename. Each tier ships with some OS: sha256sum
-# (coreutils), shasum (macOS), openssl. None available is a hard error, never a skip.
+# sha256 of a file, lowercase hex, no filename. No hasher at all is a hard error,
+# never a skip.
 sha256_file() {
     if command -v sha256sum >/dev/null 2>&1; then sha256sum "$1" | cut -d' ' -f1
     elif command -v shasum >/dev/null 2>&1; then shasum -a 256 "$1" | cut -d' ' -f1
@@ -115,9 +117,8 @@ sha256_file() {
     fi
 }
 
-# Compare hex case-insensitively; certutil and Get-FileHash emit uppercase. `if` rather
-# than `[[ ]] && return`: a failing AND-list is a set -e footgun, and bash 3.2 has no
-# ${var,,}.
+# Case-insensitive hex compare; certutil and Get-FileHash emit uppercase. `if`, not an
+# AND-list: that is a set -e footgun, and bash 3.2 has no ${var,,}.
 hex_eq() {
     if [[ "$1" == "$2" ]]; then return 0; fi
     local a b
@@ -126,120 +127,190 @@ hex_eq() {
     [[ "$a" == "$b" ]]
 }
 
-# envy releases are numbered MAJOR.MINOR.PATCH; anything else from a network resolver is
-# not a version. Clearing defers to the next tier, ultimately FALLBACK_VERSION. A
-# `vlatest/` URL 404s, reported as a 403 by a bucket without s3:ListBucket.
+# Anything not MAJOR.MINOR.PATCH is not a version. Clearing defers to the next tier; a
+# `vlatest/` URL 404s, reported as 403 by a bucket without s3:ListBucket.
 keep_valid_version() {
-    if [[ -n "$VERSION" && ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-        echo "WARNING: ignoring implausible envy version '$VERSION' from $1" >&2
-        VERSION=""
+    if [[ -n "$ENVY_VERSION" && ! "$ENVY_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+        echo "WARNING: ignoring implausible envy version '$ENVY_VERSION' from $1" >&2
+        ENVY_VERSION=""
     fi
 }
 
-if [[ -n "${ENVY_CACHE_ROOT:-}" ]]; then CACHE="$ENVY_CACHE_ROOT"
-elif [[ -n "$MANIFEST_CACHE" ]]; then
-    CACHE="$MANIFEST_CACHE"
-    [[ "$CACHE" == "~/"* ]] && CACHE="$HOME${CACHE:1}"
-    [[ "$CACHE" == "~" ]] && CACHE="$HOME"
-    while [[ "$CACHE" =~ \$\{([A-Za-z_][A-Za-z0-9_]*)\} ]]; do
-        var="${BASH_REMATCH[1]}"; CACHE="${CACHE/\$\{$var\}/${!var}}"
-    done
-    while [[ "$CACHE" =~ \$([A-Za-z_][A-Za-z0-9_]*) ]]; do
-        var="${BASH_REMATCH[1]}"; CACHE="${CACHE/\$$var/${!var}}"
-    done
-    # A relative directive anchors to the manifest's directory, never the caller's cwd,
-    # matching resolve_cache_root() in src/cache.cpp: one manifest names one cache tree
-    # from every working directory, or every invocation from a subdirectory refetches the
-    # whole package set into a tree of its own. `if`, not an AND-list: a failing AND-list
-    # is a set -e footgun.
-    if [[ "$CACHE" != /* ]]; then CACHE="${MANIFEST%/*}/$CACHE"; fi
-elif [[ $(uname) == Darwin ]]; then CACHE="$HOME/Library/Caches/envy"
-else CACHE="${XDG_CACHE_HOME:-$HOME/.cache}/envy"; fi
+ENVY_MANIFEST_DIR="${ENVY_MANIFEST%/*}"; ENVY_MANIFEST_DIR="${ENVY_MANIFEST_DIR:-/}"
 
-if [[ -z "$VERSION" ]]; then
-    if [[ -f "$CACHE/envy/latest" ]]; then
-        LATEST_VER="$(cat "$CACHE/envy/latest" 2>/dev/null)"
-        LATEST_VER="${LATEST_VER%%[[:space:]]*}"
-        [[ -n "$LATEST_VER" && -x "$CACHE/envy/$LATEST_VER/envy" ]] && VERSION="$LATEST_VER"
+# Ahead of the tiers: an exported value would otherwise survive into the override branch.
+ENVY_MODE="" ENVY_SHARED_CACHE="" ENVY_MODE_FROM_MARKER=""
+
+# Tiers, in order, matching resolve_cache_root() in src/cache.cpp. No expansion of any
+# kind, so this script and the binary have no grammar to disagree about.
+if [[ -n "${ENVY_CACHE_ROOT:-}" ]]; then
+    ENVY_CACHE="$ENVY_CACHE_ROOT"
+    # Rejected, not absolutized: the binary anchors a relative value to its own cwd.
+    if [[ "$ENVY_CACHE" != /* ]]; then
+        echo "ERROR: ENVY_CACHE_ROOT must be an absolute path: $ENVY_CACHE" >&2
+        exit 1
     fi
-    # Ask the mirror first: 'envy mirror-envy' writes a `latest` file at the mirror root,
-    # so a private or air-gapped mirror answers for itself.
-    if [[ -z "$VERSION" ]]; then
-        if VERSION="$(mirror_cat "$ENVY_MIRROR/latest" 2>/dev/null)"; then
-            VERSION="${VERSION//[[:space:]]/}"
-            keep_valid_version "$ENVY_MIRROR/latest"
-        else
-            VERSION=""  # a failed fetch leaves partial output behind
-        fi
+else
+    # The user's own root; a local tree borrows from it read-only. Guarded: set -u.
+    if [[ $(uname) == Darwin ]]; then
+        # XDG_CACHE_HOME is not consulted on Darwin, matching platform_posix.cpp.
+        if [[ -n "${HOME:-}" ]]; then ENVY_SHARED_CACHE="$HOME/Library/Caches/envy"; fi
+    elif [[ -n "${XDG_CACHE_HOME:-}" ]]; then ENVY_SHARED_CACHE="$XDG_CACHE_HOME/envy"
+    elif [[ -n "${HOME:-}" ]]; then ENVY_SHARED_CACHE="$HOME/.cache/envy"; fi
+
+    # @envy state-dir, else the manifest's own directory -- never `.envy`, which is inside
+    # the default local tree `.envy/cache` and would let a cache wipe erase the marker.
+    if [[ -n "$ENVY_STATE_DIR_REL" ]]; then ENVY_STATE_DIR="$ENVY_MANIFEST_DIR/$ENVY_STATE_DIR_REL"
+    else ENVY_STATE_DIR="$ENVY_MANIFEST_DIR"; fi
+
+    # Existence is the whole signal -- no content for three languages to read three ways.
+    if [[ -f "$ENVY_STATE_DIR/.envy-cache-local" && -f "$ENVY_STATE_DIR/.envy-cache-shared" ]]; then
+        echo "ERROR: both .envy-cache-local and .envy-cache-shared exist in $ENVY_STATE_DIR;" \
+             "envy never writes both. Delete one." >&2
+        exit 1
     fi
-    # GitHub serves no `latest` object, so fall back to its redirect. Parse the end of the
-    # chain, not hop 1: a repo rename inserts a hop whose last segment is `latest`. Skipped
-    # for s3:// mirrors, which are never github. Timeouts bound a blackholed connect.
-    if [[ -z "$VERSION" ]] && ! mirror_is_s3; then
-        # Gated on curl's status: --fail still writes the -w output on an HTTP error.
-        if EFFECTIVE="$(curl -fsSL -o /dev/null -w '%{url_effective}' \
-            --connect-timeout 5 --max-time 15 "$LATEST_URL" 2>/dev/null)"; then
-            GH="${EFFECTIVE##*/}"; VERSION="${GH#v}"
-            keep_valid_version "$LATEST_URL"
-        fi
-    fi
-    if [[ -z "$VERSION" ]]; then
-        VERSION="$FALLBACK_VERSION"
+
+    # A marker leaves no directive, so the version guard below needs it remembered.
+    if [[ -f "$ENVY_STATE_DIR/.envy-cache-local" ]]; then ENVY_MODE=local; ENVY_MODE_FROM_MARKER=1
+    elif [[ -f "$ENVY_STATE_DIR/.envy-cache-shared" ]]; then ENVY_MODE=shared; ENVY_MODE_FROM_MARKER=1
+    elif [[ -n "$ENVY_CACHE_MODE" ]]; then ENVY_MODE="$ENVY_CACHE_MODE"
+    elif [[ -n "$ENVY_CACHE_LOCAL" ]]; then ENVY_MODE=local   # naming a tree is asking for it
+    else ENVY_MODE=shared; fi
+
+    if [[ "$ENVY_MODE" == local ]]; then
+        # Anchored to the manifest dir, never the caller's cwd: one manifest, one tree.
+        ENVY_CACHE="$ENVY_MANIFEST_DIR/${ENVY_CACHE_LOCAL:-.envy/cache}"
+    else ENVY_CACHE="$ENVY_SHARED_CACHE"; fi
+
+    # Shared mode *is* the platform default, so with no HOME there is no root.
+    if [[ -z "$ENVY_CACHE" ]]; then
+        echo "ERROR: cannot determine a cache root: neither HOME nor XDG_CACHE_HOME is" \
+             "set. Set ENVY_CACHE_ROOT, or give the project a local cache." >&2
+        exit 1
     fi
 fi
 
+if [[ -z "$ENVY_VERSION" ]]; then
+    if [[ -f "$ENVY_CACHE/envy/latest" ]]; then
+        ENVY_LATEST_VER="$(cat "$ENVY_CACHE/envy/latest" 2>/dev/null)"
+        ENVY_LATEST_VER="${ENVY_LATEST_VER%%[[:space:]]*}"
+        [[ -n "$ENVY_LATEST_VER" && -x "$ENVY_CACHE/envy/$ENVY_LATEST_VER/envy" ]] && ENVY_VERSION="$ENVY_LATEST_VER"
+    fi
+    # 'envy mirror-envy' writes `latest` at the mirror root, so a private mirror answers.
+    if [[ -z "$ENVY_VERSION" ]]; then
+        if ENVY_VERSION="$(mirror_cat "$ENVY_MIRROR/latest" 2>/dev/null)"; then
+            ENVY_VERSION="${ENVY_VERSION//[[:space:]]/}"
+            keep_valid_version "$ENVY_MIRROR/latest"
+        else
+            ENVY_VERSION=""  # a failed fetch leaves partial output behind
+        fi
+    fi
+    # GitHub serves no `latest` object; parse the end of its redirect chain, not hop 1 (a
+    # repo rename inserts a hop ending in `latest`). Never s3://; timeouts bound a hang.
+    if [[ -z "$ENVY_VERSION" ]] && ! mirror_is_s3; then
+        # Gated on curl's status: --fail still writes the -w output on an HTTP error.
+        if ENVY_EFFECTIVE="$(curl -fsSL -o /dev/null -w '%{url_effective}' \
+            --connect-timeout 5 --max-time 15 "$ENVY_LATEST_URL" 2>/dev/null)"; then
+            ENVY_GH="${ENVY_EFFECTIVE##*/}"; ENVY_VERSION="${ENVY_GH#v}"
+            keep_valid_version "$ENVY_LATEST_URL"
+        fi
+    fi
+    if [[ -z "$ENVY_VERSION" ]]; then
+        ENVY_VERSION="$ENVY_FALLBACK_VERSION"
+    fi
+fi
+
+# An older envy silently ignores the cache directives below, resolving the *shared* cache
+# for a manifest asking for a hermetic tree and exiting 0. Refuse before downloading it.
+version_lt() {  # $1 < $2, both MAJOR.MINOR.PATCH
+    local IFS=. a b i
+    read -r -a a <<< "$1"
+    read -r -a b <<< "$2"
+    for i in 0 1 2; do
+        if (( ${a[i]:-0} < ${b[i]:-0} )); then return 0; fi
+        if (( ${a[i]:-0} > ${b[i]:-0} )); then return 1; fi
+    done
+    return 1
+}
+
+# 0.0.0 is a dev build, let through as in reexec_should(). Both shape tests matter: an
+# unstamped template would reach bash arithmetic and die under set -e. A marker counts too.
+if [[ -n "$ENVY_CACHE_LOCAL$ENVY_CACHE_MODE$ENVY_STATE_DIR_REL$ENVY_MODE_FROM_MARKER" \
+      && "$ENVY_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ && "$ENVY_VERSION" != 0.0.0 \
+      && "$ENVY_MIN_DIRECTIVE_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] \
+   && version_lt "$ENVY_VERSION" "$ENVY_MIN_DIRECTIVE_VERSION"; then
+    echo "ERROR: $ENVY_MANIFEST resolves its cache mode from '@envy cache-local'/'cache-mode'/" \
+         "'state-dir' or an 'envy cache' marker, added in envy" \
+         "$ENVY_MIN_DIRECTIVE_VERSION, but resolves envy $ENVY_VERSION. That envy ignores them and" \
+         "would silently use the shared cache. Raise or remove the '@envy version' pin." >&2
+    exit 1
+fi
+
 case "$(uname -s)" in
-    Darwin) PLATFORM=darwin ;; Linux) PLATFORM=linux ;;
+    Darwin) ENVY_PLATFORM=darwin ;; Linux) ENVY_PLATFORM=linux ;;
     *) echo "ERROR: Unsupported platform: $(uname -s)" >&2; exit 1 ;;
 esac
 
 case "$(uname -m)" in
-    x86_64) ARCH=x86_64 ;; aarch64|arm64) ARCH=arm64 ;;
+    x86_64) ENVY_ARCH=x86_64 ;; aarch64|arm64) ENVY_ARCH=arm64 ;;
     *) echo "ERROR: Unsupported architecture: $(uname -m)" >&2; exit 1 ;;
 esac
 
-ENVY_BIN="$CACHE/envy/$VERSION/envy"
-[[ -x "$ENVY_BIN" ]] && exec "$ENVY_BIN" "$@"
+# --project ahead of the caller's argv: this script belongs to one project. take_last on
+# the option side means a hand-typed --project still wins.
+ENVY_ARGS=(--project "$(resolve_script_dir)")
 
-echo "Downloading envy $VERSION..." >&2
-# mktemp, not $$: a predictable name in a sticky /tmp lets another user pre-create the
-# directory we extract into and exec from.
-T="$(mktemp -d "${TMPDIR:-/tmp}/envy-XXXXXXXX")"
-die() { echo "ERROR: $1" >&2; rm -rf "$T"; exit 1; }
-ARCHIVE="envy-$PLATFORM-$ARCH.tar.gz"
-URL="$ENVY_MIRROR/v$VERSION/$ARCHIVE"
+ENVY_BIN="$ENVY_CACHE/envy/$ENVY_VERSION/envy"
 
-# To a file, not piped into tar: an unattested archive must never be unpacked, or a hostile
-# mirror chooses the paths written under $T, from which we exec.
-mirror_cat "$URL" > "$T/$ARCHIVE" || die "Failed to download envy from $URL"
+# -f and -s too: bare -x passes a directory or a zero-length file, and exec then exits 126.
+usable_envy() { [[ -f "$1" && -s "$1" && -x "$1" ]]; }
 
-if [[ -n "$SUMS_PIN" ]]; then
-    SUMS_URL="$ENVY_MIRROR/v$VERSION/SHA256SUMS"
-    mirror_cat "$SUMS_URL" > "$T/SHA256SUMS" || die "Failed to download $SUMS_URL"
-
-    # Anchor the chain on the manifest's pin before trusting anything the sums file says.
-    GOT="$(sha256_file "$T/SHA256SUMS")" || { rm -rf "$T"; exit 1; }
-    hex_eq "$GOT" "$SUMS_PIN" || die "SHA256SUMS does not match the pinned '@envy sha256sums':
-       expected $SUMS_PIN
-       got      $GOT
-       The mirror is serving a different release manifest than $MANIFEST pinned.
-       Update the pin deliberately; do not remove it."
-
-    # Match this exact archive: keying on the hash alone accepts any platform's binary, and
-    # a substring name match accepts a longer sibling.
-    WANT="$(sed -nE "s/^([0-9a-fA-F]{64})[[:space:]]+\*?${ARCHIVE//./\\.}\$/\1/p" \
-        "$T/SHA256SUMS" | head -1)"
-    [[ -n "$WANT" ]] || die "SHA256SUMS lists no entry for $ARCHIVE"
-
-    GOT="$(sha256_file "$T/$ARCHIVE")" || { rm -rf "$T"; exit 1; }
-    hex_eq "$GOT" "$WANT" || die "$ARCHIVE failed attestation:
-       SHA256SUMS says $WANT
-       downloaded      $GOT"
+# Select, then exec once. Skipped under a sums pin (never re-hashed) and under
+# ENVY_CACHE_ROOT, where MODE is empty.
+if ! usable_envy "$ENVY_BIN" &&
+   [[ "$ENVY_MODE" == local && -z "$ENVY_SUMS_PIN" && -n "$ENVY_SHARED_CACHE" ]]; then
+    ENVY_BIN="$ENVY_SHARED_CACHE/envy/$ENVY_VERSION/envy"
 fi
 
-tar -xzf "$T/$ARCHIVE" -C "$T" || die "Failed to extract envy from $URL"
-# tar exits 0 on an empty archive, so a zero-length object would fall through to a
-# confusing "no such file" from exec.
-[[ -f "$T/envy" ]] || die "archive from $URL contained no envy binary"
-[[ $PLATFORM == darwin ]] && xattr -d com.apple.quarantine "$T/envy" 2>/dev/null || true
-chmod +x "$T/envy" && exec "$T/envy" "$@"
+if usable_envy "$ENVY_BIN"; then
+    exec "$ENVY_BIN" "${ENVY_ARGS[@]}" "$@"
+fi
+
+echo "Downloading envy $ENVY_VERSION..." >&2
+# mktemp, not $$: a predictable name in a sticky /tmp is another user's to pre-create.
+ENVY_TMP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/envy-XXXXXXXX")"
+die() { echo "ERROR: $1" >&2; rm -rf "$ENVY_TMP_DIR"; exit 1; }
+ENVY_ARCHIVE="envy-$ENVY_PLATFORM-$ENVY_ARCH.tar.gz"
+ENVY_URL="$ENVY_MIRROR/v$ENVY_VERSION/$ENVY_ARCHIVE"
+
+# To a file, not piped into tar: a hostile mirror must not choose paths we exec from.
+mirror_cat "$ENVY_URL" > "$ENVY_TMP_DIR/$ENVY_ARCHIVE" || die "Failed to download envy from $ENVY_URL"
+
+if [[ -n "$ENVY_SUMS_PIN" ]]; then
+    ENVY_SUMS_URL="$ENVY_MIRROR/v$ENVY_VERSION/SHA256SUMS"
+    mirror_cat "$ENVY_SUMS_URL" > "$ENVY_TMP_DIR/SHA256SUMS" || die "Failed to download $ENVY_SUMS_URL"
+
+    # Anchor the chain on the manifest's pin before trusting anything the sums file says.
+    ENVY_GOT="$(sha256_file "$ENVY_TMP_DIR/SHA256SUMS")" || { rm -rf "$ENVY_TMP_DIR"; exit 1; }
+    hex_eq "$ENVY_GOT" "$ENVY_SUMS_PIN" || die "SHA256SUMS does not match the pinned '@envy sha256sums':
+       expected $ENVY_SUMS_PIN
+       got      $ENVY_GOT
+       The mirror is serving a different release manifest than $ENVY_MANIFEST pinned.
+       Update the pin deliberately; do not remove it."
+
+    # Exact archive: hash alone accepts any platform, a substring name a longer sibling.
+    ENVY_WANT="$(sed -nE "s/^([0-9a-fA-F]{64})[[:space:]]+\*?${ENVY_ARCHIVE//./\\.}\$/\1/p" \
+        "$ENVY_TMP_DIR/SHA256SUMS" | head -1)"
+    [[ -n "$ENVY_WANT" ]] || die "SHA256SUMS lists no entry for $ENVY_ARCHIVE"
+
+    ENVY_GOT="$(sha256_file "$ENVY_TMP_DIR/$ENVY_ARCHIVE")" || { rm -rf "$ENVY_TMP_DIR"; exit 1; }
+    hex_eq "$ENVY_GOT" "$ENVY_WANT" || die "$ENVY_ARCHIVE failed attestation:
+       SHA256SUMS says $ENVY_WANT
+       downloaded      $ENVY_GOT"
+fi
+
+tar -xzf "$ENVY_TMP_DIR/$ENVY_ARCHIVE" -C "$ENVY_TMP_DIR" || die "Failed to extract envy from $ENVY_URL"
+# tar exits 0 on an empty archive; without this, exec reports a confusing "no such file".
+[[ -f "$ENVY_TMP_DIR/envy" ]] || die "archive from $ENVY_URL contained no envy binary"
+[[ $ENVY_PLATFORM == darwin ]] && xattr -d com.apple.quarantine "$ENVY_TMP_DIR/envy" 2>/dev/null || true
+chmod +x "$ENVY_TMP_DIR/envy" && exec "$ENVY_TMP_DIR/envy" "${ENVY_ARGS[@]}" "$@"
