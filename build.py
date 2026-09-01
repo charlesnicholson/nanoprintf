@@ -11,6 +11,13 @@ import sys
 _SCRIPT_PATH = pathlib.Path(__file__).resolve().parent
 _ENVY = _SCRIPT_PATH / "bin" / ("envy.bat" if os.name == "nt" else "envy")
 
+# /WX is MSVC's -Werror, and it belongs on every target. Three of the compile-only
+# ones built at the default warning level, so anything the unit and conformance
+# builds would have refused went unnoticed there. The suppressions are the
+# off-by-default level-4 notes any of these can trip -- a '..' in an include path,
+# and the three inline-expansion remarks -- none of which say anything about the code.
+_CL_WARN_FLAGS = ["/W4", "/WX", "/wd4464", "/wd4514", "/wd4710", "/wd4711"]
+
 # Globbed, not listed: the Makefile compiles the same set, and a hand-maintained copy
 # here silently missed every unit test added since it was written.
 _UNIT_SRCS = sorted(
@@ -175,12 +182,8 @@ def _build_unit_tests(args: argparse.Namespace) -> bool:
         f"/I{_doctest_include_dir()}",
         "/std:c++20",
         "/EHsc",
-        "/W4",
-        "/WX",
-        "/wd4464",
-        "/wd4514",
-        "/wd4710",
-        "/wd4711",
+        *_CL_WARN_FLAGS,
+        # doctest.h's own level-4 noise, not nanoprintf's.
         "/wd4619",
         "/wd4820",
         "/wd5039",
@@ -256,17 +259,17 @@ def _build_compile_only(args: argparse.Namespace) -> bool:
         # (name, extra_cl_flags, source_files)
         (
             "npf_static",
-            ["/nologo", *opt],
+            ["/nologo", *opt, *_CL_WARN_FLAGS],
             ["tests/static_nanoprintf.c", "tests/static_main.c"],
         ),
         (
             "npf_include_multiple",
-            ["/nologo", *opt, "/W4", "/WX", "/wd4464", "/wd4514", "/wd4710", "/wd4711"],
+            ["/nologo", *opt, *_CL_WARN_FLAGS],
             ["tests/include_multiple.c"],
         ),
         (
             "use_npf_directly",
-            ["/nologo", *opt, "/std:c++20", "/EHsc"],
+            ["/nologo", *opt, *_CL_WARN_FLAGS, "/std:c++20", "/EHsc"],
             [
                 "examples/use_npf_directly/your_project_nanoprintf.cc",
                 "examples/use_npf_directly/main.cc",
@@ -274,7 +277,7 @@ def _build_compile_only(args: argparse.Namespace) -> bool:
         ),
         (
             "wrap_npf",
-            ["/nologo", *opt, "/std:c++20", "/EHsc"],
+            ["/nologo", *opt, *_CL_WARN_FLAGS, "/std:c++20", "/EHsc"],
             [
                 "examples/wrap_npf/your_project_printf.cc",
                 "examples/wrap_npf/main.cc",
