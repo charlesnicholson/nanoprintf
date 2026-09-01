@@ -1,4 +1,20 @@
 #!/usr/bin/env bash
-# envy-managed schema "1"
-SCRIPT_DIR="$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
-exec "$("$SCRIPT_DIR/envy" product "python3")" "$@"
+# envy-managed schema "4"
+set -Eeuo pipefail
+ENVY_SCRIPT_DIR="$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+# `:+` not `:-`: an unset PATH would otherwise leave a trailing colon, and an empty PATH
+# entry means the cwd -- a hijack the payload never opted into.
+export PATH="$ENVY_SCRIPT_DIR${PATH:+:$PATH}"  # a product shelling out to a sibling finds it
+ENVY_PROJECT_ROOT_HOP=".."  # empty under '@envy root "false"'
+if [[ -n "$ENVY_PROJECT_ROOT_HOP" ]]; then
+    ENVY_PROJECT_ROOT="$(cd -P "$ENVY_SCRIPT_DIR/$ENVY_PROJECT_ROOT_HOP" && pwd -P)"
+    export ENVY_PROJECT_ROOT
+fi
+# The sibling launcher injects --project, so envy resolves the project this script was
+# deployed into, not one rediscovered from the caller's CWD.
+ENVY_PRODUCT="$("$ENVY_SCRIPT_DIR/envy" product "python3")" || exit $?
+if [[ -z "$ENVY_PRODUCT" ]]; then
+    echo "envy: failed to resolve product 'python3'" >&2
+    exit 1
+fi
+exec "$ENVY_PRODUCT" "$@"

@@ -1,14 +1,13 @@
 -- nanoprintf's toolchain manifest, and envy's root marker. The cache lives under
 -- build/ with everything else this repo generates, so no build step writes to $HOME.
--- `make clean` spares it; `rm -rf build` does not. Set ENVY_CACHE_ROOT to opt into a
--- shared cache.
+-- `make clean` spares it; `rm -rf build` does not. `envy cache --shared` or
+-- ENVY_CACHE_ROOT opts into a shared cache.
 
 -- @envy schema "1"
--- @envy version "0.1.2"
--- @envy sha256sums "8271f14cf53fe0925674d960096f6a14c910a9df5bedc0081e7d55ed157ca7aa"
+-- @envy version "0.2.3"
+-- @envy sha256sums "e1941f91fa9ff5412537ae1a6ac94c87710256978253e37a2e327a810e2bc5c5"
 -- @envy bin "bin"
--- @envy cache-posix "build/envy-cache"
--- @envy cache-win "build\envy-cache"
+-- @envy cache-local "build/envy-cache"
 -- @envy deploy "true"
 -- @envy root "true"
 
