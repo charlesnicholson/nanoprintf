@@ -5,7 +5,7 @@ set -Eeuo pipefail
 ENVY_DEFAULT_MIRROR="https://github.com/envy-package-manager/envy/releases/download"
 ENVY_LATEST_URL="https://github.com/envy-package-manager/envy/releases/latest"
 ENVY_ENV_MIRROR="${ENVY_MIRROR:-}"
-ENVY_FALLBACK_VERSION="0.2.3"
+ENVY_FALLBACK_VERSION="0.2.5"
 ENVY_MIN_DIRECTIVE_VERSION="0.2.0"
 
 resolve_script_dir() {

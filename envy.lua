@@ -4,8 +4,8 @@
 -- ENVY_CACHE_ROOT opts into a shared cache.
 
 -- @envy schema "1"
--- @envy version "0.2.3"
--- @envy sha256sums "e1941f91fa9ff5412537ae1a6ac94c87710256978253e37a2e327a810e2bc5c5"
+-- @envy version "0.2.5"
+-- @envy sha256sums "8f46bb9295d17ad29787a3e770f313e360501c4bb5eaf29cdd30cf36c86d4647"
 -- @envy bin "bin"
 -- @envy cache-local "build/envy-cache"
 -- @envy deploy "true"

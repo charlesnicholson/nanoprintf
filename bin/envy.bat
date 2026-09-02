@@ -6,7 +6,7 @@ set "ENVY_DEFAULT_MIRROR=https://github.com/envy-package-manager/envy/releases/d
 set "ENVY_LATEST_URL=https://github.com/envy-package-manager/envy/releases/latest"
 set "ENVY_ENV_MIRROR="
 if defined ENVY_MIRROR set "ENVY_ENV_MIRROR=%ENVY_MIRROR%"
-set "ENVY_FALLBACK_VERSION=0.2.3"
+set "ENVY_FALLBACK_VERSION=0.2.5"
 set "ENVY_MIN_DIRECTIVE_VERSION=0.2.0"
 
 set "ENVY_MANIFEST="
