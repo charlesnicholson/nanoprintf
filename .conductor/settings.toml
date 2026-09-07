@@ -1,0 +1,42 @@
+"$schema" = "https://conductor.build/schemas/settings.repo.schema.json"
+
+[scripts]
+# nanoprintf pins its whole toolchain (CPython, doctest, ruff) with envy, and
+# envy.lua's `@envy cache-local "build/envy-cache"` directive keeps those packages
+# inside the workspace. That's the right default for a lone clone, but it means
+# every Conductor worktree re-downloads ~250MB of CPython from scratch. If you're
+# using Conductor to create multiple nanoprintf worktrees, it's worth using the
+# shared cache to amortize that setup cost: the first workspace pays the download
+# and every later one is nearly free.
+#
+# `envy cache --shared` writes the gitignored .envy-cache-shared marker, which
+# outranks the manifest's cache-local directive. `envy install` is exactly what the
+# Makefile runs up front, so this only warms the cache -- it never rewrites the
+# committed shims in bin/.
+setup = """
+./bin/envy cache --shared
+./bin/envy install
+"""
+
+# Each workspace builds into its own build/ tree and nothing binds a port or a
+# daemon, so overlapping runs are safe; the only cost is CPU contention between
+# two `make -j12` matrices.
+run_mode = "concurrent"
+
+# The worktree goes away on archive; this just reclaims the multi-GB build tree
+# early. `make clean` skips the envy bootstrap and spares build/envy-cache.
+archive = "make clean"
+
+[scripts.run.unit]
+command = "make -j12 unit"
+default = true
+icon = "test-tube"
+
+# The full conformance matrix. Slow -- hundreds of flag combinations.
+[scripts.run.tests]
+command = "make -j12"
+icon = "layers"
+
+[scripts.run.lint]
+command = "./bin/ruff check build.py release.py tests/gen_tests.py tests/gen_eg_tests.py tests/size_report.py tests/avr_int16.py && ./bin/python3 release.py --check"
+icon = "check-check"
