@@ -344,6 +344,8 @@ All C float conversions are supported: `%f`/`%F`, `%e`/`%E`, `%g`/`%G`, and `%a`
 
 The rounding direction is fixed. C asks that conversions track the direction set by `fesetround`, but nanoprintf always rounds to nearest with ties to even, which is what `FE_TONEAREST` selects and therefore what a default-configured program gets. `FE_UPWARD`, `FE_DOWNWARD`, and `FE_TOWARDZERO` are ignored. Reading `<fenv.h>` at runtime would pull in floating-point state that the conversion code otherwise never touches, for a distinction that sits well inside the error the intermediate integer already introduces.
 
+[CONFORMANCE.md](CONFORMANCE.md) lists every known difference between nanoprintf and the C11 and C23 `printf` specifications, and what nanoprintf does where the Standard leaves the behavior implementation-defined or undefined.
+
 ## Measurement
 
 The CI build uses gcc and nm to measure the compiled size of every pull request. See the [`size-reports`](https://github.com/charlesnicholson/nanoprintf/actions/workflows/ci.yml) job output for recent runs.
