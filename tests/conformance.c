@@ -2631,14 +2631,16 @@ int NPF_TEST_FUNC(void) {
 
     /* %lc and %ls need wcrtomb, so they fail to parse and print verbatim
        rather than printing the wide argument's bytes as narrow characters.
-       The argument is not consumed, so none follow them here. */
-    NPF_TEST("%lc", "%lc", 65);
-    NPF_TEST("%ls", "%ls", L"hi");
-    NPF_TEST("%lC", "%lC", 65);
-    NPF_TEST("%lS", "%lS", L"hi");
-    NPF_TEST("[%ls]", "[%ls]", L"hi");
+       They consume no argument, so the %d after each reads the only one.
+       (No wide arguments here: single-precision mode's C11 _Generic wrapper,
+       which MSVC uses, has no entry for wchar_t pointers.) */
+    NPF_TEST("%lc 7", "%lc %d", 7);
+    NPF_TEST("%ls 7", "%ls %d", 7);
+    NPF_TEST("%lC 7", "%lC %d", 7);
+    NPF_TEST("%lS 7", "%lS %d", 7);
+    NPF_TEST("[%ls] 7", "[%ls] %d", 7);
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
-    NPF_TEST("%-5ls", "%-5ls", L"hi");
+    NPF_TEST("%-5ls 7", "%-5ls %d", 7);
 #endif
     NPF_TEST("7 lc", "%ld lc", 7L);
     NPF_TEST("c", "%c", 'c');
