@@ -698,6 +698,11 @@ static char const *npf_parse_format_spec_end(char const *format,
       break;
 #endif
     case 'l':
+      /* 'l' makes 'c' and 's' wide, and converting those needs wcrtomb. Printing
+         the argument's bytes as narrow characters would look right and not be,
+         so "%lc" and "%ls" fail to parse like any other unsupported conversion.
+         OR-ing in 0x30 maps exactly 'c', 's', 'C', and 'S' to 's'. */
+      if ((*cur | 0x30) == 's') { return NULL; }
       out_spec->length_modifier = NPF_FMT_SPEC_LEN_MOD_LONG;
 #if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
       if (*cur == 'l') {

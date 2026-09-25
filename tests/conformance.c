@@ -2629,6 +2629,21 @@ int NPF_TEST_FUNC(void) {
     /* unknown flag (non-standard) */
     NPF_TEST("%kmarco", "%kmarco");
 
+    /* %lc and %ls need wcrtomb, so they fail to parse and print verbatim
+       rather than printing the wide argument's bytes as narrow characters.
+       The argument is not consumed, so none follow them here. */
+    NPF_TEST("%lc", "%lc", 65);
+    NPF_TEST("%ls", "%ls", L"hi");
+    NPF_TEST("%lC", "%lC", 65);
+    NPF_TEST("%lS", "%lS", L"hi");
+    NPF_TEST("[%ls]", "[%ls]", L"hi");
+#if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
+    NPF_TEST("%-5ls", "%-5ls", L"hi");
+#endif
+    NPF_TEST("7 lc", "%ld lc", 7L);
+    NPF_TEST("c", "%c", 'c');
+    NPF_TEST("s", "%s", "s");
+
     /* ===== field width never truncates ===== */
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
     NPF_TEST("12345", "%3d", 12345);

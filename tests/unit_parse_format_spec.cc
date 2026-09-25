@@ -348,6 +348,13 @@ TEST_CASE("npf_parse_format_spec") {
       REQUIRE(spec.length_modifier == NPF_FMT_SPEC_LEN_MOD_LONG);
     }
 
+    SUBCASE("l with c or s is wide, which needs wcrtomb, and does not parse") {
+      REQUIRE(!npf_parse_format_spec("%lc", &spec));
+      REQUIRE(!npf_parse_format_spec("%ls", &spec));
+      REQUIRE(!npf_parse_format_spec("%lC", &spec));
+      REQUIRE(!npf_parse_format_spec("%lS", &spec));
+    }
+
 #if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
     SUBCASE("ll") {
       REQUIRE(npf_parse_format_spec("%llu", &spec) == 4);
