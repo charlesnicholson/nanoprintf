@@ -1745,15 +1745,11 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
 
 #if (NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1) && \
     (NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1)
-    // For d i o u x X, the '0' flag must be ignored if a precision is provided.
-    // Those conversions are contiguous in the enum (except BINARY, b).
+    // For b B d i o u x X, the '0' flag must be ignored if a precision is provided.
+    // Those conversions are contiguous in the enum.
     if ((fs.prec_opt != NPF_FMT_SPEC_OPT_NONE) &&
         (fs.conv_spec >= NPF_FMT_SPEC_CONV_SIGNED_INT) &&
-        (fs.conv_spec <= NPF_FMT_SPEC_CONV_UNSIGNED_INT)
-#if NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS == 1
-        && (fs.conv_spec != NPF_FMT_SPEC_CONV_BINARY)
-#endif
-       ) { fs.leading_zero_pad = 0; }
+        (fs.conv_spec <= NPF_FMT_SPEC_CONV_UNSIGNED_INT)) { fs.leading_zero_pad = 0; }
 #endif
 
     union { char cbuf_mem[NPF_CBUF]; npf_uint_t binval; } u;
@@ -1766,9 +1762,6 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
 #endif
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
     int prec_pad = 0;
-#if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
-    uint_fast8_t zero = 0;
-#endif
 #endif
 
     // Extract and convert the argument to string, point cbuf at the text.
@@ -1926,9 +1919,6 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
       }
 
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
-#if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
-      zero = !val;
-#endif
       if (!val && (fs.prec_opt != NPF_FMT_SPEC_OPT_NONE) && !fs.prec) {
         // cbuf_len was initialized to 0; preserved here.
 #if NANOPRINTF_USE_ALT_FORM_FLAG == 1
@@ -1975,16 +1965,11 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
     }
 
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
-    // Compute the field width pad character. '0' flag only with numeric types,
-    // '-' overrides '0', and a blank result (prec.0 with zero value) suppresses '0'.
-    // That blank-result rule is integers only: "%.0f" of 0 still prints "0".
+    // Compute the field width pad character: '0' flag only with numeric types, and
+    // '-' overrides '0'. An integer with a precision already dropped the '0' flag.
     // With no field width, field_pad clamps to 0 below, so pad_c is never used.
     pad_c = ' ';
-    if (fs.leading_zero_pad && !fs.left_justified
-#if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
-        && !((fs.prec_opt != NPF_FMT_SPEC_OPT_NONE) && !fs.prec && zero)
-#endif
-       ) { pad_c = '0'; }
+    if (fs.leading_zero_pad && !fs.left_justified) { pad_c = '0'; }
 
 #endif
 

@@ -1061,6 +1061,12 @@ int NPF_TEST_FUNC(void) {
     (NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1)
     NPF_TEST("  00000101", "%10.8b", 5);
     NPF_TEST("00000101  ", "%-10.8b", 5);
+    /* C23 7.23.6.1p6: a precision makes b and B ignore the '0' flag */
+    NPF_TEST("     101", "%08.3b", 5);
+    NPF_TEST("     ", "%05.0b", 0);
+#if NANOPRINTF_USE_ALT_FORM_FLAG == 1
+    NPF_TEST("     0b101", "%#010.3b", 5);
+#endif
 #endif
 
 #if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
