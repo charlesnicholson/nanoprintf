@@ -288,7 +288,7 @@ NPF_VISIBILITY int npf_vpprintf(npf_putc pc,
   #define NPF_HEX_PREC(spec) ((spec)->prec)
 #else
   #define NPF_DEC_PREC(spec) 6
-  #define NPF_HEX_PREC(spec) INT_MAX
+  #define NPF_HEX_PREC(spec) ((NPF_DOUBLE_MAN_BITS + 3) / 4)
 #endif
 
 // intmax_t / uintmax_t require stdint from c99 / c++11
@@ -698,6 +698,11 @@ static char const *npf_parse_format_spec_end(char const *format,
       break;
 #endif
     case 'l':
+      /* 'l' makes 'c' and 's' wide, and converting those needs wcrtomb. Printing
+         the argument's bytes as narrow characters would look right and not be,
+         so "%lc" and "%ls" fail to parse like any other unsupported conversion.
+         OR-ing in 0x30 maps exactly 'c', 's', 'C', and 'S' to 's'. */
+      if ((*cur | 0x30) == 's') { return NULL; }
       out_spec->length_modifier = NPF_FMT_SPEC_LEN_MOD_LONG;
 #if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
       if (*cur == 'l') {
@@ -1551,24 +1556,34 @@ static NPF_NOINLINE int npf_atoa_rev(
 
   if (exp == (npf_ftoa_exp_t)NPF_DOUBLE_EXP_MASK) { return 0; } // caller uses ftoa_rev
 
-  if (exp) {
-    bin |= (npf_double_bin_t)0x1 << NPF_DOUBLE_MAN_BITS;
-    exp = (npf_ftoa_exp_t)(exp - NPF_DOUBLE_EXP_BIAS);
-  } else if (bin) {
-    exp = (npf_ftoa_exp_t)(1 - NPF_DOUBLE_EXP_BIAS);
-  }
-
   { int const n_frac_dig = (NPF_DOUBLE_MAN_BITS + 3) / 4;
-    int const prec = NPF_MIN(NPF_HEX_PREC(spec), n_frac_dig);
+    int const prec = NPF_HEX_PREC(spec);
     int end, i;
 
-    // Discard low nibbles and round (only constant shifts of 3 and 4)
-    { npf_double_bin_t carry = 0;
+    // The longest output is "h.<prec digits>p-dddd". Past that, print "ERR".
+    if (prec > (NPF_CBUF - 8)) {
+      buf[0] = buf[1] = (char)('R' + spec->case_adjust); // "ERR", reversed
+      buf[2] = (char)('E' + spec->case_adjust);
+      return -3;
+    }
+
+    if (exp) {
+      bin |= (npf_double_bin_t)0x1 << NPF_DOUBLE_MAN_BITS;
+      exp = (npf_ftoa_exp_t)(exp - NPF_DOUBLE_EXP_BIAS);
+    } else if (bin) {
+      exp = (npf_ftoa_exp_t)(1 - NPF_DOUBLE_EXP_BIAS);
+    }
+
+    /* Discard low nibbles and round half to even, with constant shifts only. 'nib'
+       ends as the last nibble discarded, its bit 0 also set if anything below it
+       was nonzero. Adding the kept digit's low bit takes it past 8 exactly when
+       rounding up is correct: above half, or at half with an odd digit. */
+    { unsigned nib = 0; // at most 23 below, so a 16-bit int is enough
       for (i = n_frac_dig - prec; i > 0; --i) {
-        carry = (bin >> 3) & 1;
+        nib = ((unsigned)bin & 0xFu) | ((nib + 15u) >> 4);
         bin >>= 4;
       }
-      bin += carry;
+      bin += (nib + ((unsigned)bin & 1u) + 7u) >> 4;
     }
 
     { npf_ftoa_exp_t const ae = (exp < 0) ? (npf_ftoa_exp_t)-exp : exp;
@@ -1577,10 +1592,10 @@ static NPF_NOINLINE int npf_atoa_rev(
       buf[end++] = (char)('P' + spec->case_adjust);
     }
 
-    for (i = 0; i < prec; ++i) {
-      int_fast8_t const d = (int_fast8_t)(bin & 0xF);
+    for (i = prec; i > 0; --i) { // the mantissa has 13 digits, the rest are zeros
+      int_fast8_t d = 0;
+      if (i <= n_frac_dig) { d = (int_fast8_t)(bin & 0xF); bin >>= 4; }
       buf[end++] = (char)(((d < 10) ? '0' : ('A' - 10 + spec->case_adjust)) + d);
-      bin >>= 4;
     }
 
     if (prec > 0
@@ -1745,15 +1760,11 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
 
 #if (NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1) && \
     (NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1)
-    // For d i o u x X, the '0' flag must be ignored if a precision is provided.
-    // Those conversions are contiguous in the enum (except BINARY, b).
+    // For b B d i o u x X, the '0' flag must be ignored if a precision is provided.
+    // Those conversions are contiguous in the enum.
     if ((fs.prec_opt != NPF_FMT_SPEC_OPT_NONE) &&
         (fs.conv_spec >= NPF_FMT_SPEC_CONV_SIGNED_INT) &&
-        (fs.conv_spec <= NPF_FMT_SPEC_CONV_UNSIGNED_INT)
-#if NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS == 1
-        && (fs.conv_spec != NPF_FMT_SPEC_CONV_BINARY)
-#endif
-       ) { fs.leading_zero_pad = 0; }
+        (fs.conv_spec <= NPF_FMT_SPEC_CONV_UNSIGNED_INT)) { fs.leading_zero_pad = 0; }
 #endif
 
     union { char cbuf_mem[NPF_CBUF]; npf_uint_t binval; } u;
@@ -1766,9 +1777,6 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
 #endif
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
     int prec_pad = 0;
-#if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
-    uint_fast8_t zero = 0;
-#endif
 #endif
 
     // Extract and convert the argument to string, point cbuf at the text.
@@ -1793,8 +1801,13 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
       sign_c = (npf_real_to_int_rep(val) >> NPF_REAL_SIGN_POS) ? '-' : fs.prepend;
 #if NANOPRINTF_USE_FLOAT_HEX_FORMAT_SPECIFIER == 1
       if ((fs.conv_spec == NPF_FMT_SPEC_CONV_FLOAT_HEX) &&
+#if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
+          ((cbuf_len = npf_atoa_rev(cbuf, &fs, (double)val)) != 0)) {
+        if (cbuf_len > 0) { need_0x = (char)('X' + fs.case_adjust); } // not "ERR"
+#else
           ((cbuf_len = npf_atoa_rev(cbuf, &fs, (double)val)) > 0)) {
         need_0x = (char)('X' + fs.case_adjust);
+#endif
       } else
 #endif
 #if NPF_USE_SCI == 1
@@ -1926,9 +1939,6 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
       }
 
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
-#if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
-      zero = !val;
-#endif
       if (!val && (fs.prec_opt != NPF_FMT_SPEC_OPT_NONE) && !fs.prec) {
         // cbuf_len was initialized to 0; preserved here.
 #if NANOPRINTF_USE_ALT_FORM_FLAG == 1
@@ -1975,16 +1985,11 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
     }
 
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
-    // Compute the field width pad character. '0' flag only with numeric types,
-    // '-' overrides '0', and a blank result (prec.0 with zero value) suppresses '0'.
-    // That blank-result rule is integers only: "%.0f" of 0 still prints "0".
+    // Compute the field width pad character: '0' flag only with numeric types, and
+    // '-' overrides '0'. An integer with a precision already dropped the '0' flag.
     // With no field width, field_pad clamps to 0 below, so pad_c is never used.
     pad_c = ' ';
-    if (fs.leading_zero_pad && !fs.left_justified
-#if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
-        && !((fs.prec_opt != NPF_FMT_SPEC_OPT_NONE) && !fs.prec && zero)
-#endif
-       ) { pad_c = '0'; }
+    if (fs.leading_zero_pad && !fs.left_justified) { pad_c = '0'; }
 
 #endif
 

@@ -240,7 +240,7 @@ Floating-point conversion is performed by extracting the integer and fraction pa
 
 Because the float -> fixed code operates on the raw float value bits, no floating-point operations are performed. This allows nanoprintf to efficiently format floats on soft-float architectures like Cortex-M0, to function identically with or without optimizations like "fast math", and to minimize the code footprint.
 
-The `%a`/`%A` hex float specifier is optionally supported via `NANOPRINTF_USE_FLOAT_HEX_FORMAT_SPECIFIER`. It operates directly on the IEEE 754 binary representation, emitting the mantissa as hex nibbles and the exponent in decimal. No floating-point arithmetic is performed. Rounding uses a nibble-at-a-time carry loop with only constant 3- and 4-bit shifts, keeping the code compact on architectures without a barrel shifter (e.g. Cortex-M0).
+The `%a`/`%A` hex float specifier is optionally supported via `NANOPRINTF_USE_FLOAT_HEX_FORMAT_SPECIFIER`. It operates directly on the IEEE 754 binary representation, emitting the mantissa as hex nibbles and the exponent in decimal. No floating-point arithmetic is performed. Rounding is correct, with ties to even, and uses a nibble-at-a-time loop with only constant 4-bit shifts, keeping the code compact on architectures without a barrel shifter (e.g. Cortex-M0). A precision beyond the 13 digits a double's mantissa fills is padded with zeros, up to what the conversion buffer holds: a precision above `NANOPRINTF_CONVERSION_BUFFER_SIZE - 8` prints `err`, the same bound `%e` has.
 
 The `%e`/`%E` and `%g`/`%G` specifiers are optionally supported via `NANOPRINTF_USE_FLOAT_SCI_FORMAT_SPECIFIER` and `NANOPRINTF_USE_FLOAT_SHORTEST_FORMAT_SPECIFIER`. They share the scaling code above but not its layout: `%f` knows where the decimal point goes before it starts, so it can fuse digit generation with digit placement, whereas `%e` cannot know the decimal exponent until the digits have been generated *and* rounded. So the significant digits are generated right-aligned at the top of the conversion buffer alongside the exponent of the least significant one, and the output string is composed afterwards. Zeros that only carry magnitude, meaning the integer part's trailing zeros and the fraction's leading zeros, are folded into the exponent instead of being emitted.
 
@@ -338,11 +338,13 @@ See the [wrap_npf_float](https://github.com/charlesnicholson/nanoprintf/blob/mas
 
 ## Limitations
 
-No wide-character support exists: the `%lc` and `%ls` fields require that the arg be converted to a char array as if by a call to [wcrtomb](http://man7.org/linux/man-pages/man3/wcrtomb.3.html). When locale and character set conversions get involved, it's hard to keep the name "nano". Accordingly, `%lc` and `%ls` behave like `%c` and `%s`, respectively.
+No wide-character support exists: the `%lc` and `%ls` fields require that the arg be converted to a char array as if by a call to [wcrtomb](http://man7.org/linux/man-pages/man3/wcrtomb.3.html). When locale and character set conversions get involved, it's hard to keep the name "nano". Accordingly, `%lc` and `%ls` are unsupported: like any other unsupported conversion, they print verbatim and do not consume their argument. Earlier versions printed the argument's bytes as narrow characters instead, which only looked right for ASCII.
 
 All C float conversions are supported: `%f`/`%F`, `%e`/`%E`, `%g`/`%G`, and `%a`/`%A`. Only `%f`/`%F` is on by default when floats are enabled; the rest are opt-in per specifier. See [Accuracy](#accuracy) for how many significant digits to expect.
 
 The rounding direction is fixed. C asks that conversions track the direction set by `fesetround`, but nanoprintf always rounds to nearest with ties to even, which is what `FE_TONEAREST` selects and therefore what a default-configured program gets. `FE_UPWARD`, `FE_DOWNWARD`, and `FE_TOWARDZERO` are ignored. Reading `<fenv.h>` at runtime would pull in floating-point state that the conversion code otherwise never touches, for a distinction that sits well inside the error the intermediate integer already introduces.
+
+[CONFORMANCE.md](CONFORMANCE.md) lists every known difference between nanoprintf and the C11 and C23 `printf` specifications, and what nanoprintf does where the Standard leaves the behavior implementation-defined or undefined.
 
 ## Measurement
 

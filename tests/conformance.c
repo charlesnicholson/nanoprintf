@@ -1061,6 +1061,12 @@ int NPF_TEST_FUNC(void) {
     (NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1)
     NPF_TEST("  00000101", "%10.8b", 5);
     NPF_TEST("00000101  ", "%-10.8b", 5);
+    /* C23 7.23.6.1p6: a precision makes b and B ignore the '0' flag */
+    NPF_TEST("     101", "%08.3b", 5);
+    NPF_TEST("     ", "%05.0b", 0);
+#if NANOPRINTF_USE_ALT_FORM_FLAG == 1
+    NPF_TEST("     0b101", "%#010.3b", 5);
+#endif
 #endif
 
 #if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
@@ -1921,24 +1927,37 @@ int NPF_TEST_FUNC(void) {
     NPF_TEST("0x1p-100", "%.0a", 7.888609052210118e-31);
     NPF_TEST("0x1p-133", "%.0a", 1e-40);
 
-    /* rounding at precision 0 (round-half-up) */
+    /* rounding at precision 0: a normal value's leading 1 is odd, so ties go up */
     NPF_TEST("0x1p+0", "%.0a", 1.25);      /* 0x1.4 -> round down */
-    NPF_TEST("0x2p+0", "%.0a", 1.5);       /* 0x1.8 -> round up (half-up) */
+    NPF_TEST("0x2p+0", "%.0a", 1.5);       /* 0x1.8 -> tie, round up to even */
     NPF_TEST("0x2p+0", "%.0a", 1.75);      /* 0x1.c -> round up */
     NPF_TEST("0x2p-1", "%.0a", 0.75);      /* 0x1.8p-1 -> round up */
     NPF_TEST("0x2p+0", "%.0a", 1.9375);    /* 0x1.f -> round up */
+
+    /* C11 7.21.6.1p11: correctly rounded, so a tie goes to the even digit */
+    NPF_TEST("0x1.0p+0", "%.1a", 1.03125);            /* 0x1.08 -> tie, 0 is even */
+    NPF_TEST("0x1.2p+0", "%.1a", 1.09375);            /* 0x1.18 -> tie, 1 is odd */
+    NPF_TEST("0x1.1p+0", "%.1a", 1.0312500000000002); /* 0x1.0800000000001: above */
+    NPF_TEST("0x1.0p+0", "%.1a", 1.0312499999999998); /* 0x1.07fffffffffff: below */
+    NPF_TEST("0x1.000000000000p+0", "%.12a", 1.0000000000000018); /* 0x1.0000000000008 */
+    NPF_TEST("0x1.000000000002p+0", "%.12a", 1.0000000000000053); /* 0x1.0000000000018 */
 
     /* rounding carry through max mantissa (DBL_MAX) */
     NPF_TEST("0x2p+1023", "%.0a", 1.7976931348623157e+308);
     NPF_TEST("0x2.0p+1023", "%.1a", 1.7976931348623157e+308);
     NPF_TEST("0x2.00p+1023", "%.2a", 1.7976931348623157e+308);
 
-    /* subnormal rounding: carry into integer digit */
-    NPF_TEST("0x1p-1022", "%.0a", 1.1125369292536007e-308); /* 0x0.8p-1022 -> 0x1 */
+    /* subnormal rounding: a tie stays at the even 0, anything above carries to 1 */
+    NPF_TEST("0x0p-1022", "%.0a", 1.1125369292536007e-308); /* 0x0.8p-1022, tie */
+    NPF_TEST("0x1p-1022", "%.0a", 1.1125369292536010e-308); /* 0x0.8000000000001p-1022 */
     NPF_TEST("0x0.8p-1022", "%.1a", 1.1125369292536007e-308);
 
-    /* excess precision clamped to 13 (mantissa width) */
-    NPF_TEST("0x1.0000000000000p+0", "%.20a", 1.0);
+    /* C11 7.21.6.1p8: as many digits as the precision asks for, so past the
+       mantissa's 13 the rest are zeros */
+    NPF_TEST("0x1.00000000000000000000p+0", "%.20a", 1.0);
+    NPF_TEST("0x1.8000000000000000p+0", "%.16a", 1.5);
+    NPF_TEST("0x0.00000000000010p-1022", "%.14a", 5e-324);
+    NPF_TEST("0X1.FFFFFFFFFFFFF000P+1023", "%.16A", 1.7976931348623157e+308);
 
     /* return values for multi-digit exponents */
     NPF_TEST_RET(8, "%.0a", 1267650600228229401496703205376.0); /* "0x1p+100" = 8 */
@@ -1979,6 +1998,7 @@ int NPF_TEST_FUNC(void) {
     NPF_TEST("-inf", "%a", -(double)(float)INFINITY);
     /* float 0.1f = 0x1.99999a0000000p-4 when promoted to double */
     NPF_TEST("0x1.99999a0000000p-4", "%a", 0.1f);
+    NPF_TEST("0x1.99999a00000000p-4", "%.14a", 0.1f);
     NPF_TEST("0x1.ap-4", "%.1a", 0.1f);
     /* default precision (13 hex digits for double mantissa) */
     NPF_TEST("0x1.0000000000000p+0", "%a", 1.0f);
@@ -2150,6 +2170,22 @@ int NPF_TEST_FUNC(void) {
     NPF_TEST("1", "%.*g", NPF_CBUF - 7, 1.0);
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
     NPF_TEST("err         ", "%-12.100g", 1.0);
+#endif
+#endif
+    /* %a's longest output is "h.<prec>p-dddd", so it needs 8 bytes of slack. */
+#if NANOPRINTF_USE_FLOAT_HEX_FORMAT_SPECIFIER == 1
+    NPF_TEST("err", "%.100a", 1.0);
+    NPF_TEST("ERR", "%.100A", 1.0);
+    NPF_TEST("-err", "%.100a", -1.0);
+    NPF_TEST("err", "%.*a", NPF_CBUF - 7, 1.0);
+    NPF_TEST_RET(NPF_CBUF - 1, "%.*a", NPF_CBUF - 8, 1.0); /* "0x1.<zeros>p+0" */
+    NPF_TEST("inf", "%.100a", (double)INFINITY);
+#if NANOPRINTF_USE_FLOAT_SINGLE_PRECISION != 1
+    NPF_TEST_RET(NPF_CBUF + 2, "%.*a", NPF_CBUF - 8, 5e-324); /* "0x0.<digits>p-1022" */
+#endif
+#if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
+    NPF_TEST("         err", "%12.100a", 1.0);
+    NPF_TEST("        +err", "%+012.100a", 1.0);
 #endif
 #endif
 
@@ -2592,6 +2628,23 @@ int NPF_TEST_FUNC(void) {
 
     /* unknown flag (non-standard) */
     NPF_TEST("%kmarco", "%kmarco");
+
+    /* %lc and %ls need wcrtomb, so they fail to parse and print verbatim
+       rather than printing the wide argument's bytes as narrow characters.
+       They consume no argument, so the %d after each reads the only one.
+       (No wide arguments here: single-precision mode's C11 _Generic wrapper,
+       which MSVC uses, has no entry for wchar_t pointers.) */
+    NPF_TEST("%lc 7", "%lc %d", 7);
+    NPF_TEST("%ls 7", "%ls %d", 7);
+    NPF_TEST("%lC 7", "%lC %d", 7);
+    NPF_TEST("%lS 7", "%lS %d", 7);
+    NPF_TEST("[%ls] 7", "[%ls] %d", 7);
+#if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
+    NPF_TEST("%-5ls 7", "%-5ls %d", 7);
+#endif
+    NPF_TEST("7 lc", "%ld lc", 7L);
+    NPF_TEST("c", "%c", 'c');
+    NPF_TEST("s", "%s", "s");
 
     /* ===== field width never truncates ===== */
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1

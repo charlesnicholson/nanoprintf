@@ -322,6 +322,10 @@ def write_compile_commands(
         "/wd4475",
         "/wd4476",
         "/wd4477",
+        # nanoprintf prints %lc and %ls verbatim and consumes nothing, so their
+        # tests pass the int a following %d reads, which MSVC's format checker
+        # flags against the wide conversion.
+        "/wd4313",
         "/wd4505",
         "/wd4778",
         f"/I{include_rel}",
