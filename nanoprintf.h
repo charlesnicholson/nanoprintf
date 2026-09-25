@@ -1578,12 +1578,12 @@ static NPF_NOINLINE int npf_atoa_rev(
        ends as the last nibble discarded, its bit 0 also set if anything below it
        was nonzero. Adding the kept digit's low bit takes it past 8 exactly when
        rounding up is correct: above half, or at half with an odd digit. */
-    { uint32_t nib = 0;
+    { unsigned nib = 0; // at most 23 below, so a 16-bit int is enough
       for (i = n_frac_dig - prec; i > 0; --i) {
-        nib = ((uint32_t)bin & 0xFu) | ((nib + 15u) >> 4);
+        nib = ((unsigned)bin & 0xFu) | ((nib + 15u) >> 4);
         bin >>= 4;
       }
-      bin += (nib + ((uint32_t)bin & 1u) + 7u) >> 4;
+      bin += (nib + ((unsigned)bin & 1u) + 7u) >> 4;
     }
 
     { npf_ftoa_exp_t const ae = (exp < 0) ? (npf_ftoa_exp_t)-exp : exp;
