@@ -4,8 +4,8 @@
 -- ENVY_CACHE_ROOT opts into a shared cache.
 
 -- @envy schema "1"
--- @envy version "0.3.0"
--- @envy sha256sums "c10e6a029cb0b15c2ab342f234a9ce7a50e0b28adb1795cf81cb2f0c4e66788f"
+-- @envy version "0.4.10"
+-- @envy sha256sums "025057d81b0ec79da6bb4a463f356afeb9ca3f0e07aff2db07e8c92b7de30378"
 -- @envy bin "bin"
 -- @envy cache-local "build/envy-cache"
 -- @envy deploy "true"
@@ -13,18 +13,18 @@
 
 BUNDLES = {
   ["envy"] = {
-    identity = "envy.package-specs@r2",
+    identity = "envy.package-specs@r9",
     source = "https://github.com/envy-package-manager/package-specs.git",
-    ref = "4abc43074b424400f7d518ef925f8ab8d4624060",
+    ref = "21ed35ea163297b4cb6041698483b51d8f4d75e0",
   },
 }
 
 PACKAGES = {
   { spec = "envy.doctest-cpp@r0", bundle = "envy", options = { version = "2.5.3" } },
 
-  { spec = "envy.ruff@r0", bundle = "envy", options = { version = "0.16.0" } },
+  { spec = "envy.ruff@r2", bundle = "envy", options = { version = "0.16.8" } },
 
-  { spec = "envy.python@r1", bundle = "envy",
-    options = { version = "3.13.14", release = "20260623",
+  { spec = "envy.python@r3", bundle = "envy",
+    options = { version = "3.14.7", release = "20260901",
                 provide_python = true, provide_python3 = true } },
 }
