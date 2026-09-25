@@ -1952,8 +1952,12 @@ int NPF_TEST_FUNC(void) {
     NPF_TEST("0x1p-1022", "%.0a", 1.1125369292536010e-308); /* 0x0.8000000000001p-1022 */
     NPF_TEST("0x0.8p-1022", "%.1a", 1.1125369292536007e-308);
 
-    /* excess precision clamped to 13 (mantissa width) */
-    NPF_TEST("0x1.0000000000000p+0", "%.20a", 1.0);
+    /* C11 7.21.6.1p8: as many digits as the precision asks for, so past the
+       mantissa's 13 the rest are zeros */
+    NPF_TEST("0x1.00000000000000000000p+0", "%.20a", 1.0);
+    NPF_TEST("0x1.8000000000000000p+0", "%.16a", 1.5);
+    NPF_TEST("0x0.00000000000010p-1022", "%.14a", 5e-324);
+    NPF_TEST("0X1.FFFFFFFFFFFFF000P+1023", "%.16A", 1.7976931348623157e+308);
 
     /* return values for multi-digit exponents */
     NPF_TEST_RET(8, "%.0a", 1267650600228229401496703205376.0); /* "0x1p+100" = 8 */
@@ -1994,6 +1998,7 @@ int NPF_TEST_FUNC(void) {
     NPF_TEST("-inf", "%a", -(double)(float)INFINITY);
     /* float 0.1f = 0x1.99999a0000000p-4 when promoted to double */
     NPF_TEST("0x1.99999a0000000p-4", "%a", 0.1f);
+    NPF_TEST("0x1.99999a00000000p-4", "%.14a", 0.1f);
     NPF_TEST("0x1.ap-4", "%.1a", 0.1f);
     /* default precision (13 hex digits for double mantissa) */
     NPF_TEST("0x1.0000000000000p+0", "%a", 1.0f);
@@ -2165,6 +2170,22 @@ int NPF_TEST_FUNC(void) {
     NPF_TEST("1", "%.*g", NPF_CBUF - 7, 1.0);
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
     NPF_TEST("err         ", "%-12.100g", 1.0);
+#endif
+#endif
+    /* %a's longest output is "h.<prec>p-dddd", so it needs 8 bytes of slack. */
+#if NANOPRINTF_USE_FLOAT_HEX_FORMAT_SPECIFIER == 1
+    NPF_TEST("err", "%.100a", 1.0);
+    NPF_TEST("ERR", "%.100A", 1.0);
+    NPF_TEST("-err", "%.100a", -1.0);
+    NPF_TEST("err", "%.*a", NPF_CBUF - 7, 1.0);
+    NPF_TEST_RET(NPF_CBUF - 1, "%.*a", NPF_CBUF - 8, 1.0); /* "0x1.<zeros>p+0" */
+    NPF_TEST("inf", "%.100a", (double)INFINITY);
+#if NANOPRINTF_USE_FLOAT_SINGLE_PRECISION != 1
+    NPF_TEST_RET(NPF_CBUF + 2, "%.*a", NPF_CBUF - 8, 5e-324); /* "0x0.<digits>p-1022" */
+#endif
+#if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
+    NPF_TEST("         err", "%12.100a", 1.0);
+    NPF_TEST("        +err", "%+012.100a", 1.0);
 #endif
 #endif
 

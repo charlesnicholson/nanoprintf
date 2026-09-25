@@ -288,7 +288,7 @@ NPF_VISIBILITY int npf_vpprintf(npf_putc pc,
   #define NPF_HEX_PREC(spec) ((spec)->prec)
 #else
   #define NPF_DEC_PREC(spec) 6
-  #define NPF_HEX_PREC(spec) INT_MAX
+  #define NPF_HEX_PREC(spec) ((NPF_DOUBLE_MAN_BITS + 3) / 4)
 #endif
 
 // intmax_t / uintmax_t require stdint from c99 / c++11
@@ -1551,16 +1551,23 @@ static NPF_NOINLINE int npf_atoa_rev(
 
   if (exp == (npf_ftoa_exp_t)NPF_DOUBLE_EXP_MASK) { return 0; } // caller uses ftoa_rev
 
-  if (exp) {
-    bin |= (npf_double_bin_t)0x1 << NPF_DOUBLE_MAN_BITS;
-    exp = (npf_ftoa_exp_t)(exp - NPF_DOUBLE_EXP_BIAS);
-  } else if (bin) {
-    exp = (npf_ftoa_exp_t)(1 - NPF_DOUBLE_EXP_BIAS);
-  }
-
   { int const n_frac_dig = (NPF_DOUBLE_MAN_BITS + 3) / 4;
-    int const prec = NPF_MIN(NPF_HEX_PREC(spec), n_frac_dig);
+    int const prec = NPF_HEX_PREC(spec);
     int end, i;
+
+    // The longest output is "h.<prec digits>p-dddd". Past that, print "ERR".
+    if (prec > (NPF_CBUF - 8)) {
+      buf[0] = buf[1] = (char)('R' + spec->case_adjust); // "ERR", reversed
+      buf[2] = (char)('E' + spec->case_adjust);
+      return -3;
+    }
+
+    if (exp) {
+      bin |= (npf_double_bin_t)0x1 << NPF_DOUBLE_MAN_BITS;
+      exp = (npf_ftoa_exp_t)(exp - NPF_DOUBLE_EXP_BIAS);
+    } else if (bin) {
+      exp = (npf_ftoa_exp_t)(1 - NPF_DOUBLE_EXP_BIAS);
+    }
 
     /* Discard low nibbles and round half to even, with constant shifts only. 'nib'
        ends as the last nibble discarded, its bit 0 also set if anything below it
@@ -1580,10 +1587,10 @@ static NPF_NOINLINE int npf_atoa_rev(
       buf[end++] = (char)('P' + spec->case_adjust);
     }
 
-    for (i = 0; i < prec; ++i) {
-      int_fast8_t const d = (int_fast8_t)(bin & 0xF);
+    for (i = prec; i > 0; --i) { // the mantissa has 13 digits, the rest are zeros
+      int_fast8_t d = 0;
+      if (i <= n_frac_dig) { d = (int_fast8_t)(bin & 0xF); bin >>= 4; }
       buf[end++] = (char)(((d < 10) ? '0' : ('A' - 10 + spec->case_adjust)) + d);
-      bin >>= 4;
     }
 
     if (prec > 0
@@ -1789,8 +1796,13 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
       sign_c = (npf_real_to_int_rep(val) >> NPF_REAL_SIGN_POS) ? '-' : fs.prepend;
 #if NANOPRINTF_USE_FLOAT_HEX_FORMAT_SPECIFIER == 1
       if ((fs.conv_spec == NPF_FMT_SPEC_CONV_FLOAT_HEX) &&
+#if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
+          ((cbuf_len = npf_atoa_rev(cbuf, &fs, (double)val)) != 0)) {
+        if (cbuf_len > 0) { need_0x = (char)('X' + fs.case_adjust); } // not "ERR"
+#else
           ((cbuf_len = npf_atoa_rev(cbuf, &fs, (double)val)) > 0)) {
         need_0x = (char)('X' + fs.case_adjust);
+#endif
       } else
 #endif
 #if NPF_USE_SCI == 1
