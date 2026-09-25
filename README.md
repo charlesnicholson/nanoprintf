@@ -11,7 +11,7 @@ nanoprintf is an unencumbered implementation of snprintf and vsnprintf for embed
 
 Additionally, nanoprintf can be used to parse printf-style format strings to extract the various parameters and conversion specifiers, without doing any actual text formatting.
 
-nanoprintf makes no memory allocations and uses less than 100 bytes of stack. It compiles to between <!-- BEGIN SIZE RANGE -->*~470-3400 bytes of object code*<!-- END SIZE RANGE --> on a Cortex-M4 architecture, depending on configuration.
+nanoprintf makes no memory allocations and uses less than 100 bytes of stack. It compiles to between <!-- BEGIN SIZE RANGE -->*~480-3500 bytes of object code*<!-- END SIZE RANGE --> on a Cortex-M4 architecture, depending on configuration.
 
 All code is written in a minimal dialect of C99 for maximal compiler compatibility, compiles cleanly at the highest warning levels on clang + gcc + msvc, raises no issues from UBsan or Asan, and is exhaustively tested on 32-bit and 64-bit architectures. nanoprintf does include C standard headers but only uses them for C99 types and argument lists; no calls are made into stdlib / libc, with the exception of any internal large integer arithmetic calls your compiler might emit. As usual, some Windows-specific headers are required if you're compiling natively for msvc.
 
@@ -31,22 +31,22 @@ Precision gets its own pair of columns rather than its own rows, because a float
 
 | Integer only | Cortex-M0 | Cortex-M4 |
 |---|--:|--:|
-| Minimal | 472 | 472 |
-| Minimal + binary | 532 | 524 |
-| Field width | 908 | 856 |
-| Field width + precision | 1128 | 1152 |
-| Field width + precision + binary | 1208 | 1248 |
+| Minimal | 480 | 480 |
+| Minimal + binary | 540 | 532 |
+| Field width | 920 | 868 |
+| Field width + precision | 1136 | 1116 |
+| Field width + precision + binary | 1176 | 1180 |
 
 | Floating point | Cortex-M0 | Cortex-M0, no precision | Cortex-M4 | Cortex-M4, no precision |
 |---|--:|--:|--:|--:|
-| `%f` | 1740 | 1420 | 1760 | 1448 |
-| `%f` `%e` | 2240 | 1892 | 2308 | 1964 |
-| `%f` `%g` | 2480 | 2128 | 2536 | 2212 |
-| `%f` `%e` `%g` | 2500 | 2144 | 2560 | 2244 |
-| `%f` `%a` | 2064 | 1612 | 2048 | 1688 |
-| `%f` `%e` `%g` `%a` | 2828 | 2348 | 2852 | 2440 |
-| `%f` `%e` `%g` `%a`, single-precision | 2804 | 2356 | 2756 | 2368 |
-| Everything (adds large, binary, write-back) | 3304 | 2824 | 3392 | 2932 |
+| `%f` | 1688 | 1436 | 1736 | 1456 |
+| `%f` `%e` | 2204 | 1904 | 2276 | 1972 |
+| `%f` `%g` | 2440 | 2140 | 2508 | 2220 |
+| `%f` `%e` `%g` | 2460 | 2160 | 2532 | 2252 |
+| `%f` `%a` | 2064 | 1632 | 2080 | 1700 |
+| `%f` `%e` `%g` `%a` | 2832 | 2372 | 2868 | 2448 |
+| `%f` `%e` `%g` `%a`, single-precision | 2808 | 2380 | 2768 | 2380 |
+| Everything (adds large, binary, write-back) | 3336 | 2848 | 3436 | 2940 |
 
 <!-- END SIZE REPORT -->
 
