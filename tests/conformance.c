@@ -1927,20 +1927,29 @@ int NPF_TEST_FUNC(void) {
     NPF_TEST("0x1p-100", "%.0a", 7.888609052210118e-31);
     NPF_TEST("0x1p-133", "%.0a", 1e-40);
 
-    /* rounding at precision 0 (round-half-up) */
+    /* rounding at precision 0: a normal value's leading 1 is odd, so ties go up */
     NPF_TEST("0x1p+0", "%.0a", 1.25);      /* 0x1.4 -> round down */
-    NPF_TEST("0x2p+0", "%.0a", 1.5);       /* 0x1.8 -> round up (half-up) */
+    NPF_TEST("0x2p+0", "%.0a", 1.5);       /* 0x1.8 -> tie, round up to even */
     NPF_TEST("0x2p+0", "%.0a", 1.75);      /* 0x1.c -> round up */
     NPF_TEST("0x2p-1", "%.0a", 0.75);      /* 0x1.8p-1 -> round up */
     NPF_TEST("0x2p+0", "%.0a", 1.9375);    /* 0x1.f -> round up */
+
+    /* C11 7.21.6.1p11: correctly rounded, so a tie goes to the even digit */
+    NPF_TEST("0x1.0p+0", "%.1a", 1.03125);            /* 0x1.08 -> tie, 0 is even */
+    NPF_TEST("0x1.2p+0", "%.1a", 1.09375);            /* 0x1.18 -> tie, 1 is odd */
+    NPF_TEST("0x1.1p+0", "%.1a", 1.0312500000000002); /* 0x1.0800000000001: above */
+    NPF_TEST("0x1.0p+0", "%.1a", 1.0312499999999998); /* 0x1.07fffffffffff: below */
+    NPF_TEST("0x1.000000000000p+0", "%.12a", 1.0000000000000018); /* 0x1.0000000000008 */
+    NPF_TEST("0x1.000000000002p+0", "%.12a", 1.0000000000000053); /* 0x1.0000000000018 */
 
     /* rounding carry through max mantissa (DBL_MAX) */
     NPF_TEST("0x2p+1023", "%.0a", 1.7976931348623157e+308);
     NPF_TEST("0x2.0p+1023", "%.1a", 1.7976931348623157e+308);
     NPF_TEST("0x2.00p+1023", "%.2a", 1.7976931348623157e+308);
 
-    /* subnormal rounding: carry into integer digit */
-    NPF_TEST("0x1p-1022", "%.0a", 1.1125369292536007e-308); /* 0x0.8p-1022 -> 0x1 */
+    /* subnormal rounding: a tie stays at the even 0, anything above carries to 1 */
+    NPF_TEST("0x0p-1022", "%.0a", 1.1125369292536007e-308); /* 0x0.8p-1022, tie */
+    NPF_TEST("0x1p-1022", "%.0a", 1.1125369292536010e-308); /* 0x0.8000000000001p-1022 */
     NPF_TEST("0x0.8p-1022", "%.1a", 1.1125369292536007e-308);
 
     /* excess precision clamped to 13 (mantissa width) */

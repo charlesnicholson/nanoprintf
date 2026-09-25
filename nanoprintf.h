@@ -1562,13 +1562,16 @@ static NPF_NOINLINE int npf_atoa_rev(
     int const prec = NPF_MIN(NPF_HEX_PREC(spec), n_frac_dig);
     int end, i;
 
-    // Discard low nibbles and round (only constant shifts of 3 and 4)
-    { npf_double_bin_t carry = 0;
+    /* Discard low nibbles and round half to even, with constant shifts only. 'nib'
+       ends as the last nibble discarded, its bit 0 also set if anything below it
+       was nonzero. Adding the kept digit's low bit takes it past 8 exactly when
+       rounding up is correct: above half, or at half with an odd digit. */
+    { uint32_t nib = 0;
       for (i = n_frac_dig - prec; i > 0; --i) {
-        carry = (bin >> 3) & 1;
+        nib = ((uint32_t)bin & 0xFu) | ((nib + 15u) >> 4);
         bin >>= 4;
       }
-      bin += carry;
+      bin += (nib + ((uint32_t)bin & 1u) + 7u) >> 4;
     }
 
     { npf_ftoa_exp_t const ae = (exp < 0) ? (npf_ftoa_exp_t)-exp : exp;
