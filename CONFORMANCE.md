@@ -66,9 +66,9 @@ No option parses a disabled specification and discards its argument. Discarding 
 
 **Standard**: p8 requires every finite value to be converted at the requested precision. p16 requires any single conversion to be able to produce at least 4095 characters.
 
-**nanoprintf**: `%f`, `%e`, and `%g` build their result in a stack buffer of `NANOPRINTF_CONVERSION_BUFFER_SIZE` bytes. When the result does not fit, the conversion prints `err`, or `ERR` for `F`, `E`, and `G`. The sign and the `+` and space flags still apply, and a field width pads with spaces. The `0` flag is ignored, the same as for `inf`. `%f` of `-1e300` prints `-err`.
+**nanoprintf**: `%f`, `%e`, `%g`, and `%a` build their result in a stack buffer of `NANOPRINTF_CONVERSION_BUFFER_SIZE` bytes. When the result does not fit, the conversion prints `err`, or `ERR` for `F`, `E`, `G`, and `A`. The sign and the `+` and space flags still apply, and a field width pads with spaces. The `0` flag is ignored, the same as for `inf`. `%f` of `-1e300` prints `-err`.
 
-The buffer holds the digits, the decimal point, and for `%e` the exponent. It does not hold the sign, a `0x` prefix, or padding. In the table, "size" is `NANOPRINTF_CONVERSION_BUFFER_SIZE` and "point" is 1 when a decimal point is printed, which happens when the precision is nonzero or `#` is given.
+The buffer holds the digits, the decimal point, and for `%e` and `%a` the exponent. It does not hold the sign, a `0x` prefix, or padding. In the table, "size" is `NANOPRINTF_CONVERSION_BUFFER_SIZE` and "point" is 1 when a decimal point is printed, which happens when the precision is nonzero or `#` is given.
 
 | Conversion | Prints `err` when | Limit at size 64 |
 |---|---|---|
@@ -76,7 +76,7 @@ The buffer holds the digits, the decimal point, and for `%e` the exponent. It do
 | `%g` | P > size − 7, however short the result would be | P = 57. `%.58g` of `1.0` prints `err` |
 | `%f`, with `%e` or `%g` enabled | precision > size − 2, or integer digits + point + precision > size | `%.62f` of `0.5` fits, `%.63f` does not |
 | `%f`, with neither enabled | integer digits + point + precision > size. With an intermediate type of 32 bits or fewer, also point + precision > size − 10, and the integer check can fail one digit early | `%.53f` of `0.5` fits, `%.54f` does not. `%.53f` of `5e9` prints `err` although its 64 characters would fit |
-| `%a` | never | see [2.3](#23-a-precision-above-13-is-reduced-to-13) |
+| `%a` | precision > size − 8 | precision 56. `%.57a` of `1.0` prints `err` |
 
 "Integer digits" means the digits nanoprintf generates, which can be wrong (see [2.2](#22-decimal-conversions-are-not-correctly-rounded)). With the 32-bit intermediate, `%f` of `1e57` generates 57 integer digits instead of 58.
 
@@ -111,37 +111,19 @@ Issue #299 asks whether `%f` rounds exactly once the intermediate has N bits, th
 
 **Rounding direction**: nanoprintf always rounds to nearest with ties to even and ignores `fesetround`. Under `FE_UPWARD`, `FE_DOWNWARD`, or `FE_TOWARDZERO`, the result is not the one 3.12 describes. A narrow intermediate can also see a tie that is not there. That is the cause of the `0.05` row above.
 
-### 2.3 `%a` precision above 13 is reduced to 13
-
-**Standard**: p8 says the number of hexadecimal digits after the point equals the precision.
-
-**nanoprintf**: prints at most 13 digits after the point, which is the number a double's 52-bit fraction needs. `%.20a` of `1.0` prints `0x1.0000000000000p+0`, with 13 zeros. The Standard requires `0x1.00000000000000000000p+0`, with 20. The return value counts the shorter output. Single-precision mode does the same.
-
-### 2.4 `%a` rounds ties away from zero
-
-**Standard**: p11, which is normative, says the value is correctly rounded to the given precision. Under the default rounding mode, a tie goes to the even digit.
-
-**nanoprintf**: rounds up whenever the first dropped bit is set, and does not check for a tie. `%.1a` of `0x1.08p+0` prints `0x1.1p+0`. The correctly rounded result is `0x1.0p+0`. `%.0a` of the subnormal `0x0.8p-1022` prints `0x1p-1022` instead of `0x0p-1022`. Values that are not ties round correctly.
-
-### 2.5 `%lc` and `%ls` do not convert wide characters
+### 2.3 `%lc` and `%ls` are not supported
 
 **Standard**: p7 and p8 say `%lc` converts a `wint_t` to a multibyte character as if by `wcrtomb`, and `%ls` converts a `wchar_t` string the same way.
 
-**nanoprintf**: parses `l` and ignores it for `c` and `s`. `%lc` prints the low byte of its argument: `(wint_t)0x263A` prints `:`. `%ls` reads the `wchar_t` array as bytes and stops at the first zero byte: `L"hello"` prints `h`. A precision on `%ls` counts those bytes. Because nothing is converted, no encoding error can occur, which is why nanoprintf never returns a negative value.
+**nanoprintf**: has no `wcrtomb`, so `%lc` and `%ls` do not parse. They print verbatim and do not consume their argument, the same as any other unsupported conversion (see [1](#1-configuration)). `%lC` and `%lS` behave the same way. Because nothing is converted, no encoding error can occur, which is why nanoprintf never returns a negative value.
 
-### 2.6 The `0` flag is not ignored for `%b` and `%B` with a precision
-
-**Standard**: C23 p6 says that for `b`, `B`, `d`, `i`, `o`, `u`, `x`, and `X`, the `0` flag is ignored when a precision is given.
-
-**nanoprintf**: ignores the `0` flag for `d`, `i`, `o`, `u`, `x`, and `X`, but not for `b` and `B`. `%08.3b` of `5` prints `00000101`. The Standard requires `     101`.
-
-### 2.7 `long double` is converted to `double`
+### 2.4 `long double` is converted to `double`
 
 **Standard**: p7 says `L` makes `a`, `A`, `e`, `E`, `f`, `F`, `g`, and `G` apply to a `long double` argument.
 
 **nanoprintf**: reads the `long double` and converts it to `double` before formatting, or to `float` in single-precision mode. Nothing is lost where `long double` has the same format as `double`. Where it is wider, such as the x87 80-bit format or the 128-bit format on AArch64 Linux, the output has only `double` precision, and values outside the range of `double` print as `inf` or `0`.
 
-### 2.8 Single-precision mode
+### 2.5 Single-precision mode
 
 `NANOPRINTF_USE_FLOAT_SINGLE_PRECISION=1` departs from the Standard on purpose. The `npf_snprintf` and `npf_pprintf` macros convert every `float` and `double` argument to `float` at the call site. The consequences:
 
@@ -152,13 +134,13 @@ Issue #299 asks whether `%f` rounds exactly once the intermediate has N bits, th
 * On the C11 `_Generic` path, an argument whose type is not in the selection list fails to compile. `bool` and `unsigned char *` are two such types.
 * `npf_vsnprintf` and `npf_vpprintf` expect wrapped arguments. A `va_list` from a variadic function that did not apply `NPF_MAP_ARGS` holds `double` values, and the conversion reads the wrong type. The README's [Writing variadic wrappers](README.md#writing-variadic-wrappers) section shows the required pattern.
 
-### 2.9 Field width and precision are capped
+### 2.6 Field width and precision are capped
 
 **Standard**: p4 places no upper bound on a field width or a precision. p16 requires an implementation to support at least 4095 characters from one conversion.
 
 **nanoprintf**: reduces any field width or precision above 65280 to 65280, whether it comes from the format string or from a `*` argument. The cap is 8192 where `int` is 16 bits. If `NANOPRINTF_CONVERSION_BUFFER_SIZE` is set above 65280, the cap equals the buffer size. `%70000d` produces a 65280-character field. `%.70000s` writes at most 65280 bytes of a longer string. Nothing reports that the cap applied. The cap keeps the length arithmetic from overflowing `int`.
 
-### 2.10 Return value
+### 2.7 Return value
 
 **Standard**: p15 says `fprintf` returns the number of characters transmitted, or a negative value on an output or encoding error. C23 also requires a negative value "if the implementation does not support a specified width length modifier". 7.23.6.5p3 says `snprintf` returns the length the output would have had with enough room.
 
@@ -167,13 +149,13 @@ Issue #299 asks whether `%f` rounds exactly once the intermediate has N bits, th
 * An unsupported `wN` or `wfN` width, such as `%w24d`, or any `wN` when fixed-width support is compiled out, prints the text of the specification, and the call returns the character count. C23 requires a negative return.
 * The count is an `int`. The Standard does not say what happens when the output is longer than `INT_MAX` characters. In nanoprintf the count overflows, which is undefined behavior. On a target with a 16-bit `int`, that happens past 32767 characters.
 
-### 2.11 Locale and multibyte format strings
+### 2.8 Locale and multibyte format strings
 
 **Standard**: 7.1.1p2 says the decimal-point character can be changed by `setlocale`, through `LC_NUMERIC`. p3 defines the format as a multibyte character sequence.
 
 **nanoprintf**: always prints `.` and never reads the locale, which matches the `"C"` locale only. It scans the format one byte at a time for `%`. That gives the same result for any encoding in which the byte 0x25 only ever stands for `%`, such as ASCII and UTF-8.
 
-### 2.12 Empty string on overflow (opt-in)
+### 2.9 Empty string on overflow (opt-in)
 
 **Standard**: 7.23.6.5p2 says `snprintf` writes the output up to the size limit and puts a null character at the end of what it wrote.
 
@@ -216,11 +198,11 @@ The Standard places no requirement on these calls. The list records what nanopri
 
 | Item in the issue | Current state | Section |
 |---|---|---|
-| `long double` is parsed, then cast to `double` | Still true | [2.7](#27-long-double-is-converted-to-double) |
+| `long double` is parsed, then cast to `double` | Still true | [2.4](#24-long-double-is-converted-to-double) |
 | `a`, `e`, `g` are parsed and treated as `f` | No longer true. Each is a real conversion behind its own option. Compiled out, it prints verbatim | [1](#1-configuration) |
 | `aA eE gG H D DD wN wfN` are unsupported | Only `H`, `D`, and `DD` remain unsupported. They apply to the decimal floating types, which C23 makes a conditional feature (6.2.5p13) | [1](#1-configuration) |
 | Which options enable which features | Documented | [1](#1-configuration) |
-| No `l` for `%c` and `%s` | Still true. `l` is accepted and ignored | [2.5](#25-lc-and-ls-do-not-convert-wide-characters) |
+| No `l` for `%c` and `%s` | Still unsupported. `%lc` and `%ls` used to print the argument's bytes as narrow text, and now print verbatim | [2.3](#23-lc-and-ls-are-not-supported) |
 | Rounding is imperfect | Still true. Ties now go to even | [2.2](#22-decimal-conversions-are-not-correctly-rounded) |
 | Output that does not fit the buffer prints `err` | Still true. The exact conditions are listed | [2.1](#21-floating-point-output-is-limited-by-the-conversion-buffer) |
 | Infinity prints as `inf` | Implementation-defined, conforms | [3](#3-implementation-defined-choices) |
@@ -232,9 +214,9 @@ The Standard places no requirement on these calls. The list records what nanopri
 | A null `%n` pointer is not checked | True. The Standard makes this undefined | [4](#4-undefined-behavior) |
 | An unknown specification is printed verbatim | True. The `%` is written and scanning continues at the next character. Uppercase letters now fold to lowercase conversions | [4](#4-undefined-behavior) |
 | A disabled specification is treated as unknown and its argument is not consumed | True | [1](#1-configuration) |
-| A width or precision above `INT_MAX` is undefined behavior | Fixed. Both are capped at 65280 | [2.9](#29-field-width-and-precision-are-capped) |
+| A width or precision above `INT_MAX` is undefined behavior | Fixed. Both are capped at 65280 | [2.6](#26-field-width-and-precision-are-capped) |
 | A negative `*` width acting as `-` plus the magnitude is non-standard | Not so. p5 requires exactly that. A negative `*` precision counts as omitted, which p5 also requires | none, conforms |
 | `%.-5i` is accepted and the minus is ignored | Accepted, but the precision is treated as omitted, not as 5 | [4](#4-undefined-behavior) |
 | An option to parse disabled specifications and consume their arguments | Not implemented | [1](#1-configuration) |
-| Comment: exact conditions for `err` in `%f` and `%a` | `%f` conditions listed per build. `%a` no longer prints `err`. It limits the precision to 13 instead | [2.1](#21-floating-point-output-is-limited-by-the-conversion-buffer), [2.3](#23-a-precision-above-13-is-reduced-to-13) |
+| Comment: exact conditions for `err` in `%f` and `%a` | Listed per conversion and per build. `%a` prints `err` for a precision above size − 8 | [2.1](#21-floating-point-output-is-limited-by-the-conversion-buffer) |
 | Comment: is `%f` exact when N − log2(5) ≥ M | No. A counterexample for `uint64_t` and two for `uint8_t` are given | [2.2](#22-decimal-conversions-are-not-correctly-rounded) |
