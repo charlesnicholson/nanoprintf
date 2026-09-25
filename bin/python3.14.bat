@@ -15,9 +15,9 @@ rem deployed into, not one rediscovered from the caller's CWD.
 rem Cleared first: `for /f` sets nothing on empty output, so the guard below would otherwise
 rem pass on a value inherited from an ancestor product script and run that payload.
 set "ENVY_PRODUCT_PATH="
-for /f "delims=" %%i in ('call "%~dp0envy.bat" product "python3.13"') do set "ENVY_PRODUCT_PATH=%%i"
+for /f "delims=" %%i in ('call "%~dp0envy.bat" product "python3.14"') do set "ENVY_PRODUCT_PATH=%%i"
 if not defined ENVY_PRODUCT_PATH (
-    echo envy: failed to resolve product 'python3.13' 1>&2
+    echo envy: failed to resolve product 'python3.14' 1>&2
     exit /b 1
 )
 call "%ENVY_PRODUCT_PATH%" %*

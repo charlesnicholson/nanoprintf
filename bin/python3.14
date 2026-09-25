@@ -12,9 +12,9 @@ if [[ -n "$ENVY_PROJECT_ROOT_HOP" ]]; then
 fi
 # The sibling launcher injects --project, so envy resolves the project this script was
 # deployed into, not one rediscovered from the caller's CWD.
-ENVY_PRODUCT="$("$ENVY_SCRIPT_DIR/envy" product "python3.13")" || exit $?
+ENVY_PRODUCT="$("$ENVY_SCRIPT_DIR/envy" product "python3.14")" || exit $?
 if [[ -z "$ENVY_PRODUCT" ]]; then
-    echo "envy: failed to resolve product 'python3.13'" >&2
+    echo "envy: failed to resolve product 'python3.14'" >&2
     exit 1
 fi
 exec "$ENVY_PRODUCT" "$@"
