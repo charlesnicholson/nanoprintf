@@ -7,7 +7,7 @@
 [![](https://img.shields.io/badge/license-public_domain-brightgreen.svg)](https://github.com/charlesnicholson/nanoprintf/blob/master/LICENSE)
 [![](https://img.shields.io/badge/license-0BSD-brightgreen)](https://github.com/charlesnicholson/nanoprintf/blob/master/LICENSE)
 
-nanoprintf is an unencumbered implementation of snprintf and vsnprintf for embedded systems that, when fully enabled, aim for C11 standard compliance. The primary exception is locale conversions that require `wcrtomb` to exist. C23 binary integer output is optionally supported as per [N2630](http://www.open-std.org/jtc1/sc22/wg14/www/docs/n2630.pdf). Safety extensions for snprintf and vsnprintf can be optionally configured to return trimmed or fully-empty strings on buffer overflow events.
+nanoprintf is an unencumbered implementation of snprintf and vsnprintf for embedded systems that, when fully enabled, aim for C11 standard compliance. The primary exception is locale conversions that require `wcrtomb` to exist; `%lc` and `%ls` are optionally supported by passing UTF-16 code units through unchanged. C23 binary integer output is optionally supported as per [N2630](http://www.open-std.org/jtc1/sc22/wg14/www/docs/n2630.pdf). Safety extensions for snprintf and vsnprintf can be optionally configured to return trimmed or fully-empty strings on buffer overflow events.
 
 Additionally, nanoprintf can be used to parse printf-style format strings to extract the various parameters and conversion specifiers, without doing any actual text formatting.
 
@@ -112,7 +112,7 @@ nanoprintf does *not* provide `printf` or `putchar` itself; those are seen as sy
 
 The nanoprintf functions all return the same value: the number of characters that were either sent to the callback (for npf_pprintf) or the number of characters that would have been written to the buffer provided sufficient space. The null-terminator 0 byte is not part of the count.
 
-The C Standard allows for the printf functions to return negative values in case string or character encodings can not be performed, or if the output stream encounters EOF. Since nanoprintf is oblivious to OS resources like files, and does not support the `l` length modifier for `wchar_t` support, any runtime errors are either internal bugs (please report!) or incorrect usage. Because of this, nanoprintf only returns non-negative values representing how many bytes the formatted string contains (again, minus the null-terminator byte).
+The C Standard allows for the printf functions to return negative values in case string or character encodings can not be performed, or if the output stream encounters EOF. Since nanoprintf is oblivious to OS resources like files, and performs no locale conversions, any runtime errors are either internal bugs (please report!) or incorrect usage. Because of this, nanoprintf only returns non-negative values representing how many bytes the formatted string contains (again, minus the null-terminator byte).
 
 ## Configuration
 
@@ -128,6 +128,7 @@ nanoprintf has the following static configuration flags.
 * `NANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS`: Set to `0` or `1`. Enables small modifiers.
 * `NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS`: Set to `0` or `1`. Enables oversized modifiers.
 * `NANOPRINTF_USE_FIXED_WIDTH_FORMAT_SPECIFIERS`: Optional, defaults to `0`. Enables the C23 fixed-width modifiers `wN` and `wfN`. Requires `NANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS=1`, and `w64`/`wf64` additionally require `NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS=1` on targets where the 64-bit stdint types are `long long`.
+* `NANOPRINTF_USE_WIDE_FORMAT_SPECIFIERS`: Optional, defaults to `0`. Enables `%lc` and `%ls`, which print UTF-16 code units instead of converting with `wcrtomb`: the `%lc` argument is a `uint16_t`, the `%ls` argument a `const uint16_t *` to a null-terminated array, and the field width and precision count code units. Each unit is passed to the output function, so an `npf_pprintf` callback can receive values above 255. `npf_snprintf` narrows each unit to a `char`, which is only exact below 256. Meant for targets whose text is UTF-16, such as UEFI and Windows.
 * `NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS`: Set to `0` or `1`. Enables binary specifiers.
 * `NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS`: Set to `0` or `1`. Enables `%n` for write-back.
 * `NANOPRINTF_USE_ALT_FORM_FLAG`: Set to `0` or `1`. Enables the `#` modifier for alternate print forms.
@@ -338,7 +339,7 @@ See the [wrap_npf_float](https://github.com/charlesnicholson/nanoprintf/blob/mas
 
 ## Limitations
 
-No wide-character support exists: the `%lc` and `%ls` fields require that the arg be converted to a char array as if by a call to [wcrtomb](http://man7.org/linux/man-pages/man3/wcrtomb.3.html). When locale and character set conversions get involved, it's hard to keep the name "nano". Accordingly, `%lc` and `%ls` are unsupported: like any other unsupported conversion, they print verbatim and do not consume their argument. Earlier versions printed the argument's bytes as narrow characters instead, which only looked right for ASCII.
+`%lc` and `%ls` are off by default: the Standard requires that their arguments be converted to a char array as if by a call to [wcrtomb](http://man7.org/linux/man-pages/man3/wcrtomb.3.html), and when locale and character set conversions get involved, it's hard to keep the name "nano". Without `NANOPRINTF_USE_WIDE_FORMAT_SPECIFIERS`, they are unsupported: like any other unsupported conversion, they print verbatim and do not consume their argument. Earlier versions printed the argument's bytes as narrow characters instead, which only looked right for ASCII. With the option enabled, they parse and print UTF-16 code units: a `uint16_t` for `%lc`, a `const uint16_t *` for `%ls`, each unit a callback receives unchanged. Neither mode performs a multibyte conversion.
 
 All C float conversions are supported: `%f`/`%F`, `%e`/`%E`, `%g`/`%G`, and `%a`/`%A`. Only `%f`/`%F` is on by default when floats are enabled; the rest are opt-in per specifier. See [Accuracy](#accuracy) for how many significant digits to expect.
 

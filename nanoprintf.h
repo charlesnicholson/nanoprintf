@@ -143,6 +143,14 @@ NPF_VISIBILITY int npf_vpprintf(npf_putc pc,
 #ifndef NANOPRINTF_USE_FIXED_WIDTH_FORMAT_SPECIFIERS
   #define NANOPRINTF_USE_FIXED_WIDTH_FORMAT_SPECIFIERS 0
 #endif
+// Optional flag, defaults to 0 if not explicitly configured. Parses "%lc" and
+// "%ls" as UTF-16 code units: a uint16_t for "%lc", a const uint16_t * for
+// "%ls", each unit passed to the output function unchanged. Suits targets whose
+// text is already UTF-16, such as UEFI and Windows, where wcrtomb has no
+// multibyte encoding to produce.
+#ifndef NANOPRINTF_USE_WIDE_FORMAT_SPECIFIERS
+  #define NANOPRINTF_USE_WIDE_FORMAT_SPECIFIERS 0
+#endif
 
 // 'e' and 'g' share a conversion function; 'g' selects between 'e' and 'f' output.
 #if (NANOPRINTF_USE_FLOAT_SCI_FORMAT_SPECIFIER == 1) || \
@@ -698,11 +706,16 @@ static char const *npf_parse_format_spec_end(char const *format,
       break;
 #endif
     case 'l':
+#if NANOPRINTF_USE_WIDE_FORMAT_SPECIFIERS == 1
+      /* 'l' makes 'c' and 's' wide; with this option they parse and their
+         arguments are read as UTF-16 code units. */
+#else
       /* 'l' makes 'c' and 's' wide, and converting those needs wcrtomb. Printing
          the argument's bytes as narrow characters would look right and not be,
          so "%lc" and "%ls" fail to parse like any other unsupported conversion.
          OR-ing in 0x30 maps exactly 'c', 's', 'C', and 'S' to 's'. */
       if ((*cur | 0x30) == 's') { return NULL; }
+#endif
       out_spec->length_modifier = NPF_FMT_SPEC_LEN_MOD_LONG;
 #if NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS == 1
       if (*cur == 'l') {
@@ -1771,6 +1784,10 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
     char *cbuf = u.cbuf_mem, sign_c = 0;
     int cbuf_len = 0;
     char need_0x = 0;
+#if NANOPRINTF_USE_WIDE_FORMAT_SPECIFIERS == 1
+    uint16_t wide_char = 0;
+    uint16_t const *wbuf = 0; // payload for "%lc" and "%ls", in code units
+#endif
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
     int field_pad = 0;
     char pad_c = 0;
@@ -1970,18 +1987,44 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
 #endif
       }
     } else if (fs.conv_spec == NPF_FMT_SPEC_CONV_STRING) {
-      cbuf = va_arg(args, char *);
+#if NANOPRINTF_USE_WIDE_FORMAT_SPECIFIERS == 1
+      if (fs.length_modifier == NPF_FMT_SPEC_LEN_MOD_LONG) {
+        // cbuf_len counts code units, not bytes; precision caps the unit count.
+        uint16_t const *ws = va_arg(args, uint16_t const *);
+        wbuf = ws;
 #if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
-      for (char const *s = cbuf;
-           ((fs.prec_opt == NPF_FMT_SPEC_OPT_NONE) || (cbuf_len < fs.prec)) && cbuf && *s;
-           ++s, ++cbuf_len);
+        for (; ws && *ws && ((fs.prec_opt == NPF_FMT_SPEC_OPT_NONE) || (cbuf_len < fs.prec));
+             ++ws, ++cbuf_len);
 #else
-      for (char const *s = cbuf; cbuf && *s; ++s, ++cbuf_len); // strlen
+        for (; ws && *ws; ++ws, ++cbuf_len);
 #endif
+      } else
+#endif
+      {
+        cbuf = va_arg(args, char *);
+#if NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS == 1
+        for (char const *s = cbuf;
+             ((fs.prec_opt == NPF_FMT_SPEC_OPT_NONE) || (cbuf_len < fs.prec)) && cbuf && *s;
+             ++s, ++cbuf_len);
+#else
+        for (char const *s = cbuf; cbuf && *s; ++s, ++cbuf_len); // strlen
+#endif
+      }
     } else {
-      // PERCENT or CHAR: produce a 1-char buffer.
-      *cbuf = (fs.conv_spec == NPF_FMT_SPEC_CONV_CHAR) ? (char)va_arg(args, int) : '%';
-      cbuf_len = 1;
+#if NANOPRINTF_USE_WIDE_FORMAT_SPECIFIERS == 1
+      if ((fs.conv_spec == NPF_FMT_SPEC_CONV_CHAR) &&
+          (fs.length_modifier == NPF_FMT_SPEC_LEN_MOD_LONG)) {
+        // Wide char: one UTF-16 code unit, promoted to int in the call.
+        wide_char = (uint16_t)va_arg(args, int);
+        wbuf = &wide_char;
+        cbuf_len = 1;
+      } else
+#endif
+      {
+        // PERCENT or CHAR: produce a 1-char buffer.
+        *cbuf = (fs.conv_spec == NPF_FMT_SPEC_CONV_CHAR) ? (char)va_arg(args, int) : '%';
+        cbuf_len = 1;
+      }
     }
 
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
@@ -2044,6 +2087,11 @@ int npf_vpprintf(npf_putc pc, void *pc_ctx, char const *format, va_list args) {
 
     // Write the converted payload. The STRING parse loop guarantees cbuf_len == 0
     // when cbuf is NULL, so the output loop can elide the `cbuf &&` check.
+#if NANOPRINTF_USE_WIDE_FORMAT_SPECIFIERS == 1
+    if (wbuf) { // "%lc" and "%ls": emit UTF-16 code units
+      for (int i = 0; i < cbuf_len; ++i) { NPF_PUT(wbuf[i]); }
+    } else
+#endif
     if (fs.conv_spec == NPF_FMT_SPEC_CONV_STRING) {
       for (int i = 0; i < cbuf_len; ++i) { NPF_PUT(cbuf[i]); }
     } else {
@@ -2198,34 +2246,38 @@ int npf_snprintf_(char * NPF_RESTRICT buffer,
   static inline void const *npf__id_cvp(void const *v) { return v; }
   static inline int *npf__id_ip(int *v) { return v; }
   static inline short *npf__id_sp(short *v) { return v; }
+  static inline unsigned short *npf__id_usp(unsigned short *v) { return v; }
+  static inline unsigned short const *npf__id_ucsp(unsigned short const *v) { return v; }
   static inline long *npf__id_lp(long *v) { return v; }
   static inline long long *npf__id_llp(long long *v) { return v; }
   static inline signed char *npf__id_scp(signed char *v) { return v; }
 
   #define NPF__WRAP(x) _Generic((x), \
-    float:              npf__wf, \
-    double:             npf__wd, \
-    long double:        npf__wld, \
-    int:                npf__id_i, \
-    unsigned:           npf__id_u, \
-    long:               npf__id_l, \
-    unsigned long:      npf__id_ul, \
-    long long:          npf__id_ll, \
-    unsigned long long: npf__id_ull, \
-    char:               npf__id_c, \
-    signed char:        npf__id_sc, \
-    unsigned char:      npf__id_uc, \
-    short:              npf__id_s, \
-    unsigned short:     npf__id_us, \
-    char *:             npf__id_cp, \
-    char const *:       npf__id_ccp, \
-    void *:             npf__id_vp, \
-    void const *:       npf__id_cvp, \
-    int *:              npf__id_ip, \
-    short *:            npf__id_sp, \
-    long *:             npf__id_lp, \
-    long long *:        npf__id_llp, \
-    signed char *:      npf__id_scp)(x)
+    float:                  npf__wf, \
+    double:                 npf__wd, \
+    long double:            npf__wld, \
+    int:                    npf__id_i, \
+    unsigned:               npf__id_u, \
+    long:                   npf__id_l, \
+    unsigned long:          npf__id_ul, \
+    long long:              npf__id_ll, \
+    unsigned long long:     npf__id_ull, \
+    char:                   npf__id_c, \
+    signed char:            npf__id_sc, \
+    unsigned char:          npf__id_uc, \
+    short:                  npf__id_s, \
+    unsigned short:         npf__id_us, \
+    char *:                 npf__id_cp, \
+    char const *:           npf__id_ccp, \
+    void *:                 npf__id_vp, \
+    void const *:           npf__id_cvp, \
+    int *:                  npf__id_ip, \
+    short *:                npf__id_sp, \
+    unsigned short *:       npf__id_usp, \
+    unsigned short const *: npf__id_ucsp, \
+    long *:                 npf__id_lp, \
+    long long *:            npf__id_llp, \
+    signed char *:          npf__id_scp)(x)
 #else
   #error Single-precision float wrapping requires C11, GCC/Clang, or C++.
 #endif

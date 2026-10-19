@@ -2629,6 +2629,7 @@ int NPF_TEST_FUNC(void) {
     /* unknown flag (non-standard) */
     NPF_TEST("%kmarco", "%kmarco");
 
+#if NANOPRINTF_USE_WIDE_FORMAT_SPECIFIERS == 0
     /* %lc and %ls need wcrtomb, so they fail to parse and print verbatim
        rather than printing the wide argument's bytes as narrow characters.
        They consume no argument, so the %d after each reads the only one.
@@ -2641,6 +2642,22 @@ int NPF_TEST_FUNC(void) {
     NPF_TEST("[%ls] 7", "[%ls] %d", 7);
 #if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
     NPF_TEST("%-5ls 7", "%-5ls %d", 7);
+#endif
+#else
+    /* %lc and %ls parse and pass UTF-16 code units to the output unchanged.
+       The units stay below 256 here so they survive the narrowing npf_snprintf
+       does; units above 255 are covered in unit_vpprintf.cc. */
+    static uint16_t const npf_wide_text[] = {'w', 'i', 'd', 'e', 0};
+    NPF_TEST("wide", "%ls", npf_wide_text);
+    NPF_TEST("wide 7", "%ls %d", npf_wide_text, 7);
+    NPF_TEST("wi", "%.2ls", npf_wide_text);
+    NPF_TEST("[wide]", "[%ls]", npf_wide_text);
+    NPF_TEST("wi", "%lc%lc", 'w', 'i');
+#if NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS == 1
+    NPF_TEST("  wide", "%6ls", npf_wide_text);
+    NPF_TEST("wide  ", "%-6ls", npf_wide_text);
+    NPF_TEST("  A", "%3lc", 'A');
+#endif
 #endif
     NPF_TEST("7 lc", "%ld lc", 7L);
     NPF_TEST("c", "%c", 'c');

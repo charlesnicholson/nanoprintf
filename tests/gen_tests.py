@@ -45,6 +45,7 @@ FLAGS = [
     "NANOPRINTF_USE_FLOAT_SHORTEST_FORMAT_SPECIFIER",
     "NANOPRINTF_USE_FIXED_WIDTH_FORMAT_SPECIFIERS",
     "NANOPRINTF_USE_DIVISION_FREE_CONVERSION",
+    "NANOPRINTF_USE_WIDE_FORMAT_SPECIFIERS",
 ]
 
 # Flags that are only meaningful when NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS is 1.
@@ -66,6 +67,7 @@ NO_PRECISION_FLOAT_VARIED = {
     "NANOPRINTF_USE_ALT_FORM_FLAG",
     "NANOPRINTF_USE_DIVISION_FREE_CONVERSION",
     "NANOPRINTF_USE_FIXED_WIDTH_FORMAT_SPECIFIERS",
+    "NANOPRINTF_USE_WIDE_FORMAT_SPECIFIERS",
     *FLOAT_DEPENDENT_FLAGS,
 }
 
@@ -88,6 +90,17 @@ FIXED_WIDTH_VARIED = {
 }
 
 
+# "%lc" and "%ls" only reach the string conversions and only react to the field
+# width and precision flags; the rest cannot change their output. Crossing wide=1
+# with everything else would grow the matrix for no coverage, so the flags outside
+# this set are pinned to 0 instead.
+WIDE_VARIED = {
+    "NANOPRINTF_USE_WIDE_FORMAT_SPECIFIERS",
+    "NANOPRINTF_USE_FIELD_WIDTH_FORMAT_SPECIFIERS",
+    "NANOPRINTF_USE_PRECISION_FORMAT_SPECIFIERS",
+}
+
+
 def valid_combos() -> list[dict[str, int]]:
     """Return every valid flag combination.
 
@@ -95,6 +108,7 @@ def valid_combos() -> list[dict[str, int]]:
       - every flag in FLOAT_DEPENDENT_FLAGS requires float=1
       - float=1 + precision=0 is sampled over NO_PRECISION_FLOAT_VARIED only
       - fixed-width=1 requires small=1, and is sampled over FIXED_WIDTH_VARIED only
+      - wide=1 is sampled over WIDE_VARIED only
     """
     combos = []
     for bits in itertools.product((0, 1), repeat=len(FLAGS)):
@@ -106,6 +120,10 @@ def valid_combos() -> list[dict[str, int]]:
         if combo["NANOPRINTF_USE_FIXED_WIDTH_FORMAT_SPECIFIERS"] == 1 and (
             combo["NANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS"] == 0
             or any(v == 1 for k, v in combo.items() if k not in FIXED_WIDTH_VARIED)
+        ):
+            continue
+        if combo["NANOPRINTF_USE_WIDE_FORMAT_SPECIFIERS"] == 1 and any(
+            v == 1 for k, v in combo.items() if k not in WIDE_VARIED
         ):
             continue
         if (
@@ -136,6 +154,7 @@ def combo_label(combo: dict[str, int], lang: str) -> str:
         "NANOPRINTF_USE_FLOAT_SHORTEST_FORMAT_SPECIFIER": "shortest",
         "NANOPRINTF_USE_FIXED_WIDTH_FORMAT_SPECIFIERS": "fixedw",
         "NANOPRINTF_USE_DIVISION_FREE_CONVERSION": "divfree",
+        "NANOPRINTF_USE_WIDE_FORMAT_SPECIFIERS": "wide",
     }
     parts = [f"{short[k]}={v}" for k, v in combo.items()]
     return f"[{lang}] " + " ".join(parts)
@@ -322,9 +341,10 @@ def write_compile_commands(
         "/wd4475",
         "/wd4476",
         "/wd4477",
-        # nanoprintf prints %lc and %ls verbatim and consumes nothing, so their
-        # tests pass the int a following %d reads, which MSVC's format checker
-        # flags against the wide conversion.
+        # The %lc and %ls tests pass either the int a following %d reads, when
+        # wide support is off, or a uint16_t pointer, when it is on. MSVC's
+        # format checker reads both as a wide conversion with the wrong
+        # argument type.
         "/wd4313",
         "/wd4505",
         "/wd4778",

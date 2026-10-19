@@ -1,6 +1,7 @@
 #include "unit_nanoprintf.h"
 
 #include <climits>
+#include <cstdint>
 #include <cstring>
 #include <string>
 #include <vector>
@@ -291,3 +292,77 @@ TEST_CASE("npf_vpprintf") {
     REQUIRE(r.String() == std::string{"02"});
   }
 }
+
+#if NANOPRINTF_USE_WIDE_FORMAT_SPECIFIERS == 1
+
+struct WideRecorder {
+  static void PutC(int c, void *ctx) {
+    static_cast<WideRecorder*>(ctx)->calls.push_back(c);
+  }
+
+  std::vector<int> calls;
+};
+
+TEST_CASE("npf_vpprintf wide specifiers") {
+  WideRecorder r;
+  static uint16_t const text[] = {'a', 'b', 'c', 0};
+
+  SUBCASE("wide character") {
+    REQUIRE(npf_pprintf(WideRecorder::PutC, &r, "%lc", 'A') == 1);
+    REQUIRE(r.calls == std::vector<int>{'A'});
+  }
+
+  SUBCASE("wide character above 255") {
+    REQUIRE(npf_pprintf(WideRecorder::PutC, &r, "%lc", 0x2192) == 1);
+    REQUIRE(r.calls == std::vector<int>{0x2192});
+  }
+
+  SUBCASE("wide string") {
+    REQUIRE(npf_pprintf(WideRecorder::PutC, &r, "%ls", text) == 3);
+    REQUIRE(r.calls == std::vector<int>{'a', 'b', 'c'});
+  }
+
+  SUBCASE("wide string code units above 255") {
+    static uint16_t const units[] = {0xE9, 0x2192, 0xD83D, 0xDE00, 0};
+    REQUIRE(npf_pprintf(WideRecorder::PutC, &r, "%ls", units) == 4);
+    REQUIRE(r.calls == std::vector<int>{0xE9, 0x2192, 0xD83D, 0xDE00});
+  }
+
+  SUBCASE("wide string empty") {
+    static uint16_t const empty[] = {0};
+    REQUIRE(npf_pprintf(WideRecorder::PutC, &r, "%ls", empty) == 0);
+    REQUIRE(r.calls.empty());
+  }
+
+  SUBCASE("wide string null pointer") {
+    REQUIRE(npf_pprintf(WideRecorder::PutC, &r, "%ls", nullptr) == 0);
+    REQUIRE(r.calls.empty());
+  }
+
+  SUBCASE("wide string precision counts code units") {
+    REQUIRE(npf_pprintf(WideRecorder::PutC, &r, "%.2ls", text) == 2);
+    REQUIRE(r.calls == std::vector<int>{'a', 'b'});
+  }
+
+  SUBCASE("wide string field width counts code units") {
+    REQUIRE(npf_pprintf(WideRecorder::PutC, &r, "%5ls", text) == 5);
+    REQUIRE(r.calls == std::vector<int>{' ', ' ', 'a', 'b', 'c'});
+  }
+
+  SUBCASE("wide string left justified") {
+    REQUIRE(npf_pprintf(WideRecorder::PutC, &r, "%-5ls", text) == 5);
+    REQUIRE(r.calls == std::vector<int>{'a', 'b', 'c', ' ', ' '});
+  }
+
+  SUBCASE("wide character field width") {
+    REQUIRE(npf_pprintf(WideRecorder::PutC, &r, "%3lc", 0x2192) == 3);
+    REQUIRE(r.calls == std::vector<int>{' ', ' ', 0x2192});
+  }
+
+  SUBCASE("wide string mixes with narrow conversions") {
+    REQUIRE(npf_pprintf(WideRecorder::PutC, &r, "%ls %d", text, 7) == 5);
+    REQUIRE(r.calls == std::vector<int>{'a', 'b', 'c', ' ', '7'});
+  }
+}
+
+#endif

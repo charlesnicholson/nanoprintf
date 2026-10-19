@@ -43,6 +43,7 @@ A conforming `printf` accepts every flag, length modifier, and conversion specif
 | `NANOPRINTF_USE_SMALL_FORMAT_SPECIFIERS` | `hh`, `h` | 1 |
 | `NANOPRINTF_USE_LARGE_FORMAT_SPECIFIERS` | `ll`, `j`, `z`, `t` | 0 |
 | `NANOPRINTF_USE_FIXED_WIDTH_FORMAT_SPECIFIERS` | `wN`, `wfN` (C23) | 0 |
+| `NANOPRINTF_USE_WIDE_FORMAT_SPECIFIERS` | `lc`, `ls`, as UTF-16 code units | 0 |
 | `NANOPRINTF_USE_FLOAT_FORMAT_SPECIFIERS` | `f`, `F`, and the `L` modifier | 1 |
 | `NANOPRINTF_USE_FLOAT_SCI_FORMAT_SPECIFIER` | `e`, `E` | 0 |
 | `NANOPRINTF_USE_FLOAT_SHORTEST_FORMAT_SPECIFIER` | `g`, `G` | 0 |
@@ -50,7 +51,7 @@ A conforming `printf` accepts every flag, length modifier, and conversion specif
 | `NANOPRINTF_USE_BINARY_FORMAT_SPECIFIERS` | `b`, `B` (C23) | 0 |
 | `NANOPRINTF_USE_WRITEBACK_FORMAT_SPECIFIERS` | `n` | 0 |
 
-The Default column is the configuration nanoprintf picks when none of its options are defined. In that configuration `%lld`, `%zu`, `%jd`, `%td`, `%e`, `%g`, `%a`, `%b`, and `%n` do not convert. A build has every C11 feature only when every row except the two C23 rows is enabled. It has every C23 feature only when every row is enabled. See the README's [Configuration](README.md#configuration) section for the rules on defining the options.
+The Default column is the configuration nanoprintf picks when none of its options are defined. In that configuration `%lld`, `%zu`, `%jd`, `%td`, `%lc`, `%ls`, `%e`, `%g`, `%a`, `%b`, and `%n` do not convert. A build has every C11 feature only when every row except the two C23 rows is enabled; `NANOPRINTF_USE_WIDE_FORMAT_SPECIFIERS` is not part of that count, because even enabled it prints UTF-16 code units rather than the Standard's multibyte characters ([2.3](#23-lc-and-ls-print-utf-16-code-units)). It has every C23 feature only when every row is enabled. See the README's [Configuration](README.md#configuration) section for the rules on defining the options.
 
 When a conversion specification uses a feature that is compiled out:
 
@@ -111,11 +112,13 @@ Issue #299 asks whether `%f` rounds exactly once the intermediate has N bits, th
 
 **Rounding direction**: nanoprintf always rounds to nearest with ties to even and ignores `fesetround`. Under `FE_UPWARD`, `FE_DOWNWARD`, or `FE_TOWARDZERO`, the result is not the one 3.12 describes. A narrow intermediate can also see a tie that is not there. That is the cause of the `0.05` row above.
 
-### 2.3 `%lc` and `%ls` are not supported
+### 2.3 `%lc` and `%ls` print UTF-16 code units
 
 **Standard**: p7 and p8 say `%lc` converts a `wint_t` to a multibyte character as if by `wcrtomb`, and `%ls` converts a `wchar_t` string the same way.
 
-**nanoprintf**: has no `wcrtomb`, so `%lc` and `%ls` do not parse. They print verbatim and do not consume their argument, the same as any other unsupported conversion (see [1](#1-configuration)). `%lC` and `%lS` behave the same way. Because nothing is converted, no encoding error can occur, which is why nanoprintf never returns a negative value.
+**nanoprintf**: with `NANOPRINTF_USE_WIDE_FORMAT_SPECIFIERS` at its default of 0, nanoprintf has no `wcrtomb`, so `%lc` and `%ls` do not parse. They print verbatim and do not consume their argument, the same as any other unsupported conversion (see [1](#1-configuration)). `%lC` and `%lS` behave the same way. Because nothing is converted, no encoding error can occur, which is why nanoprintf never returns a negative value.
+
+With the option enabled, `%lc` consumes a single UTF-16 code unit as a `uint16_t`, and `%ls` consumes a `const uint16_t *` to a null-terminated array of them. The field width and precision count code units, and each unit is passed to the output function unchanged, so an `npf_pprintf` callback can receive values above 255. `npf_snprintf` narrows each unit to a `char`, which is only exact below 256. A surrogate pair is two units and prints as two. There is no multibyte conversion in either mode; the option exists for targets whose text is already UTF-16, such as UEFI or Windows, where there is no multibyte form to convert to.
 
 ### 2.4 `long double` is converted to `double`
 
@@ -202,7 +205,7 @@ The Standard places no requirement on these calls. The list records what nanopri
 | `a`, `e`, `g` are parsed and treated as `f` | No longer true. Each is a real conversion behind its own option. Compiled out, it prints verbatim | [1](#1-configuration) |
 | `aA eE gG H D DD wN wfN` are unsupported | Only `H`, `D`, and `DD` remain unsupported. They apply to the decimal floating types, which C23 makes a conditional feature (6.2.5p13) | [1](#1-configuration) |
 | Which options enable which features | Documented | [1](#1-configuration) |
-| No `l` for `%c` and `%s` | Still unsupported. `%lc` and `%ls` used to print the argument's bytes as narrow text, and now print verbatim | [2.3](#23-lc-and-ls-are-not-supported) |
+| No `l` for `%c` and `%s` | Optionally supported as UTF-16 code units behind `NANOPRINTF_USE_WIDE_FORMAT_SPECIFIERS`. Without it, still prints verbatim | [2.3](#23-lc-and-ls-print-utf-16-code-units) |
 | Rounding is imperfect | Still true. Ties now go to even | [2.2](#22-decimal-conversions-are-not-correctly-rounded) |
 | Output that does not fit the buffer prints `err` | Still true. The exact conditions are listed | [2.1](#21-floating-point-output-is-limited-by-the-conversion-buffer) |
 | Infinity prints as `inf` | Implementation-defined, conforms | [3](#3-implementation-defined-choices) |
